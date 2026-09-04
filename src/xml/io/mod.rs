@@ -1556,10 +1556,14 @@ fn allocate_output_buffer() -> *mut _xmlOutputBuffer {
 ///   callback receives the same three arguments upstream would pass it.
 pub(crate) fn output_buffer_create_filename_routed(
     URI: *const c_char,
-    encoder: *mut _xmlCharEncodingHandler,
+    encoder: crate::abi::structs::xmlCharEncodingHandlerPtr,
     compression: c_int,
 ) -> *mut _xmlOutputBuffer {
-    if let Some(func) = crate::xml::globals::get_output_buffer_create_filename_value() {
+    // Slot read through the R-000177 cross-DSO bridge: the whole-archive
+    // facade copies must observe the output-loader php registers via the
+    // core DSO's exported xmlOutputBufferCreateFilenameDefault (upstream:
+    // one core DSO, registration visible to every output open).
+    if let Some(func) = crate::xml::globals::get_output_buffer_create_filename_value_cross_dso() {
         // SAFETY: URI/encoder carry the same validity contract as the export
         // `xmlOutputBufferCreateFilename`; the callback is the consumer's own
         // registered function (upstream calls it with these exact arguments).

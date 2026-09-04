@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**4 open residuals:** R-000157, R-000168, R-000177, R-000179
+**6 open residuals:** R-000157, R-000168, R-000177, R-000179, R-000198, R-000199
 
 ## Phase 0 Residuals
 
@@ -1245,6 +1245,34 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Evidence:** ['courts/receipts/phase-09/xsltproc-*.json']
 - **Classification:** CANDIDATE_BUG
 - **History:** OPEN 2026-09-01 (CLI-XSLTPROC-0017 failed after the Phase-13 TLS data-segment shift: '-Infinity' followed by 6 garbage bytes); FIXED 2026-09-01 (joined buffer NUL-terminated before xml_strdup_joined)
+
+## Phase 14 Residuals
+
+### R-000198: xmlTextWriterStartDocument does not install the output encoder on the writer's output buffer: non-UTF-8 writer output (xmlTextWriterWriteComment/String/... after startDocument(encoding:...)) is emitted unconverted as UTF-8 (OPEN)
+
+- **Status:** OPEN
+- **Component:** src/xml/writer/mod.rs, src/xml/io/mod.rs
+- **Surface:** xmlTextWriterStartDocument, xmlTextWriterSetOutputEncoding, xmlOutputBufferFlush encoder path (xmlwriter.c / xmlIO.c)
+- **Oracle versions:** libxml2 2.15.3 (system, Iconv+ICU)
+- **Root cause:** Upstream xmlTextWriterStartDocument installs the found char-encoding handler on writer->out (out->encoder + a 4000-byte conv buffer) and flushes through it, so comment/text/attribute content written after startDocument(encoding:"SHIFT_JIS") is transcoded to the target encoding on the output-buffer flush. The candidate only sets an encoder_active byte-count flag and never installs out->encoder/conv, so the flush machinery (io::output_buffer_flush converts only when ob.encoder is set) passes UTF-8 through unchanged: XMLWriter::toStream() + startDocument(encoding:"SHIFT_JIS") emits raw UTF-8 comment bytes where the oracle emits Shift_JIS (0x82 0x9F ...) bytes. The same install is missing from the writer's SetOutputEncoding path. Sibling slice of R-000157: even for codecs the registry serves (UTF-16, ASCII, ISO-8859-1, windows-1252) the writer never activates them.
+- **Observable residual:** XMLWriter output declared with a non-UTF-8 encoding is byte-different from the oracle whenever the content contains non-ASCII characters.
+- **Phase 11 triangulation:** The 2.15.3 oracle (Iconv+ICU) emits the transcoded bytes; the php .exp for the only in-suite probe (xmlwriter_toStream_encoding_shiftjis) is unsatisfiable by any correct libxml2, so the gate cannot observe this — byte-parity probes vs the oracle are the court.
+- **Regression courts:** WRITER, ENCODING-001.
+- **Evidence:** ['courts/receipts/phase-14/php-14-26-zts-green-20260905/sj-toStream-probe.php']
+- **Classification:** CANDIDATE_BUG
+
+### R-000199: Recursive-descent parse stack envelope: deeply nested documents (~4k+ levels on an 8MB stack at the -O0 dev profile) overflow where upstream xmlParseChunk's iterative xmlParseTryOrFinish state machine is unbounded (OPEN)
+
+- **Status:** OPEN
+- **Component:** src/xml/parser/state.rs
+- **Surface:** xmlParseChunk / xmlParseDocument nested-element descent (parser.c xmlParseContentInternal vs state.rs parse_element recursion)
+- **Oracle versions:** libxml2 2.15.3 (system)
+- **Root cause:** The candidate parses by recursive descent (parse_element wrapper -> parse_element_content loop -> parse_element for each nested child). Phase 14.25 split the ~8KB monolithic parse_element frame into a slim wrapper + content loop (~3.3KB per level total at the -O0 dev profile), fixing the php-suite depth-1000 crash (bug65236) with 3x margin, but the envelope still caps at ~3-4k nesting levels on an 8MB stack. Upstream xmlParseChunk drives the identical work through the ITERATIVE xmlParseTryOrFinish + ctxt->instate state machine (no per-element recursion): the oracle parses depth-20000 documents on a 1MB stack without issue.
+- **Observable residual:** A consumer parsing an XML document nested deeper than ~3-4k elements segfaults (stack overflow) on the candidate where the oracle succeeds.
+- **Phase 11 triangulation:** Measured in Phase 14.25: candidate depth 3000 passes 8/8, depth 4000 crashes 8/8 (8MB stack); oracle depth 20000 passes on a 1MB stack. Closing requires converting the element-content descent to an explicit/iterative driver (upstream xmlParseTryOrFinish model) - a future implementation work item, not a suite blocker (php max ~1000).
+- **Regression courts:** PARSER.
+- **Evidence:** ['courts/receipts/phase-14/php-14-25-stack-parity-green-20260904/README.md']
+- **Classification:** UNRESOLVED
 
 ## Classification Legend
 

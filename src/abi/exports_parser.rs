@@ -3299,7 +3299,7 @@ unsafe extern "C" fn default_external_entity_loader(
         // consulted BEFORE the input-callback table and the built-in open. A
         // NULL loader result is XML_IO_ENOENT — xmlCtxtErrIO is raised and
         // there is no fallback.
-        if globals::get_parser_input_buffer_create_filename_value().is_some() {
+        if globals::get_parser_input_buffer_create_filename_value_cross_dso().is_some() {
             // SAFETY: url is a valid NUL-terminated C string for the call.
             return match call_loader_materialize(url) {
                 Err(()) => {
@@ -3438,8 +3438,11 @@ pub(crate) enum RoutedFileOpen {
 ///   registered loader callback (if any) must uphold the
 ///   `xmlParserInputBufferCreateFilenameFunc` contract.
 pub(crate) unsafe fn call_loader_materialize(uri: *const c_char) -> Result<Vec<u8>, ()> {
-    // SAFETY: reads the per-thread loader slot (upstream reads the same).
-    let Some(func) = globals::get_parser_input_buffer_create_filename_value() else {
+    // SAFETY: reads the per-thread loader slot — through the R-000177
+    // cross-DSO bridge so the whole-archive facade copies observe the
+    // loader a consumer registered via the core DSO's exported setter
+    // (upstream: single core DSO, registration visible everywhere).
+    let Some(func) = globals::get_parser_input_buffer_create_filename_value_cross_dso() else {
         return Err(());
     };
     // SAFETY: `func` is the consumer-registered C loader and must uphold the
@@ -3501,8 +3504,10 @@ pub(crate) unsafe fn call_loader_materialize(uri: *const c_char) -> Result<Vec<u
 ///
 /// - `uri` must be a valid NUL-terminated C string live for the call.
 pub(crate) unsafe fn open_filename_routed(uri: *const c_char) -> RoutedFileOpen {
-    // No registered loader: the caller keeps the built-in open.
-    if globals::get_parser_input_buffer_create_filename_value().is_none() {
+    // No registered loader: the caller keeps the built-in open. The slot is
+    // read through the R-000177 cross-DSO bridge (facade copies must see a
+    // loader registered via the core DSO's exported setter).
+    if globals::get_parser_input_buffer_create_filename_value_cross_dso().is_none() {
         return RoutedFileOpen::Builtin;
     }
     // SAFETY: uri is a valid NUL-terminated C string for the call.

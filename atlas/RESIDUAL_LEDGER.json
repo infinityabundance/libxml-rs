@@ -38,7 +38,8 @@
   "11.1-Z.2",
   "11.1-Z.3",
   "12",
-  "13"
+  "13",
+  "14"
  ],
  "ledger": [
   {
@@ -2632,7 +2633,7 @@
     {
      "status": "OPEN",
      "date": "2026-08-31",
-     "note": "demonstrated by the 11.1-Z.2 DSO-STATE-COHERENCE court; thin-facade alternative proven impossible at the ELF level (consumer static link + mangled-internal dependency); accepted as a bounded divergence with the court pinning the exact partition profile. Phase 12 target: eliminate the partitioning with a machine-enforced DSO boundary lint \u2014 src/xslt + the libxslt ABI layer may call ONLY a sanctioned libxml2 public-ABI gateway (no crate-private XML implementation internals, no XML-layer private globals, no allocator implementation internals), so with function/data sections + linker GC libxslt.so.1 owns XSLT state and resolves XML operations through libxml2.so.16, and libexslt.so.0 calls libxslt.so.1 + libxml2.so.16 \u2014 still one Cargo crate."
+     "note": "demonstrated by the 11.1-Z.2 DSO-STATE-COHERENCE court; thin-facade alternative proven impossible at the ELF level (consumer static link + mangled-internal dependency); accepted as a bounded divergence with the court pinning the exact partition profile. Phase 12 target: eliminate the partitioning with a machine-enforced DSO boundary lint. Phase 14.26 (ZTS php gate): the partition surfaced as a REAL consumer failure under php ZTS \u2014 ext/libxml MINIT installs its streams loader through the CORE DSO's exported xmlParserInputBufferCreateFilenameDefault (per-thread cell in the core) while xslt's internal document()/xinclude opens run in the whole-archive libxslt facade's PRIVATE core copy whose same-named TLS cell stays empty; with php-ZTS chdir() virtualized, the facade's raw relative opens resolve against the process start dir and xsl xinclude/document() loads fail (xinclude/xinclude.phpt). Mitigation: a cross-DSO loader-slot bridge \u2014 globals::get_{parser,output}_buffer_create_filename_value_cross_dso() \u2014 the io open paths consult the process-visible exported __xml{Parser,Output}BufferCreateFilenameValue accessor (the core DSO's cell for the CURRENT thread) via dlsym(RTLD_DEFAULT) whenever the local TLS cell is empty, restoring upstream's single-core-DSO hook visibility across the facade boundary. Same-thread, cross-DSO only: in a single-DSO link the accessor aliases the same cell, so the HOSTILE-THREADS per-thread invariant is unchanged. Gate evidence: ZTS six-extension suite 1290 tests / 1250 passed / 40 skipped / 0 failed (identical to the NTS seal) with the standard oracle-parity exclusion; NTS suite unchanged 0 failed; cargo test --lib 1242 pass; valgrind clean on the xinclude path. The structural partition remains OPEN."
     }
    ]
   },
@@ -3369,6 +3370,66 @@
      "status": "FIXED",
      "date": "2026-09-01",
      "note": "joined buffer NUL-terminated before xml_strdup_joined"
+    }
+   ]
+  },
+  {
+   "id": "R-000198",
+   "status": "OPEN",
+   "phase": "14",
+   "title": "xmlTextWriterStartDocument does not install the output encoder on the writer's output buffer: non-UTF-8 writer output (xmlTextWriterWriteComment/String/... after startDocument(encoding:...)) is emitted unconverted as UTF-8",
+   "surface": "xmlTextWriterStartDocument, xmlTextWriterSetOutputEncoding, xmlOutputBufferFlush encoder path (xmlwriter.c / xmlIO.c)",
+   "component": [
+    "src/xml/writer/mod.rs",
+    "src/xml/io/mod.rs"
+   ],
+   "discovery_date": "2026-09-04",
+   "oracle_versions": "libxml2 2.15.3 (system, Iconv+ICU)",
+   "root_cause": "Upstream xmlTextWriterStartDocument installs the found char-encoding handler on writer->out (out->encoder + a 4000-byte conv buffer) and flushes through it, so comment/text/attribute content written after startDocument(encoding:\"SHIFT_JIS\") is transcoded to the target encoding on the output-buffer flush. The candidate only sets an encoder_active byte-count flag and never installs out->encoder/conv, so the flush machinery (io::output_buffer_flush converts only when ob.encoder is set) passes UTF-8 through unchanged: XMLWriter::toStream() + startDocument(encoding:\"SHIFT_JIS\") emits raw UTF-8 comment bytes where the oracle emits Shift_JIS (0x82 0x9F ...) bytes. The same install is missing from the writer's SetOutputEncoding path. Sibling slice of R-000157: even for codecs the registry serves (UTF-16, ASCII, ISO-8859-1, windows-1252) the writer never activates them.",
+   "observable_residual": "XMLWriter output declared with a non-UTF-8 encoding is byte-different from the oracle whenever the content contains non-ASCII characters.",
+   "triangulation": "The 2.15.3 oracle (Iconv+ICU) emits the transcoded bytes; the php .exp for the only in-suite probe (xmlwriter_toStream_encoding_shiftjis) is unsatisfiable by any correct libxml2, so the gate cannot observe this \u2014 byte-parity probes vs the oracle are the court.",
+   "regression_courts": [
+    "WRITER",
+    "ENCODING-001"
+   ],
+   "evidence": [
+    "courts/receipts/phase-14/php-14-26-zts-green-20260905/sj-toStream-probe.php"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-09-04",
+     "note": "Discovered in Phase 14.25 while disposing of the shiftjis .exp case: the candidate writer emitted raw UTF-8 for the Shift_JIS comment while the oracle emitted 0x82 0x9F per U+3041 \u2014 a genuine candidate-vs-oracle output divergence hidden by the unsatisfiable .exp. Phase 14.26 (ZTS gate) re-confirmed: the ZTS oracle passes the doctored phpt with real SJIS bytes; the candidate still emits UTF-8."
+    }
+   ]
+  },
+  {
+   "id": "R-000199",
+   "status": "OPEN",
+   "phase": "14",
+   "title": "Recursive-descent parse stack envelope: deeply nested documents (~4k+ levels on an 8MB stack at the -O0 dev profile) overflow where upstream xmlParseChunk's iterative xmlParseTryOrFinish state machine is unbounded",
+   "surface": "xmlParseChunk / xmlParseDocument nested-element descent (parser.c xmlParseContentInternal vs state.rs parse_element recursion)",
+   "component": [
+    "src/xml/parser/state.rs"
+   ],
+   "discovery_date": "2026-09-04",
+   "oracle_versions": "libxml2 2.15.3 (system)",
+   "root_cause": "The candidate parses by recursive descent (parse_element wrapper -> parse_element_content loop -> parse_element for each nested child). Phase 14.25 split the ~8KB monolithic parse_element frame into a slim wrapper + content loop (~3.3KB per level total at the -O0 dev profile), fixing the php-suite depth-1000 crash (bug65236) with 3x margin, but the envelope still caps at ~3-4k nesting levels on an 8MB stack. Upstream xmlParseChunk drives the identical work through the ITERATIVE xmlParseTryOrFinish + ctxt->instate state machine (no per-element recursion): the oracle parses depth-20000 documents on a 1MB stack without issue.",
+   "observable_residual": "A consumer parsing an XML document nested deeper than ~3-4k elements segfaults (stack overflow) on the candidate where the oracle succeeds.",
+   "triangulation": "Measured in Phase 14.25: candidate depth 3000 passes 8/8, depth 4000 crashes 8/8 (8MB stack); oracle depth 20000 passes on a 1MB stack. Closing requires converting the element-content descent to an explicit/iterative driver (upstream xmlParseTryOrFinish model) - a future implementation work item, not a suite blocker (php max ~1000).",
+   "regression_courts": [
+    "PARSER"
+   ],
+   "evidence": [
+    "courts/receipts/phase-14/php-14-25-stack-parity-green-20260904/README.md"
+   ],
+   "classification": "UNRESOLVED",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-09-04",
+     "note": "Recorded at the 14.25 closure after the parse_element split: the stack envelope is measured, bounded and documented; closure is an explicit iterative-parser conversion work item."
     }
    ]
   }

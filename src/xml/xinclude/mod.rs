@@ -872,6 +872,32 @@ unsafe fn io_read_file(filename: *const xmlChar) -> *mut xmlChar {
         Err(_) => return ptr::null_mut(),
     };
 
+    // UPSTREAM-PARITY (xmlIO.c xmlParserInputBufferCreateFilename + the
+    // consumer's xmlParserInputBufferCreateFilenameDefault hook): a registered
+    // create-filename loader (php's VCWD-aware stream loader) is consulted
+    // FIRST. This is REQUIRED under ZTS php, where chdir() is virtualized
+    // per-thread and a raw relative libc open resolves against the process's
+    // real (startup) directory — the Phase-14.26 ZTS gate lost
+    // xsltLoadDocument's doXInclude (xinclude/xinclude.phpt) exactly there:
+    // xincluded.xml opened relative to php-src instead of the test dir. The
+    // slot is read through the R-000177 cross-DSO bridge so the whole-archive
+    // libxslt facade's private core copy observes the loader php installed
+    // through the core DSO's exported setter.
+    if let Ok(data) = crate::abi::exports_parser::call_loader_materialize(c_filename.as_ptr()) {
+        if data.is_empty() {
+            return ptr::null_mut();
+        }
+        let result = unsafe { allocator::xmlMallocImpl(data.len() + 1) as *mut xmlChar };
+        if result.is_null() {
+            return ptr::null_mut();
+        }
+        unsafe {
+            ptr::copy_nonoverlapping(data.as_ptr(), result, data.len());
+            *result.add(data.len()) = 0; // null-terminate
+        }
+        return result;
+    }
+
     // UPSTREAM-PARITY (xmlIO.c xmlParserInputBufferCreateFilename): a URI
     // accepted by a registered input callback pair (xmlRegisterInputCallbacks)
     // is read through that pair instead of the file path — XInclude hrefs

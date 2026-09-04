@@ -372,6 +372,151 @@ pub fn set_output_buffer_create_filename_value(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// R-000177 cross-DSO loader-slot bridge (Phase 14.26, ZTS php gate)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// The `xmlParserInputBufferCreateFilenameFunc` loader signature.
+pub(crate) type ParserInputCreateFilenameFunc =
+    unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer;
+
+/// The `xmlOutputBufferCreateFilenameFunc` loader signature.
+pub(crate) type OutputCreateFilenameFunc = unsafe extern "C" fn(
+    *const c_char,
+    crate::abi::structs::xmlCharEncodingHandlerPtr,
+    c_int,
+) -> *mut _xmlOutputBuffer;
+
+/// Upstream `__xmlParserInputBufferCreateFilenameValue` accessor signature:
+/// returns a pointer to the CURRENT thread's value cell in the exporting DSO.
+pub(crate) type ParserInputCreateFilenameValueAccessor =
+    unsafe extern "C" fn() -> *mut Option<ParserInputCreateFilenameFunc>;
+
+/// Upstream `__xmlOutputBufferCreateFilenameValue` accessor signature.
+pub(crate) type OutputCreateFilenameValueAccessor =
+    unsafe extern "C" fn() -> *mut Option<OutputCreateFilenameFunc>;
+
+/// Resolve the process-visible `__xmlParserInputBufferCreateFilenameValue`
+/// accessor (the CORE DSO's export; the whole-archive facades hide it) via
+/// the dynamic symbol scope. The accessor is cached once per process — the
+/// symbol address is stable for the process lifetime.
+#[cfg(target_os = "linux")]
+fn foreign_parser_input_create_filename_value_accessor(
+) -> Option<ParserInputCreateFilenameValueAccessor> {
+    use std::sync::OnceLock;
+    static ACCESSOR: OnceLock<Option<ParserInputCreateFilenameValueAccessor>> = OnceLock::new();
+    *ACCESSOR.get_or_init(|| {
+        // SAFETY: dlsym(RTLD_DEFAULT) returns the address of the exported
+        // accessor or NULL; a non-NULL symbol is transmuted to the matching
+        // fn-pointer type (both pointer-sized).
+        unsafe {
+            let sym = libc::dlsym(
+                libc::RTLD_DEFAULT,
+                c"__xmlParserInputBufferCreateFilenameValue".as_ptr(),
+            );
+            if sym.is_null() {
+                None
+            } else {
+                Some(std::mem::transmute::<
+                    *mut c_void,
+                    ParserInputCreateFilenameValueAccessor,
+                >(sym))
+            }
+        }
+    })
+}
+
+#[cfg(not(target_os = "linux"))]
+fn foreign_parser_input_create_filename_value_accessor(
+) -> Option<ParserInputCreateFilenameValueAccessor> {
+    None
+}
+
+/// Read the current thread's `xmlParserInputBufferCreateFilenameValue`
+/// ACROSS the three-DSO facade boundary (R-000177 partition bridge).
+///
+/// The whole-archive facades (`libxslt.so.1`/`libexslt.so.0`) carry private
+/// copies of the crate — and of the per-DSO `thread_local!` cells — so a
+/// create-filename loader that a consumer (php ext/libxml MINIT) installs
+/// through the CORE DSO's exported `xmlParserInputBufferCreateFilenameDefault`
+/// lives in the core's per-thread cell and is invisible to the facade's
+/// private copy. Upstream ships ONE core DSO (libxslt NEEDs libxml2), so
+/// every internal open observes the registration; this helper restores that
+/// property for the input-loader slot by consulting the process-visible
+/// exported value accessor only when the LOCAL cell is empty.
+///
+/// Per-thread semantics are preserved in every link shape: in a single-DSO
+/// link the accessor aliases the very same cell (dlsym finds this DSO's own
+/// export), so the HOSTILE-THREADS dimension-6 invariant (a handler
+/// installed on one thread is not observable from another) is unchanged —
+/// the foreign read is always same-thread, cross-DSO.
+pub(crate) fn get_parser_input_buffer_create_filename_value_cross_dso(
+) -> Option<ParserInputCreateFilenameFunc> {
+    let local = tls_get(&tls::PARSER_INPUT_CREATE_FILENAME);
+    if local.is_some() {
+        return local;
+    }
+    match foreign_parser_input_create_filename_value_accessor() {
+        Some(accessor) => {
+            // SAFETY: the accessor returns a pointer to the current thread's
+            // valid, initialized TLS cell in the exporting DSO (upstream's
+            // deprecated accessor contract); the read is one dereference.
+            unsafe { *accessor() }
+        }
+        None => None,
+    }
+}
+
+/// Output-side twin of
+/// [`get_parser_input_buffer_create_filename_value_cross_dso`]: php MINIT
+/// also registers `php_libxml_output_buffer_create_filename` through the
+/// core's `xmlOutputBufferCreateFilenameDefault` (same R-000177 partition;
+/// needed by facade-driven writer/save paths under ZTS).
+pub(crate) fn get_output_buffer_create_filename_value_cross_dso() -> Option<OutputCreateFilenameFunc>
+{
+    let local = tls_get(&tls::OUTPUT_CREATE_FILENAME);
+    if local.is_some() {
+        return local;
+    }
+    match foreign_output_create_filename_value_accessor() {
+        Some(accessor) => {
+            // SAFETY: as the input-side twin — one dereference of the
+            // current thread's cell in the exporting DSO.
+            unsafe { *accessor() }
+        }
+        None => None,
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn foreign_output_create_filename_value_accessor() -> Option<OutputCreateFilenameValueAccessor> {
+    use std::sync::OnceLock;
+    static ACCESSOR: OnceLock<Option<OutputCreateFilenameValueAccessor>> = OnceLock::new();
+    *ACCESSOR.get_or_init(|| {
+        // SAFETY: dlsym(RTLD_DEFAULT) returns the exported accessor address
+        // or NULL; a non-NULL symbol is transmuted to the fn-pointer type.
+        unsafe {
+            let sym = libc::dlsym(
+                libc::RTLD_DEFAULT,
+                c"__xmlOutputBufferCreateFilenameValue".as_ptr(),
+            );
+            if sym.is_null() {
+                None
+            } else {
+                Some(std::mem::transmute::<
+                    *mut c_void,
+                    OutputCreateFilenameValueAccessor,
+                >(sym))
+            }
+        }
+    })
+}
+
+#[cfg(not(target_os = "linux"))]
+fn foreign_output_create_filename_value_accessor() -> Option<OutputCreateFilenameValueAccessor> {
+    None
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Public Accessors — Error Callbacks
 // ═══════════════════════════════════════════════════════════════════════════════
 

@@ -2751,7 +2751,9 @@ pub unsafe extern "C" fn htmlCreateFileParserCtxt(
             return ptr::null_mut();
         }
         let loaded =
-            if crate::xml::globals::get_parser_input_buffer_create_filename_value().is_some() {
+            if crate::xml::globals::get_parser_input_buffer_create_filename_value_cross_dso()
+                .is_some()
+            {
                 crate::abi::exports_parser::call_loader_materialize(filename).ok()
             } else {
                 let name = std::ffi::CStr::from_ptr(filename)
