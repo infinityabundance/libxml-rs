@@ -340,7 +340,11 @@ fn fn_substring_after(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XP
 
 /// substring(string, number, number?) — substring extraction.
 ///
-/// UPSTREAM-PARITY: XPath substring uses 1-based indexing with rounding.
+/// UPSTREAM-PARITY (XPath 1.0 §4.2): substring operates on CHARACTERS
+/// (Unicode code points), and a character at 1-based position P is included
+/// when `P >= round(start)` and `P < round(start) + round(length)`. Byte
+/// slicing is wrong for multibyte strings (bug26384: xsl:key over a
+/// Cyrillic value panicked on a non-char-boundary slice).
 fn fn_substring(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     let s = get_string_arg(args, 0);
     let start = get_number_arg(args, 1);
@@ -351,37 +355,30 @@ fn fn_substring(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathVal
         f64::MAX
     };
 
-    let start_rounded = start.round() as isize;
-    let length_rounded = length.round() as isize;
+    let start_r = start.round();
+    let end_r = start_r + length.round();
 
-    // XPath 1.0: 1-based indexing
-    let start_index = if start_rounded < 1 {
-        0
-    } else {
-        (start_rounded - 1) as usize
-    };
-    let length = if length_rounded < 0 {
-        0
-    } else {
-        length_rounded as usize
-    };
-
-    if start_index >= s.len() || length == 0 {
-        Ok(XPathValue::String(String::new()))
-    } else {
-        let end = std::cmp::min(start_index + length, s.len());
-        Ok(XPathValue::String(s[start_index..end].to_string()))
+    let mut out = String::new();
+    for (i, c) in s.chars().enumerate() {
+        let p = (i + 1) as f64;
+        if p >= start_r && p < end_r {
+            out.push(c);
+        }
     }
+    Ok(XPathValue::String(out))
 }
 
 /// string-length(string?) — length of string.
+///
+/// UPSTREAM-PARITY (XPath 1.0 §4.2): string-length counts CHARACTERS (Unicode
+/// code points), not bytes.
 fn fn_string_length(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     let s = if args.is_empty() {
         node_string_value(ctx.context_node)
     } else {
         get_string_arg(args, 0)
     };
-    Ok(XPathValue::Number(s.len() as f64))
+    Ok(XPathValue::Number(s.chars().count() as f64))
 }
 
 /// normalize-space(string?) — normalize whitespace.
@@ -404,9 +401,13 @@ fn fn_translate(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathVal
     let result: String = s
         .chars()
         .map(|c| {
-            if let Some(pos) = from.find(c) {
-                if pos < to.len() {
-                    to.chars().nth(pos).unwrap_or(c)
+            // UPSTREAM-PARITY (XPath 1.0 §4.2): translate maps by CHARACTER
+            // position within the "from" string (byte offsets are wrong for
+            // multibyte "from" strings).
+            if let Some(pos) = from.chars().position(|x| x == c) {
+                let to_chars: Vec<char> = to.chars().collect();
+                if pos < to_chars.len() {
+                    to_chars[pos]
                 } else {
                     '\0' // Remove character
                 }

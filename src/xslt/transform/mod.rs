@@ -2497,6 +2497,319 @@ pub(crate) unsafe fn eval_avt(
     crate::xml::string::bytes_to_xmlstr(&out)
 }
 
+/// Collect the raw prefixes listed in an `xsl:exclude-result-prefixes`
+/// attribute (on a literal result element or the stylesheet root). An empty
+/// entry represents `#default` (the default namespace).
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid element node whose properties/children
+///   are valid.
+unsafe fn read_excluded_prefixes(node: *mut _xmlNode) -> Vec<Vec<u8>> {
+    let mut out = Vec::new();
+    if node.is_null() {
+        return out;
+    }
+    let mut prop = (*node).properties;
+    while !prop.is_null() {
+        let is_exclude = {
+            let name = (*prop).name;
+            let is_name = if name.is_null() {
+                false
+            } else {
+                let b = core::slice::from_raw_parts(
+                    name,
+                    libc::strlen(name as *const libc::c_char) as usize,
+                );
+                b == b"exclude-result-prefixes"
+            };
+            let is_xsl_ns = if (*prop).ns.is_null() {
+                false
+            } else {
+                let h = (*(*prop).ns).href;
+                !h.is_null() && {
+                    let hb = core::slice::from_raw_parts(
+                        h,
+                        libc::strlen(h as *const libc::c_char) as usize,
+                    );
+                    hb == XSLT_NAMESPACE_BYTES
+                }
+            };
+            is_name && is_xsl_ns
+        };
+        if is_exclude {
+            let content = node_get_content((*prop).children);
+            if !content.is_null() {
+                let len = libc::strlen(content as *const libc::c_char) as usize;
+                let bytes = core::slice::from_raw_parts(content, len);
+                for tok in bytes.split(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r') {
+                    if !tok.is_empty() {
+                        out.push(tok.to_vec());
+                    }
+                }
+                xmlFreeImpl(content as *mut c_void);
+            }
+        }
+        prop = (*prop).next;
+    }
+    out
+}
+
+/// Find the top-level `xsl:stylesheet`/`xsl:transform` element ancestor of a
+/// stylesheet node (or NULL).
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid node whose parent chain stays alive.
+unsafe fn find_stylesheet_root(node: *mut _xmlNode) -> *mut _xmlNode {
+    let mut cur = node;
+    while !cur.is_null() {
+        if (*cur).type_ == XML_ELEMENT_NODE as c_int {
+            if unsafe { is_xslt_namespace(cur) } {
+                let name = get_element_name(cur);
+                if matches!(name.as_deref(), Some("stylesheet") | Some("transform")) {
+                    return cur;
+                }
+            }
+        }
+        let t = (*cur).type_;
+        cur = (*cur).parent;
+        if cur.is_null() || t == XML_DOCUMENT_NODE as c_int || t == XML_HTML_DOCUMENT_NODE as c_int
+        {
+            break;
+        }
+    }
+    ptr::null_mut()
+}
+
+const XSLT_NAMESPACE_BYTES: &[u8] = b"http://www.w3.org/1999/XSL/Transform";
+
+/// Whether an LRE's full effective namespace set is suppressed: libxslt only
+/// computes effective ns-decls for literal result elements whose stylesheet
+/// ancestry to the template/stylesheet boundary contains no content-executing
+/// XSLT instruction (xsl:for-each / xsl:if / xsl:choose / xsl:when /
+/// xsl:otherwise). Inside such instruction bodies the compile-time LRE ns
+/// scope is empty (observed oracle behavior: `<xsl:for-each>..<br/>` at the
+/// top of a result emits NO xmlns declarations, while a `<br/>` directly in
+/// the template does). Literal-result ancestors do NOT reset the suppression;
+/// only the element's own namespace binding is still materialised (a
+/// prefixed literal `<php:x>` inside xsl:for-each DOES declare xmlns:php).
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid node whose parent chain stays alive.
+unsafe fn lre_decls_suppressed(node: *mut _xmlNode) -> bool {
+    let mut cur = if node.is_null() {
+        return false;
+    } else {
+        (*node).parent
+    };
+    while !cur.is_null() {
+        let t = (*cur).type_;
+        if t == XML_ELEMENT_NODE as c_int && unsafe { is_xslt_namespace(cur) } {
+            let name = get_element_name(cur);
+            match name.as_deref() {
+                Some("for-each") | Some("if") | Some("choose") | Some("when")
+                | Some("otherwise") => return true,
+                Some("template") | Some("stylesheet") | Some("transform") => return false,
+                _ => {}
+            }
+        }
+        if cur.is_null() || t == XML_DOCUMENT_NODE as c_int || t == XML_HTML_DOCUMENT_NODE as c_int
+        {
+            break;
+        }
+        cur = (*cur).parent;
+    }
+    false
+}
+
+/// Create the namespace declarations a literal result element must carry
+/// (XSLT 1.0 §7.1.3): its in-scope namespace nodes from the stylesheet,
+/// minus the xml namespace, minus any prefix bound to the XSLT namespace and
+/// minus `xsl:exclude-result-prefixes` entries. Declarations already in scope
+/// at the result insertion point (same prefix AND href) are not duplicated;
+/// the element's own namespace is bound to the matching declaration (creating
+/// it when needed). When the literal element is in NO namespace but the
+/// result parent has a non-empty default namespace, `xmlns=""` undeclares it
+/// (upstream transform.c xsltCopyTree ns handling).
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid transform context whose `insert` is the result
+///   insertion point; `elem` a freshly created, already-appended result
+///   element; `inst` the stylesheet literal element.
+unsafe fn copy_literal_result_ns(
+    ctxt: *mut _xsltTransformContext,
+    elem: *mut _xmlNode,
+    inst: *mut _xmlNode,
+) {
+    // Excluded prefix lists: the literal element itself and the stylesheet
+    // root (XSLT 1.0 §7.1.3: both attribute forms are honored).
+    let mut excluded: Vec<Vec<u8>> = Vec::new();
+    excluded.extend(read_excluded_prefixes(inst));
+    let root = find_stylesheet_root(inst);
+    if !root.is_null() && root != inst {
+        excluded.extend(read_excluded_prefixes(root));
+    }
+    let excluded_default = excluded.iter().any(|p| p.is_empty());
+
+    // The in-scope declarations of the stylesheet element: own nsDef first,
+    // then ancestors, deduplicated by prefix (nearest declaration wins).
+    struct NsDecl {
+        prefix: *const xmlChar,
+        href: *const xmlChar,
+    }
+    let mut in_scope: Vec<NsDecl> = Vec::new();
+    let mut cur: *mut _xmlNode = inst;
+    while !cur.is_null() {
+        let mut d = (*cur).nsDef;
+        while !d.is_null() {
+            let prefix = (*d).prefix;
+            let dup = in_scope.iter().any(|e| {
+                (prefix.is_null() && e.prefix.is_null())
+                    || (!prefix.is_null()
+                        && !e.prefix.is_null()
+                        && unsafe { xmlStrEqual(prefix, e.prefix) != 0 })
+            });
+            if !dup {
+                in_scope.push(NsDecl {
+                    prefix,
+                    href: (*d).href,
+                });
+            }
+            d = (*d).next;
+        }
+        let t = (*cur).type_;
+        cur = (*cur).parent;
+        if cur.is_null() || t == XML_DOCUMENT_NODE as c_int || t == XML_HTML_DOCUMENT_NODE as c_int
+        {
+            break;
+        }
+    }
+
+    let result_parent = (*elem).parent;
+    let result_doc = (*elem).doc;
+
+    // UPSTREAM-PARITY: inside xsl:for-each/if/choose/when/otherwise bodies
+    // the compiled LRE carries NO effective namespace declarations (the
+    // element-name binding and xmlns="" undeclaration below still apply).
+    let suppressed = unsafe { lre_decls_suppressed(inst) };
+    if !suppressed {
+        for decl in &in_scope {
+            let href = decl.href;
+            if href.is_null() {
+                continue;
+            }
+            // Skip the xml prefix (always implicitly bound).
+            if !decl.prefix.is_null() {
+                let pbytes = core::slice::from_raw_parts(
+                    decl.prefix,
+                    libc::strlen(decl.prefix as *const libc::c_char) as usize,
+                );
+                if pbytes == b"xml" {
+                    continue;
+                }
+                let is_xslt_bound = {
+                    let hbytes = core::slice::from_raw_parts(
+                        href,
+                        libc::strlen(href as *const libc::c_char) as usize,
+                    );
+                    hbytes == XSLT_NAMESPACE_BYTES
+                };
+                let is_excluded = excluded.iter().any(|p| p.as_slice() == pbytes);
+                if is_xslt_bound || is_excluded {
+                    continue;
+                }
+            } else if excluded_default {
+                continue;
+            }
+            // Redundant when the result insertion point already binds this
+            // prefix to the same URI.
+            let parent =
+                if result_parent.is_null() || (*result_parent).type_ != XML_ELEMENT_NODE as c_int {
+                    ptr::null_mut()
+                } else {
+                    result_parent
+                };
+            if !parent.is_null() {
+                let ins = search_ns(result_doc, parent, decl.prefix);
+                if !ins.is_null() && !(*ins).href.is_null() {
+                    let same = unsafe { xmlStrEqual((*ins).href, href) != 0 };
+                    if same {
+                        continue;
+                    }
+                }
+            }
+            unsafe {
+                new_ns(elem, href, decl.prefix);
+            }
+        }
+    }
+
+    // Bind the element's own namespace.
+    let inst_ns = (*inst).ns;
+    if !inst_ns.is_null() {
+        let want_prefix = (*inst_ns).prefix;
+        let want_href = (*inst_ns).href;
+        // 1. a declaration we just created on elem with the same prefix.
+        let mut own = (*elem).nsDef;
+        while !own.is_null() {
+            let prefix_eq = (want_prefix.is_null() && (*own).prefix.is_null())
+                || (!want_prefix.is_null()
+                    && !(*own).prefix.is_null()
+                    && unsafe { xmlStrEqual(want_prefix, (*own).prefix) != 0 });
+            if prefix_eq && !(*own).href.is_null() && !want_href.is_null() {
+                if unsafe { xmlStrEqual((*own).href, want_href) != 0 } {
+                    (*elem).ns = own;
+                    break;
+                }
+            }
+            own = (*own).next;
+        }
+        if (*elem).ns.is_null() {
+            // 2. already in scope at the result parent.
+            let parent =
+                if result_parent.is_null() || (*result_parent).type_ != XML_ELEMENT_NODE as c_int {
+                    ptr::null_mut()
+                } else {
+                    result_parent
+                };
+            let mut in_scope_ns: *mut _xmlNs = ptr::null_mut();
+            if !parent.is_null() {
+                in_scope_ns = search_ns(result_doc, parent, want_prefix);
+            }
+            if !in_scope_ns.is_null()
+                && !want_href.is_null()
+                && !(*in_scope_ns).href.is_null()
+                && unsafe { xmlStrEqual((*in_scope_ns).href, want_href) != 0 }
+            {
+                (*elem).ns = in_scope_ns;
+            } else {
+                // 3. declare it on the element itself.
+                let created = unsafe { new_ns(elem, want_href, want_prefix) };
+                if !created.is_null() {
+                    (*elem).ns = created;
+                }
+            }
+        }
+    } else if !result_parent.is_null() && (*result_parent).type_ == XML_ELEMENT_NODE as c_int {
+        // The literal element is in no namespace but the result parent is:
+        // undeclare the default namespace so serialization does not put the
+        // element in it (xmlns="").
+        let d = unsafe { search_ns(result_doc, result_parent, ptr::null()) };
+        if !d.is_null()
+            && !(*d).href.is_null()
+            && unsafe { *(*d).href } != 0
+            && unsafe { (*elem).ns }.is_null()
+        {
+            unsafe {
+                new_ns(elem, c"".as_ptr() as *const xmlChar, ptr::null());
+            }
+        }
+    }
+}
+
 /// Process a literal result element.
 ///
 /// # SAFETY
@@ -2507,11 +2820,14 @@ pub(crate) unsafe fn process_literal_element(
     inst: *mut _xmlNode,
 ) {
     // Create the result element.
-    let elem = new_node((*inst).ns, (*inst).name);
+    let elem = new_node(ptr::null_mut(), (*inst).name);
     if elem.is_null() {
         return;
     }
     append_to_result(ctxt, elem);
+    // Copy the in-scope namespace declarations onto the result element
+    // (XSLT 1.0 literal-result-element rules) and bind its namespace.
+    copy_literal_result_ns(ctxt, elem, inst);
     // Copy attributes, evaluating attribute value templates.
     let mut prop = (*inst).properties;
     while !prop.is_null() {
