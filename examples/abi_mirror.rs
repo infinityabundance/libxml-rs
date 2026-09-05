@@ -8906,12 +8906,24 @@ fn main() {
         xmlParserInputState::XML_PARSER_MISC as isize
     );
     println!(
+        "EVAL xmlParserInputState.XML_PARSER_PI={}",
+        xmlParserInputState::XML_PARSER_PI as isize
+    );
+    println!(
         "EVAL xmlParserInputState.XML_PARSER_DTD={}",
         xmlParserInputState::XML_PARSER_DTD as isize
     );
     println!(
         "EVAL xmlParserInputState.XML_PARSER_PROLOG={}",
         xmlParserInputState::XML_PARSER_PROLOG as isize
+    );
+    println!(
+        "EVAL xmlParserInputState.XML_PARSER_COMMENT={}",
+        xmlParserInputState::XML_PARSER_COMMENT as isize
+    );
+    println!(
+        "EVAL xmlParserInputState.XML_PARSER_START_TAG={}",
+        xmlParserInputState::XML_PARSER_START_TAG as isize
     );
     println!(
         "EVAL xmlParserInputState.XML_PARSER_CONTENT={}",
@@ -8922,8 +8934,12 @@ fn main() {
         xmlParserInputState::XML_PARSER_CDATA_SECTION as isize
     );
     println!(
-        "EVAL xmlParserInputState.XML_PARSER_ENTITY_REF={}",
-        xmlParserInputState::XML_PARSER_ENTITY_REF as isize
+        "EVAL xmlParserInputState.XML_PARSER_END_TAG={}",
+        xmlParserInputState::XML_PARSER_END_TAG as isize
+    );
+    println!(
+        "EVAL xmlParserInputState.XML_PARSER_ENTITY_DECL={}",
+        xmlParserInputState::XML_PARSER_ENTITY_DECL as isize
     );
     println!(
         "EVAL xmlParserInputState.XML_PARSER_ENTITY_VALUE={}",
@@ -8948,6 +8964,10 @@ fn main() {
     println!(
         "EVAL xmlParserInputState.XML_PARSER_PUBLIC_LITERAL={}",
         xmlParserInputState::XML_PARSER_PUBLIC_LITERAL as isize
+    );
+    println!(
+        "EVAL xmlParserInputState.XML_PARSER_XML_DECL={}",
+        xmlParserInputState::XML_PARSER_XML_DECL as isize
     );
     println!(
         "ENUM xmlParserMode sizeof={} alignof={}",

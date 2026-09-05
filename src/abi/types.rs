@@ -540,6 +540,7 @@ pub const XML_ERR_CONDSEC_INVALID_KEYWORD: c_int = 95;
 pub const XML_ERR_VERSION_MISSING: c_int = 96;
 pub const XML_ERR_ARGUMENT: c_int = 115;
 pub const XML_ERR_REDECL_PREDEF_ENTITY: c_int = 117; /* entities.c xmlAddEntity */
+pub const XML_ERR_INT_SUBSET_NOT_FINISHED: c_int = 118; /* parser.c xmlParseInternalSubset */
 pub const XML_WAR_ENTITY_REDEFINED: c_int = 107; /* entities.c xmlAddEntity */
 pub const XML_DTD_NO_DTD: c_int = 522; /* entities.c xmlAddEntity */
 pub const XML_DTD_UNKNOWN_ELEM: c_int = 534; /* valid.c xmlValidateElement */

@@ -1115,13 +1115,16 @@ impl XmlParser {
         let Some(open) = content.iter().position(|&b| b == b'[') else {
             return Ok(());
         };
-        let Some(close) = content.iter().rposition(|&b| b == b']') else {
-            return Ok(());
+        let subset: &[u8] = match content.iter().rposition(|&b| b == b']') {
+            Some(close) if close > open => &content[open + 1..close],
+            // Truncated internal subset: a `[` without its matching `]`. The
+            // declarations up to the end of the available input are still
+            // scanned; a trailing unterminated `<!ELEMENT ...` is a real
+            // error on a terminating parse (upstream xmlParseElementDecl
+            // hits EOF and reports it, then xmlParseInternalSubset wraps with
+            // "Content error in the internal subset").
+            _ => &content[open + 1..],
         };
-        if close <= open {
-            return Ok(());
-        }
-        let subset = &content[open + 1..close];
 
         // The declaration registry document to register into. In a parse that
         // builds a real tree (DOM/reader) this is the document's own
@@ -1136,11 +1139,93 @@ impl XmlParser {
         let mut dtd = Self::current_int_subset_opt(unsafe { (*self.ctxt).myDoc });
         self.process_dtd_fragment(&mut dtd, subset, 0, false);
 
+        // UPSTREAM-PARITY (parser.c xmlParseElementDecl): a `<!ELEMENT name`
+        // cut off by the end of the available input (no content model, no
+        // `>`) is reported on a terminating parse — first
+        // "Space required after the element name" (65), then
+        // "xmlParseElementDecl: 'EMPTY', 'ANY' or '(' expected" (54), and
+        // finally "Content error in the internal subset" (118) from
+        // xmlParseInternalSubset. The subset scan above is silent (it only
+        // builds declarations), so surface the diagnostics here.
+        self.raise_truncated_element_decl_errors(subset)?;
+
         unsafe {
             (*self.ctxt).inSubset = 0;
         }
 
         Ok(())
+    }
+
+    /// Detect a trailing `<!ELEMENT name` declaration truncated by the end of
+    /// the internal subset and, if present, raise the oracle's three fatal
+    /// diagnostics (space-required / content-not-started / internal-subset
+    /// content error). Returns `Err(())` so the caller marks the document not
+    /// well-formed (matching the oracle's errNo = 118).
+    fn raise_truncated_element_decl_errors(&mut self, subset: &[u8]) -> Result<(), ()> {
+        // Find the last `<!ELEMENT` in the subset.
+        let mut last_lt = None;
+        for (pos, w) in subset.windows(9).enumerate() {
+            if w.eq_ignore_ascii_case(b"<!ELEMENT") {
+                last_lt = Some(pos);
+            }
+        }
+        let Some(pos) = last_lt else {
+            return Ok(());
+        };
+        // The declaration starting at `pos` must be unterminated (no `>`).
+        let rest = &subset[pos + 2..]; // after `<!`
+        if find_decl_end(rest).is_some() {
+            // It terminated properly; not a truncation error.
+            return Ok(());
+        }
+        // `<!ELEMENT` already consumed; expect a name then content model.
+        let after_kw = &rest[b"ELEMENT".len()..];
+        let trimmed = trim_ascii(after_kw);
+        let name_len = trimmed
+            .iter()
+            .take_while(|&&b| {
+                b.is_ascii_alphanumeric() || b == b'_' || b == b':' || b == b'-' || b == b'.'
+            })
+            .count();
+        if name_len == 0 {
+            // No element name — upstream reports "no name for Element"
+            // (NAME_REQUIRED) instead; out of scope for this detection.
+            return Ok(());
+        }
+        // After the name, upstream requires a blank then a content model; at
+        // EOF there is neither, so it reports space-required then
+        // content-not-started before the internal-subset wrapper.
+        self.raise_error_now(
+            XML_FROM_PARSER,
+            XML_ERR_SPACE_REQUIRED,
+            xmlErrorLevel::XML_ERR_FATAL as c_int,
+            "Space required after the element name\n".to_string(),
+            None,
+            None,
+            None,
+            0,
+        );
+        self.raise_error_now(
+            XML_FROM_PARSER,
+            XML_ERR_ELEMCONTENT_NOT_STARTED,
+            xmlErrorLevel::XML_ERR_FATAL as c_int,
+            "xmlParseElementDecl: 'EMPTY', 'ANY' or '(' expected\n".to_string(),
+            None,
+            None,
+            None,
+            0,
+        );
+        self.raise_error_now(
+            XML_FROM_PARSER,
+            XML_ERR_INT_SUBSET_NOT_FINISHED,
+            xmlErrorLevel::XML_ERR_FATAL as c_int,
+            "Content error in the internal subset\n".to_string(),
+            None,
+            None,
+            None,
+            0,
+        );
+        Err(())
     }
 
     /// Process one DTD declaration fragment (internal-subset body, external
