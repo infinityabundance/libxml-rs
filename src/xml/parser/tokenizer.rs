@@ -187,6 +187,19 @@ pub(crate) struct XmlTokenizer {
     /// classification (warning for "1.x", fatal otherwise). Configured by
     /// the parser from `ctxt->options` (xmlParseXMLDecl).
     old10: bool,
+    /// Silent incremental probing (SP-14.3.1-3/-6): when set, EOF-truncated
+    /// constructs (an unterminated start tag / attribute value that may
+    /// complete on a later push call) record NO diagnostics — the probe or
+    /// eager-partial delivery pauses instead, and the error surfaces only on
+    /// a real terminating parse (upstream xmlParseChunk buffers such input on
+    /// non-final calls with a clean context).
+    silent_truncated: bool,
+    /// Byte offset at which the most recently scanned token started. The
+    /// parser uses it as the eager-delivery boundary when a scan is truncated
+    /// mid-construct: every construct completed before this offset was
+    /// delivered; the truncated construct itself re-scans from scratch on the
+    /// next call (SP-14.3.1-6, test_events eager-start semantics).
+    last_token_start: usize,
 }
 
 impl XmlTokenizer {
@@ -210,7 +223,21 @@ impl XmlTokenizer {
             split_chars_at: None,
             max_name_length: 50_000,
             old10: false,
+            silent_truncated: false,
+            last_token_start: 0,
         }
+    }
+
+    /// Set whether EOF-truncated constructs are scanned silently (see
+    /// `silent_truncated`).
+    pub const fn set_silent_truncated(&mut self, silent: bool) {
+        self.silent_truncated = silent;
+    }
+
+    /// Byte offset at which the most recently scanned token started (see
+    /// `last_token_start`).
+    pub fn last_token_start(&self) -> usize {
+        self.last_token_start
     }
 
     /// Set the byte offset at which character-data runs split (see
@@ -530,6 +557,7 @@ impl XmlTokenizer {
         if self.input.is_eof() {
             return XmlToken::Eof;
         }
+        self.last_token_start = self.input.current_pos().2;
 
         match self.input.peek_char() {
             Some('<') => self.scan_tag_or_markup(),
@@ -635,6 +663,30 @@ impl XmlTokenizer {
     /// attributes, "attributes construct error", and unterminated tags are
     /// recorded with upstream codes/levels at the exact detection position.
     fn scan_start_tag(&mut self) -> XmlToken {
+        // UPSTREAM-PARITY (parser.c xmlParseTryOrFinish XML_PARSER_START_TAG
+        // state): a start tag is only scanned once a '>' is available in the
+        // current buffer (xmlParseLookupGt gate). Without it a non-final push
+        // call defers the whole tag — name/attribute/close constructs may
+        // complete on a later push call (`<a b="c"/` fed alone must stay
+        // clean; only the terminating parse reports the truncation).
+        if self.silent_truncated
+            && !self
+                .input
+                .current_ref()
+                .remaining()
+                .iter()
+                .any(|&b| b == b'>')
+        {
+            return XmlToken::StartTag {
+                name: Vec::new(),
+                attributes: Vec::new(),
+                attr_end: Vec::new(),
+                attr_start: Vec::new(),
+                end_pos: self.input.current_pos().2,
+                empty: false,
+                unterminated: true,
+            };
+        }
         let name = self.scan_name();
         let attributes: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
         let mut empty = false;
@@ -649,6 +701,9 @@ impl XmlTokenizer {
         if name.is_empty() {
             // upstream xmlParseStartTag2: name == NULL →
             // "StartTag: invalid element name\n" (XML_ERR_NAME_REQUIRED).
+            // (A lone '<' or a '< ' at the end of the available input never
+            // reaches this point in incremental probes/partial deliveries —
+            // the no-'>' gate above defers the whole tag.)
             self.record_error(
                 crate::abi::types::XML_FROM_PARSER,
                 crate::abi::types::XML_ERR_NAME_REQUIRED,
@@ -1082,6 +1137,21 @@ impl XmlTokenizer {
             self.input.read_char(); // x
             self.input.read_char(); // m
             self.input.read_char(); // l
+                                    // UPSTREAM-PARITY (parser.c XML_PARSER_XML_DECL state): the
+                                    // declaration is only scanned once a "?>" is available in the
+                                    // current buffer; without it a non-final push call defers the
+                                    // whole construct (the pseudo-attributes may complete on a later
+                                    // call — test_feed_parser_bytes feeds `<?xml version=` alone).
+            if self.silent_truncated
+                && !self
+                    .input
+                    .current_ref()
+                    .remaining()
+                    .windows(2)
+                    .any(|w| w == b"?>")
+            {
+                return XmlToken::Eof;
+            }
             return self.scan_xml_decl_rest();
         }
 
@@ -1202,21 +1272,24 @@ impl XmlTokenizer {
             // "ParsePI: PI %s never end ...\n" (XML_ERR_PI_NOT_FINISHED).
             // The scan may continue on a later push call, so an incremental
             // probe pauses instead of delivering the error (SP-14.3.1-8
-            // pattern, same as unterminated comments/CDATA).
-            self.record_error(
-                crate::abi::types::XML_FROM_PARSER,
-                crate::abi::types::XML_ERR_PI_NOT_FINISHED,
-                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                format!(
-                    "ParsePI: PI {} never end ...\n",
-                    String::from_utf8_lossy(&target)
-                ),
-                None,
-                None,
-                None,
-                0,
-                None,
-            );
+            // pattern, same as unterminated comments/CDATA; the construct
+            // is EOF-truncated by construction).
+            if !self.silent_truncated {
+                self.record_error(
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_PI_NOT_FINISHED,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    format!(
+                        "ParsePI: PI {} never end ...\n",
+                        String::from_utf8_lossy(&target)
+                    ),
+                    None,
+                    None,
+                    None,
+                    0,
+                    None,
+                );
+            }
         }
 
         XmlToken::ProcessingInstruction {
@@ -1412,6 +1485,25 @@ impl XmlTokenizer {
 
     /// Scan a comment body (after `<!--`).
     fn scan_comment_body(&mut self) -> XmlToken {
+        // UPSTREAM-PARITY (parser.c XML_PARSER_CONTENT/MISC states): a
+        // comment is only scanned once its `-->` terminator is available in
+        // the current buffer (xmlParseLookupString gate). Without it a
+        // non-final push call defers the whole construct — scanning to the
+        // buffer end could otherwise misfire a "Double hyphen within comment"
+        // (79) for a trailing `--` that the next chunk completes.
+        if self.silent_truncated
+            && !self
+                .input
+                .current_ref()
+                .remaining()
+                .windows(3)
+                .any(|w| w == b"-->")
+        {
+            return XmlToken::Comment {
+                data: Vec::new(),
+                unterminated: true,
+            };
+        }
         let mut content = Vec::new();
         let mut unterminated = false;
 
@@ -1469,18 +1561,22 @@ impl XmlTokenizer {
 
         if unterminated {
             // upstream xmlParseComment: EOF → "Comment not terminated\n"
-            // (XML_ERR_COMMENT_NOT_FINISHED).
-            self.record_error(
-                crate::abi::types::XML_FROM_PARSER,
-                crate::abi::types::XML_ERR_COMMENT_NOT_FINISHED,
-                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                "Comment not terminated\n".to_string(),
-                None,
-                None,
-                None,
-                0,
-                None,
-            );
+            // (XML_ERR_COMMENT_NOT_FINISHED). EOF-truncated by
+            // construction: incremental probes/partial deliveries must not
+            // raise it (the comment may complete on a later push call).
+            if !self.silent_truncated {
+                self.record_error(
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_COMMENT_NOT_FINISHED,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "Comment not terminated\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                    None,
+                );
+            }
         }
 
         XmlToken::Comment {
@@ -1491,6 +1587,24 @@ impl XmlTokenizer {
 
     /// Scan a CDATA section body (after `<![CDATA[`).
     fn scan_cdata_body(&mut self, start_pos: usize) -> XmlToken {
+        // UPSTREAM-PARITY (parser.c XML_PARSER_CONTENT state): a CDATA
+        // section is only scanned once its `]]>` terminator is available in
+        // the current buffer (xmlParseLookupString gate); without it a
+        // non-final push call defers the whole construct.
+        if self.silent_truncated
+            && !self
+                .input
+                .current_ref()
+                .remaining()
+                .windows(3)
+                .any(|w| w == b"]]>")
+        {
+            return XmlToken::Cdata {
+                data: Vec::new(),
+                unterminated: true,
+                start_pos,
+            };
+        }
         let mut content = Vec::new();
         let mut unterminated = false;
 
@@ -1528,17 +1642,21 @@ impl XmlTokenizer {
             // CDATA section\n" (XML_ERR_CDATA_NOT_FINISHED). The parser
             // raises this only when the CDATA is in element content; at
             // document level it reports the invalid element name instead.
-            self.record_error(
-                crate::abi::types::XML_FROM_PARSER,
-                crate::abi::types::XML_ERR_CDATA_NOT_FINISHED,
-                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                "Premature end of data in CDATA section\n".to_string(),
-                None,
-                None,
-                None,
-                0,
-                None,
-            );
+            // EOF-truncated by construction: incremental probes/partial
+            // deliveries must not raise it.
+            if !self.silent_truncated {
+                self.record_error(
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_CDATA_NOT_FINISHED,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "Premature end of data in CDATA section\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                    None,
+                );
+            }
         }
 
         XmlToken::Cdata {

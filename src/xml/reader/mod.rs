@@ -5377,14 +5377,24 @@ mod tests {
     #[test]
     fn test_error_handling_invalid_xml() {
         unsafe {
-            // Malformed XML.
+            // Malformed XML: `<root><` is a completed `<root>` start tag
+            // followed by a lone `<` at end of input — an invalid element
+            // name. UPSTREAM-PARITY (oracle-verified 2.15.3 xmlreader.c):
+            // the first xmlTextReaderRead delivers the completed `<root>`
+            // element node (returns 1); the second read runs past it and
+            // surfaces the trailing "StartTag: invalid element name"
+            // diagnostic (returns -1).
             let data = b"<root><\0" as *const u8 as *const c_char;
             let reader = xmlReaderForMemory(data, 7, ptr::null(), ptr::null(), 0);
             assert!(!reader.is_null());
 
-            // Reading should fail.
+            // First read delivers the `<root>` element node.
             let ret = xmlTextReaderRead(reader);
-            assert!(ret == -1 || ret == 0);
+            assert_eq!(ret, 1);
+
+            // Second read fails on the trailing invalid element name.
+            let ret = xmlTextReaderRead(reader);
+            assert_eq!(ret, -1);
 
             free_reader(reader);
         }

@@ -205,6 +205,14 @@ pub(crate) struct XmlParser {
     /// complete-but-invalid document like "</foo>" closing "<foo:a>"
     /// (deliver; upstream parsed it eagerly — bug25666).
     truncated_abort: bool,
+    /// Byte offset (into the accumulated input) where the construct that
+    /// truncated the parse started — everything strictly before it was
+    /// complete and deliverable (SP-14.3.1-6 eager semantics: upstream
+    /// fires every event whose construct completed before the truncation
+    /// point, even when the tail is mid-construct — test_events expects
+    /// `start element` right after `<element ...>text</element` was fed
+    /// with the end tag still unterminated).
+    truncated_at: Option<usize>,
     /// Eager-partial delivery mode (SP-14.3.1-6): SAX and diagnostics stay ON
     /// (unlike the silent probe) but an end-of-input inside an open construct
     /// PAUSES the parse instead of raising "Premature end of data". Upstream
@@ -234,6 +242,13 @@ pub(crate) struct XmlParser {
     /// SAX2 attribute set and reports their count as `nb_defaulted`
     /// (SP-14.3.1-4, bug35447: `type (literal|pattern|sub) "literal"`).
     dtd_attr_defaults: Vec<(Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>)>,
+    /// DTD-declared attribute TYPE by element name (upstream
+    /// `ctxt->attsSpecial`/the DTD attribute descriptors):
+    /// `(element_name, [(attr_name, xmlAttributeType)])`. The start-tag parse
+    /// consults it to normalize declared attribute values (ID/IDREF(S)/
+    /// ENTITY(IES)/NMTOKEN(S)/NOTATION/enumerations collapse whitespace —
+    /// c14n-20 inC14N4's NMTOKENS `attr` and ID `id`).
+    dtd_attr_types: Vec<(Vec<u8>, Vec<(Vec<u8>, c_int)>)>,
     /// Legacy-format "cur input" tail for the next raised parser error:
     /// upstream `xmlFormatError` prints the current (entity) input's
     /// `Entity: line N: ` info + window after the parent window
@@ -330,6 +345,14 @@ impl XmlParser {
         // any non-"1.0" declaration version fatal (the tokenizer records the
         // version diagnostic in scan order, so it needs the flag up front).
         tokenizer.set_old10((options & crate::abi::types::XML_PARSE_OLD10) != 0);
+        // Silent incremental probing (SP-14.3.1-3/-6): a completeness probe
+        // must not raise EOF-truncation diagnostics for constructs that may
+        // complete on a later push call (upstream xmlParseTryOrFinish only
+        // scans a construct once its terminator is available in the current
+        // buffer — xmlParseLookupGt/"-->"/"]">"/";" gates — so a non-final
+        // call ending mid-construct keeps a clean context, errNo = 0,
+        // wellFormed = 1; the error surfaces only on the terminating parse).
+        tokenizer.set_silent_truncated(probe);
 
         XmlParser {
             tokenizer,
@@ -343,8 +366,10 @@ impl XmlParser {
             partial_delivery: false,
             sax_suppress_until: 0,
             truncated_abort: false,
+            truncated_at: None,
             ns_scope: Vec::new(),
             dtd_attr_defaults: Vec::new(),
+            dtd_attr_types: Vec::new(),
             cur_error_tail: None,
         }
     }
@@ -372,6 +397,10 @@ impl XmlParser {
     ) -> Self {
         let mut parser = Self::new_with_resume(input, ctxt, suppress_until);
         parser.partial_delivery = true;
+        // Eager-partial deliveries are non-final calls: constructs cut off by
+        // the end of the currently available input must pause silently (they
+        // may complete on a later push call), never raise (SP-14.3.1-6).
+        parser.tokenizer.set_silent_truncated(true);
         parser
     }
 
@@ -441,6 +470,20 @@ impl XmlParser {
     /// by the end of the available input (see `truncated_abort`).
     pub(crate) const fn was_truncated_abort(&self) -> bool {
         self.truncated_abort
+    }
+
+    /// Byte offset where the truncating construct started (see
+    /// `truncated_at`); `None` when the parse did not truncate.
+    pub(crate) const fn truncated_offset(&self) -> Option<usize> {
+        self.truncated_at
+    }
+
+    /// Mark the parse as aborted by a construct truncated by the end of the
+    /// available input, remembering where the construct started so the caller
+    /// can advance its eager-delivery boundary exactly to that point.
+    fn set_truncated(&mut self) {
+        self.truncated_abort = true;
+        self.truncated_at = Some(self.tokenizer.last_token_start());
     }
 
     /// Get a mutable reference to the tokenizer.
@@ -778,7 +821,7 @@ impl XmlParser {
                     // (its errors surface through parse_dtd), matching the
                     // pre-KEY-2 behavior.
                     if unterminated && (self.probe || self.partial_delivery) {
-                        self.truncated_abort = true;
+                        self.set_truncated();
                         return Err(());
                     }
                     self.parse_dtd(&content)?;
@@ -794,7 +837,7 @@ impl XmlParser {
                     // fire the partial comment or deliver its
                     // "Comment not terminated" error; it pauses (truncated).
                     if unterminated && (self.probe || self.partial_delivery) {
-                        self.truncated_abort = true;
+                        self.set_truncated();
                         return Err(());
                     }
                     self.sax_comment(&data);
@@ -811,7 +854,7 @@ impl XmlParser {
                     // partial PI or deliver its "never end" error; it pauses
                     // (KEY-3, mirroring unterminated comments/CDATA).
                     if unterminated && (self.probe || self.partial_delivery) {
-                        self.truncated_abort = true;
+                        self.set_truncated();
                         return Err(());
                     }
                     self.sax_pi(&target, &data);
@@ -2093,6 +2136,7 @@ impl XmlParser {
         }
         let mut rest = trim_ascii(&args[name_end..]);
         let mut defaults: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+        let mut types: Vec<(Vec<u8>, c_int)> = Vec::new();
         while !rest.is_empty() {
             let aend = rest
                 .iter()
@@ -2111,12 +2155,26 @@ impl XmlParser {
                 rest = trim_ascii(&rest[consumed2..]);
                 continue;
             }
-            let consumed = skip_dtd_attr_type(rest);
+            let (attr_type, _, consumed) = parse_attr_type(rest);
             rest = trim_ascii(&rest[consumed..]);
             let (_, default_val, consumed2) = parse_attr_default(rest);
             rest = trim_ascii(&rest[consumed2..]);
+            // Record the declared type for value normalization (non-CDATA
+            // declared types collapse whitespace — c14n inC14N4 NMTOKENS/ID).
+            types.push((attr_name.to_vec(), attr_type));
             if let Some(v) = default_val {
                 defaults.push((attr_name.to_vec(), v.to_vec()));
+            }
+        }
+        if !types.is_empty() {
+            if let Some(e) = self
+                .dtd_attr_types
+                .iter_mut()
+                .find(|(n, _)| n == &elem_name)
+            {
+                e.1.extend(types);
+            } else {
+                self.dtd_attr_types.push((elem_name.clone(), types));
             }
         }
         if defaults.is_empty() {
@@ -2450,7 +2508,7 @@ impl XmlParser {
                     // incremental probe (or eager-partial delivery) must not
                     // deliver.
                     if self.probe || self.partial_delivery {
-                        self.truncated_abort = true;
+                        self.set_truncated();
                     }
                     return Err(());
                 }
@@ -2507,7 +2565,7 @@ impl XmlParser {
                 XmlToken::Comment { data, unterminated } => {
                     if unterminated && (self.probe || self.partial_delivery) {
                         // See parse_prolog's Comment arm (SP-14.3.1-8).
-                        self.truncated_abort = true;
+                        self.set_truncated();
                         return Err(());
                     }
                     self.sax_comment(&data);
@@ -2520,7 +2578,7 @@ impl XmlParser {
                 } => {
                     // See parse_prolog's PI arm (KEY-3): pause in probes.
                     if unterminated && (self.probe || self.partial_delivery) {
-                        self.truncated_abort = true;
+                        self.set_truncated();
                         return Err(());
                     }
                     self.sax_pi(&target, &data);
@@ -2664,11 +2722,29 @@ impl XmlParser {
                 } => {
                     // An end tag cut off by the end of the currently
                     // available input (chunk boundary): in an incremental
-                    // probe this pauses — the tag may complete on a
-                    // later push call — and never delivers (SP-14.3.1-3).
-                    if unterminated && self.probe {
-                        self.truncated_abort = true;
+                    // probe (or eager-partial delivery) this pauses — the
+                    // tag may complete on a later push call — and never
+                    // delivers (SP-14.3.1-3). On a REAL terminating parse
+                    // the truncation is final: upstream xmlParseEndTag2
+                    // first reports the missing '>' (XML_ERR_GT_REQUIRED
+                    // 73, "expected '>'") and only then runs its
+                    // name-mismatch check (the oracle's terminating call
+                    // for `<doc></do` raises both, errNo ending at 76).
+                    if unterminated && (self.probe || self.partial_delivery) {
+                        self.set_truncated();
                         return Err(());
+                    }
+                    if unterminated {
+                        self.raise_error_now(
+                            XML_FROM_PARSER,
+                            crate::abi::types::XML_ERR_GT_REQUIRED,
+                            xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            "expected '>'".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                        );
                     }
                     // Check for matching end tag. When the end tag names
                     // a DIFFERENT element, upstream xmlParseElementEnd /
@@ -2743,7 +2819,7 @@ impl XmlParser {
                         // continue on a later push call: probes and
                         // eager-partial deliveries must not deliver.
                         if self.probe || self.partial_delivery {
-                            self.truncated_abort = true;
+                            self.set_truncated();
                             return Err(());
                         }
                         // UPSTREAM-PARITY (2.15 xmlParseContentInternal):
@@ -2801,7 +2877,7 @@ impl XmlParser {
                 XmlToken::Comment { data, unterminated } => {
                     if unterminated && (self.probe || self.partial_delivery) {
                         // See parse_prolog's Comment arm (SP-14.3.1-8).
-                        self.truncated_abort = true;
+                        self.set_truncated();
                         self.pop_name();
                         return Err(());
                     }
@@ -2817,7 +2893,7 @@ impl XmlParser {
                     // PI (no `?>`) pauses in probes; the element itself
                     // stays open (only the PI is incomplete).
                     if unterminated && (self.probe || self.partial_delivery) {
-                        self.truncated_abort = true;
+                        self.set_truncated();
                         return Err(());
                     }
                     self.sax_pi(&target, &data);
@@ -2832,7 +2908,7 @@ impl XmlParser {
                         // probes and eager-partial deliveries must not
                         // deliver.
                         if self.probe || self.partial_delivery {
-                            self.truncated_abort = true;
+                            self.set_truncated();
                         }
                         self.pop_name();
                         return Err(());
@@ -2903,7 +2979,7 @@ impl XmlParser {
                     // complete on a later push call — and would still be
                     // illegal here).
                     if dt_unterminated && (self.probe || self.partial_delivery) {
-                        self.truncated_abort = true;
+                        self.set_truncated();
                         self.pop_name();
                         return Err(());
                     }
@@ -2984,7 +3060,17 @@ impl XmlParser {
             // xmlNodeParseAttValue path (R-000120).
             let had_ref = v.contains(&b'&');
             let value_start = attr_start.get(idx).copied().unwrap_or(0);
-            let value = self.substitute_refs(&v, value_start)?;
+            // UPSTREAM-PARITY (parser.c xmlParseAttValueInternal): a
+            // DTD-declared non-CDATA attribute type (ID/IDREF(S)/ENTITY/ENTITIES/
+            // NMTOKEN(S)/NOTATION/enumeration) normalizes its value — literal
+            // whitespace and &#x20; collapse to a single space and lead/trail
+            // spaces are trimmed, while &#x9;/&#xA;/&#xD; character references
+            // survive as literal control chars (c14n-20 inC14N4).
+            let normalize = self
+                .attr_type_for(&name, &n)
+                .map(|t| t > crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_CDATA as c_int)
+                .unwrap_or(false);
+            let value = self.substitute_refs(&v, value_start, normalize)?;
             new_attributes.push((n, value, had_ref));
         }
         let attributes = new_attributes;
@@ -3390,7 +3476,25 @@ impl XmlParser {
         })
     }
 
-    /// Substitute entity and character references in an attribute value.
+    /// Look up the DTD-declared attribute type for `(element, attribute)`,
+    /// if any (from the internal-subset `<!ATTLIST>` declarations recorded in
+    /// `dtd_attr_types`).
+    fn attr_type_for(&self, elem: &[u8], attr: &[u8]) -> Option<c_int> {
+        self.dtd_attr_types
+            .iter()
+            .find(|(n, _)| n.as_slice() == elem)
+            .and_then(|(_, attrs)| {
+                attrs
+                    .iter()
+                    .find(|(n, _)| n.as_slice() == attr)
+                    .map(|(_, t)| *t)
+            })
+    }
+
+    /// Substitute entity and character references in an attribute value,
+    /// applying attribute-type whitespace normalization when `normalize` is
+    /// set (upstream `xmlParseAttValueInternal` with
+    /// `(special & XML_SPECIAL_TYPE_MASK) > XML_ATTRIBUTE_CDATA`).
     ///
     /// # UPSTREAM-PARITY
     ///
@@ -3416,8 +3520,19 @@ impl XmlParser {
     ///   entity `content` pointers (from `get_entity` and
     ///   `get_entity_content`) are read as NUL-terminated strings while the
     ///   entity is live.
-    fn substitute_refs(&mut self, value: &[u8], value_start_pos: usize) -> Result<Vec<u8>, ()> {
+    fn substitute_refs(
+        &mut self,
+        value: &[u8],
+        value_start_pos: usize,
+        normalize: bool,
+    ) -> Result<Vec<u8>, ()> {
         let mut out = Vec::with_capacity(value.len());
+        // Whitespace-collapse state for the `normalize` mode: `in_space` is
+        // true when the last character emitted to `out` was a (collapsed)
+        // space; `has_content` is true once any non-space byte was emitted
+        // (gates leading-whitespace trimming).
+        let mut in_space = false;
+        let mut has_content = false;
         let mut i = 0usize;
         while i < value.len() {
             if value[i] == b'&' {
@@ -3549,14 +3664,51 @@ impl XmlParser {
                         }
                     }
                     if let Some(r) = replaced {
-                        out.extend_from_slice(&r);
+                        // Character/entity reference emission. A `&#x20;`
+                        // (space ref) under `normalize` collapses as
+                        // whitespace (upstream xmlParseAttValueInternal's
+                        // val == ' ' arm); any other replacement — including
+                        // `&#x9;`/`&#xA;`/`&#xD;` control-char refs and entity
+                        // content — is emitted literally and breaks any
+                        // pending whitespace run (in_space = 0).
+                        if normalize && r == b" " {
+                            if has_content && !in_space {
+                                out.push(b' ');
+                                in_space = true;
+                            }
+                        } else {
+                            out.extend_from_slice(&r);
+                            if !r.is_empty() {
+                                has_content = true;
+                                in_space = false;
+                            }
+                        }
                         i += semi + 1;
                         continue;
                     }
                 }
             }
-            out.push(value[i]);
+            // Literal byte. Under `normalize`, literal whitespace (space or
+            // a control char) collapses to a single space and leading/trailing
+            // whitespace is dropped; otherwise it is copied verbatim (CDATA
+            // and undeclared types preserve the raw value).
+            let b = value[i];
+            if normalize && b <= b' ' {
+                if has_content && !in_space {
+                    out.push(b' ');
+                    in_space = true;
+                }
+            } else {
+                out.push(b);
+                has_content = true;
+                in_space = false;
+            }
             i += 1;
+        }
+        // UPSTREAM-PARITY (xmlParseAttValueInternal): a trailing whitespace
+        // run under `normalize` is trimmed (the final inSpace collapse).
+        if normalize && in_space {
+            out.pop();
         }
         Ok(out)
     }
@@ -4234,7 +4386,7 @@ impl XmlParser {
                 XmlToken::Comment { data, unterminated } => {
                     if unterminated && (self.probe || self.partial_delivery) {
                         // See parse_prolog's Comment arm (SP-14.3.1-8).
-                        self.truncated_abort = true;
+                        self.set_truncated();
                         return Err(());
                     }
                     self.sax_comment(&data);
@@ -4247,7 +4399,7 @@ impl XmlParser {
                 } => {
                     // See parse_prolog's PI arm (KEY-3): pause in probes.
                     if unterminated && (self.probe || self.partial_delivery) {
-                        self.truncated_abort = true;
+                        self.set_truncated();
                         return Err(());
                     }
                     self.sax_pi(&target, &data);

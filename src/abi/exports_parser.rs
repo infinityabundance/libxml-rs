@@ -163,10 +163,16 @@ const XML_SCAN_NC: c_int = 1;
 const XML_SCAN_NMTOKEN: c_int = 2;
 const XML_SCAN_OLD10: c_int = 4;
 
-// xmlParserLoadSubset bits (upstream parser.h).
+// xmlParserLoadSubset bits (upstream parser.h, 2.15.3):
+//   XML_DETECT_IDS = 2, XML_COMPLETE_ATTRS = 4, XML_SKIP_IDS = 8.
+// These are internal bits of `ctxt->loadsubset`, NOT parse-option flags — they
+// must match the header values exactly or consumers that inspect `loadsubset`
+// directly (lxml's SAX target bridge gates default-attribute delivery on
+// `loadsubset & XML_COMPLETE_ATTRS`) drop DTD default attributes.
 #[allow(dead_code)]
-const XML_DETECT_IDS: c_int = 1 << 0;
-const XML_COMPLETE_ATTRS: c_int = 1 << 1;
+const XML_DETECT_IDS: c_int = 2;
+const XML_COMPLETE_ATTRS: c_int = 4;
+const XML_SKIP_IDS: c_int = 8;
 
 /// Keep enough input around to show errors in context (parserInternals.c).
 const LINE_LEN: usize = 80;
@@ -272,12 +278,25 @@ pub(crate) unsafe fn apply_options(ctxt: *mut _xmlParserCtxt, options: c_int) {
         c.options = options;
         c.recovery = (options & XML_PARSE_RECOVER != 0) as c_int;
         c.replaceEntities = (options & XML_PARSE_NOENT != 0) as c_int;
-        c.loadsubset = ((options & XML_PARSE_DTDLOAD != 0) as c_int)
-            | if options & XML_PARSE_DTDATTR != 0 {
-                XML_COMPLETE_ATTRS
-            } else {
-                0
-            };
+        // UPSTREAM-PARITY (parser.c xmlCtxtUseOptions):
+        //   ctxt->loadsubset = (options & XML_PARSE_DTDLOAD) ? XML_DETECT_IDS : 0;
+        //   ctxt->loadsubset |= (options & XML_PARSE_DTDATTR) ? XML_COMPLETE_ATTRS : 0;
+        //   ctxt->loadsubset |= (options & XML_PARSE_SKIP_IDS) ? XML_SKIP_IDS : 0;
+        // `loadsubset` is an ABI-visible field; lxml's SAX target bridge reads
+        // `loadsubset & XML_COMPLETE_ATTRS` to decide whether to deliver DTD
+        // default attributes, so the bit values must be the upstream ones
+        // (XML_DETECT_IDS=2, XML_COMPLETE_ATTRS=4, XML_SKIP_IDS=8).
+        c.loadsubset = if options & XML_PARSE_DTDLOAD != 0 {
+            XML_DETECT_IDS
+        } else {
+            0
+        };
+        if options & XML_PARSE_DTDATTR != 0 {
+            c.loadsubset |= XML_COMPLETE_ATTRS;
+        }
+        if options & XML_PARSE_SKIP_IDS != 0 {
+            c.loadsubset |= XML_SKIP_IDS;
+        }
         c.validate = (options & XML_PARSE_DTDVALID != 0) as c_int;
         c.pedantic = (options & XML_PARSE_PEDANTIC != 0) as c_int;
         if options & XML_PARSE_NOBLANKS != 0 {
