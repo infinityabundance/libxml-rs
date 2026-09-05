@@ -2247,6 +2247,18 @@ pub unsafe extern "C" fn __htmlDefaultSAXHandler() -> *mut _xmlSAXHandlerV1 {
     core::ptr::addr_of!(crate::abi::data_globals::htmlDefaultSAXHandler) as *mut _xmlSAXHandlerV1
 }
 
+/// Upstream `__docbDefaultSAXHandler(void)` — pointer to `docbDefaultSAXHandler`.
+#[no_mangle]
+pub unsafe extern "C" fn __docbDefaultSAXHandler() -> *mut _xmlSAXHandlerV1 {
+    core::ptr::addr_of!(crate::abi::data_globals::docbDefaultSAXHandler) as *mut _xmlSAXHandlerV1
+}
+
+/// Upstream `__oldXMLWDcompatibility(void)` — pointer to `oldXMLWDcompatibility`.
+#[no_mangle]
+pub unsafe extern "C" fn __oldXMLWDcompatibility() -> *mut c_int {
+    core::ptr::addr_of_mut!(crate::abi::data_globals::oldXMLWDcompatibility)
+}
+
 // ── Legacy SAX1 default handler functions (deprecated, exported for the ────
 // distro ABI). These are the OLD SAX1 handler entry points (`startElement`,
 // `characters`, …) that upstream 2.9-era DSOs export as standalone symbols

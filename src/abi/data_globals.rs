@@ -337,6 +337,7 @@ pub unsafe extern "C" fn xmlGenericErrorDefaultFuncV(
 /// Violating the global lifecycle ordering, or calling this after
 /// teardown or from a signal handler, is undefined behavior.
 #[cfg(target_arch = "x86_64")]
+#[no_mangle]
 pub unsafe extern "C" fn xmlGenericErrorDefaultFunc() -> c_int {
     unsafe {
         core::arch::asm!(
@@ -799,6 +800,150 @@ pub static xmlDefaultSAXLocator: crate::abi::callbacks::_xmlSAXLocator =
         getSystemId: Some(crate::abi::exports_xml2::xmlSAX2GetSystemId),
         getLineNumber: Some(crate::abi::exports_xml2::xmlSAX2GetLineNumber),
         getColumnNumber: Some(crate::abi::exports_xml2::xmlSAX2GetColumnNumber),
+    };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Legacy 2.9.14 data globals (distro drop-in, R-000180)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The executed oracle (2.15.3) exports only the `__xmlXxx()` accessor FUNCTIONS
+// for the mutable parser/error globals (see the Phase 13 TLS note above). The
+// distro DSO (2.9.14) ALSO exports the deprecated plain *data* symbols for
+// ABI backward compatibility. The versioned `libxml2.so.2` drop-in profile must
+// re-export them; they are legacy main-thread mirrors and the candidate's
+// accessors keep routing through the per-thread cells.
+
+/// `xmlGenericErrorFunc xmlGenericError` (default `xmlGenericErrorDefaultFunc`).
+#[no_mangle]
+pub static mut xmlGenericError: Option<xmlGenericErrorFunc> = Some(XML_GENERIC_ERROR_DEFAULT);
+
+/// `xmlStructuredErrorFunc xmlStructuredError` (default NULL).
+#[no_mangle]
+pub static mut xmlStructuredError: Option<xmlStructuredErrorFunc> = None;
+
+/// `void *xmlGenericErrorContext` (default NULL).
+#[no_mangle]
+pub static mut xmlGenericErrorContext: *mut c_void = core::ptr::null_mut();
+
+/// `void *xmlStructuredErrorContext` (default NULL).
+#[no_mangle]
+pub static mut xmlStructuredErrorContext: *mut c_void = core::ptr::null_mut();
+
+/// `int xmlDoValidityCheckingDefaultValue` (default 0).
+#[no_mangle]
+pub static mut xmlDoValidityCheckingDefaultValue: c_int = 0;
+
+/// `int xmlGetWarningsDefaultValue` (default 1).
+#[no_mangle]
+pub static mut xmlGetWarningsDefaultValue: c_int = 1;
+
+/// `int xmlKeepBlanksDefaultValue` (default 1).
+#[no_mangle]
+pub static mut xmlKeepBlanksDefaultValue: c_int = 1;
+
+/// `int xmlLineNumbersDefaultValue` (default 0).
+#[no_mangle]
+pub static mut xmlLineNumbersDefaultValue: c_int = 0;
+
+/// `int xmlLoadExtDtdDefaultValue` (default 0).
+#[no_mangle]
+pub static mut xmlLoadExtDtdDefaultValue: c_int = 0;
+
+/// `int xmlPedanticParserDefaultValue` (default 0).
+#[no_mangle]
+pub static mut xmlPedanticParserDefaultValue: c_int = 0;
+
+/// `int xmlSubstituteEntitiesDefaultValue` (default 0).
+#[no_mangle]
+pub static mut xmlSubstituteEntitiesDefaultValue: c_int = 0;
+
+/// `int xmlIndentTreeOutput` (default 1).
+#[no_mangle]
+pub static mut xmlIndentTreeOutput: c_int = 1;
+
+/// `int xmlSaveNoEmptyTags` (default 0).
+#[no_mangle]
+pub static mut xmlSaveNoEmptyTags: c_int = 0;
+
+/// `const char *xmlTreeIndentString` (default "  ").
+#[no_mangle]
+pub static mut xmlTreeIndentString: *const c_char = {
+    static S: [u8; 3] = *b"  \0";
+    S.as_ptr() as *const c_char
+};
+
+/// `xmlRegisterNodeFunc xmlRegisterNodeDefaultValue` (default NULL).
+#[no_mangle]
+pub static mut xmlRegisterNodeDefaultValue: Option<
+    unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode),
+> = None;
+
+/// `xmlDeregisterNodeFunc xmlDeregisterNodeDefaultValue` (default NULL).
+#[no_mangle]
+pub static mut xmlDeregisterNodeDefaultValue: Option<
+    unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode),
+> = None;
+
+/// `xmlParserInputBufferCreateFilenameFunc
+/// xmlParserInputBufferCreateFilenameValue` (default NULL).
+#[no_mangle]
+pub static mut xmlParserInputBufferCreateFilenameValue: Option<
+    unsafe extern "C" fn(*const c_char, c_int) -> *mut crate::abi::structs::_xmlParserInputBuffer,
+> = None;
+
+/// `xmlOutputBufferCreateFilenameFunc xmlOutputBufferCreateFilenameValue`
+/// (default NULL).
+#[no_mangle]
+pub static mut xmlOutputBufferCreateFilenameValue: Option<
+    unsafe extern "C" fn(
+        *const c_char,
+        *mut crate::abi::structs::_xmlCharEncodingHandler,
+        c_int,
+    ) -> *mut crate::abi::structs::_xmlOutputBuffer,
+> = None;
+
+/// `int oldXMLWDcompatibility` (default 0, DEPRECATED).
+#[no_mangle]
+pub static mut oldXMLWDcompatibility: c_int = 0;
+
+/// `int __xmlRegisterCallbacks` (default 0) — arms the node register/deregister
+/// hooks once a callback has been installed (globals.c).
+#[no_mangle]
+pub static mut __xmlRegisterCallbacks: c_int = 0;
+
+/// `xmlSAXHandlerV1 docbDefaultSAXHandler` (globals.c 2.9.14) — the SGML
+/// DocBook SAX1 default handler; mirrors the upstream initializer list.
+#[no_mangle]
+pub static mut docbDefaultSAXHandler: crate::abi::structs::_xmlSAXHandlerV1 =
+    crate::abi::structs::_xmlSAXHandlerV1 {
+        internalSubset: Some(crate::abi::exports_xml2::xmlSAX2InternalSubset),
+        isStandalone: Some(crate::abi::exports_xml2::xmlSAX2IsStandalone),
+        hasInternalSubset: Some(crate::abi::exports_xml2::xmlSAX2HasInternalSubset),
+        hasExternalSubset: Some(crate::abi::exports_xml2::xmlSAX2HasExternalSubset),
+        resolveEntity: Some(crate::abi::exports_xml2::xmlSAX2ResolveEntity),
+        getEntity: Some(crate::abi::exports_xml2::xmlSAX2GetEntity),
+        entityDecl: Some(crate::abi::exports_xml2::xmlSAX2EntityDecl),
+        notationDecl: None,
+        attributeDecl: None,
+        elementDecl: None,
+        unparsedEntityDecl: None,
+        setDocumentLocator: Some(crate::abi::exports_xml2::xmlSAX2SetDocumentLocator),
+        startDocument: Some(crate::abi::exports_xml2::xmlSAX2StartDocument),
+        endDocument: Some(crate::abi::exports_xml2::xmlSAX2EndDocument),
+        startElement: Some(crate::abi::exports_xml2::xmlSAX2StartElement),
+        endElement: Some(crate::abi::exports_xml2::xmlSAX2EndElement),
+        reference: Some(crate::abi::exports_xml2::xmlSAX2Reference),
+        characters: Some(crate::abi::exports_xml2::xmlSAX2Characters),
+        ignorableWhitespace: Some(crate::abi::exports_xml2::xmlSAX2IgnorableWhitespace),
+        processingInstruction: None,
+        comment: Some(crate::abi::exports_xml2::xmlSAX2Comment),
+        warning: Some(crate::xml::errors::XML_PARSER_WARNING_SAX1),
+        error: Some(crate::xml::errors::XML_PARSER_ERROR_SAX1),
+        fatalError: Some(crate::xml::errors::XML_PARSER_ERROR_SAX1),
+        getParameterEntity: Some(crate::abi::exports_xml2::xmlSAX2GetParameterEntity),
+        cdataBlock: None,
+        externalSubset: None,
+        initialized: 1,
     };
 
 // ═══════════════════════════════════════════════════════════════════════════════

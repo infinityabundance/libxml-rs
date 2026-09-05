@@ -88,6 +88,7 @@ pub mod exports_automata;
 pub mod exports_buffer;
 pub mod exports_hash;
 pub mod exports_html;
+pub mod exports_legacy;
 pub mod exports_misc;
 pub mod exports_nano;
 pub mod exports_parser;

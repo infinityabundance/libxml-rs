@@ -7,18 +7,29 @@
 # local: * (inside the final node) hides the internal leaks.
 LIBXML2_2.4.30 {
   global:
+    UTF8ToHtml;
+    UTF8Toisolat1;
     attribute;
     attributeDecl;
     cdataBlock;
     characters;
+    checkNamespace;
     comment;
+    docbDefaultSAXHandler;
+    docbDefaultSAXHandlerInit;
     elementDecl;
     endDocument;
     endElement;
     entityDecl;
     externalSubset;
+    getColumnNumber;
     getEntity;
+    getLineNumber;
+    getNamespace;
     getParameterEntity;
+    getPublicId;
+    getSystemId;
+    globalNamespace;
     hasExternalSubset;
     hasInternalSubset;
     htmlAutoCloseTag;
@@ -62,19 +73,27 @@ LIBXML2_2.4.30 {
     htmlSetMetaEncoding;
     htmlTagLookup;
     ignorableWhitespace;
+    initGenericErrorDefaultFunc;
+    initdocbDefaultSAXHandler;
+    inithtmlDefaultSAXHandler;
+    initxmlDefaultSAXHandler;
     inputPop;
     inputPush;
     internalSubset;
     isStandalone;
+    isolat1ToUTF8;
     namePop;
     namePush;
+    namespaceDecl;
     nodePop;
     nodePush;
     notationDecl;
+    oldXMLWDcompatibility;
     processingInstruction;
     reference;
     resolveEntity;
     setDocumentLocator;
+    setNamespace;
     startDocument;
     startElement;
     unparsedEntityDecl;
@@ -229,6 +248,7 @@ LIBXML2_2.4.30 {
     xmlDefaultSAXLocator;
     xmlDelEncodingAlias;
     xmlDetectCharEncoding;
+    xmlDoValidityCheckingDefaultValue;
     xmlDocCopyNode;
     xmlDocDump;
     xmlDocDumpFormatMemory;
@@ -281,6 +301,8 @@ LIBXML2_2.4.30 {
     xmlFreeRefTable;
     xmlFreeTextReader;
     xmlFreeURI;
+    xmlGenericError;
+    xmlGenericErrorContext;
     xmlGetBufferAllocationScheme;
     xmlGetCharEncodingHandler;
     xmlGetCharEncodingName;
@@ -311,6 +333,7 @@ LIBXML2_2.4.30 {
     xmlGetRefs;
     xmlGetThreadId;
     xmlGetUTF8Char;
+    xmlGetWarningsDefaultValue;
     xmlHandleEntity;
     xmlHasNsProp;
     xmlHasProp;
@@ -344,6 +367,7 @@ LIBXML2_2.4.30 {
     xmlIOHTTPOpenW;
     xmlIOHTTPRead;
     xmlIOParseDTD;
+    xmlIndentTreeOutput;
     xmlInitCharEncodingHandlers;
     xmlInitMemory;
     xmlInitNodeInfoSeq;
@@ -369,7 +393,9 @@ LIBXML2_2.4.30 {
     xmlIsRef;
     xmlIsXHTML;
     xmlKeepBlanksDefault;
+    xmlKeepBlanksDefaultValue;
     xmlLineNumbersDefault;
+    xmlLineNumbersDefaultValue;
     xmlLinkGetData;
     xmlListAppend;
     xmlListClear;
@@ -399,6 +425,7 @@ LIBXML2_2.4.30 {
     xmlLoadACatalog;
     xmlLoadCatalog;
     xmlLoadCatalogs;
+    xmlLoadExtDtdDefaultValue;
     xmlLoadExternalEntity;
     xmlLoadSGMLSuperCatalog;
     xmlLockLibrary;
@@ -614,6 +641,7 @@ LIBXML2_2.4.30 {
     xmlParserVersion;
     xmlParserWarning;
     xmlPedanticParserDefault;
+    xmlPedanticParserDefaultValue;
     xmlPopInput;
     xmlPrintURI;
     xmlPushInput;
@@ -658,6 +686,7 @@ LIBXML2_2.4.30 {
     xmlSaveFormatFile;
     xmlSaveFormatFileEnc;
     xmlSaveFormatFileTo;
+    xmlSaveNoEmptyTags;
     xmlSaveUri;
     xmlScanName;
     xmlSearchNs;
@@ -717,6 +746,7 @@ LIBXML2_2.4.30 {
     xmlStrstr;
     xmlStrsub;
     xmlSubstituteEntitiesDefault;
+    xmlSubstituteEntitiesDefaultValue;
     xmlSwitchEncoding;
     xmlSwitchToEncoding;
     xmlTextConcat;
@@ -737,6 +767,7 @@ LIBXML2_2.4.30 {
     xmlTextReaderRead;
     xmlTextReaderValue;
     xmlTextReaderXmlLang;
+    xmlTreeIndentString;
     xmlUCSIsAlphabeticPresentationForms;
     xmlUCSIsArabic;
     xmlUCSIsArabicPresentationFormsA;
@@ -1061,6 +1092,7 @@ LIBXML2_2.4.30 {
     xmlXPatherror;
     xmlXPtrBuildNodeList;
     xmlXPtrEval;
+    xmlXPtrEvalRangePredicate;
     xmlXPtrFreeLocationSet;
     xmlXPtrLocationSetAdd;
     xmlXPtrLocationSetCreate;
@@ -1083,7 +1115,9 @@ LIBXML2_2.4.30 {
 LIBXML2_2.5.0 {
   global:
     xmlDeregisterNodeDefault;
+    xmlDeregisterNodeDefaultValue;
     xmlRegisterNodeDefault;
+    xmlRegisterNodeDefaultValue;
     xmlTextReaderClose;
     xmlTextReaderCurrentDoc;
     xmlTextReaderCurrentNode;
@@ -1262,6 +1296,7 @@ LIBXML2_2.6.0 {
     xmlDictQLookup;
     xmlDictReference;
     xmlDictSize;
+    xmlErrMemory;
     xmlFreeTextWriter;
     xmlGetLastError;
     xmlHashQLookup;
@@ -1323,6 +1358,7 @@ LIBXML2_2.6.0 {
     xmlSAX2HasInternalSubset;
     xmlSAX2IgnorableWhitespace;
     xmlSAX2InitDefaultSAXHandler;
+    xmlSAX2InitDocbDefaultSAXHandler;
     xmlSAX2InitHtmlDefaultSAXHandler;
     xmlSAX2InternalSubset;
     xmlSAX2IsStandalone;
@@ -1341,6 +1377,7 @@ LIBXML2_2.6.0 {
     xmlStrPrintf;
     xmlStrQEqual;
     xmlStringLenDecodeEntities;
+    xmlStructuredError;
     xmlSwitchInputEncoding;
     xmlTextReaderConstBaseUri;
     xmlTextReaderConstLocalName;
@@ -1524,7 +1561,9 @@ LIBXML2_2.6.11 {
   global:
     xmlBuildRelativeURI;
     xmlOutputBufferCreateFilenameDefault;
+    xmlOutputBufferCreateFilenameValue;
     xmlParserInputBufferCreateFilenameDefault;
+    xmlParserInputBufferCreateFilenameValue;
     xmlSchemaCollapseString;
     xmlSchemaFreeWildcard;
     xmlSchemaGetBuiltInListSimpleTypeItemType;
@@ -1696,6 +1735,7 @@ LIBXML2_2.7.3 {
 } LIBXML2_2.7.0;
 LIBXML2_2.7.4 {
   global:
+    xmlStructuredErrorContext;
     xmlXIncludeProcessTreeFlagsData;
 } LIBXML2_2.7.3;
 LIBXML2_2.8.0 {
@@ -1750,9 +1790,17 @@ LIBXML2_2.15.0 {
     _Unwind_SetIP;
     __cxa_finalize;
     __cxa_thread_atexit_impl;
+    __docbDefaultSAXHandler;
     __errno_location;
     __gmon_start__;
     __htmlDefaultSAXHandler;
+    __htmlParseContent;
+    __libxml2_xzclose;
+    __libxml2_xzcompressed;
+    __libxml2_xzdopen;
+    __libxml2_xzopen;
+    __libxml2_xzread;
+    __oldXMLWDcompatibility;
     __tls_get_addr;
     __xmlBufferAllocScheme;
     __xmlDefaultBufferSize;
@@ -1760,15 +1808,22 @@ LIBXML2_2.15.0 {
     __xmlDefaultSAXLocator;
     __xmlDeregisterNodeDefaultValue;
     __xmlDoValidityCheckingDefaultValue;
+    __xmlErrEncoding;
     __xmlFree;
     __xmlGenericError;
     __xmlGenericErrorContext;
     __xmlGetWarningsDefaultValue;
+    __xmlGlobalInitMutexDestroy;
+    __xmlGlobalInitMutexLock;
+    __xmlGlobalInitMutexUnlock;
+    __xmlIOErr;
     __xmlIndentTreeOutput;
+    __xmlInitializeDict;
     __xmlKeepBlanksDefaultValue;
     __xmlLastError;
     __xmlLineNumbersDefaultValue;
     __xmlLoadExtDtdDefaultValue;
+    __xmlLoaderErr;
     __xmlMalloc;
     __xmlMallocAtomic;
     __xmlMemStrdup;
@@ -1779,9 +1834,13 @@ LIBXML2_2.15.0 {
     __xmlParserInputBufferCreateFilenameValue;
     __xmlParserVersion;
     __xmlPedanticParserDefaultValue;
+    __xmlRaiseError;
+    __xmlRandom;
     __xmlRealloc;
+    __xmlRegisterCallbacks;
     __xmlRegisterNodeDefaultValue;
     __xmlSaveNoEmptyTags;
+    __xmlSimpleError;
     __xmlStructuredError;
     __xmlStructuredErrorContext;
     __xmlSubstituteEntitiesDefaultValue;
@@ -1830,6 +1889,8 @@ LIBXML2_2.15.0 {
     htmlNewSAXParserCtxt;
     htmlParseMemory;
     htmlUTF8ToHtml;
+    libxml_domnode_binary_insertion_sort;
+    libxml_domnode_tim_sort;
     localtime_r;
     log;
     log10;
@@ -1875,10 +1936,49 @@ LIBXML2_2.15.0 {
     writev;
     xmlAddEntity;
     xmlAddIDSafe;
+    xmlAllocOutputBufferInternal;
+    xmlAutomataSetFlags;
+    xmlBufAdd;
+    xmlBufAddHead;
+    xmlBufAddLen;
+    xmlBufAttrSerializeTxtContent;
+    xmlBufAvail;
+    xmlBufBackToBuffer;
+    xmlBufCCat;
+    xmlBufCat;
+    xmlBufCreate;
+    xmlBufCreateSize;
+    xmlBufCreateStatic;
+    xmlBufDetach;
+    xmlBufDump;
+    xmlBufDumpAttributeDecl;
+    xmlBufDumpElementDecl;
+    xmlBufDumpEntityDecl;
+    xmlBufDumpNotationTable;
+    xmlBufEmpty;
+    xmlBufErase;
+    xmlBufFree;
+    xmlBufFromBuffer;
+    xmlBufGetAllocationScheme;
+    xmlBufGetInputBase;
+    xmlBufGrow;
+    xmlBufInflate;
+    xmlBufIsEmpty;
+    xmlBufLength;
+    xmlBufMergeBuffer;
+    xmlBufResetInput;
+    xmlBufResize;
+    xmlBufSetAllocationScheme;
+    xmlBufSetInputBaseCur;
+    xmlBufWriteCHAR;
+    xmlBufWriteChar;
+    xmlBufWriteQuotedString;
     xmlBufferReserve;
     xmlBuildRelativeURISafe;
     xmlBuildURISafe;
     xmlCatalogDumpDoc;
+    xmlCharEncFirstLineInput;
+    xmlCharEncFirstLineInt;
     xmlCharEncInput;
     xmlCharEncNewCustomHandler;
     xmlCharEncOutput;
@@ -1920,20 +2020,25 @@ LIBXML2_2.15.0 {
     xmlCtxtSetSaxHandler;
     xmlCtxtValidateDocument;
     xmlCtxtValidateDtd;
+    xmlEncodeAttributeEntities;
+    xmlEscapeFormatString;
     xmlFormatError;
     xmlFreeEntity;
+    xmlGenericErrorDefaultFunc;
     xmlGetCharEncoding;
     xmlGetNsListSafe;
     xmlHashAdd;
     xmlHashAdd2;
     xmlHashAdd3;
     xmlHashCopySafe;
+    xmlInputReadCallbackNop;
     xmlInputSetEncodingHandler;
     xmlIsInitialized;
     xmlIsolat1ToUTF8;
     xmlListBack;
     xmlListReverseSplice;
     xmlLookupCharEncodingHandler;
+    xmlMallocBreakpoint;
     xmlMemSize;
     xmlNewInputFromFd;
     xmlNewInputFromIO;
@@ -1943,6 +2048,7 @@ LIBXML2_2.15.0 {
     xmlNewSAXParserCtxt;
     xmlNodeGetAttrValue;
     xmlNodeGetBaseSafe;
+    xmlNsListDumpOutput;
     xmlOpenCharEncodingHandler;
     xmlParseURISafe;
     xmlPatternCompileSafe;
@@ -1978,6 +2084,7 @@ LIBXML2_2.15.0 {
     xmlXPathSetErrorHandler;
     xmlXPathValuePop;
     xmlXPathValuePush;
+    xmlXPtrAdvanceNode;
     xsltRegisterAllExslt;
   local: *;
 } LIBXML2_2.9.11;
