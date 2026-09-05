@@ -726,6 +726,28 @@ fn register_builtin_handlers() {
         Some(utf16be_output_func as xmlCharEncodingOutputFunc),
     );
 
+    // UCS-4LE (UTF-32LE) — R-000157: the oracle serves these through its
+    // iconv/ICU fallback; the candidate's native 4-byte converters make the
+    // handlers registrable (xmlFindCharEncodingHandler / xmlSwitchEncoding /
+    // the XML input layer's whole-buffer decode all resolve through this
+    // registry).
+    register_handler(
+        b"UCS-4LE\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        Some(ucs4le_input_func as xmlCharEncodingInputFunc),
+        Some(ucs4le_output_func as xmlCharEncodingOutputFunc),
+    );
+
+    // UCS-4BE (UTF-32BE)
+    register_handler(
+        b"UCS-4BE\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE,
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE,
+        Some(ucs4be_input_func as xmlCharEncodingInputFunc),
+        Some(ucs4be_output_func as xmlCharEncodingOutputFunc),
+    );
+
     // ISO-8859-1 (Latin-1)
     register_handler(
         b"ISO-8859-1\0",
@@ -1134,6 +1156,33 @@ pub(crate) fn find_encoding_handler(name: *const xmlChar) -> *mut _xmlCharEncodi
 
         if name_str.eq_ignore_ascii_case(h_name) {
             return ptr;
+        }
+    }
+    drop(handlers);
+
+    // Canonical re-lookup for alias spellings (upstream resolves unknown
+    // names through xmlAddEncodingAlias and its iconv/ICU fallback; the
+    // candidate maps aliases through encoding_from_name — e.g. "utf-32be" /
+    // "shift-jis" resolve to the registered "UCS-4BE" / "Shift_JIS"
+    // handlers).
+    if let Some(canon) = encoding_name(encoding_from_name(name_str)) {
+        if let Ok(canon_c) = std::ffi::CString::new(canon) {
+            let handlers = ENCODING_HANDLERS.read();
+            for &handler in handlers.iter() {
+                let ptr = handler.0;
+                if ptr.is_null() {
+                    continue;
+                }
+                let h_name = unsafe {
+                    if (*ptr).name.is_null() {
+                        continue;
+                    }
+                    CStr::from_ptr((*ptr).name).to_bytes()
+                };
+                if canon.eq_ignore_ascii_case(h_name) {
+                    return ptr;
+                }
+            }
         }
     }
 
@@ -2591,6 +2640,24 @@ unsafe fn fixed_width_input(
     let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
     let mut in_pos = 0usize;
     let mut out_pos = 0usize;
+    // A leading U+FEFF code unit (the UTF-32 LE/BE BOM, which as a unit is
+    // 0x0000FEFF in both byte orders) is a byte-order marker, not content:
+    // upstream consumes it in the encoding switch, so the parser must never
+    // see it (mirrors the UTF-16 converters' BOM skip).
+    if avail_in >= width {
+        let mut first: u32 = 0;
+        for k in 0..width {
+            let b = in_data[k] as u32;
+            first = if le {
+                first | (b << (8 * k))
+            } else {
+                (first << 8) | b
+            };
+        }
+        if first == 0x0000_FEFF {
+            in_pos = width;
+        }
+    }
     while in_pos + width <= avail_in {
         let mut unit: u32 = 0;
         for k in 0..width {

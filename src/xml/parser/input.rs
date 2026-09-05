@@ -577,6 +577,37 @@ impl InputBuffer {
             return;
         }
 
+        // Check for UTF-32 LE BOM: FF FE 00 00 (must precede the UTF-16LE
+        // check — its first two bytes are the UTF-16LE BOM).
+        if self.data.len() >= 4
+            && self.data[0] == 0xFF
+            && self.data[1] == 0xFE
+            && self.data[2] == 0x00
+            && self.data[3] == 0x00
+        {
+            self.encoding = Encoding::Ucs4Le;
+            self.pos = 4;
+            self.col = 5;
+            self.bom_consumed = true;
+            self.convert_declared_native_encoding();
+            return;
+        }
+
+        // Check for UTF-32 BE BOM: 00 00 FE FF
+        if self.data.len() >= 4
+            && self.data[0] == 0x00
+            && self.data[1] == 0x00
+            && self.data[2] == 0xFE
+            && self.data[3] == 0xFF
+        {
+            self.encoding = Encoding::Ucs4Be;
+            self.pos = 4;
+            self.col = 5;
+            self.bom_consumed = true;
+            self.convert_declared_native_encoding();
+            return;
+        }
+
         // Check for UTF-16 LE BOM: FF FE
         if self.data.len() >= 2 && self.data[0] == 0xFF && self.data[1] == 0xFE {
             self.encoding = Encoding::Utf16Le;
