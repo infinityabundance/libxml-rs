@@ -1338,10 +1338,15 @@ pub unsafe extern "C" fn xmlParserError() -> c_int {
 /// caller's varargs and emits `"error: "` + formatted text through the
 /// generic channel (upstream error.c `xmlVFormatLegacyError`).
 ///
+/// x86_64-only: the va_list layout (`VaListTag`) is the SysV AMD64
+/// `__va_list_tag`; other ABIs carry their own varargs representation and the
+/// register-shim entry (`xmlParserError`) is x86_64-gated with it.
+///
 /// # Safety
 ///
 /// - `msg` must be a valid NUL-terminated printf format string, `ap` a
 ///   valid va_list matching the format, `ctx` may be NULL.
+#[cfg(target_arch = "x86_64")]
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserErrorV(
     ctx: *mut c_void,
@@ -1367,10 +1372,13 @@ pub unsafe extern "C" fn xmlParserWarning() -> c_int {
 
 /// Variadic receiver for the `xmlParserWarning` shim.
 ///
+/// x86_64-only: see `xmlParserErrorV`.
+///
 /// # Safety
 ///
 /// - `msg` must be a valid NUL-terminated printf format string, `ap` a
 ///   valid va_list matching the format, `ctx` may be NULL.
+#[cfg(target_arch = "x86_64")]
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserWarningV(
     ctx: *mut c_void,
@@ -1397,10 +1405,13 @@ pub unsafe extern "C" fn xmlParserValidityError() -> c_int {
 
 /// Variadic receiver for the `xmlParserValidityError` shim.
 ///
+/// x86_64-only: see `xmlParserErrorV`.
+///
 /// # Safety
 ///
 /// - `msg` must be a valid NUL-terminated printf format string, `ap` a
 ///   valid va_list matching the format, `ctx` may be NULL.
+#[cfg(target_arch = "x86_64")]
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserValidityErrorV(
     ctx: *mut c_void,
@@ -1427,10 +1438,13 @@ pub unsafe extern "C" fn xmlParserValidityWarning() -> c_int {
 
 /// Variadic receiver for the `xmlParserValidityWarning` shim.
 ///
+/// x86_64-only: see `xmlParserErrorV`.
+///
 /// # Safety
 ///
 /// - `msg` must be a valid NUL-terminated printf format string, `ap` a
 ///   valid va_list matching the format, `ctx` may be NULL.
+#[cfg(target_arch = "x86_64")]
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserValidityWarningV(
     ctx: *mut c_void,
@@ -1445,6 +1459,7 @@ pub unsafe extern "C" fn xmlParserValidityWarningV(
 /// callback type. The shim's declared arity is a Rust-side fiction (stable
 /// Rust cannot express `c_variadic`); the ABI is a plain code pointer and
 /// the C variadic call contract is preserved (11.1-Z.2, R-000176).
+#[cfg(target_arch = "x86_64")]
 pub const XML_PARSER_ERROR_SAX1: errorSAXFunc = unsafe {
     // SAFETY: shim and SAX callback are both plain code pointers (same ABI);
     // the declared arity difference is the documented shim fiction.
@@ -1452,6 +1467,7 @@ pub const XML_PARSER_ERROR_SAX1: errorSAXFunc = unsafe {
 };
 
 /// The variadic `xmlParserWarning` shim as the SAX v1 callback type.
+#[cfg(target_arch = "x86_64")]
 pub const XML_PARSER_WARNING_SAX1: errorSAXFunc = unsafe {
     // SAFETY: see XML_PARSER_ERROR_SAX1.
     core::mem::transmute::<unsafe extern "C" fn() -> c_int, errorSAXFunc>(xmlParserWarning)
@@ -1459,6 +1475,7 @@ pub const XML_PARSER_WARNING_SAX1: errorSAXFunc = unsafe {
 
 /// The variadic `xmlParserValidityError` shim as the validation callback
 /// type (`xmlValidityErrorFunc`-compatible fixed-arity pointer).
+#[cfg(target_arch = "x86_64")]
 pub const XML_PARSER_VALIDITY_ERROR_SAX1: unsafe extern "C" fn(*mut c_void, *const c_char) =
     // SAFETY: see XML_PARSER_ERROR_SAX1.
     unsafe {
@@ -1470,6 +1487,7 @@ pub const XML_PARSER_VALIDITY_ERROR_SAX1: unsafe extern "C" fn(*mut c_void, *con
 
 /// The variadic `xmlParserValidityWarning` shim as the validation callback
 /// type.
+#[cfg(target_arch = "x86_64")]
 pub const XML_PARSER_VALIDITY_WARNING_SAX1: unsafe extern "C" fn(*mut c_void, *const c_char) =
     // SAFETY: see XML_PARSER_ERROR_SAX1.
     unsafe {
@@ -1478,6 +1496,55 @@ pub const XML_PARSER_VALIDITY_WARNING_SAX1: unsafe extern "C" fn(*mut c_void, *c
             unsafe extern "C" fn(*mut c_void, *const c_char),
         >(xmlParserValidityWarning)
     };
+
+#[cfg(not(target_arch = "x86_64"))]
+mod legacy_plain {
+    //! Non-x86_64 fallbacks for the default legacy error/warning handlers.
+    //!
+    //! The x86_64 implementations forward the CALLER's C varargs to
+    //! `vsnprintf` through a SysV register-save-area asm shim (R-000176).
+    //! Other ABIs carry their own va_list representation; building the
+    //! matching shim per ABI is a documented platform obligation (R-000168,
+    //! varargs family). On those (unexecuted) ABIs the default slots emit the
+    //! caller's message text VERBATIM — the candidate's own error machinery
+    //! always hands these slots pre-formatted text, so the emitted bytes are
+    //! identical for every internal raise; only a C consumer that variadically
+    //! calls the DEFAULT handler with format arguments would observe the
+    //! difference (unexecuted, tracked in PLATFORM_SURFACE_ATLAS).
+    use super::emit_legacy_message;
+    use crate::abi::callbacks::errorSAXFunc;
+    use core::ffi::{c_char, c_void};
+
+    unsafe extern "C" fn error(ctx: *mut c_void, msg: *const c_char) {
+        let _ = ctx;
+        unsafe { emit_legacy_message("error", msg) };
+    }
+    unsafe extern "C" fn warning(ctx: *mut c_void, msg: *const c_char) {
+        let _ = ctx;
+        unsafe { emit_legacy_message("warning", msg) };
+    }
+    unsafe extern "C" fn validity_error(ctx: *mut c_void, msg: *const c_char) {
+        let _ = ctx;
+        unsafe { emit_legacy_message("validity error", msg) };
+    }
+    unsafe extern "C" fn validity_warning(ctx: *mut c_void, msg: *const c_char) {
+        let _ = ctx;
+        unsafe { emit_legacy_message("validity warning", msg) };
+    }
+
+    pub const XML_PARSER_ERROR_SAX1: errorSAXFunc = error;
+    pub const XML_PARSER_WARNING_SAX1: errorSAXFunc = warning;
+    pub const XML_PARSER_VALIDITY_ERROR_SAX1: unsafe extern "C" fn(*mut c_void, *const c_char) =
+        validity_error;
+    pub const XML_PARSER_VALIDITY_WARNING_SAX1: unsafe extern "C" fn(*mut c_void, *const c_char) =
+        validity_warning;
+}
+
+#[cfg(not(target_arch = "x86_64"))]
+pub use legacy_plain::{
+    XML_PARSER_ERROR_SAX1, XML_PARSER_VALIDITY_ERROR_SAX1, XML_PARSER_VALIDITY_WARNING_SAX1,
+    XML_PARSER_WARNING_SAX1,
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Tests

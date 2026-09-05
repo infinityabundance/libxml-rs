@@ -518,8 +518,9 @@ pub unsafe extern "C" fn xsltTimestamp() -> c_long {
 #[no_mangle]
 pub unsafe extern "C" fn xsltCalibrateAdjust(delta: c_long) {
     // Upstream stores a process-lifetime calibration offset; the candidate
-    // applies it to the monotonic clock read.
-    CALIBRATION_OFFSET.fetch_add(delta, core::sync::atomic::Ordering::Relaxed);
+    // applies it to the monotonic clock read. `c_long` is 32-bit on 32-bit
+    // ABIs — widen to the i64 accumulator (R-000168 calibration arithmetic).
+    CALIBRATION_OFFSET.fetch_add(delta as i64, core::sync::atomic::Ordering::Relaxed);
 }
 
 static CALIBRATION_OFFSET: core::sync::atomic::AtomicI64 = core::sync::atomic::AtomicI64::new(0);
