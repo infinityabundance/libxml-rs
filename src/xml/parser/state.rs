@@ -1918,7 +1918,8 @@ impl XmlParser {
         }
 
         // Element-content group: (a, b, c) or (a | b | c), possibly nested.
-        let mut items: Vec<(*mut _xmlElementContent, u8)> = Vec::new();
+        let mut items: Vec<*mut _xmlElementContent> = Vec::new();
+        let mut sep: u8 = 0;
         loop {
             skip_ws(s, idx);
             if *idx >= s.len() {
@@ -1930,6 +1931,13 @@ impl XmlParser {
                 break;
             }
             if c == b',' || c == b'|' {
+                // Record the first separator; the grammar is
+                // `cp (sep cp)*`, so the separator precedes each child after
+                // the first (XSD/DTD forbid mixing `,` and `|` in one group,
+                // but the parser keeps the first just as upstream does).
+                if sep == 0 {
+                    sep = c;
+                }
                 *idx += 1;
                 continue;
             }
@@ -1937,26 +1945,25 @@ impl XmlParser {
             if child.is_null() {
                 break;
             }
-            items.push((child, c));
+            items.push(child);
         }
         if items.is_empty() {
             return ptr::null_mut();
         }
-        let sep = if items.len() > 1 { items[1].1 } else { b',' };
         let group_type = if sep == b'|' {
             XML_ELEMENT_CONTENT_OR as c_int
         } else {
             XML_ELEMENT_CONTENT_SEQ as c_int
         };
         // Build a left-leaning chain: ((a,b),c) with OR/SEQ connectors.
-        let mut node = items[0].0;
+        let mut node = items[0];
         for item in &items[1..] {
             let group = unsafe { crate::xml::dtd::create_content_model(ptr::null(), group_type) };
             unsafe {
                 (*group).c1 = node;
                 (*node).parent = group;
-                (*group).c2 = item.0;
-                (*(item.0)).parent = group;
+                (*group).c2 = *item;
+                (*(*item)).parent = group;
                 (*group).ocur = XML_ELEMENT_CONTENT_ONCE as c_int;
             }
             node = group;

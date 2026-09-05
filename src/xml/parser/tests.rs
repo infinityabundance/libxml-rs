@@ -74,6 +74,39 @@ fn test_parse_empty_document() {
     }
 }
 
+/// Parse a DTD element declaration with a choice group and verify the content
+/// model is an OR (choice) connector, not a SEQ (sequence) connector.
+///
+/// Regression: `parse_cp` consumed the `|` separator and then recorded the
+/// first byte of the next child as the separator, so `(a|b|c)` was built as
+/// `(a , b , c)`. This is observable in `xmllint --format` DTD output.
+///
+/// # Safety
+///
+/// - The document returned by `parse_bytes` is non-NULL (asserted); the DTD,
+///   element declaration and content-model pointers are borrowed and read
+///   only while the document stays alive.
+#[test]
+fn test_element_content_choice_group_is_or() {
+    unsafe {
+        let xml = b"<!DOCTYPE doc [<!ELEMENT doc (a|b|c)*>]><doc/>";
+        let doc = parse_bytes(xml);
+        assert!(!doc.is_null(), "should parse doc with DTD");
+        let dtd = (*doc).intSubset;
+        assert!(!dtd.is_null(), "internal subset should be present");
+
+        let elem = crate::xml::dtd::get_element_decl(dtd, b"doc\0".as_ptr() as *const xmlChar);
+        assert!(!elem.is_null(), "element declaration should exist");
+        let content = (*elem).content;
+        assert!(!content.is_null(), "element content model should exist");
+        assert_eq!(
+            (*content).type_,
+            crate::abi::types::xmlElementContentType::XML_ELEMENT_CONTENT_OR as c_int,
+            "(a|b|c) must be a choice (OR) group"
+        );
+    }
+}
+
 // ── KEY-1 regression guard (declared encoding on BOM-less input) ───────────
 
 /// A BOM-less byte stream that declares `encoding="iso-8859-1"` and contains
