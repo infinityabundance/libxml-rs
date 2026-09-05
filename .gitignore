@@ -19,6 +19,13 @@ __pycache__/
 Thumbs.db
 .directory
 
+# Scratch investigation artifacts (Phase 15 courts) — not part of source
+/evfeed.py
+/feed6.c
+/micro.c
+/push_probe.c
+/xsltrepro.py
+
 # Docker build artifacts
 docker/build/
 docker/*.tar.xz
