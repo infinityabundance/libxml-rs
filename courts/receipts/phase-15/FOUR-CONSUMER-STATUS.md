@@ -84,6 +84,36 @@ So the Debian reverse-dependency court's first-order failure count is **175
 missing symbols + 1 SONAME-mismatch**, and every installed reverse-dep fails to
 load. Fixing this is a prerequisite before any runtime reverse-dep test can run.
 
+### ltrace residual logging (which missing symbols consumers actually CALL)
+
+`ltrace -e '@libxml2.so.2*'` over the five reverse-deps (xmllint, xsltproc,
+python3-lxml, ruby-nokogiri, php) yields **70 unique runtime-called libxml2
+symbols**. Of those, **~40 are missing from the candidate** — the critical,
+actually-exercised subset of the 175, dominated by:
+
+- `xmlBuf*` buffer API (xmlBufCreate/CreateSize/Add/AddLen/Avail/Free/
+  GetAllocationScheme/Grow/ResetInput/SetAllocationScheme, xmlAllocOutputBufferInternal)
+- `__xml*` globals/aliases (`__xmlDefaultSAXHandler`, `__htmlDefaultSAXHandler`,
+  `__xmlDefaultBufferSize`, `__xmlBufferAllocScheme`, `__xmlLastError`,
+  `__xmlGenericError`, `__xmlIndentTreeOutput`, `__xmlSaveNoEmptyTags`,
+  `__xmlSubstituteEntitiesDefaultValue`, `__xmlLineNumbersDefaultValue`,
+  `__xmlKeepBlanksDefaultValue`, `__xmlLoadExtDtdDefaultValue`,
+  `__xmlDoValidityCheckingDefaultValue`, `__xmlPedanticParserDefaultValue`,
+  `__xmlParserDebugEntities`, `__xmlParserInputBufferCreateFilenameValue`,
+  `__xmlOutputBufferCreateFilenameValue`, `__xmlStructuredError`,
+  `__xmlStructuredErrorContext`, `__xmlRandom`, `__xmlInitializeDict`,
+  `__xmlGlobalInitMutex{Lock,Unlock,Destroy}`)
+- xz (`__libxml2_xz{open,read,close,compressed}`)
+- `initGenericErrorDefaultFunc`
+
+### Candidate STUB functions (exported but not implemented)
+
+`// Phase 1: STUB` marks in `src/abi/exports_xml2.rs` (7 found): `htmlParseFile`,
+`htmlParseMemory`, `htmlParseDoc`, `htmlInitParser`, `htmlCleanupParser`,
+`xmlGetBinaryPath`, `xmlGetHomeOfBinary`. The three `htmlParse*` stubs return
+NULL — a real gap for any consumer using the legacy HTML parse entry points
+(though lxml/nokogiri use `htmlRead*`/`htmlCtxtRead*`, not these).
+
 ## Priority (biggest movers first)
 
 1. **Isolate and fix the nokogiri XPath extension-function SIGSEGV** — it
