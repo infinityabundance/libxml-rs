@@ -1606,7 +1606,7 @@ pub unsafe extern "C" fn xmlCtxtReadDoc(
     ctxt: *mut _xmlParserCtxt,
     cur: *const xmlChar,
     URL: *const c_char,
-    _encoding: *const c_char,
+    encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
     if ctxt.is_null() || cur.is_null() {
@@ -1614,7 +1614,11 @@ pub unsafe extern "C" fn xmlCtxtReadDoc(
     }
     unsafe {
         let len = string::xml_strlen(cur);
-        let input = helpers::input_from_memory(cur as *const c_char, len as c_int);
+        let mut input = helpers::input_from_memory(cur as *const c_char, len as c_int);
+        if !encoding.is_null() {
+            let name = core::ffi::CStr::from_ptr(encoding).to_bytes();
+            input.apply_explicit_input_encoding(name);
+        }
         ctxt_read_doc(ctxt, input, URL, options)
     }
 }
@@ -1716,14 +1720,24 @@ pub unsafe extern "C" fn xmlCtxtReadMemory(
     buffer: *const c_char,
     size: c_int,
     URL: *const c_char,
-    _encoding: *const c_char,
+    encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
     if ctxt.is_null() || buffer.is_null() || size < 0 {
         return ptr::null_mut();
     }
     unsafe {
-        let input = helpers::input_from_memory(buffer, size);
+        let mut input = helpers::input_from_memory(buffer, size);
+        // UPSTREAM-PARITY (xmlCtxtNewInputFromMemory): an explicit `encoding`
+        // argument switches the input to that encoding BEFORE the parse, so
+        // the parser never sees raw UCS-2/UCS-4/Latin-1 bytes (lxml feeds
+        // PEP-393 python strings this way). Best-effort: when the name is
+        // unknown or the buffer was already converted the raw bytes stay and
+        // BOM/declaration detection decides as usual.
+        if !encoding.is_null() {
+            let name = core::ffi::CStr::from_ptr(encoding).to_bytes();
+            input.apply_explicit_input_encoding(name);
+        }
         ctxt_read_doc(ctxt, input, URL, options)
     }
 }

@@ -820,6 +820,64 @@ impl InputBuffer {
         }
     }
 
+    /// Apply an EXPLICIT caller-supplied input encoding (the `encoding`
+    /// argument of xmlCtxtReadMemory/ReadDoc and friends, upstream
+    /// `xmlCtxtNewInputFromMemory` -> `xmlSwitchEncoding` before the parse).
+    /// Any encodable multi-byte or legacy encoding converts the whole raw
+    /// buffer to UTF-8 up front (UTF-16LE/BE, UCS-4LE/BE, Latin-1 and the
+    /// other registry-served encodings — lxml feeds PEP-393 KIND-2/4 python
+    /// strings this way). Returns false when no conversion applies (the raw
+    /// bytes stay; BOM/declaration detection then decides as usual).
+    pub(crate) fn apply_explicit_input_encoding(&mut self, name: &[u8]) -> bool {
+        if self.converted_to_utf8 || self.data.is_empty() {
+            return false;
+        }
+        let enc = crate::xml::encoding::encoding_from_name(name);
+        let converted: Option<Vec<u8>> = match enc {
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE => {
+                crate::xml::encoding::utf16le_to_utf8(&self.data).ok()
+            }
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE => {
+                crate::xml::encoding::utf16be_to_utf8(&self.data).ok()
+            }
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE => {
+                crate::xml::encoding::ucs4le_to_utf8(&self.data).ok()
+            }
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE => {
+                crate::xml::encoding::ucs4be_to_utf8(&self.data).ok()
+            }
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_8859_1 => {
+                Some(crate::xml::encoding::latin1_to_utf8(&self.data))
+            }
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_ASCII
+            | crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF8 => Some(self.data.clone()),
+            // Other registry-served encodings (ISO-8859-2..16, Shift_JIS,
+            // EUC-JP, ISO-2022-JP, UCS-2, EBCDIC ...): whole-buffer decode
+            // through the registered input handler (R-000157).
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_ERROR => None,
+            _ => {
+                if let Some(canon) = crate::xml::encoding::encoding_name(enc) {
+                    crate::xml::encoding::decode_whole_buffer_declared(canon, &self.data).ok()
+                } else {
+                    None
+                }
+            }
+        };
+        match converted {
+            Some(conv) => {
+                self.data = conv;
+                self.pos = 0;
+                self.col = 1;
+                self.line = 1;
+                self.bom_consumed = false;
+                self.converted_to_utf8 = true;
+                self.encoding = Encoding::Utf8;
+                true
+            }
+            None => false,
+        }
+    }
+
     /// The registry name of the source encoding whose raw bytes still
     /// arrive incrementally after a whole-buffer conversion (KEY-1 tail
     /// path). UTF-16 (BOM-switched) and UTF-8/ASCII return None — their

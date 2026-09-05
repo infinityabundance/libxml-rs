@@ -2963,7 +2963,15 @@ pub unsafe extern "C" fn xmlReadMemory(
     }
     // UPSTREAM-PARITY: the URL becomes the input's filename (feeds the
     // `file:line:` error prefix and doc->URL).
-    let input = crate::xml::parser::helpers::input_from_memory_named(buffer, size, URL);
+    let mut input = crate::xml::parser::helpers::input_from_memory_named(buffer, size, URL);
+    // UPSTREAM-PARITY (xmlReadMemory -> xmlCtxtReadMemory): an explicit
+    // `encoding` argument switches the input before parsing (lxml/KIND-2/4
+    // python strings arrive as raw UTF-16/UCS-4). Best-effort: unknown
+    // names leave the raw bytes for BOM/declaration detection.
+    if !encoding.is_null() {
+        let name = core::ffi::CStr::from_ptr(encoding).to_bytes();
+        input.apply_explicit_input_encoding(name);
+    }
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     // UPSTREAM-PARITY (xmlReadMemory -> xmlCtxtReadMemory): the parse
     // options are mirrored into the context members (dictNames, keepBlanks,

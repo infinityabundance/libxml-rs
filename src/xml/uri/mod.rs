@@ -453,6 +453,18 @@ pub(crate) fn parse_uri(str: &[u8]) -> Option<UriParts> {
         return None;
     }
 
+    // UPSTREAM-PARITY (uri.c 2.15 xmlParseURIReference): the strict 3986
+    // scanner rejects any raw byte outside the URI grammar. The union of the
+    // per-component character classes is: unreserved (ALPHA/DIGIT/-._~),
+    // sub-delims (!$&'()*+,;=), the reserved delimiters (:/?#@[]) and
+    // pct-encoded triplets. Everything else — spaces, control bytes, bytes
+    // >= 0x80 (non-ASCII must be pct-encoded), and the excluded ASCII
+    // punctuation "<>\^`{|} — fails the parse (lxml `_uriValidOrRaise` calls
+    // xmlParseURI and rejects invalid namespace URIs through this).
+    if !uri_raw_bytes_valid(str) {
+        return None;
+    }
+
     let mut parts = UriParts::default();
     let mut remaining = str;
 
@@ -542,6 +554,42 @@ pub(crate) fn parse_uri(str: &[u8]) -> Option<UriParts> {
     }
 
     Some(parts)
+}
+
+/// Whether every raw byte of `uri` is allowed by the RFC 3986 grammar
+/// (see `parse_uri`): unreserved, sub-delims, the reserved delimiters, or a
+/// `%XX` pct-encoding triplet.
+fn uri_raw_bytes_valid(uri: &[u8]) -> bool {
+    const fn is_unreserved_byte(b: u8) -> bool {
+        b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~')
+    }
+    const fn is_sub_delim_byte(b: u8) -> bool {
+        matches!(
+            b,
+            b'!' | b'$' | b'&' | b'\'' | b'(' | b')' | b'*' | b'+' | b',' | b';' | b'='
+        )
+    }
+    let mut i = 0usize;
+    while i < uri.len() {
+        let b = uri[i];
+        if is_unreserved_byte(b)
+            || is_sub_delim_byte(b)
+            || matches!(b, b':' | b'/' | b'?' | b'#' | b'@' | b'[' | b']')
+        {
+            i += 1;
+            continue;
+        }
+        if b == b'%' && i + 2 < uri.len() {
+            let h1 = uri[i + 1];
+            let h2 = uri[i + 2];
+            if h1.is_ascii_hexdigit() && h2.is_ascii_hexdigit() {
+                i += 3;
+                continue;
+            }
+        }
+        return false;
+    }
+    true
 }
 
 /// Parse a URI from a null-terminated C string.
