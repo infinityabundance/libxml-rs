@@ -194,6 +194,81 @@ if [ -x /tmp/ev-consumer-oracle ]; then
     fi
 fi
 
+# ── 4. R-000179 VERSIONED-DISTRO PROFILE (libxml2.so.2) ──────────────── #
+# The executed oracle (.16) is unversioned, but distro binaries built against
+# a versioned libxml2 (SONAME libxml2.so.2, LIBXML2_2.x nodes) require those
+# nodes. The candidate builds a versioned-profile artifact (target/debug/
+# versioned/libxml2.so.2, tools/packaging/versioned-profile.sh + the
+# committed libxml2-versioned.syms derived from the authoritative distro
+# DSO) so such binaries bind without ld.so warnings. These cases run only
+# when the distro oracle (/usr/lib/libxml2.so.2.13.9) is present.
+DISTRO_XML2="/usr/lib/libxml2.so.2.13.9"
+VPROFILE="${ARTIFACT}/versioned"
+DVC="${SCRIPT_DIR}/distro-versioned-consumer.c"
+if [ -f "$DISTRO_XML2" ] && [ -f "$VPROFILE/libxml2.so.2.13.9" ]; then
+    # SIGPIPE-safe node presence (grep -q on the huge readelf stream can die
+    # with 141 when readelf is killed mid-write)
+    vinfo="$(readelf --version-info "$VPROFILE/libxml2.so.2.13.9" 2>/dev/null)"
+    if printf '%s' "$vinfo" | grep -q "LIBXML2_2.4.30" \
+            && printf '%s' "$vinfo" | grep -q "LIBXML2_2.15.0"; then
+        record PASS "vprofile:node-graph (LIBXML2_2.4.30..LIBXML2_2.15.0 terminal)"
+    else
+        record FAIL "vprofile:node-graph" "$(printf '%s' "$vinfo" | grep -oE 'LIBXML2_[0-9.]+' | tr '\n' ' ' | head -c 200)"
+    fi
+    # per-symbol node parity over the SHARED surface: every symbol the
+    # candidate profile versions must carry the SAME @@node as the distro DSO
+    # (one-directional: the distro exports 2.13-only APIs the 2.15-surface
+    # candidate does not define — attribute/cdataBlock/... SAX1-era members —
+    # which no executed consumer can reference against a 2.15 provider)
+    dmap="$(nm -D --defined-only "$DISTRO_XML2" 2>/dev/null | grep '@@LIBXML2_2' | awk '{print $3}' | sort)"
+    vmap="$(nm -D --defined-only "$VPROFILE/libxml2.so.2.13.9" 2>/dev/null | grep '@@LIBXML2_2' | awk '{print $3}' | grep -v '@@LIBXML2_2.15.0$' | sort)"
+    only_cand="$(comm -13 <(printf '%s\n' "$dmap") <(printf '%s\n' "$vmap") | head -5 | tr '\n' ' ')"
+    nshared="$(comm -12 <(printf '%s\n' "$dmap") <(printf '%s\n' "$vmap") | grep -v '^$' | wc -l)"
+    ndistro="$(printf '%s\n' "$dmap" | grep -v '^$' | wc -l)"
+    if [ -n "$dmap" ] && [ -z "$only_cand" ]; then
+        record PASS "vprofile:per-symbol nodes == distro over the shared surface ($nshared/$ndistro symbols; distro-only 2.13-era absent from the 2.15 surface)"
+    else
+        record FAIL "vprofile:per-symbol nodes" "candidate-only=[$only_cand]"
+    fi
+    # distro-versioned consumer: build against the DISTRO .so.2 (records the
+    # LIBXML2_2.x DT_VERNEED), then run against the candidate profile
+    if cc -std=c11 -o /tmp/dvc-consumer "$DVC" -I/usr/include/libxml2 \
+            -L/usr/lib -Wl,-l:libxml2.so.2 >/tmp/dvc-cc.txt 2>&1; then
+        record PASS "vprofile:build-distro-linked-consumer"
+    else
+        record FAIL "vprofile:build-distro-linked-consumer" "$(sanitize "$(head -3 /tmp/dvc-cc.txt)")"
+    fi
+    if [ -x /tmp/dvc-consumer ]; then
+        /tmp/dvc-consumer >/tmp/dvc-o.out 2>/tmp/dvc-o.err
+        o_rc=$?
+        LD_LIBRARY_PATH="$VPROFILE" /tmp/dvc-consumer >/tmp/dvc-v.out 2>/tmp/dvc-v.err
+        v_rc=$?
+        # output must be byte-identical modulo the xmlParserVersion identity
+        # line (2.13.9 vs the candidate's own version string)
+        grep -v '^version=' /tmp/dvc-o.out >/tmp/dvc-o2.out 2>/dev/null
+        grep -v '^version=' /tmp/dvc-v.out >/tmp/dvc-v2.out 2>/dev/null
+        if [ "$o_rc" = "$v_rc" ] && cmp -s /tmp/dvc-o2.out /tmp/dvc-v2.out; then
+            record PASS "vprofile:distro-consumer-on-profile (byte-identical, rc=$v_rc)"
+        else
+            record FAIL "vprofile:distro-consumer-on-profile" "oracle-rc=$o_rc profile-rc=$v_rc"
+        fi
+        if [ ! -s /tmp/dvc-v.err ] || ! grep -q "no version information" /tmp/dvc-v.err; then
+            record PASS "vprofile:no-ld.so-version-warnings"
+        else
+            record FAIL "vprofile:no-ld.so-version-warnings" "$(sanitize "$(head -2 /tmp/dvc-v.err)")"
+        fi
+        if LD_LIBRARY_PATH="$VPROFILE" ldd /tmp/dvc-consumer 2>/dev/null \
+                | grep libxml2 | grep -q "$VPROFILE"; then
+            record PASS "vprofile:ldd-resolves-into-versioned-profile"
+        else
+            record FAIL "vprofile:ldd-resolves-into-versioned-profile" \
+                "$(LD_LIBRARY_PATH="$VPROFILE" ldd /tmp/dvc-consumer 2>&1 | grep libxml2)"
+        fi
+    fi
+else
+    record PASS "vprofile:distro oracle (.so.2.13.9) absent — versioned-profile cases not applicable"
+fi
+
 # ── receipt ──────────────────────────────────────────────────────────────── #
 {
     echo "{"

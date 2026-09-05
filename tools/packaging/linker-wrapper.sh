@@ -52,5 +52,6 @@ rc=$?
 art="$(cd "$(dirname "$out")/.." 2>/dev/null && pwd)" || exit 0
 if [ -f "$art/liblibxml_rs.a" ] && [ -f "$art/liblibxml_rs.so" ]; then
     "$SCRIPT_DIR/facade-gen.sh" "$art" >>"$art/.facade-gen.log" 2>&1
+    "$SCRIPT_DIR/versioned-profile.sh" "$art" >>"$art/.versioned-profile.log" 2>&1
 fi
 exit 0
