@@ -7,6 +7,20 @@
 # local: * (inside the final node) hides the internal leaks.
 LIBXML2_2.4.30 {
   global:
+    attribute;
+    attributeDecl;
+    cdataBlock;
+    characters;
+    comment;
+    elementDecl;
+    endDocument;
+    endElement;
+    entityDecl;
+    externalSubset;
+    getEntity;
+    getParameterEntity;
+    hasExternalSubset;
+    hasInternalSubset;
     htmlAutoCloseTag;
     htmlCreateFileParserCtxt;
     htmlCreatePushParserCtxt;
@@ -47,12 +61,23 @@ LIBXML2_2.4.30 {
     htmlSaveFileFormat;
     htmlSetMetaEncoding;
     htmlTagLookup;
+    ignorableWhitespace;
     inputPop;
     inputPush;
+    internalSubset;
+    isStandalone;
     namePop;
     namePush;
     nodePop;
     nodePush;
+    notationDecl;
+    processingInstruction;
+    reference;
+    resolveEntity;
+    setDocumentLocator;
+    startDocument;
+    startElement;
+    unparsedEntityDecl;
     valuePop;
     valuePush;
     xlinkGetDefaultDetect;

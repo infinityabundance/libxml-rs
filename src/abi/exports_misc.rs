@@ -2247,6 +2247,84 @@ pub unsafe extern "C" fn __htmlDefaultSAXHandler() -> *mut _xmlSAXHandlerV1 {
     core::ptr::addr_of!(crate::abi::data_globals::htmlDefaultSAXHandler) as *mut _xmlSAXHandlerV1
 }
 
+// ── Legacy SAX1 default handler functions (deprecated, exported for the ────
+// distro ABI). These are the OLD SAX1 handler entry points (`startElement`,
+// `characters`, …) that upstream 2.9-era DSOs export as standalone symbols
+// for backward compatibility. They are the DEFAULT handlers and are no-ops
+// (or return the documented sentinel), matching the deprecated upstream bodies.
+
+macro_rules! sax1_void_1 {
+    ($name:ident, $($arg:ident: $ty:ty),+) => {
+        #[no_mangle]
+        pub unsafe extern "C" fn $name($(_: $ty),*) {}
+    };
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn attribute(_: *mut c_void, _: *const xmlChar, _: *const xmlChar) {}
+sax1_void_1!(internalSubset, a: *mut c_void, b: *const xmlChar, c: *const xmlChar, d: *const xmlChar);
+#[no_mangle]
+pub unsafe extern "C" fn isStandalone(_: *mut c_void) -> c_int {
+    -1
+}
+#[no_mangle]
+pub unsafe extern "C" fn hasInternalSubset(_: *mut c_void) -> c_int {
+    0
+}
+#[no_mangle]
+pub unsafe extern "C" fn hasExternalSubset(_: *mut c_void) -> c_int {
+    0
+}
+#[no_mangle]
+pub unsafe extern "C" fn resolveEntity(
+    _: *mut c_void,
+    _: *const xmlChar,
+    _: *const xmlChar,
+) -> *mut _xmlParserInput {
+    ptr::null_mut()
+}
+#[no_mangle]
+pub unsafe extern "C" fn getEntity(_: *mut c_void, _: *const xmlChar) -> *mut _xmlEntity {
+    ptr::null_mut()
+}
+sax1_void_1!(entityDecl, a: *mut c_void, b: *const xmlChar, c: c_int, d: *const xmlChar, e: *const xmlChar, f: *mut xmlChar);
+sax1_void_1!(notationDecl, a: *mut c_void, b: *const xmlChar, c: *const xmlChar, d: *const xmlChar);
+sax1_void_1!(attributeDecl, a: *mut c_void, b: *const xmlChar, c: *const xmlChar, d: c_int, e: c_int, f: *const xmlChar, g: *mut _xmlEnumeration);
+sax1_void_1!(elementDecl, a: *mut c_void, b: *const xmlChar, c: c_int, d: *mut _xmlElementContent);
+sax1_void_1!(unparsedEntityDecl, a: *mut c_void, b: *const xmlChar, c: *const xmlChar, d: *const xmlChar, e: *const xmlChar);
+#[no_mangle]
+pub unsafe extern "C" fn setDocumentLocator(_: *mut c_void, _: *mut _xmlSAXLocator) {}
+#[no_mangle]
+pub unsafe extern "C" fn startDocument(_: *mut c_void) {}
+#[no_mangle]
+pub unsafe extern "C" fn endDocument(_: *mut c_void) {}
+#[no_mangle]
+pub unsafe extern "C" fn startElement(_: *mut c_void, _: *const xmlChar, _: *mut *const xmlChar) {}
+#[no_mangle]
+pub unsafe extern "C" fn endElement(_: *mut c_void, _: *const xmlChar) {}
+#[no_mangle]
+pub unsafe extern "C" fn reference(_: *mut c_void, _: *const xmlChar) {}
+#[no_mangle]
+pub unsafe extern "C" fn characters(_: *mut c_void, _: *const xmlChar, _: c_int) {}
+#[no_mangle]
+pub unsafe extern "C" fn ignorableWhitespace(_: *mut c_void, _: *const xmlChar, _: c_int) {}
+#[no_mangle]
+pub unsafe extern "C" fn processingInstruction(
+    _: *mut c_void,
+    _: *const xmlChar,
+    _: *const xmlChar,
+) {
+}
+#[no_mangle]
+pub unsafe extern "C" fn comment(_: *mut c_void, _: *const xmlChar) {}
+#[no_mangle]
+pub unsafe extern "C" fn getParameterEntity(_: *mut c_void, _: *const xmlChar) -> *mut _xmlEntity {
+    ptr::null_mut()
+}
+#[no_mangle]
+pub unsafe extern "C" fn cdataBlock(_: *mut c_void, _: *const xmlChar, _: c_int) {}
+sax1_void_1!(externalSubset, a: *mut c_void, b: *const xmlChar, c: *const xmlChar, d: *const xmlChar);
+
 /// Upstream `__xmlLastError(void)` — pointer to the exported `xmlLastError`
 /// mirror (kept in sync with the thread-local error state on every raise).
 #[no_mangle]
