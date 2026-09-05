@@ -28,7 +28,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "tools", "packaging", "libxml2-versioned.syms")
-DISTRO = "/usr/lib/libxml2.so.2.13.9"
+DISTRO = sys.argv[1] if len(sys.argv) > 1 else "/usr/lib/libxml2.so.2.13.9"
 
 
 def defined_symbols(dso):
