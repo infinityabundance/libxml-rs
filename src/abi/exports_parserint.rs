@@ -4830,13 +4830,15 @@ pub unsafe extern "C" fn xmlParseCtxtExternalEntity(
             return (*ctxt).errNo;
         }
         // Load the entity content from the URL (treated as a file path),
-        // consulting the registered xmlParserInputBufferCreateFilenameDefault
-        // (php streams loader) first — upstream xmlParseCtxtExternalEntity
-        // reads through xmlNewInputFromFile.
+        // consulting a registered external entity loader and then the
+        // xmlParserInputBufferCreateFilenameDefault (php streams loader)
+        // first — upstream xmlParseCtxtExternalEntity reads through
+        // xmlLoadExternalEntity / xmlNewInputFromFile.
         let url_cstr = url as *const c_char;
-        let input_buf = match crate::abi::exports_parser::open_filename_routed(url_cstr) {
+        let input_buf = match crate::abi::exports_parser::open_filename_routed(url_cstr, ctxt) {
             crate::abi::exports_parser::RoutedFileOpen::Loaded(b) => Ok(b),
-            crate::abi::exports_parser::RoutedFileOpen::Failed => Err(()),
+            crate::abi::exports_parser::RoutedFileOpen::Failed
+            | crate::abi::exports_parser::RoutedFileOpen::EntityLoaderFailed => Err(()),
             crate::abi::exports_parser::RoutedFileOpen::Builtin => input_from_file(url_cstr),
         };
         let input_buf = match input_buf {
@@ -5171,14 +5173,17 @@ pub unsafe extern "C" fn xmlParseDTD(
         (*ctxt).hasExternalSubset = 1;
 
         let mut ret: *mut _xmlDtd = ptr::null_mut();
-        let input_buf =
-            match crate::abi::exports_parser::open_filename_routed(system_id as *const c_char) {
-                crate::abi::exports_parser::RoutedFileOpen::Loaded(b) => Ok(b),
-                crate::abi::exports_parser::RoutedFileOpen::Failed => Err(()),
-                crate::abi::exports_parser::RoutedFileOpen::Builtin => {
-                    input_from_file(system_id as *const c_char)
-                }
-            };
+        let input_buf = match crate::abi::exports_parser::open_filename_routed(
+            system_id as *const c_char,
+            ctxt,
+        ) {
+            crate::abi::exports_parser::RoutedFileOpen::Loaded(b) => Ok(b),
+            crate::abi::exports_parser::RoutedFileOpen::Failed
+            | crate::abi::exports_parser::RoutedFileOpen::EntityLoaderFailed => Err(()),
+            crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+                input_from_file(system_id as *const c_char)
+            }
+        };
         if input_buf.is_err() {
             // UPSTREAM-PARITY (parserInternals.c xmlNewInputFromFile via the
             // default entity loader): a failed load raises
@@ -5252,13 +5257,17 @@ pub unsafe extern "C" fn xmlParseEntity(filename: *const c_char) -> *mut _xmlDoc
         if ctxt.is_null() {
             return ptr::null_mut();
         }
-        let input_buf = match crate::abi::exports_parser::open_filename_routed(filename) {
+        let input_buf = match crate::abi::exports_parser::open_filename_routed(filename, ctxt) {
             crate::abi::exports_parser::RoutedFileOpen::Loaded(b) => b,
             crate::abi::exports_parser::RoutedFileOpen::Failed => {
                 crate::abi::exports_parser::emit_io_warning(
                     ctxt,
                     crate::abi::exports_parser::io_load_failure_message(filename),
                 );
+                free_parser_ctxt(ctxt);
+                return ptr::null_mut();
+            }
+            crate::abi::exports_parser::RoutedFileOpen::EntityLoaderFailed => {
                 free_parser_ctxt(ctxt);
                 return ptr::null_mut();
             }

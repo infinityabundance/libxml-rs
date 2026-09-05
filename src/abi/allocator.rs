@@ -518,8 +518,12 @@ pub unsafe extern "C" fn xmlGcMemGet(
 /// - `size` may be 0 (returns a valid non-NULL pointer or NULL)
 pub unsafe extern "C" fn xmlMallocImpl(size: usize) -> *mut c_void {
     // SAFETY: reading the exported static mut is safe under the upstream
-    // setup-ordering contract; the stored value is a valid C fn pointer.
-    unsafe { (xmlMalloc)(size) }
+    // setup-ordering contract; the stored value is a valid C fn pointer. The
+    // slot is the process-visible (core DSO's) one when it resolves, so
+    // whole-archive facades allocate through the same hooks as the core
+    // (R-000177 allocator coherence).
+    let hook = allocator_slot(foreign_malloc_slot(), unsafe { xmlMalloc });
+    unsafe { hook(size) }
 }
 
 /// Default `xmlMalloc` body: plain `libc::malloc` (upstream default `malloc`).
@@ -561,7 +565,8 @@ unsafe extern "C" fn xmlMallocDefault(size: usize) -> *mut c_void {
 /// - `size` may be 0 (returns a valid non-NULL pointer or NULL)
 pub unsafe extern "C" fn xmlMallocAtomicImpl(size: usize) -> *mut c_void {
     // SAFETY: see xmlMallocImpl.
-    unsafe { (xmlMallocAtomic)(size) }
+    let hook = allocator_slot(foreign_malloc_atomic_slot(), unsafe { xmlMallocAtomic });
+    unsafe { hook(size) }
 }
 
 /// Default `xmlMallocAtomic` body (initial exported-variable value).
@@ -591,7 +596,8 @@ unsafe extern "C" fn xmlMallocAtomicDefault(size: usize) -> *mut c_void {
 /// - The returned pointer must be freed with `xmlFree`
 pub unsafe extern "C" fn xmlReallocImpl(ptr: *mut c_void, size: usize) -> *mut c_void {
     // SAFETY: see xmlMallocImpl.
-    unsafe { (xmlRealloc)(ptr, size) }
+    let hook = allocator_slot(foreign_realloc_slot(), unsafe { xmlRealloc });
+    unsafe { hook(ptr, size) }
 }
 
 /// Default `xmlRealloc` body: plain `libc::realloc` (upstream default `realloc`).
@@ -621,7 +627,8 @@ unsafe extern "C" fn xmlReallocDefault(ptr: *mut c_void, size: usize) -> *mut c_
 /// - After this call, `ptr` must not be dereferenced
 pub unsafe extern "C" fn xmlFreeImpl(ptr: *mut c_void) {
     // SAFETY: see xmlMallocImpl.
-    unsafe { (xmlFree)(ptr) }
+    let hook = allocator_slot(foreign_free_slot(), unsafe { xmlFree });
+    unsafe { hook(ptr) }
 }
 
 /// Default `xmlFree` body: plain `libc::free` (upstream default `free`).
@@ -647,7 +654,8 @@ unsafe extern "C" fn xmlFreeDefault(ptr: *mut c_void) {
 /// - The returned pointer must be freed with `xmlFree`
 pub unsafe extern "C" fn xmlMemStrdupImpl(str: *const c_char) -> *mut c_void {
     // SAFETY: see xmlMallocImpl.
-    unsafe { (xmlMemStrdup)(str) }
+    let hook = allocator_slot(foreign_mem_strdup_slot(), unsafe { xmlMemStrdup });
+    unsafe { hook(str) }
 }
 
 /// Default `xmlMemStrdup` body: plain libc strdup (upstream default
@@ -657,17 +665,73 @@ unsafe extern "C" fn xmlMemStrdupDefault(str: *const c_char) -> *mut c_void {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Exported allocator globals (upstream xmlmemory.h)
+// R-000177 allocator-slot bridge
 // ═══════════════════════════════════════════════════════════════════════════════
-//
-// Upstream exports the allocator entry points as DATA: `XMLPUBVAR
-// xmlMallocFunc xmlMalloc;` etc. — function-pointer variables that downstream
-// code can read AND assign (the documented allocator-override mechanism).
-// The candidate mirrors that ABI: these five variables ARE the allocator
-// state (single source of truth, R-000176). Their initial values are the
-// `*Default` bodies; every internal allocation routes through the variables
-// via the `*Impl` indirection, so `xmlMemSetup` and direct assignment are
-// equivalent override mechanisms, exactly as upstream.
+// The allocator hooks (xmlMemSetup / direct xmlMalloc= assignments) bind to
+// the CORE DSO's exported slots; the whole-archive facades' private copies
+// of those statics are never written, so every *Impl indirection reads the
+// process-visible (core DSO's) slot via its __xml* accessor and falls back
+// to the local exported variable when the accessor is not exported
+// (single-DSO links resolve their own export — identical storage).
+
+#[cfg(target_os = "linux")]
+macro_rules! alloc_slot_reader {
+    ($reader:ident, $cname:expr, $t:ty) => {
+        fn $reader() -> Option<*mut $t> {
+            use std::sync::OnceLock;
+            type Acc = unsafe extern "C" fn() -> *mut $t;
+            static ACC: OnceLock<Option<Acc>> = OnceLock::new();
+            let acc = *ACC.get_or_init(|| {
+                // SAFETY: dlsym(RTLD_DEFAULT) returns the exported accessor
+                // address or NULL; the transmute (pointer-sized) is sound.
+                unsafe {
+                    let sym = libc::dlsym(libc::RTLD_DEFAULT, ($cname).as_ptr());
+                    if sym.is_null() {
+                        None
+                    } else {
+                        Some(std::mem::transmute::<*mut c_void, Acc>(sym))
+                    }
+                }
+            });
+            acc.map(|a| unsafe { a() })
+        }
+    };
+}
+
+#[cfg(not(target_os = "linux"))]
+macro_rules! alloc_slot_reader {
+    ($reader:ident, $cname:expr, $t:ty) => {
+        fn $reader() -> Option<*mut $t> {
+            None
+        }
+    };
+}
+
+alloc_slot_reader!(foreign_malloc_slot, c"__xmlMalloc", xmlMallocFunc);
+alloc_slot_reader!(
+    foreign_malloc_atomic_slot,
+    c"__xmlMallocAtomic",
+    xmlMallocFunc
+);
+alloc_slot_reader!(foreign_realloc_slot, c"__xmlRealloc", xmlReallocFunc);
+alloc_slot_reader!(foreign_free_slot, c"__xmlFree", xmlFreeFunc);
+alloc_slot_reader!(foreign_mem_strdup_slot, c"__xmlMemStrdup", xmlStrdupFunc);
+
+/// Resolve the active allocator hook: the process-visible (core) slot when
+/// its accessor resolves, else the local exported variable via `local`.
+#[inline]
+fn allocator_slot<T: Copy>(foreign: Option<*mut T>, local: T) -> T {
+    match foreign {
+        Some(slot) => {
+            // SAFETY: the accessor returned a pointer to the core DSO's
+            // exported allocator slot (valid for the process lifetime); the
+            // stored value is a valid C fn pointer under the upstream
+            // setup-ordering contract.
+            unsafe { *slot }
+        }
+        None => local,
+    }
+}
 
 /// `xmlMallocFunc xmlMalloc` — the malloc hook (default: `xmlMallocDefault`).
 #[no_mangle]

@@ -256,6 +256,13 @@ unsafe fn init_sax_parser_ctxt(
 /// Mirror `options` into the parser context's historical struct members
 /// (upstream `xmlCtxtSetOptionsInternal`).
 ///
+/// `keepBlanks` is special: the executed 2.15.3 oracle seeds it from the
+/// deprecated `xmlKeepBlanksDefaultValue` at context creation and only ever
+/// LOWERS it (XML_PARSE_NOBLANKS) — option application never re-raises it.
+/// Empirical: a context created while `xmlKeepBlanksDefault(0)` drops
+/// whitespace-only text for ALL its reads, even reused ones, and
+/// `xmlCtxtUseOptions`/read options without NOBLANKS do not restore it.
+///
 /// # Safety
 ///
 /// `ctxt` must be a valid, writable parser context.
@@ -273,11 +280,9 @@ pub(crate) unsafe fn apply_options(ctxt: *mut _xmlParserCtxt, options: c_int) {
             };
         c.validate = (options & XML_PARSE_DTDVALID != 0) as c_int;
         c.pedantic = (options & XML_PARSE_PEDANTIC != 0) as c_int;
-        c.keepBlanks = if options & XML_PARSE_NOBLANKS != 0 {
-            0
-        } else {
-            1
-        };
+        if options & XML_PARSE_NOBLANKS != 0 {
+            c.keepBlanks = 0;
+        }
         c.dictNames = if options & XML_PARSE_NODICT != 0 {
             0
         } else {
@@ -1485,13 +1490,20 @@ pub unsafe extern "C" fn xmlCreateURLParserCtxt(
             return ptr::null_mut();
         }
         apply_options(ctxt, options);
-        let input = match open_filename_routed(filename) {
+        let input = match open_filename_routed(filename, ctxt) {
             RoutedFileOpen::Loaded(i) => i,
             RoutedFileOpen::Failed => {
                 // UPSTREAM-PARITY (parserInternals.c xmlNewInputFromFile via
                 // the registered loader): NULL loader result is XML_IO_ENOENT
                 // — raise xmlCtxtErrIO, no built-in fallback.
                 emit_io_warning(ctxt, io_load_failure_message(filename));
+                helpers::free_parser_ctxt(ctxt);
+                return ptr::null_mut();
+            }
+            RoutedFileOpen::EntityLoaderFailed => {
+                // UPSTREAM-PARITY (parser.c xmlCreateURLParserCtxt ->
+                // xmlLoadResource): a custom entity loader returning NULL
+                // fails the open SILENTLY.
                 helpers::free_parser_ctxt(ctxt);
                 return ptr::null_mut();
             }
@@ -1645,15 +1657,21 @@ pub unsafe extern "C" fn xmlCtxtReadFile(
         return ptr::null_mut();
     }
     unsafe {
-        // UPSTREAM-PARITY (parser.c xmlCtxtReadFile -> xmlNewInputFromFile):
-        // the registered xmlParserInputBufferCreateFilenameDefault (php
-        // streams loader) is consulted first; a NULL loader result raises
+        // UPSTREAM-PARITY (parser.c xmlCtxtReadFile -> xmlCtxtNewInputFromUrl
+        // -> xmlLoadResource): a registered external entity loader governs the
+        // open; below it the xmlParserInputBufferCreateFilenameDefault (php
+        // streams loader) is consulted; a NULL loader result raises
         // xmlCtxtErrIO(XML_IO_ENOENT, filename) — "I/O warning : failed to
-        // load \"%s\": %s\n\" — and parsing fails.
-        match open_filename_routed(filename) {
+        // load \"%s\": %s\n" — and parsing fails.
+        match open_filename_routed(filename, ctxt) {
             RoutedFileOpen::Loaded(input) => ctxt_read_doc(ctxt, input, filename, options),
             RoutedFileOpen::Failed => {
                 emit_io_warning(ctxt, io_load_failure_message(filename));
+                ptr::null_mut()
+            }
+            RoutedFileOpen::EntityLoaderFailed => {
+                // UPSTREAM-PARITY (parser.c xmlCtxtReadFile): a custom entity
+                // loader returning NULL fails the read SILENTLY.
                 ptr::null_mut()
             }
             RoutedFileOpen::Builtin => match helpers::input_from_file(filename) {
@@ -3309,12 +3327,19 @@ unsafe extern "C" fn default_external_entity_loader(
                 Ok(data) => {
                     // Build a MEMORY-backed C input: the entity machinery
                     // consumes the loader result through base/end (upstream
-                    // buffers the external entity content the same way).
-                    let mem = io::input_buffer_create_mem(
-                        data.as_ptr() as *const c_char,
-                        data.len() as c_int,
-                        xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
-                    );
+                    // buffers the external entity content the same way). A
+                    // zero-length result (php://memory, 0-byte file) is a
+                    // VALID empty input — the parse reports "Document is
+                    // empty" (php DOM createFromFile).
+                    let mem = if data.is_empty() {
+                        crate::xml::io::input_buffer_create_empty()
+                    } else {
+                        io::input_buffer_create_mem(
+                            data.as_ptr() as *const c_char,
+                            data.len() as c_int,
+                            xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
+                        )
+                    };
                     if mem.is_null() {
                         return ptr::null_mut();
                     }
@@ -3401,18 +3426,22 @@ pub(crate) unsafe fn emit_io_warning(ctxt: *mut _xmlParserCtxt, message: String)
     }
 }
 
-/// Result of routing a filename open through the registered
-/// `xmlParserInputBufferCreateFilenameDefault` loader (upstream
-/// parserInternals.c `xmlNewInputFromUrl`).
+/// Result of routing a filename open through the registered loaders
+/// (upstream 2.14+ `xmlLoadResource` layering).
 #[allow(dead_code)]
 pub(crate) enum RoutedFileOpen {
     /// No custom loader is registered — the caller falls back to the built-in
     /// file open (`helpers::input_from_file`).
     Builtin,
-    /// The registered loader returned NULL: upstream reports `XML_IO_ENOENT`
+    /// A registered loader returned NULL: upstream reports `XML_IO_ENOENT`
     /// with NO built-in fallback (php streams loader: missing file, percent-
     /// encoded-NUL guard, disabled entity loader).
     Failed,
+    /// A registered EXTERNAL ENTITY loader (`xmlSetExternalEntityLoader`)
+    /// returned NULL for a file/URL open. Upstream `xmlCtxtNewInputFromUrl`
+    /// propagates that NULL silently (no `xmlCtxtErrIO` — the custom loader
+    /// owns its own error reporting), so callers fail without a warning.
+    EntityLoaderFailed,
     /// The loader produced an input buffer whose bytes were materialized
     /// (filename = the original URI).
     Loaded(InputBuffer),
@@ -3495,15 +3524,57 @@ pub(crate) unsafe fn call_loader_materialize(uri: *const c_char) -> Result<Vec<u
     result.map(|()| data)
 }
 
-/// Route a filename open through the registered
-/// `xmlParserInputBufferCreateFilenameDefault` loader, materializing the
-/// result into an owned [`InputBuffer`] (filename = the original URI). See
-/// [`call_loader_materialize`] for the loader contract.
+/// Route a filename open through the registered loaders, materializing the
+/// result into an owned [`InputBuffer`] (filename = the original URI).
+///
+/// UPSTREAM LAYERING (2.14+ `xmlLoadResource`, R-000177): a REGISTERED
+/// external entity loader (`xmlSetExternalEntityLoader`) is consulted first
+/// for file/URL opens — main documents go through the same resource loader
+/// as entities (`xmlCtxtNewInputFromUrl` -> `xmlLoadResource` ->
+/// `xmlCurrentExternalEntityLoader`). A NULL custom-loader result is
+/// `EntityLoaderFailed` (silent upstream — no `xmlCtxtErrIO`, the custom
+/// loader reports its own errors). With NO custom entity loader the default
+/// loader's tail is the `xmlParserInputBufferCreateFilenameDefault` (php
+/// streams) loader, which is what the rest of this function implements
+/// (upstream `xmlNewInputFromUrl`).
+///
+/// The registration is read through the R-000177 cross-DSO bridge (facade
+/// copies must see a loader registered via the core DSO's exported setter).
 ///
 /// # Safety
 ///
 /// - `uri` must be a valid NUL-terminated C string live for the call.
-pub(crate) unsafe fn open_filename_routed(uri: *const c_char) -> RoutedFileOpen {
+/// - `ctxt` must be NULL or a valid parser context live for the call (passed
+///   to the entity loader exactly as upstream `xmlLoadResource` does).
+pub(crate) unsafe fn open_filename_routed(
+    uri: *const c_char,
+    ctxt: *mut _xmlParserCtxt,
+) -> RoutedFileOpen {
+    // A custom external entity loader governs file/URL opens too.
+    if external_entity_loader_active() {
+        // SAFETY: uri is a valid C string; ctxt is NULL or valid.
+        let input = xmlLoadExternalEntity(uri, ptr::null(), ctxt);
+        if input.is_null() {
+            return RoutedFileOpen::EntityLoaderFailed;
+        }
+        // Materialize the loader's bytes into an owned InputBuffer (the
+        // loader result is freed here; the parse consumes the copy).
+        let loaded = input_bytes_owned(input);
+        let named = if uri.is_null() {
+            None
+        } else {
+            // SAFETY: uri is a valid NUL-terminated C string.
+            Some(
+                unsafe { CStr::from_ptr(uri) }
+                    .to_string_lossy()
+                    .into_owned(),
+            )
+        };
+        return RoutedFileOpen::Loaded(InputBuffer::from_memory(
+            loaded.as_deref().unwrap_or(&[]),
+            named.as_deref(),
+        ));
+    }
     // No registered loader: the caller keeps the built-in open. The slot is
     // read through the R-000177 cross-DSO bridge (facade copies must see a
     // loader registered via the core DSO's exported setter).
@@ -3527,6 +3598,83 @@ pub(crate) unsafe fn open_filename_routed(uri: *const c_char) -> RoutedFileOpen 
             };
             RoutedFileOpen::Loaded(InputBuffer::from_memory(&bytes, named.as_deref()))
         }
+    }
+}
+
+/// True when a custom external entity loader is registered process-wide
+/// (the core DSO's `xmlSetExternalEntityLoader` registration, or this DSO's
+/// own when the accessor does not resolve in a single-DSO link). The
+/// process-visible registration is authoritative (R-000177).
+fn external_entity_loader_active() -> bool {
+    match foreign_external_entity_loader() {
+        Some(_) => true,
+        None => EXTERNAL_ENTITY_LOADER.lock().is_some(),
+    }
+}
+
+/// Route a filename open through the `xmlParserInputBufferCreateFilenameDefault`
+/// (php streams) loader ONLY — no external-entity-loader consult.
+///
+/// The xmlTextReader family reads through `xmlNewInputFromFile` upstream,
+/// which does NOT go through the external entity loader (verified against
+/// the executed 2.15.3 oracle), so the reader must not pick up an
+/// `xmlSetExternalEntityLoader` registration.
+///
+/// # Safety
+///
+/// - `uri` must be a valid NUL-terminated C string live for the call.
+pub(crate) unsafe fn open_filename_routed_input_only(uri: *const c_char) -> RoutedFileOpen {
+    // No registered loader: the caller keeps the built-in open. The slot is
+    // read through the R-000177 cross-DSO bridge (facade copies must see a
+    // loader registered via the core DSO's exported setter).
+    if globals::get_parser_input_buffer_create_filename_value_cross_dso().is_none() {
+        return RoutedFileOpen::Builtin;
+    }
+    // SAFETY: uri is a valid NUL-terminated C string for the call.
+    let loaded = unsafe { call_loader_materialize(uri) };
+    match loaded {
+        Err(()) => RoutedFileOpen::Failed,
+        Ok(bytes) => {
+            let named = if uri.is_null() {
+                None
+            } else {
+                // SAFETY: uri is a valid NUL-terminated C string.
+                Some(
+                    unsafe { CStr::from_ptr(uri) }
+                        .to_string_lossy()
+                        .into_owned(),
+                )
+            };
+            RoutedFileOpen::Loaded(InputBuffer::from_memory(&bytes, named.as_deref()))
+        }
+    }
+}
+
+/// Copy the bytes of a loader-produced `_xmlParserInput` into an owned
+/// `Vec` and release the input (upstream `xmlCtxtParseDocument` consumes the
+/// input; the candidate's parse paths own an [`InputBuffer`]). The input's
+/// underlying buffer is freed with the input (xmlFreeInputStream).
+///
+/// # Safety
+///
+/// - `input` must be a valid `_xmlParserInput` produced by a registered
+///   loader / `xmlLoadExternalEntity`, not yet freed.
+unsafe fn input_bytes_owned(input: *mut _xmlParserInput) -> Option<Vec<u8>> {
+    unsafe {
+        let base = (*input).base;
+        let end = (*input).end;
+        let len = if base.is_null() {
+            0
+        } else {
+            end.offset_from(base).max(0) as usize
+        };
+        let bytes = if base.is_null() || len == 0 {
+            None
+        } else {
+            Some(core::slice::from_raw_parts(base, len).to_vec())
+        };
+        crate::abi::exports_xml2::xmlFreeInputStream(input);
+        bytes
     }
 }
 
@@ -3690,11 +3838,45 @@ pub unsafe extern "C" fn xmlLoadExternalEntity(
     ID: *const c_char,
     ctxt: *mut _xmlParserCtxt,
 ) -> *mut _xmlParserInput {
-    let loader = *EXTERNAL_ENTITY_LOADER.lock();
+    // R-000177: the loader xmlSetExternalEntityLoader registers binds to the
+    // CORE DSO, so a load performed by a whole-archive facade's private copy
+    // must consult the process-visible registration first (upstream: one
+    // core instance, one loader). Single-DSO links resolve their own export.
+    let loader = match foreign_external_entity_loader() {
+        Some(f) => Some(f),
+        None => *EXTERNAL_ENTITY_LOADER.lock(),
+    };
     match loader {
         Some(f) => unsafe { f(URL, ID, ctxt) },
         None => unsafe { default_external_entity_loader(URL, ID, ctxt) },
     }
+}
+
+/// Resolve the process-visible `xmlGetExternalEntityLoader` (the CORE DSO's
+/// registration) via the dynamic symbol scope.
+#[cfg(target_os = "linux")]
+fn foreign_external_entity_loader() -> Option<xmlExternalEntityLoader> {
+    use std::sync::OnceLock;
+    type Getter = unsafe extern "C" fn() -> Option<xmlExternalEntityLoader>;
+    static GETTER: OnceLock<Option<Getter>> = OnceLock::new();
+    let getter = *GETTER.get_or_init(|| {
+        // SAFETY: dlsym(RTLD_DEFAULT) returns the exported accessor address
+        // or NULL; the transmute (pointer-sized) is sound.
+        unsafe {
+            let sym = libc::dlsym(libc::RTLD_DEFAULT, c"xmlGetExternalEntityLoader".as_ptr());
+            if sym.is_null() {
+                None
+            } else {
+                Some(std::mem::transmute::<*mut c_void, Getter>(sym))
+            }
+        }
+    });
+    getter.and_then(|g| unsafe { g() })
+}
+
+#[cfg(not(target_os = "linux"))]
+fn foreign_external_entity_loader() -> Option<xmlExternalEntityLoader> {
+    None
 }
 
 /// Check an input for HTTP access; with XML_PARSE_NONET set, HTTP inputs are
@@ -5095,10 +5277,14 @@ pub unsafe extern "C" fn xmlSAXParseEntity(
         if ctxt.is_null() {
             return ptr::null_mut();
         }
-        let input = match open_filename_routed(filename) {
+        let input = match open_filename_routed(filename, ctxt) {
             RoutedFileOpen::Loaded(i) => i,
             RoutedFileOpen::Failed => {
                 emit_io_warning(ctxt, io_load_failure_message(filename));
+                helpers::free_parser_ctxt(ctxt);
+                return ptr::null_mut();
+            }
+            RoutedFileOpen::EntityLoaderFailed => {
                 helpers::free_parser_ctxt(ctxt);
                 return ptr::null_mut();
             }

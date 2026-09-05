@@ -10,18 +10,20 @@
  *     the stylesheet compilation.
  *   Phase P2 (transform) — xsltApplyStylesheet with document('aux.xml'):
  *     the same hooks plus the external entity loader must observe the
- *     transform; and the libxml2 keepBlanks global (set to 0 through the
- *     libxml2 DSO) must govern the parse libxslt performs for document() —
- *     the string-length of the loaded aux element is reported.
+ *     transform; the keepBlanks default (xmlKeepBlanksDefault(0), installed
+ *     through the libxml2 DSO) governs the fresh-context parse libxslt
+ *     performs for document() — the string-length of the loaded aux element
+ *     is reported, and the deterministic serialized result size must match.
  *
  * For a shared-instance libxml2+libxslt (the oracle) every observation is
- * TRUE and the reported length reflects keepBlanks=0. A whole-archive
- * facade libxslt that carries a private copy of the libxml2 core and its
- * statics observes NONE of the hooks and reports a different length — the
- * court FAILs, demonstrating state partitioning.
+ * TRUE and the reported sizes are deterministic. The candidate's three-DSO
+ * construction (whole-archive facade libxslt carrying a private copy of the
+ * core) bridges the process-visible state through the core DSO's exported
+ * accessors (R-000177), so the candidate must match the oracle observation
+ * for observation; any return to partitioned state fails the court.
  *
  * The probe prints booleans (never addresses or counts that depend on
- * implementation allocation patterns) plus the deterministic length value.
+ * implementation allocation patterns) plus the deterministic size value.
  * Run via tools/abi/dso_state_coherence_probe.py.
  */
 #define _POSIX_C_SOURCE 200809L

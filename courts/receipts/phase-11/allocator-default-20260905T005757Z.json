@@ -1,0 +1,22 @@
+{
+ "court": "ALLOCATOR-DEFAULT",
+ "case": "ALLOCATOR-DEFAULT-001",
+ "phase": "11.1-Z.3",
+ "timestamp": "20260905T005757Z",
+ "schema": "allocator-default-differential-1",
+ "probe": "courts/suites/data-abi/allocator-default-probe.c",
+ "oracle_sha256": "466b3537586dca22f65ef6c6716362a4140c0f655bfa526a5cecde5948269886",
+ "candidate_sha256": "466b3537586dca22f65ef6c6716362a4140c0f655bfa526a5cecde5948269886",
+ "identical": true,
+ "mismatches": [],
+ "valgrind": {
+  "available": true,
+  "binary": "/usr/bin/valgrind",
+  "error_exitcode": 99,
+  "exit_code": -4,
+  "usable": false,
+  "reason": "valgrind SIGILLs in the dynamic loader (_dl_start) on every binary in this environment (toolchain incompatibility); the memory-safety sweep is therefore not executable here",
+  "stderr_tail": "==805732== \n==805732== Process terminating with default action of signal 4 (SIGILL): dumping core\n==805732==  Illegal opcode at address 0x402EECD\n==805732==    at 0x402EECD: _dl_start (rtld.c:563)\n==805732==    by 0x402DEC7: ??? (in /usr/lib/ld-linux-x86-64.so.2)\n"
+ },
+ "verdict": "PASS"
+}

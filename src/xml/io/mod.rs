@@ -988,6 +988,30 @@ pub(crate) fn input_buffer_create_mem(
     buf
 }
 
+/// Create an input buffer with EMPTY (zero-length) content.
+///
+/// A zero-length loader result is a VALID input upstream — the parse then
+/// reports "Document is empty" (php://memory and 0-byte files reach this
+/// path through the php streams loader / external-entity-loader chains).
+/// `input_buffer_create_mem` refuses `size <= 0`, so the resource-loading
+/// code builds empty inputs through this constructor instead.
+pub(crate) fn input_buffer_create_empty() -> *mut _xmlParserInputBuffer {
+    let buf = allocate_input_buffer();
+    if buf.is_null() {
+        return ptr::null_mut();
+    }
+    let raw = buf_create(1);
+    if raw.is_null() {
+        unsafe { xmlFreeImpl(buf as *mut c_void) };
+        return ptr::null_mut();
+    }
+    unsafe {
+        (*buf).buffer = raw as *mut c_void;
+        (*buf).raw = raw as *mut c_void;
+    }
+    buf
+}
+
 // ── File I/O callbacks ──────────────────────────────────────────────────────
 
 /// Read callback for file descriptor-based input.

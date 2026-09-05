@@ -257,16 +257,16 @@ unsafe fn load_via_loader(ctxt: *mut _xsltTransformContext, uri: *mut xmlChar) -
     // If a custom loader is configured, invoke it with the upstream
     // xsltDocLoaderFunc contract.
     let loader = xsltGetLoaderFunc();
+    let options = if ctxt.is_null() {
+        0
+    } else {
+        (*ctxt).parserOptions
+    };
     if let Some(loader_fn) = loader {
         let dict = if ctxt.is_null() {
             ptr::null_mut()
         } else {
             (*ctxt).dict
-        };
-        let options = if ctxt.is_null() {
-            0
-        } else {
-            (*ctxt).parserOptions
         };
         let doc = loader_fn(
             uri as *const xmlChar,
@@ -279,8 +279,15 @@ unsafe fn load_via_loader(ctxt: *mut _xsltTransformContext, uri: *mut xmlChar) -
             return doc;
         }
     }
-    // Default: parse the URI as a file path.
-    crate::abi::exports_xml2::xmlReadFile(uri as *const c_char, ptr::null(), 0)
+    // UPSTREAM-PARITY (documents.c xsltDocDefaultLoaderFunc): the default
+    // loader parses the URI with the context's parser options (the transform
+    // default is XSLT_PARSE_OPTIONS = NOENT|DTDLOAD|DTDATTR|NOCDATA) through
+    // xmlReadFile, whose open routes through a registered external entity
+    // loader (xmlLoadExternalEntity) exactly like upstream
+    // xmlNewParserCtxt + xmlCtxtUseOptions + xmlLoadExternalEntity. Dropping
+    // the options here made document() miss NOENT external-entity
+    // substitution and the resource-loader routing (R-000177).
+    crate::abi::exports_xml2::xmlReadFile(uri as *const c_char, ptr::null(), options)
 }
 
 /// Look up a document in the context's cache.

@@ -10,19 +10,19 @@ Compiles courts/suites/data-abi/dso-state-coherence-probe.c twice:
 for every observation the candidate must match the oracle: the allocator,
 node register/deregister and external-entity-loader hooks installed through
 the libxml2 DSO must be observed by the libxslt-DSO compile and transform
-phases, the keepBlanks global must govern the document() load, and the
-deterministic lengths must agree. The oracle (shared instance) passes; a
-whole-archive facade libxslt with a private copy of the libxml2 core FAILs,
-proving state partitioning.
+phases, the keepBlanks default must govern fresh-context parses inside the
+transform, and the deterministic result sizes must agree.
 
-DOCUMENTED DIVERGENCE MODE (11.1-Z.2, residual R-000177): the candidate's
-whole-archive facades are the only consumer-linkable construction (thin
-re-export facades fail the consumer static link, and the core cannot
-satisfy the facades' mangled-internal references), so the partition is
-accepted and PINNED: the court asserts the exact partition profile (every
-transform-phase hook observation False, keepBlanks not shared) so any
-silent architectural change to the facades is caught. The oracle column
-documents what upstream does (shared).
+HISTORY (R-000177): until Phase 14.30 the candidate's whole-archive facade
+libxslt/libexslt carried private copies of the libxml2 core (its statics,
+TLS cells, allocator slots and loader registration), so hooks installed
+through the core DSO were invisible to facade-side work — the court PINNED
+that documented divergence. The R-000177 fix bridged the process-visible
+state (dlsym'd core accessors for the per-thread cells and the allocator /
+entity-loader registrations) so facade copies observe consumer registrations
+exactly like upstream's single shared libxml2 instance. The court now
+asserts full PARITY with the oracle: any future regression to partitioned
+state fails it.
 
 Receipts are written to courts/receipts/phase-11/.
 
@@ -108,44 +108,36 @@ def main():
     for k in OBS_KEYS:
         print(f"    {k}={c_obs.get(k)}")
 
-    # DOCUMENTED DIVERGENCE (R-000177): the whole-archive facades partition
-    # state. The court PINs the exact profile: every transform-phase hook
-    # observation must be False and the keepBlanks global must NOT be shared
-    # (result size differs from the oracle). A future architecture that
-    # shares state flips these assertions and forces the documentation to be
-    # updated.
-    partitioned_hooks = ("p1_allocator_observed", "p2_allocator_observed",
-                         "p2_reg_observed", "p2_dereg_observed",
-                         "p2_loader_observed")
-    hook_partition_ok = all(c_obs.get(k, 1) == 0 for k in partitioned_hooks)
-    blanks_partition_ok = (c_obs.get("p2_result_size") !=
-                           o_obs.get("p2_result_size"))
-    profile_ok = hook_partition_ok and blanks_partition_ok
+    # FULL PARITY (R-000177 FIXED, Phase 14.30): every observation must match
+    # the oracle. The candidate's three-DSO construction now bridges the
+    # process-visible state (core cells/registrations via dlsym'd accessors),
+    # so hooks installed through the libxml2 DSO are observed by the libxslt
+    # DSO exactly as with upstream's single shared instance.
+    parity_ok = all(c_obs.get(k) == o_obs.get(k) for k in OBS_KEYS)
+    mismatches = [k for k in OBS_KEYS if c_obs.get(k) != o_obs.get(k)]
 
     ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     receipt = {
         "court": "DSO-STATE-COHERENCE",
         "phase": "11.1-Z.2",
         "timestamp": ts,
-        "schema": "dso-state-coherence-1",
+        "schema": "dso-state-coherence-2",
         "probe": os.path.relpath(PROBE, ROOT),
-        "mode": "documented-divergence (R-000177)",
+        "mode": "full-parity (R-000177 bridged)",
         "oracle_observations": o_obs,
         "candidate_observations": c_obs,
-        "partition_profile_ok": profile_ok,
-        "hook_partition_ok": hook_partition_ok,
-        "blanks_partition_ok": blanks_partition_ok,
+        "parity_ok": parity_ok,
+        "mismatches": mismatches,
         "candidate_output": c_out,
-        "verdict": "PASS" if profile_ok else "FAIL",
+        "verdict": "PASS" if parity_ok else "FAIL",
     }
     rp = os.path.join(RECEIPTS, f"dso-state-coherence-{ts}.json")
     with open(rp, "w") as f:
         json.dump(receipt, f, indent=1, ensure_ascii=False)
         f.write("\n")
     print(f"receipt -> {rp}")
-    print(f"verdict={'PASS' if profile_ok else 'FAIL'} "
-          f"hook_partition={hook_partition_ok} blanks_partition={blanks_partition_ok}")
-    return 0 if profile_ok else 1
+    print(f"verdict={'PASS' if parity_ok else 'FAIL'} mismatches={mismatches}")
+    return 0 if parity_ok else 1
 
 
 if __name__ == "__main__":

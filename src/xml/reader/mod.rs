@@ -2636,24 +2636,26 @@ pub unsafe extern "C" fn xmlReaderForFile(
     // its input via xmlParserInputBufferCreateFilename, which does NOT raise
     // xmlCtxtErrIO on XML_IO_ENOENT — a failed open returns NULL silently and
     // the php binding reports "Unable to open source data".
-    let input = match unsafe { crate::abi::exports_parser::open_filename_routed(filename) } {
-        crate::abi::exports_parser::RoutedFileOpen::Loaded(input) => input,
-        crate::abi::exports_parser::RoutedFileOpen::Failed => {
-            // SAFETY: ctxt is valid.
-            unsafe { free_parser_ctxt(ctxt) };
-            return ptr::null_mut();
-        }
-        crate::abi::exports_parser::RoutedFileOpen::Builtin => {
-            match unsafe { input_from_file(filename) } {
-                Ok(input) => input,
-                Err(_) => {
-                    // SAFETY: ctxt is valid.
-                    unsafe { free_parser_ctxt(ctxt) };
-                    return ptr::null_mut();
+    let input =
+        match unsafe { crate::abi::exports_parser::open_filename_routed_input_only(filename) } {
+            crate::abi::exports_parser::RoutedFileOpen::Loaded(input) => input,
+            crate::abi::exports_parser::RoutedFileOpen::Failed
+            | crate::abi::exports_parser::RoutedFileOpen::EntityLoaderFailed => {
+                // SAFETY: ctxt is valid.
+                unsafe { free_parser_ctxt(ctxt) };
+                return ptr::null_mut();
+            }
+            crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+                match unsafe { input_from_file(filename) } {
+                    Ok(input) => input,
+                    Err(_) => {
+                        // SAFETY: ctxt is valid.
+                        unsafe { free_parser_ctxt(ctxt) };
+                        return ptr::null_mut();
+                    }
                 }
             }
-        }
-    };
+        };
 
     // SAFETY: ctxt and input are valid.
     unsafe { setup_parser_input(ctxt, input) };

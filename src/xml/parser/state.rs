@@ -3906,6 +3906,10 @@ impl XmlParser {
     ) -> Result<(), ()> {
         const XML_ENT_PARSED: c_int = 1 << 0;
         const XML_ENT_EXPANDING: c_int = 1 << 3;
+        // Owned copy of a LOADED external entity's bytes (the content-NULL
+        // branch below); when present the children are parsed from these
+        // instead of from ent->content.
+        let mut owned_ext: Option<Vec<u8>> = None;
         unsafe {
             if ent.is_null() || ((*ent).flags & XML_ENT_PARSED) != 0 {
                 return Ok(());
@@ -3939,17 +3943,65 @@ impl XmlParser {
                 return Err(());
             }
             if (*ent).content.is_null() {
-                (*ent).flags |= XML_ENT_PARSED;
-                return Ok(());
+                // EXTERNAL general parsed entity: no in-memory replacement
+                // text (internal entities always carry their literal content
+                // here). UPSTREAM-PARITY (parser.c xmlNewEntityInputStream +)
+                // xmlCtxtParseEntity): when the parse is substituting or
+                // validating — `(replaceEntities || validate)` and NOT
+                // XML_PARSE_NO_XXE — the entity content is LOADED through the
+                // registered resource loader and parsed into ent->children on
+                // the first reference. Under XML_PARSE_NOENT the substitution
+                // path in parse_reference loads the content itself and
+                // re-parses it inline (one loader consult per entity), so this
+                // load is the non-NOENT branch only.
+                let want_load = (*ent).etype == XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int
+                    && (self.options & XML_PARSE_NOENT) == 0
+                    && (self.options & XML_PARSE_NO_XXE) == 0
+                    && unsafe {
+                        let c = &*self.ctxt;
+                        c.replaceEntities != 0 || c.validate != 0
+                    };
+                if want_load {
+                    let loaded = unsafe {
+                        let sys = (*ent).SystemID as *const c_char;
+                        let ext = (*ent).ExternalID as *const c_char;
+                        crate::abi::exports_parser::xmlLoadExternalEntity(sys, ext, self.ctxt)
+                    };
+                    if !loaded.is_null() {
+                        unsafe {
+                            let base = (*loaded).base;
+                            let end = (*loaded).end;
+                            let len = end.offset_from(base).max(0) as usize;
+                            if !base.is_null() && len > 0 {
+                                owned_ext = Some(core::slice::from_raw_parts(base, len).to_vec());
+                            }
+                            // free_parser_input (xmlFreeInputStream) frees the
+                            // owned buffer; no separate buffer free here.
+                            crate::abi::exports_xml2::xmlFreeInputStream(loaded);
+                        }
+                    }
+                }
+                if owned_ext.is_none() {
+                    // Unloaded external entity (plain parse, NO_XXE, or a
+                    // failed load): nothing to parse — upstream leaves
+                    // ent->children NULL and marks the entity checked.
+                    (*ent).flags |= XML_ENT_PARSED;
+                    return Ok(());
+                }
             }
             let doc = (*ent).doc;
-            let content = (*ent).content;
-            let len = libc::strlen(content as *const c_char);
-            let bytes = core::slice::from_raw_parts(content, len);
+            let bytes: &[u8] = match &owned_ext {
+                Some(v) => v.as_slice(),
+                None => {
+                    let content = (*ent).content;
+                    let len = libc::strlen(content as *const c_char);
+                    core::slice::from_raw_parts(content, len)
+                }
+            };
             // Recursive-sum accumulator (upstream xmlCheckEntityInAttValue):
             // starts at the raw content length and adds each nested general
             // entity's expanded size plus the fixed cost.
-            let mut expansion_sum: c_ulong = len as c_ulong;
+            let mut expansion_sum: c_ulong = bytes.len() as c_ulong;
 
             (*ent).flags |= XML_ENT_EXPANDING;
 

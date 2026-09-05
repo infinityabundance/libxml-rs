@@ -199,12 +199,131 @@ thread_local! {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// R-000177 cross-DSO cell readers (three-DSO facade boundary)
+// ═══════════════════════════════════════════════════════════════════════════════
+// The whole-archive libxslt/libexslt facades carry private copies of the
+// crate — and of the per-DSO thread_local! cells — so a consumer that
+// installs hooks/changes a parser default through the CORE DSO's exported
+// setter/accessor (which is where the symbol binds; the facades hide the
+// xml* surface) writes the CORE's per-thread cell, invisible to the facade's
+// private reads. Upstream ships ONE core DSO, so every read observes the
+// registration. These readers resolve the process-visible exported __xml*
+// VALUE accessor (the core DSO's) via the dynamic symbol scope and return a
+// pointer to the CURRENT thread's cell in that DSO; the getters below prefer
+// it and fall back to the local cell only when the symbol is not exported
+// (single-DSO links resolve their own export — the very same cell — so the
+// per-thread semantics and every single-DSO court are unchanged).
+
+#[cfg(target_os = "linux")]
+macro_rules! foreign_cell {
+    ($name:ident, $cname:expr, $t:ty) => {
+        fn $name() -> Option<*mut $t> {
+            use std::sync::OnceLock;
+            type Acc = unsafe extern "C" fn() -> *mut $t;
+            static ACC: OnceLock<Option<Acc>> = OnceLock::new();
+            let acc = *ACC.get_or_init(|| {
+                // SAFETY: dlsym(RTLD_DEFAULT) returns the exported accessor
+                // address or NULL; every __xml* accessor shares the
+                // `() -> *mut T` shape (pointer-sized), so the transmute is
+                // sound. The resolved symbol address is process-stable.
+                unsafe {
+                    let sym = libc::dlsym(libc::RTLD_DEFAULT, ($cname).as_ptr());
+                    if sym.is_null() {
+                        None
+                    } else {
+                        Some(std::mem::transmute::<*mut c_void, Acc>(sym))
+                    }
+                }
+            });
+            acc.map(|a| unsafe { a() })
+        }
+    };
+}
+
+#[cfg(not(target_os = "linux"))]
+macro_rules! foreign_cell {
+    ($name:ident, $cname:expr, $t:ty) => {
+        fn $name() -> Option<*mut $t> {
+            None
+        }
+    };
+}
+
+foreign_cell!(
+    foreign_validity,
+    c"__xmlDoValidityCheckingDefaultValue",
+    c_int
+);
+foreign_cell!(foreign_warnings, c"__xmlGetWarningsDefaultValue", c_int);
+foreign_cell!(foreign_indent_tree, c"__xmlIndentTreeOutput", c_int);
+foreign_cell!(foreign_keep_blanks, c"__xmlKeepBlanksDefaultValue", c_int);
+foreign_cell!(foreign_load_ext_dtd, c"__xmlLoadExtDtdDefaultValue", c_int);
+foreign_cell!(foreign_pedantic, c"__xmlPedanticParserDefaultValue", c_int);
+foreign_cell!(
+    foreign_substitute_entities,
+    c"__xmlSubstituteEntitiesDefaultValue",
+    c_int
+);
+foreign_cell!(foreign_save_no_empty, c"__xmlSaveNoEmptyTags", c_int);
+foreign_cell!(foreign_line_numbers, c"__xmlLineNumbersDefaultValue", c_int);
+foreign_cell!(
+    foreign_tree_indent_string,
+    c"__xmlTreeIndentString",
+    *const xmlChar
+);
+foreign_cell!(
+    foreign_register_node,
+    c"__xmlRegisterNodeDefaultValue",
+    Option<unsafe extern "C" fn(*mut _xmlNode)>
+);
+foreign_cell!(
+    foreign_deregister_node,
+    c"__xmlDeregisterNodeDefaultValue",
+    Option<unsafe extern "C" fn(*mut _xmlNode)>
+);
+foreign_cell!(
+    foreign_generic_error,
+    c"__xmlGenericError",
+    Option<xmlGenericErrorFunc>
+);
+foreign_cell!(
+    foreign_generic_error_ctx,
+    c"__xmlGenericErrorContext",
+    *mut c_void
+);
+foreign_cell!(
+    foreign_structured_error,
+    c"__xmlStructuredError",
+    Option<xmlStructuredErrorFunc>
+);
+foreign_cell!(
+    foreign_structured_error_ctx,
+    c"__xmlStructuredErrorContext",
+    *mut c_void
+);
+
+/// Read a cell preferring the process-visible (core DSO) value when its
+/// accessor resolves, else the local cell.
+#[inline]
+fn read_cross<T: Copy>(foreign: Option<*mut T>, local: T) -> T {
+    match foreign {
+        Some(cell) => {
+            // SAFETY: the accessor returned a pointer to the current
+            // thread's valid, initialized cell in the exporting DSO
+            // (upstream's deprecated accessor contract); one dereference.
+            unsafe { *cell }
+        }
+        None => local,
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Public Accessors — Parser Defaults
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Get the default validity checking value (thread-local, upstream 2.15).
 pub fn get_validity_checking_default() -> c_int {
-    tls_get(&tls::DO_VALIDITY)
+    read_cross(foreign_validity(), tls_get(&tls::DO_VALIDITY))
 }
 
 /// Set the default validity checking value (thread-local, upstream 2.15).
@@ -214,7 +333,7 @@ pub fn set_validity_checking_default(val: c_int) {
 
 /// Get the default warnings value (thread-local, upstream 2.15).
 pub fn get_do_warnings_default() -> c_int {
-    tls_get(&tls::GET_WARNINGS)
+    read_cross(foreign_warnings(), tls_get(&tls::GET_WARNINGS))
 }
 
 /// Set the default warnings value (thread-local, upstream 2.15).
@@ -224,7 +343,7 @@ pub fn set_do_warnings_default(val: c_int) {
 
 /// Get the indent tree output default (thread-local, upstream 2.15).
 pub fn get_indent_tree_output() -> c_int {
-    tls_get(&tls::INDENT_TREE_OUTPUT)
+    read_cross(foreign_indent_tree(), tls_get(&tls::INDENT_TREE_OUTPUT))
 }
 
 /// Set the indent tree output default (thread-local, upstream 2.15).
@@ -234,7 +353,7 @@ pub fn set_indent_tree_output(val: c_int) {
 
 /// Get the keep blanks default value (thread-local, upstream 2.15).
 pub fn get_keep_blanks_default() -> c_int {
-    tls_get(&tls::KEEP_BLANKS)
+    read_cross(foreign_keep_blanks(), tls_get(&tls::KEEP_BLANKS))
 }
 
 /// Set the keep blanks default value (thread-local, upstream 2.15).
@@ -244,7 +363,7 @@ pub fn set_keep_blanks_default(val: c_int) {
 
 /// Get the load external DTD default value (thread-local, upstream 2.15).
 pub fn get_load_ext_dtd_default() -> c_int {
-    tls_get(&tls::LOAD_EXT_DTD)
+    read_cross(foreign_load_ext_dtd(), tls_get(&tls::LOAD_EXT_DTD))
 }
 
 /// Set the load external DTD default value (thread-local, upstream 2.15).
@@ -254,7 +373,7 @@ pub fn set_load_ext_dtd_default(val: c_int) {
 
 /// Get the pedantic parser default (thread-local, upstream 2.15).
 pub fn get_pedantic_parser_default() -> c_int {
-    tls_get(&tls::PEDANTIC)
+    read_cross(foreign_pedantic(), tls_get(&tls::PEDANTIC))
 }
 
 /// Set the pedantic parser default (thread-local, upstream 2.15).
@@ -264,7 +383,10 @@ pub fn set_pedantic_parser_default(val: c_int) {
 
 /// Get the substitute entities default (thread-local, upstream 2.15).
 pub fn get_substitute_entities_default() -> c_int {
-    tls_get(&tls::SUBSTITUTE_ENTITIES)
+    read_cross(
+        foreign_substitute_entities(),
+        tls_get(&tls::SUBSTITUTE_ENTITIES),
+    )
 }
 
 /// Set the substitute entities default (thread-local, upstream 2.15).
@@ -274,7 +396,7 @@ pub fn set_substitute_entities_default(val: c_int) {
 
 /// Get the save no empty tags default (thread-local, upstream 2.15).
 pub fn get_save_no_empty_tags() -> c_int {
-    tls_get(&tls::SAVE_NO_EMPTY_TAGS)
+    read_cross(foreign_save_no_empty(), tls_get(&tls::SAVE_NO_EMPTY_TAGS))
 }
 
 /// Set the save no empty tags default (thread-local, upstream 2.15).
@@ -284,7 +406,7 @@ pub fn set_save_no_empty_tags(val: c_int) {
 
 /// Get the get warnings default (thread-local, upstream 2.15).
 pub fn get_get_warnings_default() -> c_int {
-    tls_get(&tls::GET_WARNINGS)
+    read_cross(foreign_warnings(), tls_get(&tls::GET_WARNINGS))
 }
 
 /// Set the get warnings default (thread-local, upstream 2.15).
@@ -294,7 +416,7 @@ pub fn set_get_warnings_default(val: c_int) {
 
 /// Get `xmlLineNumbersDefaultValue` (thread-local, upstream 2.15).
 pub fn get_line_numbers_default() -> c_int {
-    tls_get(&tls::LINE_NUMBERS)
+    read_cross(foreign_line_numbers(), tls_get(&tls::LINE_NUMBERS))
 }
 
 /// Set `xmlLineNumbersDefaultValue` (thread-local, upstream 2.15).
@@ -304,7 +426,10 @@ pub fn set_line_numbers_default(val: c_int) {
 
 /// Get `xmlTreeIndentString` (thread-local, upstream 2.15).
 pub fn get_tree_indent_string() -> *const xmlChar {
-    tls_get(&tls::TREE_INDENT_STRING)
+    read_cross(
+        foreign_tree_indent_string(),
+        tls_get(&tls::TREE_INDENT_STRING),
+    )
 }
 
 /// Set `xmlTreeIndentString` (thread-local, upstream 2.15).
@@ -314,7 +439,7 @@ pub fn set_tree_indent_string(val: *const xmlChar) {
 
 /// Get `xmlRegisterNodeDefaultValue` (thread-local, upstream 2.15).
 pub fn get_register_node_default() -> Option<unsafe extern "C" fn(*mut _xmlNode)> {
-    tls_get(&tls::REGISTER_NODE)
+    read_cross(foreign_register_node(), tls_get(&tls::REGISTER_NODE))
 }
 
 /// Set `xmlRegisterNodeDefaultValue` (thread-local, upstream 2.15).
@@ -324,7 +449,7 @@ pub fn set_register_node_default(val: Option<unsafe extern "C" fn(*mut _xmlNode)
 
 /// Get `xmlDeregisterNodeDefaultValue` (thread-local, upstream 2.15).
 pub fn get_deregister_node_default() -> Option<unsafe extern "C" fn(*mut _xmlNode)> {
-    tls_get(&tls::DEREGISTER_NODE)
+    read_cross(foreign_deregister_node(), tls_get(&tls::DEREGISTER_NODE))
 }
 
 /// Set `xmlDeregisterNodeDefaultValue` (thread-local, upstream 2.15).
@@ -549,16 +674,19 @@ pub fn set_generic_error_ctx(ctx: *mut c_void) {
     tls_set(&tls::GENERIC_ERROR_CTX, ctx);
 }
 
-/// Get the generic error handler context (thread-local).
-pub fn get_generic_error_ctx() -> *mut c_void {
-    let _guard = ERROR_HANDLER_LOCK.lock();
-    tls_get(&tls::GENERIC_ERROR_CTX)
-}
-
 /// Get the generic error handler function pointer (thread-local).
 pub fn get_generic_error_func() -> Option<xmlGenericErrorFunc> {
     let _guard = ERROR_HANDLER_LOCK.lock();
-    tls_get(&tls::GENERIC_ERROR)
+    read_cross(foreign_generic_error(), tls_get(&tls::GENERIC_ERROR))
+}
+
+/// Get the generic error handler context (thread-local).
+pub fn get_generic_error_ctx() -> *mut c_void {
+    let _guard = ERROR_HANDLER_LOCK.lock();
+    read_cross(
+        foreign_generic_error_ctx(),
+        tls_get(&tls::GENERIC_ERROR_CTX),
+    )
 }
 
 /// Read the generic error (func, ctx) pair atomically.
@@ -569,8 +697,11 @@ pub fn with_generic_error<R>(f: impl FnOnce(Option<xmlGenericErrorFunc>, *mut c_
     let (h, c) = {
         let _guard = ERROR_HANDLER_LOCK.lock();
         (
-            tls_get(&tls::GENERIC_ERROR),
-            tls_get(&tls::GENERIC_ERROR_CTX),
+            read_cross(foreign_generic_error(), tls_get(&tls::GENERIC_ERROR)),
+            read_cross(
+                foreign_generic_error_ctx(),
+                tls_get(&tls::GENERIC_ERROR_CTX),
+            ),
         )
     };
     f(h, c)
@@ -592,16 +723,19 @@ pub unsafe fn set_structured_error_func(ctx: *mut c_void, handler: Option<xmlStr
     tls_set(&tls::STRUCTURED_ERROR, handler);
 }
 
-/// Get the structured error handler context (thread-local).
-pub fn get_structured_error_ctx() -> *mut c_void {
-    let _guard = ERROR_HANDLER_LOCK.lock();
-    tls_get(&tls::STRUCTURED_ERROR_CTX)
-}
-
 /// Get the structured error handler function pointer (thread-local).
 pub fn get_structured_error_func() -> Option<xmlStructuredErrorFunc> {
     let _guard = ERROR_HANDLER_LOCK.lock();
-    tls_get(&tls::STRUCTURED_ERROR)
+    read_cross(foreign_structured_error(), tls_get(&tls::STRUCTURED_ERROR))
+}
+
+/// Get the structured error handler context (thread-local).
+pub fn get_structured_error_ctx() -> *mut c_void {
+    let _guard = ERROR_HANDLER_LOCK.lock();
+    read_cross(
+        foreign_structured_error_ctx(),
+        tls_get(&tls::STRUCTURED_ERROR_CTX),
+    )
 }
 
 /// Read the structured error (func, ctx) pair atomically.
@@ -623,8 +757,11 @@ pub fn with_structured_error<R>(
     let (h, c) = {
         let _guard = ERROR_HANDLER_LOCK.lock();
         (
-            tls_get(&tls::STRUCTURED_ERROR),
-            tls_get(&tls::STRUCTURED_ERROR_CTX),
+            read_cross(foreign_structured_error(), tls_get(&tls::STRUCTURED_ERROR)),
+            read_cross(
+                foreign_structured_error_ctx(),
+                tls_get(&tls::STRUCTURED_ERROR_CTX),
+            ),
         )
     };
     f(h, c)

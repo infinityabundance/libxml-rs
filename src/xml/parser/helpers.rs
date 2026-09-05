@@ -240,8 +240,10 @@ pub(crate) fn free_stashed_input_buffer(ctxt: *mut _xmlParserCtxt) {
 /// - `userData` — set to `ctxt` itself (so SAX callbacks can recover the context)
 /// - `wellFormed` — `1` (the document starts well-formed)
 /// - `instate` — `0` (`XML_PARSER_START`)
-/// - `keepBlanks` — `1` (preserve whitespace by default)
-/// - `replaceEntities` — `0` (don't replace entities by default)
+/// - `keepBlanks` — the deprecated `xmlKeepBlanksDefaultValue` (fresh contexts
+///   snapshot it exactly like upstream `xmlInitParserCtxt`, so
+///   `xmlKeepBlanksDefault(0)` suppresses whitespace-only text nodes)
+/// - `replaceEntities` — the deprecated `xmlSubstituteEntitiesDefaultValue`
 /// - `linenumbers` — `1` (track line numbers)
 ///
 /// # Safety
@@ -275,8 +277,15 @@ pub(crate) unsafe fn create_parser_ctxt() -> *mut _xmlParserCtxt {
         c.userData = ctxt as *mut c_void;
         c.wellFormed = 1;
         c.instate = 0; // XML_PARSER_START
-        c.keepBlanks = 1;
-        c.replaceEntities = 0;
+                       // UPSTREAM-PARITY (parserInternals.c xmlInitParserCtxt): a fresh
+                       // context snapshots the deprecated per-thread defaults. keepBlanks
+                       // is load-bearing: the executed 2.15.3 oracle never re-raises it once
+                       // seeded (only XML_PARSE_NOBLANKS lowers it), so
+                       // `xmlKeepBlanksDefault(0)` governs whitespace-only text nodes in
+                       // fresh-context reads even when the read options omit NOBLANKS
+                       // (R-000177 three-DSO reads resolve the process-visible cell).
+        c.keepBlanks = crate::xml::globals::get_keep_blanks_default();
+        c.replaceEntities = crate::xml::globals::get_substitute_entities_default();
         c.linenumbers = 1;
         // UPSTREAM-PARITY (parser.c xmlInitParserCtxt): a fresh context is
         // valid and namespace-well-formed until a failure says otherwise;
