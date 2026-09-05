@@ -74,6 +74,24 @@ receipt trail.
   pattern-detects the UCS-4/EBCDIC/BOM-less-UTF-16 family (upstream
   xmlDetectCharEncoding); output + input probes are cmp-identical to the
   oracle (receipt php-14-29-encoding-backend-20260905).
+- 14.30 (cross-DSO state coherence + versioned-distro profile): R-000177
+  FIXED — the facade state bridges extend to the full observable surface
+  (allocator slots, node register/deregister hooks, the external entity
+  loader incl. MAIN-DOCUMENT resource loads, fresh-context parser-default
+  seeding incl. keepBlanks, and the deprecated setter family —
+  xmlKeepBlanksDefault(0) now stores; the DSO-STATE-COHERENCE court flips
+  from pinning the documented partition to FULL PARITY, all ten
+  observations match the oracle). R-000179 FIXED — a separate versioned
+  profile (target/debug/versioned/libxml2.so.2, SONAME libxml2.so.2)
+  carries the exact LIBXML2_2.x node graph derived from the distro
+  libxml2.so.2.13.9 .gnu.version tables; a distro-versioned consumer runs
+  against it with zero ld.so warnings (ELF-VERSIONING court 20/20). The
+  unversioned .16 core is untouched. The gate caught + fixed a candidate
+  bug on the way (empty php://memory loader results are valid zero-length
+  inputs). Gates: NTS + ZTS six-extension 1290/1250/0 failed each; cargo
+  test 1254; cross-compile contract restored (aarch64/i686/armv7/musl
+  cargo check 0 errors) (receipt
+  php-14-30-dso-state-coherence-20260905).
 
 ## Register of residuals opened/closed by the court
 
@@ -86,19 +104,22 @@ receipt trail.
   native (handlers + parser input side) — see the 14.29 receipt; bounded
   remainder: iconv names beyond the enumeration and multi-flush ISO-2022-JP
   escape state.
-- R-000177 (OPEN): cross-DSO state partitioning — Phase 14.26 added the
-  same-thread cross-DSO loader-slot bridge (dlsym of the core's exported
-  `__xml{Parser,Output}BufferCreateFilenameValue` accessor) restoring
-  upstream single-core hook visibility under php ZTS; the structural
-  partition remains pinned by DSO-STATE-COHERENCE.
-- Open global residuals (atlas/RESIDUAL_LEDGER.json): R-000168, R-000177,
-  R-000179 (3 open).
+- R-000177 (FIXED, Phase 14.30): cross-DSO state partitioning — Phase 14.26
+  added the same-thread cross-DSO loader-slot bridge; Phase 14.30 extended
+  the bridge to the full observable state surface (allocator slots, node
+  register/deregister hooks, the external entity loader incl.
+  MAIN-DOCUMENT resource loads, fresh-context parser-default seeding incl.
+  keepBlanks, and the deprecated setter family). The DSO-STATE-COHERENCE
+  court asserts FULL PARITY and passes — see the 14.30 receipt.
+- R-000179 (FIXED, Phase 14.30): versioned-distro profile (libxml2.so.2
+  with the exact LIBXML2_2.x graph) — see the 14.30 receipt.
+- Open global residuals (atlas/RESIDUAL_LEDGER.json): R-000168 (1 open).
 
 ## Next
 
-R-000177 cross-DSO observable-state coherence (the 14.26 bridge extended to
-the remaining per-thread globals) and R-000179 (versioned-distro symbol
-graph) are the open engine items; the bounded R-000157 remainder (iconv
-names beyond the enumerated set; multi-flush ISO-2022-JP state) can follow;
-Debian reverse-dependency court (Phase-14 consumer 4/4) is the next custodian
-gate. See PROJECT_STATE.md "Phase 14" + "Immediate Next Actions".
+The remaining custodian consumers (lxml — the Sep-1 bootstrap attempt
+segfaulted and predates all 14.4–14.30 closures; nokogiri — probes exist,
+never gated; Debian reverse-dependency court, Phase-14 consumer 4/4) are the
+next executable gates on this host; R-000168 (platform runtime outside Linux
+x86-64) is the CI-matrix obligation. See PROJECT_STATE.md "Phase 14" + the
+phase-14 consumer runners.
