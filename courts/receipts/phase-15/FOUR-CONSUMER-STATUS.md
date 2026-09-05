@@ -20,18 +20,23 @@ engine change.
 - **Oracle** (`nokogiri-run.sh oracle` + `bundle exec rake test`): 2831 runs,
   10268 assertions, **0 failures, 0 errors, 39 skips**.
 - **Candidate** (`bundle exec rake test`, `LD_LIBRARY_PATH=/candidate/lib`):
-  **SIGSEGV** early in the run (status 134) at
-  `_noko_xml_xpath_context__xpath2ruby` ← `Nokogiri_marshal_xpath_funcall_and_return_values`
-  ← `invoke_c_extension_function` (src/xml/xpath/eval.rs:553) ←
-  `eval_function_call` (eval.rs:444). 18 failures + 11 errors accumulated
-  before the crash (randomised `--seed` order).
+  multiple **SIGSEGV** crashes and many failures.
+- Two distinct crash sites observed:
+  1. XPath extension-function dispatch:
+     `_noko_xml_xpath_context__xpath2ruby` (reads `c_context->doc`) ←
+     `Nokogiri_marshal_xpath_funcall_and_return_values` ←
+     `invoke_c_extension_function` (src/xml/xpath/eval.rs:553).
+  2. SAX parser context creation: `native_memory` (nokogiri
+     `xml/sax/parser_context.rb:78`) — empty-processing-instruction test.
+- CSS integration: `Nokogiri::HTML5::Document` selector tests fail broadly
+  (CSS→XPath on HTML5 documents).
 - Isolated `test/xml/test_xpath_context.rb` (no crash): 2 failures —
-  `SyntaxError expected but nothing was raised` for registering/deregistering
+  `SyntaxError expected but nothing was raised` for register/deregister
   namespaces and variables.
 - Minimal C probes (`xmlXPathRegisterFunc` and `xmlXPathRegisterFuncLookup`
-  with string/number/node-set args) **pass** on the candidate — the crash is
-  specific to nokogiri's Ruby `VALUE` marshaling path, not the basic C
-  extension-function protocol. **Root cause not yet isolated.**
+  with string/number/node-set args) **pass** on the candidate — the XPath
+  crash is specific to nokogiri's Ruby `VALUE` marshaling path, not the basic
+  C extension-function protocol. **Root cause not yet isolated.**
 
 ### nokogiri infrastructure note
 
