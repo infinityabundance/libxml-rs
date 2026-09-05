@@ -3169,41 +3169,41 @@ pub unsafe fn remove_prop(attr: *mut _xmlAttr) -> c_int {
 
     let a = unsafe { &mut *attr };
 
-    // UPSTREAM-PARITY (tree.c xmlRemoveProp -> xmlFreeProp): removing an ID
-    // attribute unregisters it from the document's ID table.
-    if !a.doc.is_null() && !a.id.is_null() {
-        crate::xml::validation::remove_id(a.doc, attr);
+    // UPSTREAM-PARITY (tree.c xmlRemoveProp): a NULL parent means the
+    // attribute is not attached to any element — upstream returns -1
+    // without freeing (the caller keeps ownership).
+    if a.parent.is_null() {
+        return -1;
     }
 
-    // Unlink from parent's property list
+    // Unlink from the parent's property list. Upstream scans the list for
+    // `attr`; once found it rethreads prev/next and hands the attribute to
+    // xmlFreeProp. When the attribute is not in the list, -1 is returned
+    // and nothing is freed.
     let parent = a.parent;
-    if !parent.is_null() {
-        let p = unsafe { &mut *parent };
-        if p.properties == attr {
-            p.properties = a.next;
+    let p = unsafe { &mut *parent };
+    if p.properties == attr {
+        p.properties = a.next;
+        if !a.next.is_null() {
+            unsafe { (*a.next).prev = ptr::null_mut() };
         }
+        free_prop(attr);
+        return 0;
     }
-
-    // Fix up prev/next chain
-    if !a.prev.is_null() {
-        unsafe { (*a.prev).next = a.next };
+    let mut tmp = p.properties;
+    while !tmp.is_null() {
+        let next = unsafe { (*tmp).next };
+        if next == attr {
+            unsafe { (*tmp).next = a.next };
+            if !a.next.is_null() {
+                unsafe { (*a.next).prev = tmp };
+            }
+            free_prop(attr);
+            return 0;
+        }
+        tmp = next;
     }
-    if !a.next.is_null() {
-        unsafe { (*a.next).prev = a.prev };
-    }
-
-    // Free children (text value nodes)
-    if !a.children.is_null() {
-        free_node_list(a.children);
-    }
-
-    // Free name
-    if !a.name.is_null() {
-        allocator::xmlFreeImpl(a.name as *mut c_void);
-    }
-
-    allocator::xmlFreeImpl(attr as *mut c_void);
-    0
+    -1
 }
 
 /// Check whether a node has a property with the given name (upstream tree.c
@@ -7091,3 +7091,4 @@ mod tests {
         }
     }
 }
+

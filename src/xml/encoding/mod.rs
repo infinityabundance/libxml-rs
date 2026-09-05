@@ -121,6 +121,8 @@ const UTF16LE_BOM: [u8; 2] = [0xFF, 0xFE];
 
 /// UTF-16BE BOM bytes.
 const UTF16BE_BOM: [u8; 2] = [0xFE, 0xFF];
+const UTF32LE_BOM: [u8; 4] = [0xFF, 0xFE, 0x00, 0x00];
+const UTF32BE_BOM: [u8; 4] = [0x00, 0x00, 0xFE, 0xFF];
 
 // ── Global handler registry ────────────────────────────────────────────────
 
@@ -243,6 +245,11 @@ pub(crate) fn encoding_from_name(name: &[u8]) -> xmlCharEncoding {
         // UTF-16
         "utf-16" | "utf-16le" | "utf16le" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
         "utf-16be" | "utf16be" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE,
+
+        // UTF-32/UCS-4 (upstream resolves these through its iconv/ICU fallback;
+        // the candidate maps them to the native UCS-4 handlers, R-000157)
+        "utf-32" | "utf-32le" | "utf32le" => xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        "utf-32be" | "utf32be" => xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE,
 
         // ISO-8859 variants
         "iso-8859-1" | "iso_8859-1" | "latin1" | "latin-1" | "l1" | "cp819" | "ibm819"
@@ -512,6 +519,63 @@ pub(crate) fn utf16be_to_utf8(data: &[u8]) -> Result<Vec<u8>, ()> {
         }
     }
 
+    Ok(result)
+}
+
+/// Convert UCS-4/UTF-32LE bytes (4-byte little-endian code points) to UTF-8.
+///
+/// Returns `Ok(converted_bytes)` on success, or `Err(())` on invalid input
+/// (truncated unit, surrogate, or out-of-range code point). A UTF-32LE BOM is
+/// skipped when present.
+pub(crate) fn ucs4le_to_utf8(data: &[u8]) -> Result<Vec<u8>, ()> {
+    fixed_width_to_utf8(data, true, UTF32LE_BOM)
+}
+
+/// Convert UCS-4/UTF-32BE bytes (4-byte big-endian code points) to UTF-8.
+///
+/// Returns `Ok(converted_bytes)` on success, or `Err(())` on invalid input
+/// (truncated unit, surrogate, or out-of-range code point). A UTF-32BE BOM is
+/// skipped when present.
+pub(crate) fn ucs4be_to_utf8(data: &[u8]) -> Result<Vec<u8>, ()> {
+    fixed_width_to_utf8(data, false, UTF32BE_BOM)
+}
+
+/// Shared 4-byte-unit-to-UTF-8 conversion (UCS-4/UTF-32 LE and BE).
+fn fixed_width_to_utf8(data: &[u8], little_endian: bool, bom: [u8; 4]) -> Result<Vec<u8>, ()> {
+    if data.is_empty() {
+        return Ok(Vec::new());
+    }
+    let offset = if data.len() >= 4 && data[0..4] == bom {
+        4
+    } else {
+        0
+    };
+    let mut result = Vec::with_capacity(data.len() / 2);
+    let mut i = offset;
+    while i + 4 <= data.len() {
+        let raw = [data[i], data[i + 1], data[i + 2], data[i + 3]];
+        i += 4;
+        let cp = if little_endian {
+            u32::from_le_bytes(raw)
+        } else {
+            u32::from_be_bytes(raw)
+        };
+        // Surrogates and out-of-range code points are invalid in UCS-4 text
+        // (upstream fixed_width_input rejects them the same way).
+        if cp > 0x10FFFF || (0xD800..=0xDFFF).contains(&cp) {
+            return Err(());
+        }
+        let mut buf = [0u8; 4];
+        let n = encode_codepoint_to_utf8(cp, &mut buf);
+        if n == 0 {
+            return Err(());
+        }
+        result.extend_from_slice(&buf[..n]);
+    }
+    // Trailing partial unit: invalid.
+    if i != data.len() {
+        return Err(());
+    }
     Ok(result)
 }
 

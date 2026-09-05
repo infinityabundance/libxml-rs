@@ -1596,6 +1596,9 @@ impl XmlParser {
                 // properties = XML_DOC_INTERNAL`).
                 (*d).properties |= crate::abi::types::xmlDocProperties::XML_DOC_INTERNAL as c_int;
                 (*ctxt).myDoc = d;
+                // Record ownership so free_parser_ctxt reclaims this exact
+                // document without dereferencing a caller-freed myDoc.
+                crate::xml::parser::helpers::mark_internal_doc(ctxt);
                 d
             } else {
                 doc

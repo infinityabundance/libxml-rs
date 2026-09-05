@@ -1772,18 +1772,26 @@ impl XmlTokenizer {
         // tail into the same token; break the run when the scan crosses back
         // below its starting depth.
         let start_depth = self.input.depth();
+        // SP-14.3.1-6: whether any byte of the CURRENT run was consumed
+        // strictly below the split offset. Only a run that begins in the
+        // already-delivered prefix and crosses the boundary is split there; a
+        // run starting at or after the boundary is fresh and must be delivered
+        // whole (splitting it would emit one character per token and turn
+        // text merges into O(n²) appends).
+        let mut below_split = false;
 
         loop {
             if self.input.is_eof() {
                 break;
             }
+            let pos_before = self.input.current_pos().2;
             // SP-14.3.1-6 delivery boundary: a character run crossing the
             // already-delivered prefix of the accumulated input is split at
             // the boundary so the re-parse's event segmentation matches the
             // earlier eager-partial parse exactly (the prefix part was
             // delivered; the suffix part must fire as its own event).
             if let Some(split) = self.split_chars_at {
-                if !content.is_empty() && self.input.current_pos().2 >= split {
+                if below_split && pos_before >= split {
                     break;
                 }
             }
@@ -1797,6 +1805,7 @@ impl XmlTokenizer {
             if let Some(b) = self.input.peek_raw() {
                 if b >= 0x80 && self.input.peek_char().is_none() {
                     self.record_encoding_error();
+                    below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
                     self.input.skip_raw_bytes(1);
                     // UPSTREAM-PARITY (parserInternals.c xmlCurrentChar
                     // encoding_error): the byte is consumed and replaced
@@ -1826,6 +1835,7 @@ impl XmlTokenizer {
                         );
                         // Skip the offending character (upstream NEXTL after
                         // the error).
+                        below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
                         self.input.read_char();
                         continue;
                     }
@@ -1849,6 +1859,7 @@ impl XmlTokenizer {
                         }
                     }
                     self.input.read_char();
+                    below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
                     Self::push_char(&mut content, c);
                 }
                 None => break,

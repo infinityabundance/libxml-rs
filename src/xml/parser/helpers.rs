@@ -123,6 +123,12 @@ struct PushState {
     /// (SP-14.3.1-6). Later parses suppress the events at or below this
     /// offset and deliver only the new tail; 0 = nothing delivered yet.
     delivered_bytes: usize,
+    /// Whether THIS parser created an internal SAX-compat registry document
+    /// (XML_DOC_INTERNAL) on `ctxt->myDoc` (state.rs
+    /// `ensure_entity_registry_dtd`). Only such docs are reclaimed by
+    /// `free_parser_ctxt` — caller-owned documents are never dereferenced or
+    /// freed there (upstream xmlFreeParserCtxt ignores myDoc entirely).
+    internal_doc_created: bool,
 }
 
 static PUSH_STATE: once_cell::sync::Lazy<parking_lot::Mutex<HashMap<usize, PushState>>> =
@@ -132,6 +138,13 @@ fn push_state(ctxt: *mut _xmlParserCtxt) -> parking_lot::MappedMutexGuard<'stati
     parking_lot::MutexGuard::map(PUSH_STATE.lock(), |m| {
         m.entry(ctxt as usize).or_insert_with(PushState::default)
     })
+}
+
+/// Record that the parser created the internal SAX-compat registry document
+/// (XML_DOC_INTERNAL) on `ctxt->myDoc`, so `free_parser_ctxt` can reclaim it
+/// without dereferencing a possibly caller-freed pointer.
+pub(crate) fn mark_internal_doc(ctxt: *mut _xmlParserCtxt) {
+    push_state(ctxt).internal_doc_created = true;
 }
 
 /// Re-apply the `wellFormed` value the context had when the incremental parse
@@ -325,10 +338,23 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
     }
 
     unsafe {
-        // Free SAX handler.
+        // Free SAX handler (upstream parserInternals.c xmlFreeParserCtxt): a
+        // handler that IS one of the exported STATIC defaults — the XML
+        // xmlDefaultSAXHandler or the htmlDefaultSAXHandler global selected by
+        // html contexts created with a NULL sax — is not heap-owned and must
+        // never be freed here (only heap handler structs are reclaimed).
         let sax = (*ctxt).sax;
         if !sax.is_null() {
-            xmlFreeImpl(sax as *mut c_void);
+            let statics = [
+                core::ptr::addr_of!(crate::abi::data_globals::xmlDefaultSAXHandler)
+                    as *const c_void,
+                core::ptr::addr_of!(crate::abi::data_globals::htmlDefaultSAXHandler)
+                    as *const c_void,
+            ];
+            let is_static = statics.iter().any(|&p| p == sax as *const c_void);
+            if !is_static {
+                xmlFreeImpl(sax as *mut c_void);
+            }
         }
 
         // Free all inputs in the input stack.
@@ -370,9 +396,25 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
         // setup_parser_input). `ctxt._private` is application data and is
         // NEVER touched here (11.1-X).
         free_stashed_input_buffer(ctxt);
+
+        // UPSTREAM-PARITY (parser SAX-compat entity registry): a document the
+        // parser created internally (XML_DOC_INTERNAL — see
+        // state.rs::ensure_entity_registry_dtd) is never delivered to the
+        // caller, so it must be reclaimed here. Ownership is tracked by a flag
+        // (set at creation) instead of dereferencing `ctxt->myDoc`, which the
+        // caller may already have freed — upstream xmlFreeParserCtxt never
+        // touches myDoc, and caller-owned documents are never reclaimed here.
+        let reclaim_internal_doc = push_state(ctxt).internal_doc_created;
         // Drop incremental-push state so a later context allocated at the
         // same address starts clean (SP-14.3.1-3).
         free_push_state(ctxt);
+        if reclaim_internal_doc {
+            let my_doc = (*ctxt).myDoc;
+            if !my_doc.is_null() {
+                (*ctxt).myDoc = ptr::null_mut();
+                crate::xml::tree::free_doc(my_doc);
+            }
+        }
 
         // Free the parser dictionary (upstream xmlFreeParserCtxt).
         if !(*ctxt).dict.is_null() {

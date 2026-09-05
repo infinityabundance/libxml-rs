@@ -3018,7 +3018,15 @@ unsafe fn html_ctxt_finish_read(
     let c = ctxt as *mut _xmlParserCtxt;
     unsafe {
         (*st).doc = doc;
-        (*c).myDoc = doc;
+        // UPSTREAM-PARITY (parserInternals.c xmlCtxtGetDocument): the parsed
+        // document is RETURNED to the caller but never left attached to
+        // `ctxt->myDoc` — xmlCtxtGetDocument clears myDoc to NULL after
+        // retrieving it (htmlCtxtReadMemory/ReadDoc/ReadFile all end in that
+        // helper). lxml relies on the NULL: its `_handleParseResult` frees
+        // `c_ctxt.myDoc` when it differs from the returned result, so a
+        // dangling myDoc after an error-path xmlFreeDoc(result) would be
+        // freed twice.
+        (*c).myDoc = ptr::null_mut();
         if !doc.is_null() {
             (*c).wellFormed = 1;
         }

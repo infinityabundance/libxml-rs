@@ -1274,6 +1274,28 @@ unsafe fn new_doc_node(
     if name.is_null() {
         return ptr::null_mut();
     }
+
+    // UPSTREAM-PARITY (tree.c xmlNewDocNode): when the document carries a
+    // dictionary the name is interned with xmlDictLookup and the node BORROWS
+    // the dict-owned string; only dict-less documents get a duplicated name.
+    // Consumers (lxml `_tagMatchesExactly` via `cacheTags`) rely on node names
+    // being pointer-identical to xmlDictLookup/xmlDictExists results, so the
+    // interning branch is observable behaviour, not an optimisation.
+    let dict = if doc.is_null() {
+        ptr::null_mut()
+    } else {
+        unsafe { (*doc).dict }
+    };
+    if !dict.is_null() {
+        let dict_name = unsafe {
+            crate::xml::dictionary::dict_lookup(dict as *mut crate::xml::dictionary::Dict, name, -1)
+        };
+        if dict_name.is_null() {
+            return ptr::null_mut();
+        }
+        return unsafe { new_elem(doc, ns, dict_name, content) };
+    }
+
     let copy = unsafe { dup_str(name) };
     if copy.is_null() {
         return ptr::null_mut();
@@ -1298,7 +1320,16 @@ unsafe fn new_doc_node_eat_name(
     }
     let cur = unsafe { new_elem(doc, ns, name, content) };
     if cur.is_null() {
-        unsafe { xmlFreeImpl(name as *mut c_void) };
+        // UPSTREAM-PARITY (tree.c xmlNewDocNodeEatName): only a name that is
+        // not owned by the document dictionary is freed here.
+        let dict = if doc.is_null() {
+            ptr::null_mut()
+        } else {
+            unsafe { (*doc).dict }
+        };
+        if !crate::abi::exports_hash::dict_owns_str(dict, name as *const xmlChar) {
+            unsafe { xmlFreeImpl(name as *mut c_void) };
+        }
         return ptr::null_mut();
     }
     cur
@@ -2689,13 +2720,30 @@ pub unsafe extern "C" fn xmlNodeSetName(cur: *mut _xmlNode, name: *const xmlChar
             || t == XML_ENTITY_REF_NODE as u32 => {}
         _ => return,
     }
-    let copy = unsafe { dup_str(name) };
+    let dict = if (*cur).doc.is_null() {
+        ptr::null_mut()
+    } else {
+        unsafe { (*(*cur).doc).dict }
+    };
+
+    // UPSTREAM-PARITY (tree.c xmlNodeSetName): with a document dictionary the
+    // new name is interned (xmlDictLookup); the old name is freed only when it
+    // is NOT dict-owned (DICT_FREE semantics). Plain-freeing a dict-interned
+    // name would leave a dangling entry in the dictionary (lxml `element.tag =
+    // ...` on a parsed tree exercises exactly this).
+    let copy = if dict.is_null() {
+        unsafe { dup_str(name) }
+    } else {
+        unsafe {
+            crate::xml::dictionary::dict_lookup(dict as *mut crate::xml::dictionary::Dict, name, -1)
+        }
+    };
     if copy.is_null() {
         return;
     }
     let old = (*cur).name;
     (*cur).name = copy;
-    if !old.is_null() {
+    if !old.is_null() && !crate::abi::exports_hash::dict_owns_str(dict, old) {
         unsafe { xmlFreeImpl(old as *mut c_void) };
     }
 }

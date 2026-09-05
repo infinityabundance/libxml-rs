@@ -1901,6 +1901,16 @@ fn convert_input_to_utf8(encoding: *const c_char, data: &[u8]) -> Option<Vec<u8>
         xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE => {
             crate::xml::encoding::utf16be_to_utf8(data).ok()
         }
+        // UTF-32/UCS-4 (R-000157): lxml feeds PEP-393 KIND-4 python strings to
+        // htmlCtxtReadMemory as UTF-32LE/BE raw buffers; without conversion the
+        // parser would consume the raw 4-byte units as UTF-8 and garble the
+        // tree (wide-character HTML through etree.HTML crashed teardown).
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE => {
+            crate::xml::encoding::ucs4le_to_utf8(data).ok()
+        }
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE => {
+            crate::xml::encoding::ucs4be_to_utf8(data).ok()
+        }
         // UTF-8 / US-ASCII / NONE (and unsupported encodings): no conversion.
         _ => None,
     }
