@@ -5416,6 +5416,178 @@ pub unsafe extern "C" fn xmlC14NDocSave(
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Parser-internal stack primitives (parserInternals.h)
+//
+// Debian/2.9-era distro binaries link these directly (they are exported data
+// in the distro DSO, not hidden). They manipulate the parser context's
+// deprecated `inputTab`/`nameTab`/`nodeTab` arrays exactly as upstream
+// parserInternals.c does. `valuePush`/`valuePop` operate on the XPath parser
+// context value stack (xpath.c valuePush/valuePop).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// `inputPush` (parserInternals.h) — push an input onto the parser input stack.
+#[no_mangle]
+pub unsafe extern "C" fn inputPush(
+    ctxt: *mut _xmlParserCtxt,
+    value: *mut _xmlParserInput,
+) -> *mut _xmlParserInput {
+    if ctxt.is_null() || value.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let c = &mut *ctxt;
+        if c.inputNr >= c.inputMax {
+            let new_max = if c.inputMax > 0 { c.inputMax * 2 } else { 4 };
+            let new_tab = crate::abi::allocator::xmlReallocImpl(
+                c.inputTab as *mut core::ffi::c_void,
+                (new_max as usize) * core::mem::size_of::<*mut _xmlParserInput>(),
+            ) as *mut *mut _xmlParserInput;
+            if new_tab.is_null() {
+                return ptr::null_mut();
+            }
+            c.inputTab = new_tab;
+            c.inputMax = new_max;
+        }
+        *c.inputTab.add(c.inputNr as usize) = value;
+        c.inputNr += 1;
+        value
+    }
+}
+
+/// `inputPop` (parserInternals.h) — pop an input off the parser input stack.
+#[no_mangle]
+pub unsafe extern "C" fn inputPop(ctxt: *mut _xmlParserCtxt) -> *mut _xmlParserInput {
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let c = &mut *ctxt;
+        if c.inputNr <= 0 {
+            return ptr::null_mut();
+        }
+        c.inputNr -= 1;
+        let ret = *c.inputTab.add(c.inputNr as usize);
+        *c.inputTab.add(c.inputNr as usize) = ptr::null_mut();
+        ret
+    }
+}
+
+/// `namePush` (parserInternals.h) — push a name onto the parser name stack.
+#[no_mangle]
+pub unsafe extern "C" fn namePush(
+    ctxt: *mut _xmlParserCtxt,
+    value: *const xmlChar,
+) -> *const xmlChar {
+    if ctxt.is_null() || value.is_null() {
+        return ptr::null();
+    }
+    unsafe {
+        let c = &mut *ctxt;
+        if c.nameNr >= c.nameMax {
+            let new_max = if c.nameMax > 0 { c.nameMax * 2 } else { 4 };
+            let new_tab = crate::abi::allocator::xmlReallocImpl(
+                c.nameTab as *mut core::ffi::c_void,
+                (new_max as usize) * core::mem::size_of::<*const xmlChar>(),
+            ) as *mut *const xmlChar;
+            if new_tab.is_null() {
+                return ptr::null();
+            }
+            c.nameTab = new_tab;
+            c.nameMax = new_max;
+        }
+        *c.nameTab.add(c.nameNr as usize) = value;
+        c.nameNr += 1;
+        value
+    }
+}
+
+/// `namePop` (parserInternals.h) — pop a name off the parser name stack.
+#[no_mangle]
+pub unsafe extern "C" fn namePop(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
+    if ctxt.is_null() {
+        return ptr::null();
+    }
+    unsafe {
+        let c = &mut *ctxt;
+        if c.nameNr <= 0 {
+            return ptr::null();
+        }
+        c.nameNr -= 1;
+        let ret = *c.nameTab.add(c.nameNr as usize);
+        *c.nameTab.add(c.nameNr as usize) = ptr::null();
+        ret
+    }
+}
+
+/// `nodePush` (parserInternals.h) — push a node onto the parser node stack.
+#[no_mangle]
+pub unsafe extern "C" fn nodePush(
+    ctxt: *mut _xmlParserCtxt,
+    value: *mut _xmlNode,
+) -> *mut _xmlNode {
+    if ctxt.is_null() || value.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let c = &mut *ctxt;
+        if c.nodeNr >= c.nodeMax {
+            let new_max = if c.nodeMax > 0 { c.nodeMax * 2 } else { 4 };
+            let new_tab = crate::abi::allocator::xmlReallocImpl(
+                c.nodeTab as *mut core::ffi::c_void,
+                (new_max as usize) * core::mem::size_of::<*mut _xmlNode>(),
+            ) as *mut *mut _xmlNode;
+            if new_tab.is_null() {
+                return ptr::null_mut();
+            }
+            c.nodeTab = new_tab;
+            c.nodeMax = new_max;
+        }
+        *c.nodeTab.add(c.nodeNr as usize) = value;
+        c.nodeNr += 1;
+        value
+    }
+}
+
+/// `nodePop` (parserInternals.h) — pop a node off the parser node stack.
+#[no_mangle]
+pub unsafe extern "C" fn nodePop(ctxt: *mut _xmlParserCtxt) -> *mut _xmlNode {
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let c = &mut *ctxt;
+        if c.nodeNr <= 0 {
+            return ptr::null_mut();
+        }
+        c.nodeNr -= 1;
+        let ret = *c.nodeTab.add(c.nodeNr as usize);
+        *c.nodeTab.add(c.nodeNr as usize) = ptr::null_mut();
+        ret
+    }
+}
+
+/// `valuePush` (xpath.c) — push an XPath object onto the parser value stack.
+#[no_mangle]
+pub unsafe extern "C" fn valuePush(
+    ctxt: *mut crate::xml::xpath::parser_context::XmlXPathParserContext,
+    value: *mut _xmlXPathObject,
+) -> c_int {
+    if crate::xml::xpath::parser_context::value_push(ctxt, value).is_null() {
+        -1
+    } else {
+        0
+    }
+}
+
+/// `valuePop` (xpath.c) — pop an XPath object off the parser value stack.
+#[no_mangle]
+pub unsafe extern "C" fn valuePop(
+    ctxt: *mut crate::xml::xpath::parser_context::XmlXPathParserContext,
+) -> *mut _xmlXPathObject {
+    crate::xml::xpath::parser_context::value_pop(ctxt)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

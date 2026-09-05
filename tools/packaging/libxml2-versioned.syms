@@ -47,6 +47,14 @@ LIBXML2_2.4.30 {
     htmlSaveFileFormat;
     htmlSetMetaEncoding;
     htmlTagLookup;
+    inputPop;
+    inputPush;
+    namePop;
+    namePush;
+    nodePop;
+    nodePush;
+    valuePop;
+    valuePush;
     xlinkGetDefaultDetect;
     xlinkGetDefaultHandler;
     xlinkIsLink;
@@ -1720,6 +1728,10 @@ LIBXML2_2.15.0 {
     __errno_location;
     __gmon_start__;
     __tls_get_addr;
+    __xmlBufferAllocScheme;
+    __xmlDefaultBufferSize;
+    __xmlDefaultSAXHandler;
+    __xmlDefaultSAXLocator;
     __xmlDeregisterNodeDefaultValue;
     __xmlDoValidityCheckingDefaultValue;
     __xmlFree;
@@ -1736,8 +1748,10 @@ LIBXML2_2.15.0 {
     __xmlMemStrdup;
     __xmlOutputBufferCreateFilename;
     __xmlOutputBufferCreateFilenameValue;
+    __xmlParserDebugEntities;
     __xmlParserInputBufferCreateFilename;
     __xmlParserInputBufferCreateFilenameValue;
+    __xmlParserVersion;
     __xmlPedanticParserDefaultValue;
     __xmlRealloc;
     __xmlRegisterNodeDefaultValue;
@@ -1785,6 +1799,7 @@ LIBXML2_2.15.0 {
     htmlCleanupParser;
     htmlCtxtParseDocument;
     htmlCtxtSetOptions;
+    htmlDecodeEntities;
     htmlInitParser;
     htmlNewSAXParserCtxt;
     htmlParseMemory;
@@ -1838,7 +1853,9 @@ LIBXML2_2.15.0 {
     xmlBuildRelativeURISafe;
     xmlBuildURISafe;
     xmlCatalogDumpDoc;
+    xmlCharEncInput;
     xmlCharEncNewCustomHandler;
+    xmlCharEncOutput;
     xmlCheckThreadLocalStorage;
     xmlCreateCharEncodingHandler;
     xmlCtxtErrMemory;
@@ -1925,6 +1942,7 @@ LIBXML2_2.15.0 {
     xmlTextReaderSetResourceLoader;
     xmlTextWriterClose;
     xmlUTF8ToIsolat1;
+    xmlUpgradeOldNs;
     xmlValidateID;
     xmlValidateIDRef;
     xmlValidateIDRefs;
