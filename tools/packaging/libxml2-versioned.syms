@@ -1727,6 +1727,7 @@ LIBXML2_2.15.0 {
     __cxa_thread_atexit_impl;
     __errno_location;
     __gmon_start__;
+    __htmlDefaultSAXHandler;
     __tls_get_addr;
     __xmlBufferAllocScheme;
     __xmlDefaultBufferSize;

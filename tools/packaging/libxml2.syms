@@ -1717,6 +1717,7 @@
     __xmlBufferAllocScheme;
     __xmlDefaultBufferSize;
     __xmlDefaultSAXHandler;
+    __htmlDefaultSAXHandler;
     __xmlDefaultSAXLocator;
     __xmlParserDebugEntities;
     __xmlParserVersion;

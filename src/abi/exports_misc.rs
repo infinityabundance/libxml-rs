@@ -2241,6 +2241,12 @@ pub unsafe extern "C" fn __xmlDefaultSAXLocator() -> *mut _xmlSAXLocator {
     core::ptr::addr_of!(crate::abi::data_globals::xmlDefaultSAXLocator) as *mut _xmlSAXLocator
 }
 
+/// Upstream `__htmlDefaultSAXHandler(void)` — pointer to `htmlDefaultSAXHandler`.
+#[no_mangle]
+pub unsafe extern "C" fn __htmlDefaultSAXHandler() -> *mut _xmlSAXHandlerV1 {
+    core::ptr::addr_of!(crate::abi::data_globals::htmlDefaultSAXHandler) as *mut _xmlSAXHandlerV1
+}
+
 /// Upstream `__xmlLastError(void)` — pointer to the exported `xmlLastError`
 /// mirror (kept in sync with the thread-local error state on every raise).
 #[no_mangle]
