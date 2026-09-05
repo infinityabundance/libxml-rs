@@ -47,12 +47,42 @@ containers `nokogiri-oracle` / `nokogiri-cand`. The committed
 pinned Gemfile (minitest 6.0.1 + minitest-mock 5.27.0) the non-bundled
 `rake test` cannot load `minitest/mock`, so the runner needs `bundle exec`.
 
-## debian — not yet gated
+## debian — reverse-dependency drop-in: 175 missing symbols + SONAME mismatch
 
-Multi-distro Dockerfiles exist (`courts/suites/phase14/docker/Dockerfile.{debian,ubuntu,opensuse,arch,almalinux}`)
-and there is a stale `courts/receipts/phase-14/debian-lxml-out` from the Sep-1
-bootstrap attempt (segfaulted). No current reverse-dependency census/runner has
-been produced.
+Fresh `debian:bookworm` container (`debian-court`), system libxml2 2.9.14 +
+libxslt 1.1.35. Reverse-deps installed: `libxml2-utils` (xmllint),
+`xsltproc`, `python3-lxml`, `ruby-nokogiri`, `php-cli php-xml`.
+
+Drop-in dir `/dropin` = candidate versioned `libxml2.so.2` (R-000179 rebuild) +
+`libxslt.so.1` + `libexslt.so.0` facades.
+
+### Result
+
+- **175 symbols exported by Debian `libxml2.so.2` are missing from the
+  candidate** (system 1786 vs candidate 1748). They are genuinely absent from
+  the unversioned core too (0 overlap), i.e. a real implementation gap, not a
+  version-script-only issue.
+  - `xmlBuf*` buffer API (~45): `xmlBufAdd/Create/Free/Length/Grow/…`
+  - legacy SAX1 handler globals: `startElement`, `characters`, `attribute`,
+    `endElement`, `comment`, `getEntity`, …
+  - parser internals: `inputPush/inputPop/namePush/namePop/nodePush/nodePop/
+    valuePush/valuePop`
+  - global vars + `__` aliases: `xmlGenericError`, `xmlLastError`,
+    `xmlIndentTreeOutput`, `__xmlParserVersion`, `__xmlRegisterCallbacks`, …
+  - encoding: `UTF8ToHtml/UTF8Toisolat1/isolat1ToUTF8`,
+    `xmlEncodeAttributeEntities`, `htmlDecodeEntities`
+  - xz: `__libxml2_xz*`; misc: `xmlAutomataSetFlags`, `xmlCatalogDumpDoc`,
+    `xmlXPtrAdvanceNode`, `libxml_domnode_*_sort`, …
+- **Drop-in load failures** (even before any runtime test):
+  - `xmllint` → `undefined symbol: inputPush` (LIBXML2_2.4.30)
+  - `php -r 'new DOMDocument()'` → `undefined symbol: __xmlParserVersion`
+  - `xsltproc` / `python3-lxml` / `ruby-nokogiri` → `libxml2.so.16: cannot
+    open` (the candidate libxslt/libexslt facades NEED the unversioned
+    `libxml2.so.16`, but the drop-in only supplies `libxml2.so.2`).
+
+So the Debian reverse-dependency court's first-order failure count is **175
+missing symbols + 1 SONAME-mismatch**, and every installed reverse-dep fails to
+load. Fixing this is a prerequisite before any runtime reverse-dep test can run.
 
 ## Priority (biggest movers first)
 
