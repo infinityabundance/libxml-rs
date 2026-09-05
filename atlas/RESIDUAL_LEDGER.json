@@ -1806,7 +1806,7 @@
   },
   {
    "id": "R-000157",
-   "status": "OPEN",
+   "status": "FIXED",
    "phase": "11.1-I",
    "title": "xmlLookupCharEncodingHandler / xmlOpenCharEncodingHandler report XML_ERR_UNSUPPORTED_ENCODING for iconv/ICU-only encodings",
    "surface": "xmlLookupCharEncodingHandler, xmlGetCharEncodingHandler, xmlOpenCharEncodingHandler, xmlCreateCharEncodingHandler (encoding.h)",
@@ -1823,8 +1823,8 @@
     "ENCODING-001"
    ],
    "evidence": [
-    "courts/suites/data-abi/encoding-family-probe.c",
-    "courts/receipts/phase-11/encoding-family-*.json"
+    "courts/receipts/phase-14/php-14-29-encoding-backend-20260905/enc-remainder-probe.php",
+    "courts/receipts/phase-14/php-14-29-encoding-backend-20260905/enc-input-probe.php"
    ],
    "classification": "UNRESOLVED",
    "history": [
@@ -1832,10 +1832,17 @@
      "status": "OPEN",
      "date": "2026-08-30",
      "note": " | 11.1-X final disposition: the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252) remain INTENTIONAL_SAFE_DIVERGENCE: the crate ships no iconv/ICU backend, so XML_ERR_UNSUPPORTED_ENCODING is the correct native answer. ENCODING-001 is byte-identical on the native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and on every error path. Closing this residual would require adding an iconv backend \u2014 a future work item, not a parity defect (triangulated against every upstream epoch: none provides these converters without iconv/ICU). | 11.1-Z.1 amendment: reclassified from INTENTIONAL_SAFE_DIVERGENCE to UNRESOLVED \u2014 the iconv/ICU-only encodings are an actual current Linux-x86-64 observable difference vs the Iconv+ICU-enabled 2.15.3 oracle, not a platform obligation; closing the residual requires implementing an iconv/ICU backend (future implementation work item). Phase 14.27 (2026-09-05) partial closure: Shift_JIS + EUC-JP are now served by NATIVE encoding_rs-backed converters (input and output; CP932-compatible WHATWG Shift_JIS + WHATWG EUC-JP, byte-identical to the oracle's glibc-iconv output on the shared JIS X 0208 repertoire and on the unmappable->decimal-charref error path; WHATWG/CP932 extension-range differences are the residual remainder), joining the earlier native windows-1252 converter. Still iconv/ICU-only (no converter): UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16 and ISO-2022-JP (the last is stateful \u2014 a chunked native implementation must carry escape state across flushes)."
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-05",
+     "note": "Closure evidence (Phase 14.29): enc-remainder-probe.php (writer OUTPUT for UCS-4LE/UCS-4BE/UCS-2/EBCDIC-US/IBM037/ISO-8859-2..11/13..16/ISO-2022-JP) is cmp-identical to the oracle (1897 bytes); enc-input-probe.php (DOMDocument::load of files physically encoded in UCS-4LE/UCS-4BE/UCS-2/EBCDIC-US/ISO-8859-2/ISO-8859-7/ISO-2022-JP incl. ISO-8859-1 control) is byte-identical to the oracle; cargo test --lib 1254 pass (7 new codec tests incl. the EBCDIC bijection, UCS-2 astral unmappable and ISO-2022-JP escape-sequence checks); NTS+ZTS six-extension gates 0 failed each; valgrind 0 errors on the input-decode path. Bounded remainder (not part of the enumerated set): other glibc-iconv names beyond the enumeration (KOI8-R/U, IBM866, macintosh, GBK/Big5/EUC-KR ...) are still unregistered, and ISO-2022-JP chunked output resets its escape state per conversion call (whole-document single-flush output is oracle-identical)."
     }
    ],
    "disposition": "11.1-Z.1 reclassification (UNRESOLVED, not INTENTIONAL_SAFE_DIVERGENCE): this is a current executed-platform difference \u2014 on the 2.15.3 system oracle (Iconv+ICU enabled) the encodings above return handlers; the candidate returns XML_ERR_UNSUPPORTED_ENCODING. The native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and all error paths stay byte-identical (ENCODING-001). Closure requires an iconv/ICU backend \u2014 tracked as UNRESOLVED so it must eventually be implemented rather than waived.",
-   "lesson": "A bounded backend dependency must not be waived as \"safe divergence\" when the executed oracle serves the converters: an honest UNRESOLVED record keeps the implementation work item visible until the iconv/ICU backend lands."
+   "lesson": "A bounded backend dependency must not be waived as \"safe divergence\" when the executed oracle serves the converters: an honest UNRESOLVED record keeps the implementation work item visible until the iconv/ICU backend lands.",
+   "fixed_date": "2026-09-05",
+   "fix": "Phase 14.27 + 14.29: the enumerated iconv/ICU-only set is now served by NATIVE converters. Phase 14.27: encoding_rs-backed Shift_JIS/EUC-JP (CP932-compatible WHATWG Shift_JIS / WHATWG EUC-JP) + writer output-encoder install. Phase 14.29: encoding_rs-backed ISO-8859-2..11/13..16 (ISO-8859-11 == windows-874/TIS-620; ISO-8859-9 via the WHATWG windows-1254 index) + ISO-2022-JP, and NATIVE fixed-width UCS-2 (glibc host-order = little-endian on x86-64) and UCS-4LE/BE codecs + a full EBCDIC code page 037 table derived from the oracle container's glibc iconv (a bijection onto U+0000..U+00FF). All are registered in the handler registry under their canonical names + aliases and are usable by every registry consumer (xmlFindCharEncodingHandler, the writer/save output path, char_enc_in/out). The parser INPUT layer (src/xml/parser/input.rs) now (a) whole-buffer-decodes any registry-served encoding named in a BOM-less XML declaration and (b) pattern-detects the non-ASCII-compatible family exactly like upstream xmlDetectCharEncoding (UCS-4LE 3C 00 00 00, UCS-4BE 00 00 00 3C, EBCDIC 4C 6F A7 94, BOM-less UTF-16LE/BE) and decodes through the registry handlers."
   },
   {
    "id": "R-000158",

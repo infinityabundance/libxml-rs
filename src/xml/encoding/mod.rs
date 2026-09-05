@@ -767,6 +767,180 @@ fn register_builtin_handlers() {
         Some(euc_jp_input_func as xmlCharEncodingInputFunc),
         Some(euc_jp_output_func as xmlCharEncodingOutputFunc),
     );
+
+    // ISO-8859-2..16 (R-000157 remainder, Phase 14.29): encoding_rs-backed
+    // single-byte converters (upstream serves these via iconv on the
+    // executed oracle). ISO-8859-11 == TIS-620 == the WHATWG windows-874
+    // single-byte set on the shared repertoire; both spellings are
+    // registered. The canonical names are the registered keys; lookups are
+    // case-insensitive.
+    macro_rules! register_iso8859 {
+        ($name:literal, $enc:expr, $input:ident, $output:ident) => {
+            register_handler(
+                concat!($name, "\0").as_bytes(),
+                xmlCharEncoding::XML_CHAR_ENCODING_ERROR,
+                xmlCharEncoding::XML_CHAR_ENCODING_ERROR,
+                Some($input as xmlCharEncodingInputFunc),
+                Some($output as xmlCharEncodingOutputFunc),
+            );
+            let _ = $enc; // (encoding identity carried by the func pair)
+        };
+    }
+    register_iso8859!(
+        "ISO-8859-2",
+        encoding_rs::ISO_8859_2,
+        iso_8859_2_input_func,
+        iso_8859_2_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-3",
+        encoding_rs::ISO_8859_3,
+        iso_8859_3_input_func,
+        iso_8859_3_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-4",
+        encoding_rs::ISO_8859_4,
+        iso_8859_4_input_func,
+        iso_8859_4_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-5",
+        encoding_rs::ISO_8859_5,
+        iso_8859_5_input_func,
+        iso_8859_5_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-6",
+        encoding_rs::ISO_8859_6,
+        iso_8859_6_input_func,
+        iso_8859_6_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-7",
+        encoding_rs::ISO_8859_7,
+        iso_8859_7_input_func,
+        iso_8859_7_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-8",
+        encoding_rs::ISO_8859_8,
+        iso_8859_8_input_func,
+        iso_8859_8_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-9",
+        encoding_rs::WINDOWS_1254,
+        iso_8859_9_input_func,
+        iso_8859_9_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-10",
+        encoding_rs::ISO_8859_10,
+        iso_8859_10_input_func,
+        iso_8859_10_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-11",
+        encoding_rs::WINDOWS_874,
+        iso_8859_11_input_func,
+        iso_8859_11_output_func
+    );
+    register_iso8859!(
+        "windows-874",
+        encoding_rs::WINDOWS_874,
+        iso_8859_11_input_func,
+        iso_8859_11_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-13",
+        encoding_rs::ISO_8859_13,
+        iso_8859_13_input_func,
+        iso_8859_13_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-14",
+        encoding_rs::ISO_8859_14,
+        iso_8859_14_input_func,
+        iso_8859_14_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-15",
+        encoding_rs::ISO_8859_15,
+        iso_8859_15_input_func,
+        iso_8859_15_output_func
+    );
+    register_iso8859!(
+        "ISO-8859-16",
+        encoding_rs::ISO_8859_16,
+        iso_8859_16_input_func,
+        iso_8859_16_output_func
+    );
+
+    // ISO-2022-JP (stateful escape-sequence encoding; encoding_rs keeps the
+    // JIS X 0208 / ASCII escape state inside each conversion call).
+    register_handler(
+        b"ISO-2022-JP\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_2022_JP,
+        xmlCharEncoding::XML_CHAR_ENCODING_2022_JP,
+        Some(iso_2022_jp_input_func as xmlCharEncodingInputFunc),
+        Some(iso_2022_jp_output_func as xmlCharEncodingOutputFunc),
+    );
+
+    // UCS-2 (2-byte big-endian units; the glibc iconv "UCS-2" the oracle
+    // serves) and UCS-4LE/BE (4-byte units). Native fixed-width codecs.
+    register_handler(
+        b"UCS-2\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS2,
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS2,
+        Some(ucs2_input_func as xmlCharEncodingInputFunc),
+        Some(ucs2_output_func as xmlCharEncodingOutputFunc),
+    );
+    register_handler(
+        b"UCS-4LE\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        Some(ucs4le_input_func as xmlCharEncodingInputFunc),
+        Some(ucs4le_output_func as xmlCharEncodingOutputFunc),
+    );
+    register_handler(
+        b"UCS-4BE\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE,
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE,
+        Some(ucs4be_input_func as xmlCharEncodingInputFunc),
+        Some(ucs4be_output_func as xmlCharEncodingOutputFunc),
+    );
+    register_handler(
+        b"UCS-4\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        Some(ucs4le_input_func as xmlCharEncodingInputFunc),
+        Some(ucs4le_output_func as xmlCharEncodingOutputFunc),
+    );
+
+    // EBCDIC code page 037 (the glibc iconv "IBM037"/"EBCDIC-US" the
+    // oracle serves). Native 037 table.
+    register_handler(
+        b"IBM037\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
+        xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
+        Some(ebcdic_input_func as xmlCharEncodingInputFunc),
+        Some(ebcdic_output_func as xmlCharEncodingOutputFunc),
+    );
+    register_handler(
+        b"EBCDIC-US\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
+        xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
+        Some(ebcdic_input_func as xmlCharEncodingInputFunc),
+        Some(ebcdic_output_func as xmlCharEncodingOutputFunc),
+    );
+    register_handler(
+        b"EBCDIC\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
+        xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
+        Some(ebcdic_input_func as xmlCharEncodingInputFunc),
+        Some(ebcdic_output_func as xmlCharEncodingOutputFunc),
+    );
 }
 
 /// Helper to create and register an encoding handler.
@@ -1220,7 +1394,11 @@ pub(crate) fn char_enc_out(
     const ENC_INPUT_ERROR: c_int = -2;
     let mut total_written: usize = 0;
     loop {
-        let out_capacity = (in_data.len().saturating_mul(3)).max(64) + 16;
+        // Scratch is >= 5x the input so even the widest native codec
+        // (UCS-4: 4 bytes per ASCII input byte) can never exhaust it
+        // mid-buffer; unmappable characters stop with ENC_INPUT_ERROR and
+        // are substituted here without expansion through the func.
+        let out_capacity = (in_data.len().saturating_mul(5)).max(64) + 16;
         let mut out_vec = vec![0u8; out_capacity];
         let mut out_len = out_capacity as c_int;
         let mut in_len = in_data.len() as c_int;
@@ -1266,9 +1444,96 @@ pub(crate) fn char_enc_out(
     total_written as c_int
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 6b. Whole-buffer declared-encoding decode (parser input layer; R-000157)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Decode a whole raw byte buffer to UTF-8 through the registry handler for
+/// a declared encoding NAME, canonicalizing alias spellings exactly like
+/// `xmlFindCharEncodingHandler_owned`. Used by the parser input layer for
+/// BOM-less inputs whose XML declaration names a legacy encoding (and for
+/// the pattern-detected UCS-4/EBCDIC family, whose canonical names are
+/// passed directly). Returns `Err(())` when the name has no handler or the
+/// bytes are not decodable (iconv EILSEQ semantics — the caller falls back
+/// to the tokenizer's invalid-character diagnostics).
+pub(crate) fn decode_whole_buffer_declared(name: &[u8], data: &[u8]) -> Result<Vec<u8>, ()> {
+    if data.is_empty() {
+        return Ok(Vec::new());
+    }
+    let Ok(cname) = std::ffi::CString::new(name) else {
+        return Err(());
+    };
+    let mut handler = find_encoding_handler(cname.as_ptr() as *const xmlChar);
+    if handler.is_null() {
+        // Canonical re-lookup for alias spellings (upstream
+        // xmlFindCharEncodingHandler: latin2 -> ISO-8859-2, sjis ->
+        // SHIFT_JIS, ...).
+        if let Some(canon) = encoding_name(encoding_from_name(name)) {
+            if let Ok(canon_c) = std::ffi::CString::new(canon) {
+                handler = find_encoding_handler(canon_c.as_ptr() as *const xmlChar);
+            }
+        }
+    }
+    if handler.is_null() {
+        return Err(());
+    }
+    decode_bytes_with_handler(handler, data)
+}
+
+/// Drive a registry handler's `input.legacyFunc` over a whole byte buffer,
+/// growing the output as needed. Each input func converts complete source
+/// characters; source encodings expand at most ~3x into UTF-8, so the
+/// initial 3x+16 scratch completes valid input in one call and the growth
+/// branch only guards pathological (near-invalid) content.
+pub(crate) fn decode_bytes_with_handler(
+    handler: *mut _xmlCharEncodingHandler,
+    data: &[u8],
+) -> Result<Vec<u8>, ()> {
+    if handler.is_null() || data.is_empty() {
+        return Ok(Vec::new());
+    }
+    let input_func = unsafe { (*handler).input.legacyFunc };
+    let Some(input_func) = input_func else {
+        return Err(());
+    };
+    let mut out: Vec<u8> = vec![0u8; data.len().saturating_mul(3) + 16];
+    let mut in_pos: usize = 0;
+    let mut written_total: usize = 0;
+    loop {
+        let mut out_len = (out.len() - written_total) as c_int;
+        let mut in_len = (data.len() - in_pos) as c_int;
+        // SAFETY: `out[written_total..]` and `data[in_pos..]` are valid
+        // writable/readable slices for the call; the func respects the
+        // length pointers (house func contract).
+        let ret = unsafe {
+            input_func(
+                out[written_total..].as_mut_ptr(),
+                &mut out_len,
+                data[in_pos..].as_ptr(),
+                &mut in_len,
+            )
+        };
+        let written = out_len.max(0) as usize;
+        let consumed = in_len.max(0) as usize;
+        written_total += written;
+        in_pos += consumed;
+        if ret < 0 {
+            return Err(());
+        }
+        if in_pos >= data.len() {
+            break;
+        }
+        if written == 0 {
+            // No progress with input left: undecodable tail.
+            return Err(());
+        }
+        out.resize(out.len().saturating_mul(2).max(written_total + 64), 0);
+    }
+    out.truncate(written_total);
+    Ok(out)
+}
+
 /// Append bytes to an `_xmlBuffer`, reallocating if needed.
-///
-/// # Safety
 ///
 /// - `buf` must be a valid `_xmlBuffer` whose `content` is NULL or points to
 ///   `size` allocated bytes; `buf.content` may be replaced by a fresh
@@ -2127,6 +2392,427 @@ unsafe extern "C" fn euc_jp_output_func(
     inlen: *mut c_int,
 ) -> c_int {
     enc_rs_output(encoding_rs::EUC_JP, out, outlen, in_, inlen)
+}
+
+// ── ISO-8859-2..11 / 13..16 + ISO-2022-JP (encoding_rs-backed, R-000157) ──
+
+/// Generate the input/output func pair for an encoding_rs single-byte or
+/// stateful legacy encoding served by name (upstream: iconv).
+macro_rules! define_enc_rs_codec {
+    ($input_fn:ident, $output_fn:ident, $enc:expr) => {
+        #[allow(dead_code)]
+        unsafe extern "C" fn $input_fn(
+            out: *mut c_uchar,
+            outlen: *mut c_int,
+            in_: *const c_uchar,
+            inlen: *mut c_int,
+        ) -> c_int {
+            enc_rs_input($enc, out, outlen, in_, inlen)
+        }
+        #[allow(dead_code)]
+        unsafe extern "C" fn $output_fn(
+            out: *mut c_uchar,
+            outlen: *mut c_int,
+            in_: *const c_uchar,
+            inlen: *mut c_int,
+        ) -> c_int {
+            enc_rs_output($enc, out, outlen, in_, inlen)
+        }
+    };
+}
+
+define_enc_rs_codec!(
+    iso_8859_2_input_func,
+    iso_8859_2_output_func,
+    encoding_rs::ISO_8859_2
+);
+define_enc_rs_codec!(
+    iso_8859_3_input_func,
+    iso_8859_3_output_func,
+    encoding_rs::ISO_8859_3
+);
+define_enc_rs_codec!(
+    iso_8859_4_input_func,
+    iso_8859_4_output_func,
+    encoding_rs::ISO_8859_4
+);
+define_enc_rs_codec!(
+    iso_8859_5_input_func,
+    iso_8859_5_output_func,
+    encoding_rs::ISO_8859_5
+);
+define_enc_rs_codec!(
+    iso_8859_6_input_func,
+    iso_8859_6_output_func,
+    encoding_rs::ISO_8859_6
+);
+define_enc_rs_codec!(
+    iso_8859_7_input_func,
+    iso_8859_7_output_func,
+    encoding_rs::ISO_8859_7
+);
+define_enc_rs_codec!(
+    iso_8859_8_input_func,
+    iso_8859_8_output_func,
+    encoding_rs::ISO_8859_8
+);
+define_enc_rs_codec!(
+    iso_8859_9_input_func,
+    iso_8859_9_output_func,
+    encoding_rs::WINDOWS_1254
+);
+define_enc_rs_codec!(
+    iso_8859_10_input_func,
+    iso_8859_10_output_func,
+    encoding_rs::ISO_8859_10
+);
+define_enc_rs_codec!(
+    iso_8859_11_input_func,
+    iso_8859_11_output_func,
+    encoding_rs::WINDOWS_874
+);
+define_enc_rs_codec!(
+    iso_8859_13_input_func,
+    iso_8859_13_output_func,
+    encoding_rs::ISO_8859_13
+);
+define_enc_rs_codec!(
+    iso_8859_14_input_func,
+    iso_8859_14_output_func,
+    encoding_rs::ISO_8859_14
+);
+define_enc_rs_codec!(
+    iso_8859_15_input_func,
+    iso_8859_15_output_func,
+    encoding_rs::ISO_8859_15
+);
+define_enc_rs_codec!(
+    iso_8859_16_input_func,
+    iso_8859_16_output_func,
+    encoding_rs::ISO_8859_16
+);
+define_enc_rs_codec!(
+    iso_2022_jp_input_func,
+    iso_2022_jp_output_func,
+    encoding_rs::ISO_2022_JP
+);
+
+// ── UCS-2 / UCS-4 / EBCDIC (native codecs; R-000157 remainder) ────────────
+
+/// Shared fixed-width-input converter: 2/4-byte big/little-endian code
+/// units → UTF-8. `width` is 2 (UCS-2) or 4 (UCS-4). Undefined code units
+/// (surrogates for UCS-2, > U+10FFFF for UCS-4) report -1 after the complete
+/// prefix (iconv EILSEQ); an incomplete trailing unit stops cleanly with the
+/// complete prefix consumed (iconv EINVAL semantics — the caller owns the
+/// tail).
+unsafe fn fixed_width_input(
+    le: bool,
+    width: usize,
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    if out.is_null() || outlen.is_null() || in_.is_null() || inlen.is_null() {
+        return -1;
+    }
+    let avail_in = *inlen as usize;
+    let avail_out = *outlen as usize;
+    if avail_in == 0 || avail_out == 0 {
+        *outlen = 0;
+        *inlen = 0;
+        return 0;
+    }
+    let in_data = core::slice::from_raw_parts(in_, avail_in);
+    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+    let mut in_pos = 0usize;
+    let mut out_pos = 0usize;
+    while in_pos + width <= avail_in {
+        let mut unit: u32 = 0;
+        for k in 0..width {
+            let b = in_data[in_pos + k] as u32;
+            unit = if le {
+                unit | (b << (8 * k))
+            } else {
+                (unit << 8) | b
+            };
+        }
+        if unit > 0x10FFFF || (0xD800..=0xDFFF).contains(&unit) {
+            // Undefined code unit: hard error after the complete prefix.
+            *outlen = out_pos as c_int;
+            *inlen = in_pos as c_int;
+            return -1;
+        }
+        let mut buf = [0u8; 4];
+        // SAFETY: unit <= 0x10FFFF and not a surrogate, so char::from_u32
+        // succeeds.
+        let ch = unsafe { char::from_u32_unchecked(unit) };
+        let n = ch.encode_utf8(&mut buf).len();
+        if out_pos + n > avail_out {
+            break;
+        }
+        out_slice[out_pos..out_pos + n].copy_from_slice(&buf[..n]);
+        out_pos += n;
+        in_pos += width;
+    }
+    *outlen = out_pos as c_int;
+    *inlen = in_pos as c_int;
+    out_pos as c_int
+}
+
+/// Shared fixed-width OUTPUT converter: UTF-8 → 2/4-byte big/little-endian
+/// code units. A code point that does not fit the width (astral under UCS-2)
+/// stops with the -2 input-error convention (charref substitution).
+unsafe fn fixed_width_output(
+    le: bool,
+    width: usize,
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    if out.is_null() || outlen.is_null() || in_.is_null() || inlen.is_null() {
+        return -1;
+    }
+    let avail_in = *inlen as usize;
+    let avail_out = *outlen as usize;
+    if avail_in == 0 || avail_out == 0 {
+        *outlen = 0;
+        *inlen = 0;
+        return 0;
+    }
+    let in_data = core::slice::from_raw_parts(in_, avail_in);
+    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+    let mut in_pos = 0usize;
+    let mut out_pos = 0usize;
+    while in_pos < avail_in {
+        let (cp, consumed) = match decode_utf8_char(in_data, in_pos) {
+            None => {
+                // Invalid UTF-8 (or an incomplete trailing sequence): hard
+                // error after the complete prefix (iconv EILSEQ/EINVAL).
+                *outlen = out_pos as c_int;
+                *inlen = in_pos as c_int;
+                return -1;
+            }
+            Some(v) => v,
+        };
+        let max_cp = if width == 2 { 0xFFFF } else { 0x10FFFF };
+        if cp > max_cp {
+            // Not representable at this width (astral under UCS-2): stop
+            // BEFORE it — char_enc_out substitutes the decimal charref.
+            *outlen = out_pos as c_int;
+            *inlen = in_pos as c_int;
+            return ENC_INPUT_ERROR;
+        }
+        if out_pos + width > avail_out {
+            break;
+        }
+        for k in 0..width {
+            let shift = 8 * if le { k } else { width - 1 - k };
+            out_slice[out_pos + k] = ((cp >> shift) & 0xFF) as u8;
+        }
+        out_pos += width;
+        in_pos += consumed;
+    }
+    *outlen = out_pos as c_int;
+    *inlen = in_pos as c_int;
+    out_pos as c_int
+}
+
+/// UCS-2 input (2-byte units → UTF-8). glibc iconv "UCS-2" uses the host
+/// byte order (little-endian on the executed x86-64 oracle), so the codec
+/// is little-endian to match.
+unsafe extern "C" fn ucs2_input_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    fixed_width_input(true, 2, out, outlen, in_, inlen)
+}
+
+/// UCS-2 output (UTF-8 → 2-byte little-endian units).
+unsafe extern "C" fn ucs2_output_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    fixed_width_output(true, 2, out, outlen, in_, inlen)
+}
+
+/// UCS-4LE input (4-byte little-endian units → UTF-8).
+unsafe extern "C" fn ucs4le_input_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    fixed_width_input(true, 4, out, outlen, in_, inlen)
+}
+
+/// UCS-4LE output (UTF-8 → 4-byte little-endian units).
+unsafe extern "C" fn ucs4le_output_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    fixed_width_output(true, 4, out, outlen, in_, inlen)
+}
+
+/// UCS-4BE input (4-byte big-endian units → UTF-8).
+unsafe extern "C" fn ucs4be_input_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    fixed_width_input(false, 4, out, outlen, in_, inlen)
+}
+
+/// UCS-4BE output (UTF-8 → 4-byte big-endian units).
+unsafe extern "C" fn ucs4be_output_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    fixed_width_output(false, 4, out, outlen, in_, inlen)
+}
+
+/// EBCDIC code page 037 → Unicode (derived from the oracle container's glibc
+/// iconv IBM037 table: byte i maps to EBCDIC037_TO_UNICODE[i]; the mapping is
+/// a bijection onto U+0000..U+00FF).
+const EBCDIC037_TO_UNICODE: [u16; 256] = [
+    0x0000, 0x0001, 0x0002, 0x0003, 0x009C, 0x0009, 0x0086, 0x007F, 0x0097, 0x008D, 0x008E, 0x000B,
+    0x000C, 0x000D, 0x000E, 0x000F, 0x0010, 0x0011, 0x0012, 0x0013, 0x009D, 0x0085, 0x0008, 0x0087,
+    0x0018, 0x0019, 0x0092, 0x008F, 0x001C, 0x001D, 0x001E, 0x001F, 0x0080, 0x0081, 0x0082, 0x0083,
+    0x0084, 0x000A, 0x0017, 0x001B, 0x0088, 0x0089, 0x008A, 0x008B, 0x008C, 0x0005, 0x0006, 0x0007,
+    0x0090, 0x0091, 0x0016, 0x0093, 0x0094, 0x0095, 0x0096, 0x0004, 0x0098, 0x0099, 0x009A, 0x009B,
+    0x0014, 0x0015, 0x009E, 0x001A, 0x0020, 0x00A0, 0x00E2, 0x00E4, 0x00E0, 0x00E1, 0x00E3, 0x00E5,
+    0x00E7, 0x00F1, 0x00A2, 0x002E, 0x003C, 0x0028, 0x002B, 0x007C, 0x0026, 0x00E9, 0x00EA, 0x00EB,
+    0x00E8, 0x00ED, 0x00EE, 0x00EF, 0x00EC, 0x00DF, 0x0021, 0x0024, 0x002A, 0x0029, 0x003B, 0x00AC,
+    0x002D, 0x002F, 0x00C2, 0x00C4, 0x00C0, 0x00C1, 0x00C3, 0x00C5, 0x00C7, 0x00D1, 0x00A6, 0x002C,
+    0x0025, 0x005F, 0x003E, 0x003F, 0x00F8, 0x00C9, 0x00CA, 0x00CB, 0x00C8, 0x00CD, 0x00CE, 0x00CF,
+    0x00CC, 0x0060, 0x003A, 0x0023, 0x0040, 0x0027, 0x003D, 0x0022, 0x00D8, 0x0061, 0x0062, 0x0063,
+    0x0064, 0x0065, 0x0066, 0x0067, 0x0068, 0x0069, 0x00AB, 0x00BB, 0x00F0, 0x00FD, 0x00FE, 0x00B1,
+    0x00B0, 0x006A, 0x006B, 0x006C, 0x006D, 0x006E, 0x006F, 0x0070, 0x0071, 0x0072, 0x00AA, 0x00BA,
+    0x00E6, 0x00B8, 0x00C6, 0x00A4, 0x00B5, 0x007E, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 0x0078,
+    0x0079, 0x007A, 0x00A1, 0x00BF, 0x00D0, 0x00DD, 0x00DE, 0x00AE, 0x005E, 0x00A3, 0x00A5, 0x00B7,
+    0x00A9, 0x00A7, 0x00B6, 0x00BC, 0x00BD, 0x00BE, 0x005B, 0x005D, 0x00AF, 0x00A8, 0x00B4, 0x00D7,
+    0x007B, 0x0041, 0x0042, 0x0043, 0x0044, 0x0045, 0x0046, 0x0047, 0x0048, 0x0049, 0x00AD, 0x00F4,
+    0x00F6, 0x00F2, 0x00F3, 0x00F5, 0x007D, 0x004A, 0x004B, 0x004C, 0x004D, 0x004E, 0x004F, 0x0050,
+    0x0051, 0x0052, 0x00B9, 0x00FB, 0x00FC, 0x00F9, 0x00FA, 0x00FF, 0x005C, 0x00F7, 0x0053, 0x0054,
+    0x0055, 0x0056, 0x0057, 0x0058, 0x0059, 0x005A, 0x00B2, 0x00D4, 0x00D6, 0x00D2, 0x00D3, 0x00D5,
+    0x0030, 0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037, 0x0038, 0x0039, 0x00B3, 0x00DB,
+    0x00DC, 0x00D9, 0x00DA, 0x009F,
+];
+
+/// Reverse lookup: Unicode code point → EBCDIC 037 byte. The forward table
+/// is a bijection onto U+0000..U+00FF, so any cp <= 0xFF resolves.
+const fn ebcdic037_cp_to_byte(cp: u32) -> Option<u8> {
+    if cp > 0xFF {
+        return None;
+    }
+    let mut i = 0;
+    while i < 256 {
+        if EBCDIC037_TO_UNICODE[i] as u32 == cp {
+            return Some(i as u8);
+        }
+        i += 1;
+    }
+    None
+}
+
+/// EBCDIC (IBM037) input: bytes → UTF-8 via the 037 table.
+unsafe extern "C" fn ebcdic_input_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    if out.is_null() || outlen.is_null() || in_.is_null() || inlen.is_null() {
+        return -1;
+    }
+    let avail_in = *inlen as usize;
+    let avail_out = *outlen as usize;
+    if avail_in == 0 || avail_out == 0 {
+        *outlen = 0;
+        *inlen = 0;
+        return 0;
+    }
+    let in_data = core::slice::from_raw_parts(in_, avail_in);
+    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+    let mut in_pos = 0usize;
+    let mut out_pos = 0usize;
+    while in_pos < avail_in {
+        let cp = u32::from(EBCDIC037_TO_UNICODE[in_data[in_pos] as usize]);
+        let mut buf = [0u8; 2];
+        let ch = unsafe { char::from_u32_unchecked(cp) };
+        let n = ch.encode_utf8(&mut buf).len();
+        if out_pos + n > avail_out {
+            break;
+        }
+        out_slice[out_pos..out_pos + n].copy_from_slice(&buf[..n]);
+        out_pos += n;
+        in_pos += 1;
+    }
+    *outlen = out_pos as c_int;
+    *inlen = in_pos as c_int;
+    out_pos as c_int
+}
+
+/// EBCDIC (IBM037) output: UTF-8 → 037 bytes. Unmappable code points
+/// (> U+00FF) stop with the -2 input-error convention (charref).
+unsafe extern "C" fn ebcdic_output_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    if out.is_null() || outlen.is_null() || in_.is_null() || inlen.is_null() {
+        return -1;
+    }
+    let avail_in = *inlen as usize;
+    let avail_out = *outlen as usize;
+    if avail_in == 0 || avail_out == 0 {
+        *outlen = 0;
+        *inlen = 0;
+        return 0;
+    }
+    let in_data = core::slice::from_raw_parts(in_, avail_in);
+    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+    let mut in_pos = 0usize;
+    let mut out_pos = 0usize;
+    while in_pos < avail_in {
+        let (cp, consumed) = match decode_utf8_char(in_data, in_pos) {
+            None => {
+                *outlen = out_pos as c_int;
+                *inlen = in_pos as c_int;
+                return -1;
+            }
+            Some(v) => v,
+        };
+        match ebcdic037_cp_to_byte(cp) {
+            None => {
+                *outlen = out_pos as c_int;
+                *inlen = in_pos as c_int;
+                return ENC_INPUT_ERROR;
+            }
+            Some(byte) => {
+                if out_pos + 1 > avail_out {
+                    break;
+                }
+                out_slice[out_pos] = byte;
+                out_pos += 1;
+            }
+        }
+        in_pos += consumed;
+    }
+    *outlen = out_pos as c_int;
+    *inlen = in_pos as c_int;
+    out_pos as c_int
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3588,5 +4274,96 @@ mod tests {
         assert_eq!(rc, -1);
         assert_eq!(out, b"A");
         assert_eq!(consumed, 1);
+    }
+
+    // ── R-000157 remainder codecs (UCS-4/UCS-2/EBCDIC/ISO-8859-x) ─────────
+
+    #[test]
+    fn test_ucs4le_output_matches_utf32le() {
+        // あ U+3042 → 42 30 00 00 little-endian; 中 U+4E2D → 2D 4E 00 00.
+        let (rc, out, consumed) = call_func(ucs4le_output_func, "Aあ中".as_bytes());
+        assert!(rc >= 0);
+        assert_eq!(out, [0x41, 0, 0, 0, 0x42, 0x30, 0, 0, 0x2D, 0x4E, 0, 0]);
+        assert_eq!(consumed, "Aあ中".len());
+        let (rc, back, _) = call_func(ucs4le_input_func, &out);
+        assert!(rc >= 0);
+        assert_eq!(back, "Aあ中".as_bytes());
+    }
+
+    #[test]
+    fn test_ucs4be_output_matches_utf32be() {
+        let (rc, out, _) = call_func(ucs4be_output_func, "Aあ".as_bytes());
+        assert!(rc >= 0);
+        assert_eq!(out, [0, 0, 0, 0x41, 0, 0, 0x30, 0x42]);
+        let (rc, back, _) = call_func(ucs4be_input_func, &out);
+        assert!(rc >= 0);
+        assert_eq!(back, "Aあ".as_bytes());
+    }
+
+    #[test]
+    fn test_ucs2_output_astral_is_unmappable() {
+        // glibc "UCS-2" on x86 is little-endian; astral chars are unmappable
+        // (the -2 input-error convention -> decimal charref).
+        let (rc, out, consumed) = call_func(ucs2_output_func, "A😀".as_bytes());
+        assert_eq!(rc, ENC_INPUT_ERROR);
+        assert_eq!(out, [0x41, 0]);
+        assert_eq!(consumed, 1);
+    }
+
+    #[test]
+    fn test_ebcdic037_bijection() {
+        // cp037: space 0x40, 'A' 0xC1, '0' 0xF0.
+        let (rc, out, _) = call_func(ebcdic_output_func, b"A 0");
+        assert!(rc >= 0);
+        assert_eq!(out, [0xC1, 0x40, 0xF0]);
+        let (rc, back, _) = call_func(ebcdic_input_func, &out);
+        assert!(rc >= 0);
+        assert_eq!(back, b"A 0");
+        // Every byte is defined and the mapping is a bijection onto
+        // U+0000..U+00FF (derived from the oracle glibc iconv IBM037).
+        for (b, cp) in EBCDIC037_TO_UNICODE.iter().enumerate() {
+            assert_eq!(ebcdic037_cp_to_byte(u32::from(*cp)), Some(b as u8));
+        }
+        assert!(ebcdic037_cp_to_byte(0x100).is_none());
+    }
+
+    #[test]
+    fn test_iso_8859_2_output_roundtrip() {
+        // ą U+0105 → 0xB1, ć U+0107 → 0xE6, ę U+0119 → 0xEA (ISO-8859-2).
+        let (rc, out, _) = call_func(iso_8859_2_output_func, "Aąćę".as_bytes());
+        assert!(rc >= 0);
+        assert_eq!(out, [0x41, 0xB1, 0xE6, 0xEA]);
+        let (rc, back, _) = call_func(iso_8859_2_input_func, &out);
+        assert!(rc >= 0);
+        assert_eq!(back, "Aąćę".as_bytes());
+    }
+
+    #[test]
+    fn test_decode_whole_buffer_declared_dispatch() {
+        // Whole-buffer decode via the registry (parser input layer path).
+        let iso2 = [0x41u8, 0xB1, 0xE6, 0xEA];
+        assert_eq!(
+            decode_whole_buffer_declared(b"ISO-8859-2", &iso2).unwrap(),
+            "Aąćę".as_bytes()
+        );
+        // Alias spelling resolves through the canonical re-lookup.
+        assert_eq!(
+            decode_whole_buffer_declared(b"latin2", &iso2).unwrap(),
+            "Aąćę".as_bytes()
+        );
+        // Unknown names error (no handler).
+        assert!(decode_whole_buffer_declared(b"no-such-encoding", b"abc").is_err());
+    }
+
+    #[test]
+    fn test_iso_2022_jp_output_uses_escape_sequences() {
+        // A → ASCII; あ U+3042 → ESC $ B + 0x24 0x22; back to ASCII ESC ( B.
+        let (rc, out, consumed) = call_func(iso_2022_jp_output_func, "AあB".as_bytes());
+        assert!(rc >= 0);
+        assert_eq!(out, b"A\x1B$B$\"\x1B(BB");
+        assert_eq!(consumed, "AあB".len());
+        let (rc, back, _) = call_func(iso_2022_jp_input_func, &out);
+        assert!(rc >= 0);
+        assert_eq!(back, "AあB".as_bytes());
     }
 }

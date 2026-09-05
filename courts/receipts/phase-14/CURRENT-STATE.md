@@ -66,6 +66,14 @@ receipt trail.
   xml_parse now parses depth-100000 crash-free where depth-4000 SEGFAULTed
   (oracle: 20000); SAX event sequences + DOM serialize + the 2048 tree cap
   are oracle-identical (receipt php-14-28-iterative-parser-20260905).
+- 14.29 (encoding backend completion): R-000157 FIXED — the full enumerated
+  iconv/ICU set is native: encoding_rs-backed ISO-8859-2..11/13..16 +
+  ISO-2022-JP, native UCS-2 (host-order LE) + UCS-4LE/BE codecs and a
+  glibc-derived EBCDIC 037 table; the parser input layer now
+  whole-buffer-decodes any registry-served declared encoding and
+  pattern-detects the UCS-4/EBCDIC/BOM-less-UTF-16 family (upstream
+  xmlDetectCharEncoding); output + input probes are cmp-identical to the
+  oracle (receipt php-14-29-encoding-backend-20260905).
 
 ## Register of residuals opened/closed by the court
 
@@ -74,22 +82,23 @@ receipt trail.
   empty comment, unsatisfiable by any correct libxml2).
 - R-000199 (FIXED, Phase 14.28): iterative element driver — see the 14.28
   receipt.
+- R-000157 (FIXED, Phase 14.29): the enumerated iconv/ICU encoding set is
+  native (handlers + parser input side) — see the 14.29 receipt; bounded
+  remainder: iconv names beyond the enumeration and multi-flush ISO-2022-JP
+  escape state.
 - R-000177 (OPEN): cross-DSO state partitioning — Phase 14.26 added the
   same-thread cross-DSO loader-slot bridge (dlsym of the core's exported
   `__xml{Parser,Output}BufferCreateFilenameValue` accessor) restoring
   upstream single-core hook visibility under php ZTS; the structural
   partition remains pinned by DSO-STATE-COHERENCE.
-- R-000157 (OPEN): narrowed to the still-iconv-only remainder
-  (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP) after the native
-  windows-1252 (14.20) + Shift_JIS/EUC-JP (14.27) closures.
-- Open global residuals (atlas/RESIDUAL_LEDGER.json): R-000157, R-000168,
-  R-000177, R-000179 (4 open).
+- Open global residuals (atlas/RESIDUAL_LEDGER.json): R-000168, R-000177,
+  R-000179 (3 open).
 
 ## Next
 
-R-000157 remainder (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16 native
-converters; ISO-2022-JP stateful) is the next engine item; R-000177
-cross-DSO observable-state coherence (the 14.26 bridge extended to the
-remaining per-thread globals) and R-000179 (versioned-distro symbol graph)
-follow; Debian reverse-dependency court (Phase-14 consumer 4/4) is the next
-custodian gate. See PROJECT_STATE.md "Phase 14" + "Immediate Next Actions".
+R-000177 cross-DSO observable-state coherence (the 14.26 bridge extended to
+the remaining per-thread globals) and R-000179 (versioned-distro symbol
+graph) are the open engine items; the bounded R-000157 remainder (iconv
+names beyond the enumerated set; multi-flush ISO-2022-JP state) can follow;
+Debian reverse-dependency court (Phase-14 consumer 4/4) is the next custodian
+gate. See PROJECT_STATE.md "Phase 14" + "Immediate Next Actions".

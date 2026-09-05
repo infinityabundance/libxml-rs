@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**4 open residuals:** R-000157, R-000168, R-000177, R-000179
+**3 open residuals:** R-000168, R-000177, R-000179
 
 ## Phase 0 Residuals
 
@@ -704,18 +704,20 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Evidence:** ['src/xml/writer/mod.rs', 'include/libxml/xmlwriter.h', 'courts/receipts/phase-11/writer-family-*.json']
 - **Classification:** CANDIDATE_BUG
 
-### R-000157: xmlLookupCharEncodingHandler / xmlOpenCharEncodingHandler report XML_ERR_UNSUPPORTED_ENCODING for iconv/ICU-only encodings (OPEN)
+### R-000157: xmlLookupCharEncodingHandler / xmlOpenCharEncodingHandler report XML_ERR_UNSUPPORTED_ENCODING for iconv/ICU-only encodings (FIXED)
 
-- **Status:** OPEN
+- **Status:** FIXED (2026-09-05, Phase 11.1-I)
 - **Component:** src/xml/encoding/mod.rs, src/abi/exports_xml2.rs
 - **Surface:** xmlLookupCharEncodingHandler, xmlGetCharEncodingHandler, xmlOpenCharEncodingHandler, xmlCreateCharEncodingHandler (encoding.h)
 - **Oracle versions:** libxml2 2.15.3 (system)
 - **Root cause:** Upstream serves UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..9/10/11/13..16, ISO-2022-JP, Shift_JIS, EUC-JP and windows-1252 via iconv/ICU plus static 8-bit tables; the crate ships no iconv/ICU backend, so those encodings report XML_ERR_UNSUPPORTED_ENCODING (32) where the oracle returns a converter. The native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and all error paths are byte-identical (ENCODING-001).
 - **Observable residual:** A C consumer requesting an iconv-only encoding gets XML_ERR_UNSUPPORTED_ENCODING instead of a handler; conversion through those encodings is unavailable in the candidate.
+- **Fix:** Phase 14.27 + 14.29: the enumerated iconv/ICU-only set is now served by NATIVE converters. Phase 14.27: encoding_rs-backed Shift_JIS/EUC-JP (CP932-compatible WHATWG Shift_JIS / WHATWG EUC-JP) + writer output-encoder install. Phase 14.29: encoding_rs-backed ISO-8859-2..11/13..16 (ISO-8859-11 == windows-874/TIS-620; ISO-8859-9 via the WHATWG windows-1254 index) + ISO-2022-JP, and NATIVE fixed-width UCS-2 (glibc host-order = little-endian on x86-64) and UCS-4LE/BE codecs + a full EBCDIC code page 037 table derived from the oracle container's glibc iconv (a bijection onto U+0000..U+00FF). All are registered in the handler registry under their canonical names + aliases and are usable by every registry consumer (xmlFindCharEncodingHandler, the writer/save output path, char_enc_in/out). The parser INPUT layer (src/xml/parser/input.rs) now (a) whole-buffer-decodes any registry-served encoding named in a BOM-less XML declaration and (b) pattern-detects the non-ASCII-compatible family exactly like upstream xmlDetectCharEncoding (UCS-4LE 3C 00 00 00, UCS-4BE 00 00 00 3C, EBCDIC 4C 6F A7 94, BOM-less UTF-16LE/BE) and decodes through the registry handlers.
 - **Phase 11 triangulation:** The reference system oracle (libxml2 2.15.3, built with Iconv and ICU enabled) returns usable converters for UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP and windows-1252, while the candidate reports XML_ERR_UNSUPPORTED_ENCODING — a REAL current Linux-x86-64 observable parity gap. No upstream epoch provides these converters without iconv/ICU, so closing the gap requires implementing an iconv (or ICU) backend in the crate: a future implementation work item, not a permanent waiver.
 - **Regression courts:** ENCODING-001.
-- **Evidence:** ['courts/suites/data-abi/encoding-family-probe.c', 'courts/receipts/phase-11/encoding-family-*.json']
+- **Evidence:** ['courts/receipts/phase-14/php-14-29-encoding-backend-20260905/enc-remainder-probe.php', 'courts/receipts/phase-14/php-14-29-encoding-backend-20260905/enc-input-probe.php']
 - **Classification:** UNRESOLVED
+- **History:** OPEN 2026-08-30 ( | 11.1-X final disposition: the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252) remain INTENTIONAL_SAFE_DIVERGENCE: the crate ships no iconv/ICU backend, so XML_ERR_UNSUPPORTED_ENCODING is the correct native answer. ENCODING-001 is byte-identical on the native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and on every error path. Closing this residual would require adding an iconv backend — a future work item, not a parity defect (triangulated against every upstream epoch: none provides these converters without iconv/ICU). | 11.1-Z.1 amendment: reclassified from INTENTIONAL_SAFE_DIVERGENCE to UNRESOLVED — the iconv/ICU-only encodings are an actual current Linux-x86-64 observable difference vs the Iconv+ICU-enabled 2.15.3 oracle, not a platform obligation; closing the residual requires implementing an iconv/ICU backend (future implementation work item). Phase 14.27 (2026-09-05) partial closure: Shift_JIS + EUC-JP are now served by NATIVE encoding_rs-backed converters (input and output; CP932-compatible WHATWG Shift_JIS + WHATWG EUC-JP, byte-identical to the oracle's glibc-iconv output on the shared JIS X 0208 repertoire and on the unmappable->decimal-charref error path; WHATWG/CP932 extension-range differences are the residual remainder), joining the earlier native windows-1252 converter. Still iconv/ICU-only (no converter): UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16 and ISO-2022-JP (the last is stateful — a chunked native implementation must carry escape state across flushes).); FIXED 2026-09-05 (Closure evidence (Phase 14.29): enc-remainder-probe.php (writer OUTPUT for UCS-4LE/UCS-4BE/UCS-2/EBCDIC-US/IBM037/ISO-8859-2..11/13..16/ISO-2022-JP) is cmp-identical to the oracle (1897 bytes); enc-input-probe.php (DOMDocument::load of files physically encoded in UCS-4LE/UCS-4BE/UCS-2/EBCDIC-US/ISO-8859-2/ISO-8859-7/ISO-2022-JP incl. ISO-8859-1 control) is byte-identical to the oracle; cargo test --lib 1254 pass (7 new codec tests incl. the EBCDIC bijection, UCS-2 astral unmappable and ISO-2022-JP escape-sequence checks); NTS+ZTS six-extension gates 0 failed each; valgrind 0 errors on the input-decode path. Bounded remainder (not part of the enumerated set): other glibc-iconv names beyond the enumeration (KOI8-R/U, IBM866, macintosh, GBK/Big5/EUC-KR ...) are still unregistered, and ISO-2022-JP chunked output resets its escape state per conversion call (whole-document single-flush output is oracle-identical).)
 
 ### R-000160: libxslt exports with literally-trivial upstream 1.1.45 bodies classified as intentional no-ops (FIXED)
 

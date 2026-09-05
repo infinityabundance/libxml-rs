@@ -101,6 +101,12 @@ pub(crate) enum Encoding {
     Ascii,
     /// ISO-8859-1 (Latin-1).
     Iso8859_1,
+    /// EBCDIC code page 037 (first-4-byte pattern detected: 4C 6F A7 94).
+    Ebcdic,
+    /// UCS-4 (UTF-32) little-endian (pattern: 3C 00 00 00).
+    Ucs4Le,
+    /// UCS-4 (UTF-32) big-endian (pattern: 00 00 00 3C).
+    Ucs4Be,
     /// Other encoding (name stored for reference).
     Other(String),
 }
@@ -115,6 +121,9 @@ impl Encoding {
             Self::Utf16Be => xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE,
             Self::Ascii => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
             Self::Iso8859_1 => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+            Self::Ebcdic => xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
+            Self::Ucs4Le => xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+            Self::Ucs4Be => xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE,
             Self::Other(_) => xmlCharEncoding::XML_CHAR_ENCODING_ERROR,
         }
     }
@@ -366,17 +375,29 @@ impl InputBuffer {
         }
         let first_real_bytes = self.data.is_empty() && self.pos == 0 && !self.bom_consumed;
         // Once the accumulated buffer has been transcoded to UTF-8, the raw
-        // tail still arrives in the declared (source) encoding. ISO-8859-1 is
-        // a byte-wise mapping, so convert just the new tail (KEY-1). For any
-        // other latched encoding, keep appending raw like upstream's buffered
-        // input does before the parser's own encoder processes it.
-        if self.converted_to_utf8 && matches!(self.encoding, Encoding::Iso8859_1) {
-            if let InputSource::Memory(d) = &mut self.source {
-                d.extend_from_slice(bytes);
+        // tail still arrives in the declared (source) encoding. Convert just
+        // the new tail per the source encoding (KEY-1): single-byte legacy
+        // encodings (ISO-8859-x, windows-1252 …) and the other
+        // registry-served declared encodings are byte-wise/self-synchronizing
+        // enough to convert tail-chunk-wise like upstream's incremental
+        // encoder. For any other latched encoding, keep appending raw like
+        // upstream's buffered input does before the parser's own encoder
+        // processes it.
+        if self.converted_to_utf8 && !matches!(self.encoding, Encoding::Utf8 | Encoding::Ascii) {
+            if let Some(src_name) = self.legacy_source_encoding_name() {
+                if let InputSource::Memory(d) = &mut self.source {
+                    d.extend_from_slice(bytes);
+                }
+                let tail = crate::xml::encoding::decode_whole_buffer_declared(&src_name, bytes);
+                if let Ok(conv) = tail {
+                    self.data.extend_from_slice(&conv);
+                    return;
+                }
+                // Undecodable tail: append raw; the tokenizer reports the
+                // invalid-character error.
+                self.data.extend_from_slice(bytes);
+                return;
             }
-            let tail = crate::xml::encoding::latin1_to_utf8(bytes);
-            self.data.extend_from_slice(&tail);
-            return;
         }
         self.data.extend_from_slice(bytes);
         if let InputSource::Memory(d) = &mut self.source {
@@ -576,7 +597,48 @@ impl InputBuffer {
             return;
         }
 
-        // No BOM found. Default to UTF-8 and check for XML declaration.
+        // No BOM found. Sniff upstream xmlDetectCharEncoding's first-4-byte
+        // patterns for the non-ASCII-compatible encodings whose XML
+        // declaration cannot be read as ASCII/UTF-8: UCS-4 LE/BE (the `<?`
+        // code units interleaved with NULs), EBCDIC 037 (`<?xm` as 4C 6F A7
+        // 94) and BOM-less UTF-16 (`<\0?\0` / `\0<\0?` — upstream also
+        // auto-recognizes those). Each switches to the matching whole-buffer
+        // decoder; the parser then reads the converted UTF-8 (the
+        // declaration inside is never re-scanned, exactly like upstream's
+        // xmlSwitchEncoding).
+        if self.data.len() >= 4 {
+            let d0 = self.data[0];
+            let d1 = self.data[1];
+            let d2 = self.data[2];
+            let d3 = self.data[3];
+            if d0 == 0x3C && d1 == 0x00 && d2 == 0x00 && d3 == 0x00 {
+                self.encoding = Encoding::Ucs4Le;
+                self.convert_declared_native_encoding();
+                return;
+            }
+            if d0 == 0x00 && d1 == 0x00 && d2 == 0x00 && d3 == 0x3C {
+                self.encoding = Encoding::Ucs4Be;
+                self.convert_declared_native_encoding();
+                return;
+            }
+            if d0 == 0x4C && d1 == 0x6F && d2 == 0xA7 && d3 == 0x94 {
+                self.encoding = Encoding::Ebcdic;
+                self.convert_declared_native_encoding();
+                return;
+            }
+            if d0 == 0x3C && d1 == 0x00 && d2 == 0x3F && d3 == 0x00 {
+                self.encoding = Encoding::Utf16Le;
+                self.convert_detected_utf16();
+                return;
+            }
+            if d0 == 0x00 && d1 == 0x3C && d2 == 0x00 && d3 == 0x3F {
+                self.encoding = Encoding::Utf16Be;
+                self.convert_detected_utf16();
+                return;
+            }
+        }
+
+        // No BOM or pattern found. Default to UTF-8 and check for XML declaration.
         self.encoding = Encoding::Utf8;
         self.detect_encoding_from_xml_declaration();
         // The XML declaration may name a native non-UTF-8 encoding (e.g.
@@ -589,12 +651,17 @@ impl InputBuffer {
     }
 
     /// Transcode `data` to UTF-8 when the XML declaration named an encoding
-    /// the crate has a built-in converter for. ISO-8859-1 is a byte-wise
-    /// mapping (every byte 0x80..=0xFF becomes a two-byte UTF-8 sequence, all
-    /// ASCII stays identical — including the declaration itself), so the whole
-    /// buffered stream converts safely regardless of how much has arrived.
-    /// Unknown encodings (R-000157: iconv/ICU-only names) are left untouched
-    /// so the existing unsupported-encoding handling applies unchanged.
+    /// the crate has a converter for, or the first bytes pattern-detected a
+    /// non-ASCII-compatible encoding (UCS-4/EBCDIC). ISO-8859-1 is a
+    /// byte-wise mapping (every byte 0x80..=0xFF becomes a two-byte UTF-8
+    /// sequence, all ASCII stays identical — including the declaration
+    /// itself), so the whole buffered stream converts safely regardless of
+    /// how much has arrived. Every other registry-served legacy encoding
+    /// (ISO-8859-2..16, windows-1252, Shift_JIS, EUC-JP, ISO-2022-JP, UCS-2,
+    /// UCS-4LE/BE, EBCDIC …) is decoded whole-buffer through its registered
+    /// input handler the same way (R-000157 input side, Phase 14.29).
+    /// Unknown encodings are left untouched so the existing
+    /// unsupported-encoding handling applies unchanged.
     fn convert_declared_native_encoding(&mut self) {
         if self.converted_to_utf8 {
             return;
@@ -610,7 +677,40 @@ impl InputBuffer {
                 // incremental pushes stop re-detecting.
                 self.converted_to_utf8 = true;
             }
+            Encoding::Other(name) => self.convert_via_registry(&name.clone().into_bytes()),
+            Encoding::Ebcdic => self.convert_via_registry(b"IBM037"),
+            Encoding::Ucs4Le => self.convert_via_registry(b"UCS-4LE"),
+            Encoding::Ucs4Be => self.convert_via_registry(b"UCS-4BE"),
             _ => {}
+        }
+    }
+
+    /// Whole-buffer decode of the raw input through the registry handler for
+    /// `name`. On success the converted UTF-8 replaces `data` and the
+    /// position resets; on failure the raw bytes stay and the tokenizer
+    /// reports the invalid-character error like upstream (mirrors the
+    /// UTF-16 `convert_detected_utf16` failure handling). The `encoding`
+    /// field is deliberately NOT reset: incremental `push_bytes` tails still
+    /// arrive in the source encoding and convert per-tail (KEY-1).
+    fn convert_via_registry(&mut self, name: &[u8]) {
+        if self.converted_to_utf8 || self.data.is_empty() {
+            return;
+        }
+        match crate::xml::encoding::decode_whole_buffer_declared(name, &self.data) {
+            Ok(conv) => {
+                self.data = conv;
+                self.pos = 0;
+                self.col = 1;
+                self.bom_consumed = false;
+                self.converted_to_utf8 = true;
+            }
+            Err(()) => {
+                self.encoding = Encoding::Utf8;
+                self.pos = 0;
+                self.col = 1;
+                self.bom_consumed = false;
+                self.converted_to_utf8 = false;
+            }
         }
     }
 
@@ -686,6 +786,21 @@ impl InputBuffer {
                 true
             }
             None => false,
+        }
+    }
+
+    /// The registry name of the source encoding whose raw bytes still
+    /// arrive incrementally after a whole-buffer conversion (KEY-1 tail
+    /// path). UTF-16 (BOM-switched) and UTF-8/ASCII return None — their
+    /// tails are handled by the existing raw-append paths.
+    fn legacy_source_encoding_name(&self) -> Option<Vec<u8>> {
+        match &self.encoding {
+            Encoding::Iso8859_1 => Some(b"ISO-8859-1".to_vec()),
+            Encoding::Ebcdic => Some(b"IBM037".to_vec()),
+            Encoding::Ucs4Le => Some(b"UCS-4LE".to_vec()),
+            Encoding::Ucs4Be => Some(b"UCS-4BE".to_vec()),
+            Encoding::Other(name) => Some(name.clone().into_bytes()),
+            _ => None,
         }
     }
 
