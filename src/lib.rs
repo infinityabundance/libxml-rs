@@ -127,6 +127,10 @@ use abi::versioning::*;
 // Internal modules (not part of public C ABI)
 mod internal;
 
+// Property-based fuzzing smoke targets (proptest, runs in `cargo test`).
+#[cfg(test)]
+mod fuzz;
+
 /// The full version string of the libxml-rs crate (from Cargo.toml).
 pub const LIBXML_RS_VERSION: &str = env!("CARGO_PKG_VERSION");
 

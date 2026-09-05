@@ -14,32 +14,48 @@
 # exact export map. This wrapper rewrites that rustc-generated script path
 # to the committed tools/packaging/libxml2.syms, so ld receives exactly one
 # version script: the upstream LIBXML2_2.x named-version graph + terminal
-# node, with INTERNAL_LEAK symbols hidden. Bins/tests/examples (rlib links)
-# are unaffected (no cdylib script).
+# node, with INTERNAL_LEAK symbols hidden.
 #
-# rustc's default linker is `cc`, so this adds no new toolchain requirement;
-# cross builds and non-Linux targets are unaffected (the config key is
-# target-specific and this script no-ops there).
+# IMPORTANT: the rewrite must apply ONLY to the libxml2 core cdylib
+# (`liblibxml_rs*.so`). Cargo also links proc-macro and dependency dylibs
+# (e.g. serde_derive, quickcheck_macros) through this wrapper, and those carry
+# their own rustc-generated version script; substituting libxml2.syms there
+# fails the link with "symbol not defined". We therefore do a first pass to
+# discover the `-o` target and only rewrite for the core cdylib.
+#
+# Bins/tests/examples (rlib links) have no cdylib script and are unaffected.
 set -u
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# First pass: discover the output artifact so we know whether this link is the
+# libxml2 core cdylib (the only one whose version script we replace).
 out=
 prev=
-args=""
 for a in "$@"; do
     if [ "$prev" = "-o" ]; then out="$a"; fi
     prev="$a"
-    case "$a" in
-        -Wl,--version-script=*)
-            vs="${a#-Wl,--version-script=}"
-            # rustc's generated cdylib export list lives under deps/rustci*
-            if printf '%s' "$vs" | grep -qi '/deps/rustc.*/list$'; then
-                if [ -f "$SCRIPT_DIR/libxml2.syms" ]; then
-                    a="-Wl,--version-script=$SCRIPT_DIR/libxml2.syms"
+done
+
+case "$out" in
+    *libxml_rs*.so) rewrite=1 ;;
+    *) rewrite=0 ;;
+esac
+
+args=""
+for a in "$@"; do
+    if [ "$rewrite" = "1" ]; then
+        case "$a" in
+            -Wl,--version-script=*)
+                vs="${a#-Wl,--version-script=}"
+                # rustc's generated cdylib export list lives under deps/rustci*
+                if printf '%s' "$vs" | grep -qi '/deps/rustc.*/list$'; then
+                    if [ -f "$SCRIPT_DIR/libxml2.syms" ]; then
+                        a="-Wl,--version-script=$SCRIPT_DIR/libxml2.syms"
+                    fi
                 fi
-            fi
-            ;;
-    esac
+                ;;
+        esac
+    fi
     args="$args $a"
 done
 

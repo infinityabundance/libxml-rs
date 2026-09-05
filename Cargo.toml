@@ -54,6 +54,10 @@ path = "src/bin/xsltproc.rs"
 name = "abi_mirror"
 path = "examples/abi_mirror.rs"
 
+[[bench]]
+name = "benchmarks"
+harness = false
+
 [profile.release]
 lto = true
 codegen-units = 1
@@ -63,6 +67,12 @@ strip = "symbols"
 [profile.dev]
 debug = true
 overflow-checks = true
+
+# Criterion needs unwind so it can catch panics during a benchmark iteration;
+# the release cdylib keeps panic = abort for the drop-in DSO, but the bench
+# binary (rlib-linked) overrides it here.
+[profile.bench]
+panic = "unwind"
 
 [features]
 default = ["libxml2", "libxslt", "xpath", "xinclude", "schemas", "catalog", "html", "c14n", "regexp", "reader", "writer", "debug", "threads"]
