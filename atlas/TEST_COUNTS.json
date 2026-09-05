@@ -1,10 +1,10 @@
 {
  "schema": "test-counts-1",
  "generator": "tools/evidence/test_counts.py",
- "generated": "2026-09-05T01:47:30Z",
+ "generated": "2026-09-05T21:46:40Z",
  "cargo_test_lib": {
   "status": "ok",
-  "passed": 1254,
+  "passed": 1255,
   "failed": 0,
   "ignored": 1
  },
@@ -72,7 +72,7 @@
   "XSLT serialization": 4,
   "XSLT sorting": 3,
   "XSLT stylesheet": 4,
-  "XSLT transform": 26,
+  "XSLT transform": 27,
   "XSLT variables/params": 4,
   "XSLT whitespace": 2
  },

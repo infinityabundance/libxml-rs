@@ -2851,9 +2851,12 @@ pub(crate) unsafe fn eval_avt(
     crate::xml::string::bytes_to_xmlstr(&out)
 }
 
-/// Collect the raw prefixes listed in an `xsl:exclude-result-prefixes`
-/// attribute (on a literal result element or the stylesheet root). An empty
-/// entry represents `#default` (the default namespace).
+/// Collect the raw prefixes listed in an `xsl:exclude-result-prefixes` or
+/// `xsl:extension-element-prefixes` attribute (on a literal result element or
+/// the stylesheet root). Both designate namespaces that must not be copied to
+/// the result tree (XSLT 1.0 §14.1: an extension namespace is excluded from
+/// the result unless actually used). An empty entry represents `#default`
+/// (the default namespace).
 ///
 /// # Safety
 ///
@@ -2875,7 +2878,7 @@ unsafe fn read_excluded_prefixes(node: *mut _xmlNode) -> Vec<Vec<u8>> {
                     name,
                     libc::strlen(name as *const libc::c_char) as usize,
                 );
-                b == b"exclude-result-prefixes"
+                b == b"exclude-result-prefixes" || b == b"extension-element-prefixes"
             };
             let is_xsl_ns = if (*prop).ns.is_null() {
                 false
@@ -2889,7 +2892,11 @@ unsafe fn read_excluded_prefixes(node: *mut _xmlNode) -> Vec<Vec<u8>> {
                     hb == XSLT_NAMESPACE_BYTES
                 }
             };
-            is_name && is_xsl_ns
+            // Unprefixed XSLT attributes on the stylesheet root have no
+            // namespace (`exclude-result-prefixes="..."` written without
+            // `xsl:`); a literal result element uses the prefixed
+            // `xsl:exclude-result-prefixes` form. Accept both.
+            is_name && (is_xsl_ns || (*prop).ns.is_null())
         };
         if is_exclude {
             let content = node_get_content((*prop).children);
@@ -4200,6 +4207,49 @@ mod tests {
             let out = run_transform(xsl, src);
             assert!(out.contains("<max>9</max>"), "math:max wrong: {}", out);
             assert!(out.contains("<cnt>4</cnt>"), "count wrong: {}", out);
+        }
+    }
+
+    #[test]
+    /// Tests that `extension-element-prefixes` and `exclude-result-prefixes`
+    /// namespaces are not copied into the result tree (XSLT 1.0 §14.1 / §7.1.3).
+    ///
+    /// Regression: the unprefixed forms on `xsl:stylesheet` were missed by the
+    /// namespace check, so `xmlns:exsl` leaked into every serialized result.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call.
+    fn test_xslt_extension_prefixes_excluded_from_result() {
+        unsafe {
+            crate::exslt::register_all();
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns:exsl=\"http://exslt.org/common\" extension-element-prefixes=\"exsl\">\
+              <xsl:template match=\"/\">\
+                <out><v><xsl:value-of select=\"count(exsl:node-set(/doc/b)/b)\"/></v></out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?><doc><b>x</b></doc>\0";
+            let out = run_transform(xsl, src);
+            assert!(
+                !out.contains("xmlns:exsl"),
+                "extension-element-prefixes leaked: {}",
+                out
+            );
+
+            let xsl2 = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns:exsl=\"http://exslt.org/common\" exclude-result-prefixes=\"exsl\">\
+              <xsl:template match=\"/\">\
+                <out><v><xsl:value-of select=\"count(exsl:node-set(/doc/b)/b)\"/></v></out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let out2 = run_transform(xsl2, src);
+            assert!(
+                !out2.contains("xmlns:exsl"),
+                "exclude-result-prefixes leaked: {}",
+                out2
+            );
         }
     }
 
