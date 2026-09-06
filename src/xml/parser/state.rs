@@ -4440,16 +4440,16 @@ impl XmlParser {
                                 } else {
                                     ptr::null_mut()
                                 };
-                                // The transient name was only needed for the
-                                // resolution/dispatch (Phase 16 ASan fuzz
-                                // fix).
-                                if !name_cstr.is_null() {
-                                    unsafe {
-                                        crate::abi::allocator::xmlFreeImpl(
-                                            name_cstr as *mut c_void,
-                                        );
-                                    }
-                                }
+                                // NOTE: name_cstr must NOT be freed here — the
+                                // entity-ref node built below duplicates it
+                                // (xml_strdup at the node-name assignment) and
+                                // the single xmlFreeImpl at the end of the
+                                // reference arm is the real owner (Phase 16
+                                // ASan fuzz fix: an early free made xml_strdup
+                                // copy from a freed block the allocator had
+                                // already reissued — an overlapping
+                                // copy_nonoverlapping UB panic in the php
+                                // gh12223 simplexml gate).
                                 if !ent2.is_null() {
                                     // Window for a possible loop raise: the
                                     // referencing entity's content at the
@@ -4505,7 +4505,17 @@ impl XmlParser {
                                         last = node;
                                     }
                                 }
-                                crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+                                // The reference name is released once, after its
+                                // last use (the node-name xml_strdup above) — this
+                                // covers the unresolved-entity arm too (Phase 16
+                                // ASan fuzz fix).
+                                if !name_cstr.is_null() {
+                                    unsafe {
+                                        crate::abi::allocator::xmlFreeImpl(
+                                            name_cstr as *mut c_void,
+                                        );
+                                    }
+                                }
                             }
                         }
                         i += semi_rel + 2;
@@ -5009,11 +5019,12 @@ impl XmlParser {
             );
 
             // ns_vec layout: [prefix0, uri0, prefix1, uri1, ...]. NULL
-            // prefixes (no declared prefix) and static empty URIs
-            // (xmlns="") must not be freed; every other slot is an
+            // prefixes (no declared prefix) and the static empty URI
+            // (xmlns="" — c"") must not be freed; every other slot is an
             // individually xmlMalloc'd buffer.
+            let static_empty = c"".as_ptr() as *const xmlChar;
             for &p in &ns_vec {
-                if !p.is_null() {
+                if !p.is_null() && p != static_empty {
                     crate::abi::allocator::xmlFreeImpl(p as *mut c_void);
                 }
             }
