@@ -1,4 +1,4 @@
-/* harness.c — oracle-vs-candidate C ABI benchmark harness.
+/* harness.c — oracle-vs-candidate C ABI benchmark harness (v2).
  *
  * A single source compiled against either upstream libxml2 (oracle) or the
  * libxml-rs drop-in (candidate). It exercises the exact same public C ABI a
@@ -7,24 +7,33 @@
  *
  * Operations: parse, xpath, serialize, html, validate, xslt.
  *
- * Output is CSV on stdout (machine-readable for the Pareto matrix):
- *   op,bytes,iters,mean_ns,throughput_bytes_per_sec
+ * v2 changes (Phase 16.2):
+ *   - warmup phase (discarded) before timed trials,
+ *   - N independent timed trials in a single process (single-provider, so no
+ *     cross-provider contamination),
+ *   - per-trial wall time (CLOCK_MONOTONIC) and CPU time (getrusage diff),
+ *   - peak RSS (ru_maxrss) reported once at the end.
+ *
+ * Output is CSV on stdout (machine-readable for the analysis layer):
+ *
+ *   op,bytes,iters,trial,wall_ns_per_iter,cpu_ns_per_iter
+ *   ... one row per trial ...
+ *   RSS,<peak_rss_kib>
  *
  * Usage:
- *   harness <op> <bytes> <iters> [seed]
- *
- * The generated document size is approximate (`bytes` target); the actual
- * byte length is reported in the CSV row.
+ *   harness <op> <bytes> <iters> <trials> [warmup_iters]
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/resource.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
 #include <libxml/HTMLparser.h>
+#include <libxml/valid.h>
 #include <libxslt/xslt.h>
 #include <libxslt/transform.h>
 
@@ -32,6 +41,13 @@ static double now_ns(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (double)ts.tv_sec * 1e9 + (double)ts.tv_nsec;
+}
+
+static double cpu_ns(void) {
+    struct rusage ru;
+    getrusage(RUSAGE_SELF, &ru);
+    return (double)(ru.ru_utime.tv_sec + ru.ru_stime.tv_sec) * 1e9 +
+           (double)(ru.ru_utime.tv_usec + ru.ru_stime.tv_usec) * 1e3;
 }
 
 /* Build an element-heavy XML document approximating `bytes` bytes. */
@@ -85,85 +101,97 @@ static xmlDocPtr parse_mem(const char *buf, size_t len) {
     return xmlReadMemory(buf, (int)len, NULL, NULL, 0);
 }
 
+static void run_op(const char *op, const char *buf, size_t len) {
+    if (strcmp(op, "parse") == 0) {
+        xmlDocPtr d = parse_mem(buf, len);
+        if (d) xmlFreeDoc(d);
+    } else if (strcmp(op, "html") == 0) {
+        xmlDocPtr d = htmlReadMemory(buf, (int)len, NULL, NULL, 0);
+        if (d) xmlFreeDoc(d);
+    } else if (strcmp(op, "serialize") == 0) {
+        xmlDocPtr d = parse_mem(buf, len);
+        if (d) {
+            xmlChar *mem = NULL;
+            int sz = 0;
+            xmlDocDumpMemory(d, &mem, &sz);
+            if (mem) xmlFree(mem);
+            xmlFreeDoc(d);
+        }
+    } else if (strcmp(op, "xpath") == 0) {
+        xmlDocPtr d = parse_mem(buf, len);
+        if (d) {
+            xmlXPathContextPtr ctx = xmlXPathNewContext(d);
+            xmlXPathObjectPtr obj = xmlXPathEvalExpression((const xmlChar *)"count(//item)", ctx);
+            if (obj) xmlXPathFreeObject(obj);
+            xmlXPathFreeContext(ctx);
+            xmlFreeDoc(d);
+        }
+    } else if (strcmp(op, "validate") == 0) {
+        xmlDocPtr d = parse_mem(buf, len);
+        if (d) {
+            xmlValidCtxtPtr v = xmlNewValidCtxt();
+            xmlValidateDocument(v, d);
+            xmlFreeValidCtxt(v);
+            xmlFreeDoc(d);
+        }
+    } else if (strcmp(op, "xslt") == 0) {
+        xmlDocPtr sd = xmlReadMemory(XSLT_DOC, (int)strlen(XSLT_DOC), NULL, NULL, 0);
+        xsltStylesheetPtr style = xsltParseStylesheetDoc(sd);
+        xmlDocPtr d = parse_mem(buf, len);
+        if (d) {
+            xmlDocPtr out = xsltApplyStylesheet(style, d, NULL);
+            if (out) xmlFreeDoc(out);
+            xmlFreeDoc(d);
+        }
+        if (style) xsltFreeStylesheet(style);
+    }
+}
+
 int main(int argc, char **argv) {
-    if (argc < 4) {
-        fprintf(stderr, "usage: %s <op> <bytes> <iters>\n", argv[0]);
+    if (argc < 5) {
+        fprintf(stderr, "usage: %s <op> <bytes> <iters> <trials> [warmup_iters]\n", argv[0]);
         return 2;
     }
     const char *op = argv[1];
     size_t target = (size_t)strtoull(argv[2], NULL, 10);
     int iters = atoi(argv[3]);
+    int trials = atoi(argv[4]);
+    int warmup = (argc > 5) ? atoi(argv[5]) : 0;
     if (iters <= 0) iters = 1;
+    if (trials <= 0) trials = 1;
 
     char *buf = NULL;
     size_t len = 0;
-    double t0, t1;
-    int i;
-
-    if (strcmp(op, "parse") == 0 || strcmp(op, "xpath") == 0 ||
-        strcmp(op, "serialize") == 0 || strcmp(op, "validate") == 0 ||
-        strcmp(op, "xslt") == 0) {
-        buf = make_xml(target, &len);
-    } else if (strcmp(op, "html") == 0) {
+    if (strcmp(op, "html") == 0) {
         buf = make_html(target, &len);
     } else {
-        fprintf(stderr, "unknown op: %s\n", op);
-        return 2;
+        buf = make_xml(target, &len);
     }
     if (!buf) return 1;
 
-    t0 = now_ns();
-    for (i = 0; i < iters; i++) {
-        if (strcmp(op, "parse") == 0) {
-            xmlDocPtr d = parse_mem(buf, len);
-            if (d) xmlFreeDoc(d);
-        } else if (strcmp(op, "html") == 0) {
-            xmlDocPtr d = htmlReadMemory(buf, (int)len, NULL, NULL, 0);
-            if (d) xmlFreeDoc(d);
-        } else if (strcmp(op, "serialize") == 0) {
-            xmlDocPtr d = parse_mem(buf, len);
-            if (d) {
-                xmlChar *mem = NULL;
-                int sz = 0;
-                xmlDocDumpMemory(d, &mem, &sz);
-                if (mem) xmlFree(mem);
-                xmlFreeDoc(d);
-            }
-        } else if (strcmp(op, "xpath") == 0) {
-            xmlDocPtr d = parse_mem(buf, len);
-            if (d) {
-                xmlXPathContextPtr ctx = xmlXPathNewContext(d);
-                xmlXPathObjectPtr obj = xmlXPathEvalExpression((const xmlChar *)"count(//item)", ctx);
-                if (obj) xmlXPathFreeObject(obj);
-                xmlXPathFreeContext(ctx);
-                xmlFreeDoc(d);
-            }
-        } else if (strcmp(op, "validate") == 0) {
-            xmlDocPtr d = parse_mem(buf, len);
-            if (d) {
-                xmlValidCtxtPtr v = xmlNewValidCtxt();
-                xmlValidateDocument(v, d);
-                xmlFreeValidCtxt(v);
-                xmlFreeDoc(d);
-            }
-        } else if (strcmp(op, "xslt") == 0) {
-            xmlDocPtr sd = xmlReadMemory(XSLT_DOC, (int)strlen(XSLT_DOC), NULL, NULL, 0);
-            xsltStylesheetPtr style = xsltParseStylesheetDoc(sd);
-            xmlDocPtr d = parse_mem(buf, len);
-            if (d) {
-                xmlDocPtr out = xsltApplyStylesheet(style, d, NULL);
-                if (out) xmlFreeDoc(out);
-                xmlFreeDoc(d);
-            }
-            if (style) xsltFreeStylesheet(style);
-        }
+    /* Warmup (discarded). */
+    for (int i = 0; i < warmup; i++) {
+        run_op(op, buf, len);
     }
-    t1 = now_ns();
-    double total = t1 - t0;
-    double mean = total / (double)iters;
-    double thrpt = (mean > 0.0) ? ((double)len / (mean / 1e9)) : 0.0;
 
-    printf("%s,%zu,%d,%.1f,%.1f\n", op, len, iters, mean, thrpt);
+    /* Independent timed trials. */
+    for (int t = 0; t < trials; t++) {
+        double w0 = now_ns();
+        double c0 = cpu_ns();
+        for (int i = 0; i < iters; i++) {
+            run_op(op, buf, len);
+        }
+        double w1 = now_ns();
+        double c1 = cpu_ns();
+        double wall_per_iter = (w1 - w0) / (double)iters;
+        double cpu_per_iter = (c1 - c0) / (double)iters;
+        printf("%s,%zu,%d,%d,%.1f,%.1f\n", op, len, iters, t, wall_per_iter, cpu_per_iter);
+    }
+
+    struct rusage ru;
+    getrusage(RUSAGE_SELF, &ru);
+    printf("RSS,%ld\n", ru.ru_maxrss);
+
     free(buf);
     xmlCleanupParser();
     return 0;
