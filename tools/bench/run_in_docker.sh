@@ -13,11 +13,15 @@
 #   sh tools/bench/run_in_docker.sh [output-dir] [cpuset]
 #
 # Env overrides: BENCH_TRIALS BENCH_MIN_NS BENCH_CONFIDENCE
+#   BENCH_IMAGE — oracle court image tag (default libxml-rs/phase14-debian:1,
+#   the locally built court; CI builds the same oracle from
+#   docker/Dockerfile.oracle and passes that tag).
 
 set -eu
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="${1:-$ROOT/target/bench-matrix}"
 CPUSET="${2:-0}"
+IMAGE="${BENCH_IMAGE:-libxml-rs/phase14-debian:1}"
 # Canonicalize to an absolute path so docker -v treats it as a host dir.
 mkdir -p "$OUT"
 OUT="$(cd "$OUT" && pwd)"
@@ -37,7 +41,7 @@ docker run --rm \
   -e BENCH_CPUSET="$CPUSET" \
   -e BENCH_CONFIDENCE="${BENCH_CONFIDENCE:-0.95}" \
   -e CANDIDATE_SHA="$CANDIDATE_SHA" \
-  libxml-rs/phase14-debian:1 \
+  "$IMAGE" \
   python3 /bench/pareto_matrix.py
 
 # Retain raw observations in the forensic evidence tree.

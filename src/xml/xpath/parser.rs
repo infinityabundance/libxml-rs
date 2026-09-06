@@ -110,6 +110,22 @@ impl std::fmt::Display for ParseError {
 // Parser
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/// UPSTREAM-PARITY (xpath.c `XPATH_MAX_RECURSION_DEPTH`): upstream budgets
+/// recursive expression parsing at 10 depth units per nested expression
+/// ("Parsing a single '(' pushes about 10 functions on the call stack before
+/// recursing!") and raises XPATH_RECURSION_LIMIT_EXCEEDED once the budget is
+/// exhausted. Normal builds use 5000 units (~499 nested '(' groups — the
+/// 2.15.3 oracle accepts 499 and rejects 500, verified with xmllint);
+/// oss-fuzz builds define FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION and drop to
+/// 500 units so the fuzzer cannot overflow the ASan stack. cargo-fuzz sets
+/// `--cfg fuzzing`, so the candidate applies the same reduced budget under
+/// the fuzz harness (Phase 16 ASan fuzz finding: a ~3000-'(' expression
+/// overflowed the stack in parse_unary_expr).
+#[cfg(fuzzing)]
+const XPATH_MAX_RECURSION_DEPTH: u32 = 500;
+#[cfg(not(fuzzing))]
+const XPATH_MAX_RECURSION_DEPTH: u32 = 5000;
+
 /// Recursive-descent parser for XPath 1.0 expressions.
 ///
 /// Consumes the token stream produced by the lexer and builds the
@@ -118,12 +134,19 @@ impl std::fmt::Display for ParseError {
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    /// Nested-expression depth budget (upstream `ctxt->context->depth`),
+    /// incremented by 10 per `Expr` production entered.
+    depth: u32,
 }
 
 impl Parser {
     /// Create a parser over a token stream produced by the lexer.
     pub const fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, pos: 0 }
+        Self {
+            tokens,
+            pos: 0,
+            depth: 0,
+        }
     }
 
     /// Parse a complete XPath expression.
@@ -189,6 +212,21 @@ impl Parser {
 
     /// OrExpr ::= AndExpr ('or' AndExpr)*
     fn parse_or_expr(&mut self) -> Result<Expr, ParseError> {
+        // UPSTREAM-PARITY (xpath.c xmlXPathCompileExpr): each nested
+        // expression (a '(' group, function argument, predicate, ...)
+        // consumes 10 depth units; exceeding the budget fails compilation
+        // with XPATH_RECURSION_LIMIT_EXCEEDED ("Recursion limit exceeded") —
+        // exactly the oracle's observable boundary, never a stack overflow.
+        if self.depth >= XPATH_MAX_RECURSION_DEPTH {
+            return Err(self.error("Recursion limit exceeded".to_string()));
+        }
+        self.depth += 10;
+        let result = self.parse_or_expr_body();
+        self.depth -= 10;
+        result
+    }
+
+    fn parse_or_expr_body(&mut self) -> Result<Expr, ParseError> {
         let mut left = self.parse_and_expr()?;
         while matches!(self.current(), Token::Or) {
             self.advance();

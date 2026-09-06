@@ -6480,6 +6480,12 @@ pub unsafe extern "C" fn xmlXPathFreeContext(ctxt: *mut _xmlXPathContext) {
         xmlHashFree((*ctxt).nsHash, Some(free_ns_uri_payload));
         (*ctxt).nsHash = ptr::null_mut();
     }
+    // UPSTREAM-PARITY (xpath.c xmlXPathFreeContext): the lastError fields
+    // are heap-owned by the context (raise_xpath_error strdups the
+    // expression into str1 and later raises free the previous strings
+    // before overwriting). Release them here or every failed evaluation
+    // leaks (Phase 16 ASan fuzz finding: 1 B per error raise).
+    crate::xml::globals::free_error_strings(&(*ctxt).lastError);
     // Free the C ABI context struct.
     xmlFreeImpl(ctxt as *mut c_void);
 }
@@ -6554,6 +6560,16 @@ pub(crate) unsafe fn raise_internal_xpath_error(
         Some(m) if m.starts_with("Undefined namespace prefix") => (XPATH_UNDEF_PREFIX_ERROR, m),
         Some(m) if m.starts_with("Unregistered function") => (XPATH_UNKNOWN_FUNC_ERROR, m),
         Some(m) if m.starts_with("Undefined variable") => (XPATH_UNDEF_VARIABLE_ERROR, m),
+        // UPSTREAM-PARITY (xpath.c XPATH_RECURSION_LIMIT_EXCEEDED — the
+        // compile recursion budget, e.g. a 500th nested '(' group): the
+        // oracle reports "XPath error : Recursion limit exceeded" (verified
+        // against xmllint 2.15.3).
+        Some(m) if m == "Recursion limit exceeded" => (XPATH_RECURSION_LIMIT_EXCEEDED, m),
+        // UPSTREAM-PARITY (xpath.c XPATH_INVALID_TYPE — FilterExpr
+        // '/'-paths and unions over non-node-sets, e.g. `1/b`): the oracle
+        // reports "XPath error : Invalid type" (verified against xmllint
+        // 2.15.3).
+        Some(m) if m == "Invalid type" => (XPATH_INVALID_TYPE, m),
         Some(m) => (XPATH_EXPR_ERROR, m),
         None => {
             internal.set_error("Invalid expression");

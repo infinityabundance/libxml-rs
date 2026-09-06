@@ -933,8 +933,9 @@ impl XmlParser {
     ///
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; the
     ///   function writes `instate`, `version`, `encoding` and `standalone`.
-    ///   The `version`/`encoding` pointers are NUL-terminated buffers
-    ///   created by `vec_to_cstr` and are intentionally leaked, not freed.
+    ///   The `version`/`encoding` pointers are heap buffers owned by the
+    ///   context and released by `free_parser_ctxt` (upstream xmlFreeParserCtxt
+    ///   frees ctxt->version/encoding/directory).
     fn parse_xml_decl(
         &mut self,
         version: Vec<u8>,
@@ -949,8 +950,10 @@ impl XmlParser {
         if !version.is_empty() {
             let version_cstr = Self::vec_to_cstr(&version);
             unsafe {
+                // A context is only reused after a full parse (ctxtReset),
+                // so a stale version means a prior error path left one.
                 if !(*self.ctxt).version.is_null() {
-                    // Free old version — in a real impl we'd use xmlFree
+                    crate::abi::allocator::xmlFreeImpl((*self.ctxt).version as *mut c_void);
                 }
                 (*self.ctxt).version = version_cstr as *mut xmlChar;
             }
@@ -961,7 +964,7 @@ impl XmlParser {
             let enc_cstr = Self::vec_to_cstr(&enc);
             unsafe {
                 if !(*self.ctxt).encoding.is_null() {
-                    // Free old encoding
+                    crate::abi::allocator::xmlFreeImpl((*self.ctxt).encoding as *mut c_void);
                 }
                 (*self.ctxt).encoding = enc_cstr as *mut xmlChar;
                 // UPSTREAM-PARITY (parser.c xmlParseXMLDecl / SAX2.c
@@ -1065,6 +1068,17 @@ impl XmlParser {
                 let sax = &*(*self.ctxt).sax;
                 let ctx = (*self.ctxt).userData;
                 SaxDispatcher::internal_subset(sax, ctx, name_cstr, ext_cstr, sys_cstr);
+                // internalSubset dispatch is synchronous; the three strings
+                // are only valid for the callback (Phase 16 ASan fuzz fix).
+                if !name_cstr.is_null() {
+                    crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+                }
+                if !ext_cstr.is_null() {
+                    crate::abi::allocator::xmlFreeImpl(ext_cstr as *mut c_void);
+                }
+                if !sys_cstr.is_null() {
+                    crate::abi::allocator::xmlFreeImpl(sys_cstr as *mut c_void);
+                }
             }
         }
 
@@ -1437,6 +1451,13 @@ impl XmlParser {
         let name_cstr = Self::vec_to_cstr_null(name);
         let ent = unsafe { crate::xml::entities::get_parameter_entity(doc, name_cstr) };
         if ent.is_null() {
+            // The name was only needed for the lookup (Phase 16 ASan fuzz
+            // fix).
+            if !name_cstr.is_null() {
+                unsafe {
+                    crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+                }
+            }
             return;
         }
         unsafe {
@@ -1462,6 +1483,11 @@ impl XmlParser {
                     }
                 }
                 _ => {}
+            }
+            // The name was only needed for the lookup (Phase 16 ASan fuzz
+            // fix).
+            if !name_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
             }
         }
     }
@@ -1503,6 +1529,13 @@ impl XmlParser {
                         let name_cstr = Self::vec_to_cstr_null(pe_name);
                         let ent =
                             unsafe { crate::xml::entities::get_parameter_entity(doc, name_cstr) };
+                        // The name was only needed for the lookup (Phase 16
+                        // ASan fuzz fix).
+                        if !name_cstr.is_null() {
+                            unsafe {
+                                crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+                            }
+                        }
                         let expanded: Option<Vec<u8>> = if !ent.is_null() {
                             let e = unsafe { &*ent };
                             use crate::abi::types::xmlEntityType::*;
@@ -1841,12 +1874,17 @@ impl XmlParser {
             if name.is_empty() {
                 return ptr::null_mut();
             }
+            let name_c = Self::vec_to_cstr_null(name);
             let node = unsafe {
-                crate::xml::dtd::create_content_model(
-                    Self::vec_to_cstr_null(name),
-                    XML_ELEMENT_CONTENT_ELEMENT as c_int,
-                )
+                crate::xml::dtd::create_content_model(name_c, XML_ELEMENT_CONTENT_ELEMENT as c_int)
             };
+            // create_content_model xml_strdup's the name; the transient is
+            // transient (Phase 16 ASan fuzz fix).
+            if !name_c.is_null() {
+                unsafe {
+                    crate::abi::allocator::xmlFreeImpl(name_c as *mut c_void);
+                }
+            }
             apply_occurrence(node, s, idx);
             return node;
         }
@@ -3664,7 +3702,17 @@ impl XmlParser {
                                     let name_cstr = Self::vec_to_cstr_null(inner);
                                     let ent =
                                         unsafe { crate::xml::entities::get_entity(doc, name_cstr) };
-                                    unsafe { libc::free(name_cstr as *mut libc::c_void) };
+                                    // xmlMallocImpl'd buffer: released through
+                                    // xmlFreeImpl so xmlMemSetup hooks stay
+                                    // honoured (was libc::free — wrong under
+                                    // a custom allocator).
+                                    if !name_cstr.is_null() {
+                                        unsafe {
+                                            crate::abi::allocator::xmlFreeImpl(
+                                                name_cstr as *mut c_void,
+                                            );
+                                        }
+                                    }
                                     if !ent.is_null() {
                                         let content = unsafe { (*ent).content };
                                         // UPSTREAM-PARITY (xmlCheckEntityInAttValue):
@@ -3893,19 +3941,34 @@ impl XmlParser {
                 // dispatches it.
                 let name_cstr = Self::vec_to_cstr_null(name);
                 unsafe {
-                    let pre = crate::abi::exports_misc::xmlGetPredefinedEntity(name_cstr);
-                    if pre.is_null() {
-                        crate::xml::tree::get_doc_entity((*self.ctxt).myDoc, name_cstr)
-                    } else {
-                        pre
+                    let found = {
+                        let pre = crate::abi::exports_misc::xmlGetPredefinedEntity(name_cstr);
+                        if pre.is_null() {
+                            crate::xml::tree::get_doc_entity((*self.ctxt).myDoc, name_cstr)
+                        } else {
+                            pre
+                        }
+                    };
+                    // The lookup only reads the transient name (Phase 16 ASan
+                    // fuzz fix: leaked one buffer per entity reference during
+                    // incremental probes).
+                    if !name_cstr.is_null() {
+                        crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
                     }
+                    found
                 }
             } else if !self.is_sax_disabled() {
                 let name_cstr = Self::vec_to_cstr_null(name);
                 unsafe {
                     let sax = &*(*self.ctxt).sax;
                     let ctx = (*self.ctxt).userData;
-                    SaxDispatcher::get_entity(sax, ctx, name_cstr)
+                    let ent = SaxDispatcher::get_entity(sax, ctx, name_cstr);
+                    // getEntity dispatch is synchronous; the name is only
+                    // needed for the call (Phase 16 ASan fuzz fix).
+                    if !name_cstr.is_null() {
+                        crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+                    }
+                    ent
                 }
             } else {
                 ptr::null_mut()
@@ -4009,6 +4072,11 @@ impl XmlParser {
                         let sax = &*(*self.ctxt).sax;
                         let ctx = (*self.ctxt).userData;
                         SaxDispatcher::reference(sax, ctx, name_cstr);
+                        // reference dispatch is synchronous; the name is only
+                        // valid for the callback (Phase 16 ASan fuzz fix).
+                        if !name_cstr.is_null() {
+                            crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+                        }
                     }
                 }
                 return Ok(());
@@ -4122,6 +4190,11 @@ impl XmlParser {
                         let sax = &*(*self.ctxt).sax;
                         let ctx = (*self.ctxt).userData;
                         SaxDispatcher::reference(sax, ctx, name_cstr);
+                        // reference dispatch is synchronous; the name is only
+                        // valid for the callback (Phase 16 ASan fuzz fix).
+                        if !name_cstr.is_null() {
+                            crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+                        }
                     }
                 }
             }
@@ -4367,6 +4440,16 @@ impl XmlParser {
                                 } else {
                                     ptr::null_mut()
                                 };
+                                // The transient name was only needed for the
+                                // resolution/dispatch (Phase 16 ASan fuzz
+                                // fix).
+                                if !name_cstr.is_null() {
+                                    unsafe {
+                                        crate::abi::allocator::xmlFreeImpl(
+                                            name_cstr as *mut c_void,
+                                        );
+                                    }
+                                }
                                 if !ent2.is_null() {
                                     // Window for a possible loop raise: the
                                     // referencing entity's content at the
@@ -4594,8 +4677,9 @@ impl XmlParser {
     ///   `node` may be NULL or a valid `_xmlNode` (for `tree::search_ns`);
     ///   `attrs` and `ns_decls` are caller-owned slices live for the call;
     ///   the NUL-terminated C strings passed to the SAX callback are
-    ///   intentionally leaked and stay valid for the duration of the
-    ///   callback.
+    ///   heap buffers owned by this call and released after the synchronous
+    ///   dispatch returns (the SAX contract only guarantees their validity
+    ///   for the duration of the callback).
     fn sax_start_element(
         &mut self,
         _name: &[u8],
@@ -4754,12 +4838,13 @@ impl XmlParser {
                     Self::vec_to_cstr_null(prefix)
                 };
                 // UPSTREAM-PARITY: xmlns="" declares an empty (not NULL)
-                // namespace URI — xmlNewNs stores href="".
+                // namespace URI — xmlNewNs stores href="". A static empty
+                // string keeps the non-NULL contract without a per-
+                // declaration heap allocation (Phase 16 ASan fuzz fix: the
+                // previous vec + forget variant leaked one byte per
+                // declaration and could never be reclaimed).
                 let uri_cstr = if uri.is_empty() {
-                    let empty = vec![0u8];
-                    let p = empty.as_ptr();
-                    core::mem::forget(empty);
-                    p as *const xmlChar
+                    c"".as_ptr() as *const xmlChar
                 } else {
                     Self::vec_to_cstr_null(uri)
                 };
@@ -4893,12 +4978,23 @@ impl XmlParser {
             } else {
                 attr_vec.as_mut_ptr()
             };
+            // The element name is dictionary-owned when the parser interns
+            // names (sax_name_cstr) — that pointer must never be freed here;
+            // the no-dict fallback heap copy is released after dispatch.
+            let ctxt = self.ctxt;
+            let localname_dict_owned =
+                (*ctxt).dictNames != 0 && !(*ctxt).dict.is_null() && !localname.is_empty();
 
-            // Leak the vectors so the pointers remain valid during the callback
-            // In a production implementation, we'd manage this more carefully
-            core::mem::forget(ns_vec);
-            core::mem::forget(attr_vec);
-
+            // UPSTREAM-PARITY (SAX2.c): every pointer handed to a SAX2
+            // callback — the namespaces array, the attributes array and all
+            // strings they reference — is only valid FOR THE DURATION of the
+            // callback; consumers that need them longer must copy (the
+            // default tree-builder xmlSAX2StartElementNs does). Dispatch is
+            // synchronous, so every heap buffer allocated above is released
+            // the moment the callback returns (Phase 16 ASan fuzz fix: the
+            // previous forget() leaked every namespace declaration and
+            // attribute name/value on EVERY start tag — the dominant parser
+            // leak).
             SaxDispatcher::start_element(
                 sax,
                 ctx,
@@ -4911,6 +5007,39 @@ impl XmlParser {
                 nb_defaulted,
                 attributes_ptr,
             );
+
+            // ns_vec layout: [prefix0, uri0, prefix1, uri1, ...]. NULL
+            // prefixes (no declared prefix) and static empty URIs
+            // (xmlns="") must not be freed; every other slot is an
+            // individually xmlMalloc'd buffer.
+            for &p in &ns_vec {
+                if !p.is_null() {
+                    crate::abi::allocator::xmlFreeImpl(p as *mut c_void);
+                }
+            }
+            // attr_vec layout: five slots per attribute/local entry
+            // [local, prefix, uri, value_start, value_end]. value_end is an
+            // INTERIOR alias of value_start (value_start + len) and must not
+            // be freed; value_start may be the static c"" for an empty
+            // value. Only slots 0..=3 of each group are candidates.
+            let attr_groups = attr_vec.len() / 5;
+            for g in 0..attr_groups {
+                for slot in 0..4 {
+                    let p = attr_vec[g * 5 + slot];
+                    if !p.is_null() && p != c"".as_ptr() as *const xmlChar {
+                        crate::abi::allocator::xmlFreeImpl(p as *mut c_void);
+                    }
+                }
+            }
+            if !localname_dict_owned && !localname_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(localname_cstr as *mut c_void);
+            }
+            if !prefix_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(prefix_cstr as *mut c_void);
+            }
+            if !uri_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(uri_cstr as *mut c_void);
+            }
         }
     }
 
@@ -4926,8 +5055,8 @@ impl XmlParser {
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
     ///   valid `sax`/`userData`; the caller-owned slices live for the call;
     ///   the NUL-terminated C strings passed to the SAX callback are
-    ///   intentionally leaked and stay valid for the duration of the
-    ///   callback.
+    ///   heap buffers owned by this call and released after the synchronous
+    ///   dispatch returns.
     fn sax1_start_element(
         &mut self,
         name: &[u8],
@@ -4952,13 +5081,29 @@ impl XmlParser {
             }
             att_vec.push(ptr::null());
             let atts_ptr = att_vec.as_ptr() as *mut *const xmlChar;
-            core::mem::forget(att_vec);
             // Dispatch through the context's own SAX struct: `userData` is
             // the consumer's opaque context (PHP ext/xml compat passes its
             // XML_Parser object) and must NOT be reinterpreted as a parser
             // context here.
             if let Some(cb) = sax.startElement {
                 cb(ctx, name_cstr, atts_ptr);
+            }
+            // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElement): the SAX1 atts
+            // array and the strings it references are only valid for the
+            // duration of the callback. Dispatch is synchronous, so every
+            // buffer is released on return (Phase 16 ASan fuzz fix: the
+            // previous forget() leaked the element name and every attribute
+            // name/value on each SAX1 start tag). The trailing NULL
+            // terminator and any NULL slots (empty values) are skipped.
+            if !name_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+            }
+            let pairs = att_vec.len().saturating_sub(1);
+            for i in 0..pairs {
+                let p = att_vec[i];
+                if !p.is_null() {
+                    crate::abi::allocator::xmlFreeImpl(p as *mut c_void);
+                }
             }
         }
     }
@@ -4993,6 +5138,13 @@ impl XmlParser {
                     if let Some(cb) = sax.endElement {
                         cb(ctx, name_cstr);
                     }
+                    // SAX contract: the name pointer is only valid for the
+                    // duration of the synchronous callback (Phase 16 ASan
+                    // fuzz fix: previously leaked one buffer per SAX1 end
+                    // tag).
+                    if !name_cstr.is_null() {
+                        crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+                    }
                 }
             }
             return;
@@ -5024,7 +5176,11 @@ impl XmlParser {
                 .as_ref()
                 .map(|p| Self::vec_to_cstr_null(p))
                 .unwrap_or(ptr::null());
-            let uri_cstr = {
+            // uri_cstr is a heap copy ONLY for a pure-SAX parse (no tree,
+            // resolved through the parser-scoped ns stack); with a tree it
+            // aliases the node namespace's href, which is tree-owned and must
+            // never be freed here.
+            let (uri_cstr, uri_cstr_owned) = {
                 let node = (*self.ctxt).node;
                 if node.is_null() {
                     // Pure-SAX parse (no tree): resolve through the
@@ -5044,23 +5200,38 @@ impl XmlParser {
                             if u.is_empty() {
                                 // xmlns="" undeclares the default namespace:
                                 // the SAX2 URI is NULL, not "".
-                                ptr::null()
+                                (ptr::null(), false)
                             } else {
-                                Self::vec_to_cstr_null(&u)
+                                (Self::vec_to_cstr_null(&u), true)
                             }
                         }
-                        None => ptr::null(),
+                        None => (ptr::null(), false),
                     }
                 } else {
                     let ns = (*node).ns;
                     if ns.is_null() {
-                        ptr::null()
+                        (ptr::null(), false)
                     } else {
-                        (*ns).href
+                        ((*ns).href, false)
                     }
                 }
             };
             SaxDispatcher::end_element(sax, ctx, name_cstr, prefix_cstr, uri_cstr);
+            // SAX contract: every pointer is only valid for the duration of
+            // the synchronous callback (Phase 16 ASan fuzz fix: previously
+            // leaked the local name, prefix and pure-SAX URI per end tag).
+            let ctxt = self.ctxt;
+            let localname_dict_owned =
+                (*ctxt).dictNames != 0 && !(*ctxt).dict.is_null() && !localname.is_empty();
+            if !localname_dict_owned && !name_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+            }
+            if !prefix_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(prefix_cstr as *mut c_void);
+            }
+            if uri_cstr_owned && !uri_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(uri_cstr as *mut c_void);
+            }
         }
     }
 
@@ -5313,6 +5484,11 @@ impl XmlParser {
             let ctx = (*self.ctxt).userData;
             let data_cstr = Self::vec_to_cstr_null(data);
             SaxDispatcher::characters(sax, ctx, data_cstr, data.len() as c_int);
+            // SAX callbacks are synchronous: the buffer is only needed for the
+            // call (Phase 16 ASan fuzz fix).
+            if !data_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(data_cstr as *mut c_void);
+            }
         }
     }
 
@@ -5333,6 +5509,9 @@ impl XmlParser {
             let ctx = (*self.ctxt).userData;
             let data_cstr = Self::vec_to_cstr_null(data);
             SaxDispatcher::comment(sax, ctx, data_cstr);
+            if !data_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(data_cstr as *mut c_void);
+            }
         }
     }
 
@@ -5354,6 +5533,12 @@ impl XmlParser {
             let target_cstr = Self::vec_to_cstr_null(target);
             let data_cstr = Self::vec_to_cstr_null(data);
             SaxDispatcher::processing_instruction(sax, ctx, target_cstr, data_cstr);
+            if !target_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(target_cstr as *mut c_void);
+            }
+            if !data_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(data_cstr as *mut c_void);
+            }
         }
     }
 
@@ -5386,6 +5571,9 @@ impl XmlParser {
                 SaxDispatcher::characters(sax, ctx, data_cstr, len);
             } else {
                 SaxDispatcher::cdata_block(sax, ctx, data_cstr, len);
+            }
+            if !data_cstr.is_null() {
+                crate::abi::allocator::xmlFreeImpl(data_cstr as *mut c_void);
             }
         }
     }
@@ -5491,14 +5679,38 @@ impl XmlParser {
     /// # Safety
     ///
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `name`
-    ///   is a caller-owned slice; the NUL-terminated copy is leaked
-    ///   intentionally and remains valid until the context is freed.
+    ///   is a caller-owned slice; the NUL-terminated copy is heap-owned by
+    ///   the context nameTab and freed on pop / context teardown.
     fn push_name(&mut self, name: &[u8]) {
+        // NUL-terminated heap copy (NULL only for an empty name).
         let name_cstr = Self::vec_to_cstr_null(name);
         unsafe {
-            // Store in the context's name field
-            (*self.ctxt).name = name_cstr;
-            (*self.ctxt).nameNr += 1;
+            let c = &mut *self.ctxt;
+            // UPSTREAM-PARITY (parserInternals namePush): names live on the
+            // context nameTab stack and ctxt->name aliases the TOP entry.
+            // Growing nameTab and freeing each entry on pop (or at context
+            // teardown) reclaims every name exactly once — the previous
+            // single-slot overwrite leaked one buffer per element name on
+            // every parse (ASan fuzz finding: 8 B per element).
+            if c.nameNr >= c.nameMax {
+                let new_max = if c.nameMax == 0 { 10 } else { c.nameMax * 2 };
+                let new_tab = crate::abi::allocator::xmlReallocImpl(
+                    c.nameTab as *mut c_void,
+                    (new_max as usize) * core::mem::size_of::<*const xmlChar>(),
+                ) as *mut *const xmlChar;
+                if new_tab.is_null() {
+                    // OOM: drop the fresh copy, keep the old stack intact.
+                    if !name_cstr.is_null() {
+                        crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+                    }
+                    return;
+                }
+                c.nameTab = new_tab;
+                c.nameMax = new_max;
+            }
+            *c.nameTab.add(c.nameNr as usize) = name_cstr;
+            c.nameNr += 1;
+            c.name = name_cstr;
         }
     }
 
@@ -5507,15 +5719,24 @@ impl XmlParser {
     /// # Safety
     ///
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; the
-    ///   `name` pointer is cleared when the stack empties and must not be
-    ///   used afterwards.
+    ///   popped name is freed and the `name` pointer restored to the new top
+    ///   (or NULL when the stack empties) and must not be used afterwards.
     fn pop_name(&mut self) {
         unsafe {
-            if (*self.ctxt).nameNr > 0 {
-                (*self.ctxt).nameNr -= 1;
+            let c = &mut *self.ctxt;
+            if c.nameNr <= 0 {
+                return;
             }
-            if (*self.ctxt).nameNr == 0 {
-                (*self.ctxt).name = ptr::null();
+            c.nameNr -= 1;
+            let old = *c.nameTab.add(c.nameNr as usize);
+            *c.nameTab.add(c.nameNr as usize) = ptr::null();
+            if c.nameNr == 0 {
+                c.name = ptr::null();
+            } else {
+                c.name = *c.nameTab.add((c.nameNr - 1) as usize);
+            }
+            if !old.is_null() {
+                crate::abi::allocator::xmlFreeImpl(old as *mut c_void);
             }
         }
     }
@@ -5885,16 +6106,27 @@ impl XmlParser {
 
     /// Convert a byte slice to a null-terminated C string pointer.
     /// The returned pointer is valid until the backing memory is freed.
+    ///
+    /// The buffer is allocated through the C ALLOCATOR (xmlMallocImpl) so it
+    /// can be released with `xmlFreeImpl` (and honours xmlMemSetup hooks). The
+    /// previous Rust-Vec + forget variant leaked permanently — its capacity
+    /// was lost, so it could never be reclaimed (ASan fuzz: one buffer per SAX
+    /// event / element). Callers that do not transfer ownership MUST free the
+    /// result.
     fn vec_to_cstr_null(data: &[u8]) -> *const xmlChar {
         if data.is_empty() {
             return ptr::null();
         }
-        // Allocate a null-terminated buffer
-        let mut buf = data.to_vec();
-        buf.push(0);
-        let ptr = buf.as_ptr();
-        // Leak the buffer so the pointer remains valid
-        core::mem::forget(buf);
+        // SAFETY: xmlMallocImpl mirrors malloc; the buffer is written below
+        // inside its own unsafe block.
+        let ptr = unsafe { crate::abi::allocator::xmlMallocImpl(data.len() + 1) } as *mut u8;
+        if ptr.is_null() {
+            return ptr::null();
+        }
+        unsafe {
+            core::ptr::copy_nonoverlapping(data.as_ptr(), ptr, data.len());
+            *ptr.add(data.len()) = 0;
+        }
         ptr as *const xmlChar
     }
 
@@ -5906,12 +6138,19 @@ impl XmlParser {
     /// string, never NULL — DOMEntity::$publicId/$systemId distinguish the
     /// empty literal from an absent id.
     fn vec_to_cstr_keep_empty(data: &[u8]) -> *const xmlChar {
-        // Allocate a null-terminated buffer (empty => single NUL byte)
-        let mut buf = data.to_vec();
-        buf.push(0);
-        let ptr = buf.as_ptr();
-        // Leak the buffer so the pointer remains valid
-        core::mem::forget(buf);
+        // Allocate through the C allocator (empty => single NUL byte); the
+        // caller owns the result and releases it with xmlFreeImpl (Phase 16
+        // ASan fuzz fix: the Rust-Vec + forget variant leaked permanently).
+        let ptr = unsafe { crate::abi::allocator::xmlMallocImpl(data.len() + 1) } as *mut u8;
+        if ptr.is_null() {
+            return ptr::null();
+        }
+        unsafe {
+            if !data.is_empty() {
+                core::ptr::copy_nonoverlapping(data.as_ptr(), ptr, data.len());
+            }
+            *ptr.add(data.len()) = 0;
+        }
         ptr as *const xmlChar
     }
 
@@ -5920,10 +6159,16 @@ impl XmlParser {
         if data.is_empty() {
             return ptr::null_mut();
         }
-        let mut buf = data.to_vec();
-        buf.push(0);
-        let ptr = buf.as_mut_ptr();
-        core::mem::forget(buf);
+        // C-allocator owned buffer; caller releases with xmlFreeImpl (Phase 16
+        // ASan fuzz fix: the Rust-Vec + forget variant leaked permanently).
+        let ptr = unsafe { crate::abi::allocator::xmlMallocImpl(data.len() + 1) } as *mut u8;
+        if ptr.is_null() {
+            return ptr::null_mut();
+        }
+        unsafe {
+            core::ptr::copy_nonoverlapping(data.as_ptr(), ptr, data.len());
+            *ptr.add(data.len()) = 0;
+        }
         ptr as *mut xmlChar
     }
 

@@ -1704,10 +1704,23 @@ mod tests {
             assert_eq!(xmlMemSize(dptr), 100, "debug-surface blocks are tracked");
             let rptr = xmlReallocLoc(dptr, 200, c"mem.c".as_ptr(), 43);
             assert!(!rptr.is_null());
-            // The realloc record supersedes the old one (same address when
-            // glibc grows in place — then the block AT that address is 200).
+            // The realloc record supersedes the old one. glibc may grow the
+            // block in place (rptr == dptr; the block at that address is then
+            // recorded at 200) or MOVE it (the old address is released and
+            // xmlMemSize(old) == 0 while rptr is the live 200-byte block). Both
+            // are valid libc behaviors — assert per case so the test is
+            // environment-independent (CI glibc moves; some hosts grow in
+            // place).
             assert_eq!(xmlMemSize(rptr), 200);
-            assert_eq!(xmlMemSize(dptr), xmlMemSize(rptr));
+            if rptr == dptr {
+                assert_eq!(xmlMemSize(dptr), 200);
+            } else {
+                assert_eq!(
+                    xmlMemSize(dptr),
+                    0,
+                    "a moved realloc releases the old address"
+                );
+            }
             xmlMemFree(rptr);
             assert_eq!(xmlMemSize(rptr), 0);
 

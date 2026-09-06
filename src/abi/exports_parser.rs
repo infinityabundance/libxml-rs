@@ -694,8 +694,16 @@ pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
         c.nodeNr = 0;
         c.node = ptr::null_mut();
 
-        // Name stack.
+        // Name stack: reclaim every live entry (heap NUL-terminated name
+        // owned by the context nameTab) before the array (Phase 16 ASan fuzz
+        // fix — mirrors free_parser_ctxt).
         if !c.nameTab.is_null() {
+            for i in 0..c.nameNr {
+                let entry = *c.nameTab.add(i as usize);
+                if !entry.is_null() {
+                    xmlFreeImpl(entry as *mut c_void);
+                }
+            }
             xmlFreeImpl(c.nameTab as *mut c_void);
         }
         c.nameTab = ptr::null_mut();

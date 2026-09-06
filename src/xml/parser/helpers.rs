@@ -396,11 +396,41 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
             xmlFreeImpl(node_tab as *mut c_void);
         }
 
-        // Free the name stack.
+        // Free the name stack: every live entry (heap NUL-terminated name
+        // owned by the context nameTab) is reclaimed before the array itself
+        // (Phase 16 ASan fuzz fix: names pushed but never popped on abort
+        // paths must not leak).
+        let name_nr = (*ctxt).nameNr;
         let name_tab = (*ctxt).nameTab;
         if !name_tab.is_null() {
+            for i in 0..name_nr {
+                let entry = *name_tab.add(i as usize);
+                if !entry.is_null() {
+                    xmlFreeImpl(entry as *mut c_void);
+                }
+            }
             xmlFreeImpl(name_tab as *mut c_void);
         }
+        (*ctxt).nameNr = 0;
+        (*ctxt).name = ptr::null();
+
+        // UPSTREAM-PARITY (parserInternals.c xmlFreeParserCtxt): the
+        // declaration strings recorded on the context (xmlParseXMLDecl) are
+        // context-owned heap buffers — xmlFree(ctxt->version/encoding/
+        // directory). Without this, every document with an XML declaration
+        // leaked its version+encoding strings (Phase 16 ASan fuzz finding).
+        if !(*ctxt).version.is_null() {
+            xmlFreeImpl((*ctxt).version as *mut c_void);
+        }
+        if !(*ctxt).encoding.is_null() {
+            xmlFreeImpl((*ctxt).encoding as *mut c_void);
+        }
+        if !(*ctxt).directory.is_null() {
+            xmlFreeImpl((*ctxt).directory as *mut c_void);
+        }
+        (*ctxt).version = ptr::null_mut();
+        (*ctxt).encoding = ptr::null_mut();
+        (*ctxt).directory = ptr::null_mut();
 
         // Free the stored InputBuffer (stashed in the side table by
         // setup_parser_input). `ctxt._private` is application data and is

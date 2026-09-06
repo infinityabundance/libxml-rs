@@ -2296,9 +2296,18 @@ mod tests {
     fn setup() -> std::sync::MutexGuard<'static, ()> {
         let guard = CATALOG_TEST_MUTEX.lock().unwrap();
         cleanup();
-        init();
-        // Reset catalog defaults to ALL for testing
-        set_defaults(XML_CATA_ALLOW_ALL);
+        // Reset to a clean, deterministic, initialized state WITHOUT loading
+        // system catalogs: init() reads XML_CATALOG_FILES / SGML_CATALOG_FILES
+        // env vars and /etc/xml/catalog, which differ per host (the ubuntu CI
+        // runner ships /etc/xml/catalog with deletePublic entries that leaked
+        // into test_convert_sgml_to_xml). The tests are self-contained and
+        // must never depend on the host catalog files.
+        {
+            let mut state = CATALOG_STATE.write();
+            state.initialized = true;
+            state.allow = XML_CATA_ALLOW_ALL;
+        }
+        crate::xml::globals::set_catalog_defaults(XML_CATA_ALLOW_ALL);
         guard
     }
 

@@ -1469,6 +1469,50 @@ fn parse_entity(ctxt: &mut HtmlParserCtxt) -> Vec<u8> {
 /// - Nodes returned by `tree::new_text` and `tree::new_node` are NULL-checked
 ///   before their fields are written, and `tree::add_child` requires a valid
 ///   non-NULL parent node.
+
+/// Create an element node from a heap-free byte-slice name.
+///
+/// `tree::new_node` DUPLICATES its name argument, so passing a freshly
+/// `bytes_to_xmlstr`-allocated copy leaks it (ASan fuzz: ~5 bytes per element
+/// on every HTML parse). This helper frees the temporary copy.
+///
+/// # Safety
+///
+/// - `name` is a valid byte slice for the call.
+unsafe fn new_element_node(ns: *mut _xmlNs, name: &[u8]) -> *mut _xmlNode {
+    let name_c = bytes_to_xmlstr(name);
+    let node = tree::new_node(ns, name_c);
+    if !name_c.is_null() {
+        xmlFreeImpl(name_c as *mut c_void);
+    }
+    node
+}
+
+/// Create a text node whose content is a byte slice.
+///
+/// `tree::new_text(NULL)` pre-allocates a 1-byte empty content placeholder;
+/// assigning over it leaks that byte (ASan fuzz: 1 byte per text node). This
+/// helper replaces the placeholder with the real (NUL-terminated) content.
+///
+/// # Safety
+///
+/// - `content` is a valid byte slice for the call.
+unsafe fn new_text_node(content: &[u8]) -> *mut _xmlNode {
+    let node = tree::new_text(ptr::null_mut());
+    if node.is_null() {
+        return ptr::null_mut();
+    }
+    let content_c = bytes_to_xmlstr(content);
+    unsafe {
+        if !(*node).content.is_null() {
+            xmlFreeImpl((*node).content as *mut c_void);
+        }
+        // NULL only when bytes_to_xmlstr hit OOM.
+        (*node).content = content_c;
+    }
+    node
+}
+
 unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
     if text.is_empty() {
         return;
@@ -1493,15 +1537,8 @@ unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
 
     if insertion_point.is_null() {
         // Fall back to document
-        let text_node = tree::new_text(ptr::null_mut());
+        let text_node = new_text_node(text);
         if !text_node.is_null() {
-            // Create a null-terminated copy
-            let content = bytes_to_xmlstr(text);
-            if !content.is_null() {
-                unsafe {
-                    (*text_node).content = content;
-                }
-            }
             tree::add_child(ctxt.doc as *mut _xmlNode, text_node);
         }
         return;
@@ -1516,14 +1553,10 @@ unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
             return;
         }
         let content = trim_ascii_start(text);
-        let html_node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(b"html"));
+        let html_node = new_element_node(ptr::null_mut(), b"html");
         if !html_node.is_null() {
-            let content_c = bytes_to_xmlstr(content);
-            let text_node = tree::new_text(ptr::null_mut());
+            let text_node = new_text_node(content);
             if !text_node.is_null() {
-                unsafe {
-                    (*text_node).content = content_c;
-                }
                 tree::add_child(html_node, text_node);
             }
             tree::add_child(ctxt.doc as *mut _xmlNode, html_node);
@@ -1534,17 +1567,9 @@ unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
         return;
     }
 
-    let text_node = tree::new_text(ptr::null_mut());
+    let text_node = new_text_node(text);
     if text_node.is_null() {
         return;
-    }
-
-    // Set the content
-    let content = bytes_to_xmlstr(text);
-    if !content.is_null() {
-        unsafe {
-            (*text_node).content = content;
-        }
     }
 
     tree::add_child(insertion_point, text_node);
@@ -1591,7 +1616,7 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
         }
         // Create or use existing html
         if ctxt.html.is_null() {
-            let html_node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
+            let html_node = new_element_node(ptr::null_mut(), tag_name);
             if !html_node.is_null() {
                 attach_attrs(html_node, attrs);
                 ctxt.html = html_node;
@@ -1615,7 +1640,7 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
         ensure_html(ctxt);
 
         if ctxt.head.is_null() {
-            let head_node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
+            let head_node = new_element_node(ptr::null_mut(), tag_name);
             if !head_node.is_null() {
                 attach_attrs(head_node, attrs);
                 ctxt.head = head_node;
@@ -1647,7 +1672,7 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
         ensure_html(ctxt);
 
         if ctxt.body.is_null() {
-            let body_node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
+            let body_node = new_element_node(ptr::null_mut(), tag_name);
             if !body_node.is_null() {
                 attach_attrs(body_node, attrs);
                 ctxt.body = body_node;
@@ -1682,7 +1707,7 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
 
         if is_empty {
             // Void element in head
-            let node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
+            let node = new_element_node(ptr::null_mut(), tag_name);
             if !node.is_null() {
                 attach_attrs(node, attrs);
                 // UPSTREAM-PARITY (NOIMPLIED): top-level head-only elements
@@ -1697,7 +1722,7 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
             return;
         }
 
-        let node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
+        let node = new_element_node(ptr::null_mut(), tag_name);
         if !node.is_null() {
             attach_attrs(node, attrs);
             let ip = if ctxt.current.is_null() {
@@ -1739,7 +1764,7 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
 
     if is_empty {
         // Void element: create node, add attributes, add as child (no children)
-        let node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
+        let node = new_element_node(ptr::null_mut(), tag_name);
         if !node.is_null() {
             for attr in attrs {
                 let name_c = bytes_to_xmlstr(&attr.name);
@@ -1769,7 +1794,7 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
     }
 
     // Regular element
-    let node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
+    let node = new_element_node(ptr::null_mut(), tag_name);
     if !node.is_null() {
         for attr in attrs {
             let name_c = bytes_to_xmlstr(&attr.name);
@@ -2188,7 +2213,12 @@ unsafe fn html_parse_buffer(
 
                 // Create comment node
                 if !comment_content.is_empty() {
-                    let comment_node = tree::new_comment(bytes_to_xmlstr(&comment_content));
+                    // new_comment duplicates its content; free the temporary.
+                    let cc = bytes_to_xmlstr(&comment_content);
+                    let comment_node = tree::new_comment(cc);
+                    if !cc.is_null() {
+                        xmlFreeImpl(cc as *mut c_void);
+                    }
                     if !comment_node.is_null() {
                         let insertion_point = if !ctxt.current.is_null() {
                             ctxt.current
@@ -2241,7 +2271,16 @@ unsafe fn html_parse_buffer(
                     let target = parts.next().unwrap_or(&pi_content);
                     let value = parts.next().unwrap_or(b"");
 
-                    let pi_node = tree::new_pi(bytes_to_xmlstr(target), bytes_to_xmlstr(value));
+                    // new_pi duplicates both arguments; free the temporaries.
+                    let t_c = bytes_to_xmlstr(target);
+                    let v_c = bytes_to_xmlstr(value);
+                    let pi_node = tree::new_pi(t_c, v_c);
+                    if !t_c.is_null() {
+                        xmlFreeImpl(t_c as *mut c_void);
+                    }
+                    if !v_c.is_null() {
+                        xmlFreeImpl(v_c as *mut c_void);
+                    }
                     if !pi_node.is_null() {
                         let insertion_point = if !ctxt.current.is_null() {
                             ctxt.current
@@ -2285,7 +2324,7 @@ unsafe fn html_parse_buffer(
             if tag_str == "script" || tag_str == "style" {
                 // Handle raw text content
                 // Create the element first
-                let raw_node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(&tag_name));
+                let raw_node = new_element_node(ptr::null_mut(), &tag_name);
                 if !raw_node.is_null() {
                     for attr in &attrs {
                         let name_c = bytes_to_xmlstr(&attr.name);
@@ -2340,7 +2379,7 @@ unsafe fn html_parse_buffer(
                                     // We found the start of </tag
                                     // Add the text before the end tag
                                     if !raw_text.is_empty() {
-                                        let text_node = tree::new_text(bytes_to_xmlstr(&raw_text));
+                                        let text_node = new_text_node(&raw_text);
                                         if !text_node.is_null() {
                                             tree::add_child(raw_node, text_node);
                                         }
@@ -2374,7 +2413,7 @@ unsafe fn html_parse_buffer(
                         if match_idx < end_bytes.len() {
                             raw_text.extend_from_slice(&match_buf);
                             if !raw_text.is_empty() {
-                                let text_node = tree::new_text(bytes_to_xmlstr(&raw_text));
+                                let text_node = new_text_node(&raw_text);
                                 if !text_node.is_null() {
                                     tree::add_child(raw_node, text_node);
                                 }

@@ -124,5 +124,21 @@ pub fn evaluate(compiled: &CompiledExpr, context: &mut XPathContext) -> Option<X
 
 /// Parse and evaluate in one step.
 pub fn evaluate_str(expr_str: &str, context: &mut XPathContext) -> Option<XPathValue> {
-    compile(expr_str).and_then(|compiled| evaluate(&compiled, context))
+    match compile_result(expr_str) {
+        Ok(compiled) => evaluate(&compiled, context),
+        Err(e) => {
+            // UPSTREAM-PARITY (xpath.c xmlXPathCompileExpr): a compile
+            // failure from the recursion budget is observable as "XPath error
+            // : Recursion limit exceeded" (XPATH_RECURSION_LIMIT_EXCEEDED) —
+            // the one compile error whose message upstream does NOT fold into
+            // the generic "Invalid expression" (verified against the 2.15.3
+            // oracle: 499 nested '(' succeed, 500 fail). Every other parse
+            // error keeps the generic message for parity with the existing
+            // XPATH_EXPR_ERROR channel.
+            if e.message == "Recursion limit exceeded" {
+                context.set_error(&e.message);
+            }
+            None
+        }
+    }
 }

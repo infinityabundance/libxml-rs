@@ -476,10 +476,11 @@ pub(crate) mod default_sax_handler {
                 (*attr).children = head;
                 (*attr).last = last;
             }
-        } else {
-            // No general reference survived substitution (e.g. `&amp;` only):
-            // a single text node, non-compact because the raw value had a
-            // reference (upstream's dup'd-value text node, R-000120).
+        } else if head.is_null() {
+            // No general reference survived substitution (e.g. `&amp;` only)
+            // AND no text run was flushed — build a single text node,
+            // non-compact because the raw value had a reference (upstream's
+            // dup'd-value text node, R-000120).
             let text = unsafe { parser_new_text_node(ctxt, value, len, had_ref) };
             if !text.is_null() {
                 unsafe {
@@ -488,6 +489,17 @@ pub(crate) mod default_sax_handler {
                     (*attr).children = text;
                     (*attr).last = text;
                 }
+            }
+        } else {
+            // any_ref == false: the final flush_text_run! above already built
+            // exactly one full-length text node into head/last (no reference
+            // boundaries were crossed). Reusing it avoids leaking that node
+            // (Phase 16 ASan fuzz finding: one _xmlNode per entity-bearing
+            // attribute value whose substitution contained no general
+            // reference, e.g. `x="&amp;"`).
+            unsafe {
+                (*attr).children = head;
+                (*attr).last = last;
             }
         }
     }

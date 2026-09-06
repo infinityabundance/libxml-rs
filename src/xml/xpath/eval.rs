@@ -144,9 +144,17 @@ fn eval_relative_path(
     left: &Expr,
     right: &Expr,
 ) -> Result<XPathValue, String> {
-    // Evaluate left side to get a node-set
+    // Evaluate left side to get a node-set. UPSTREAM-PARITY (xpath.c
+    // xmlXPathCompOpEval, FilterExpr '/' RelativeLocationPath): a non-node-set
+    // left operand (e.g. `1/b`) is XPATH_INVALID_TYPE — "XPath error : Invalid
+    // type" — NOT a panic (Phase 16 ASan fuzz finding: `1/b` aborted the
+    // process).
     let left_val = eval(ctx, left)?;
-    let left_ns = left_val.as_node_set().clone();
+    let left_ns = match left_val {
+        XPathValue::NodeSet(ns) => ns,
+        _ => return Err("Invalid type".to_string()),
+    };
+    let left_ns = left_ns.clone();
 
     let mut result = NodeSet::new();
 
@@ -672,11 +680,21 @@ fn eval_binary_op(
 
 /// Evaluate a union expression: `left | right`.
 fn eval_union(ctx: &mut XPathContext, left: &Expr, right: &Expr) -> Result<XPathValue, String> {
+    // UPSTREAM-PARITY (xpath.c xmlXPathUnionExpr): a union of non-node-sets
+    // (e.g. `1 | 2`) is XPATH_INVALID_TYPE — "XPath error : Invalid type" —
+    // not a panic (Phase 16 ASan fuzz finding).
     let left_val = eval(ctx, left)?;
     let right_val = eval(ctx, right)?;
-
-    let mut result = left_val.as_node_set().clone();
-    result.extend(right_val.as_node_set());
+    let mut result = match left_val {
+        XPathValue::NodeSet(ns) => ns,
+        _ => return Err("Invalid type".to_string()),
+    };
+    match right_val {
+        XPathValue::NodeSet(ns) => {
+            result.extend(&ns);
+        }
+        _ => return Err("Invalid type".to_string()),
+    }
     result.sort();
 
     Ok(XPathValue::NodeSet(result))
