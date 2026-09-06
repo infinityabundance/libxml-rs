@@ -83,7 +83,15 @@ jobs:
       # Build the optimized candidate DSOs, then run the matrix in the minimal
       # Docker image that also ships the upstream oracle at /usr/local.
       - name: build release drop-in
-        run: cargo build --release --lib
+        # facade-gen.sh must run AFTER cargo build: build.rs emits the
+        # whole-archive libxslt.so.1 facade BEFORE the core lib is linked on a
+        # clean checkout ("Library not yet built — symlinks will be recreated
+        # on a later build"), and a timestamp-skip leaves it stale after core
+        # edits. Without the explicit regen the matrix candidate segfaults in
+        # xslt_apply (the XSLT engine lives inside the facade).
+        run: |
+          cargo build --release --lib
+          sh tools/packaging/facade-gen.sh target/release
 
       # Build the oracle court image from the pinned-source Dockerfile so the
       # matrix never depends on a host-only image (the earlier

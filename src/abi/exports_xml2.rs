@@ -6718,16 +6718,25 @@ pub(crate) unsafe fn raise_xpath_error(
             }
         }
 
-        // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt channel selection): with no
-        // structured handler the message goes VERBATIM to the generic channel
-        // — `channel = xmlGenericError; data = xmlGenericErrorContext`, and
-        // error.c xmlVRaiseError calls `channel(data, "%s", to->message)`
-        // because xmlGenericError is NOT one of the parser channels that
-        // trigger xmlFormatError's fragment stream (which prefixes
-        // "XPath error : "). PHP's generic handler must receive the message
-        // text alone (ext/simplexml 008: "Invalid expression", not
-        // "XPath error : Invalid expression").
+        // UPSTREAM-PARITY (error.c xmlVRaiseError channel selection): the
+        // XPath raise passes the message VERBATIM to the generic channel —
+        // `channel(data, "%s", to->message)` — EXCEPT when that channel IS
+        // the default handler (xmlGenericErrorDefaultFunc / xmlParserError &co),
+        // which routes through xmlFormatError's fragment stream and prefixes
+        // "XPath error : " (verified against the 2.15.3 oracle: no-handler
+        // C caller sees "XPath error : Invalid type"). PHP installs a custom
+        // generic handler and must keep receiving the text alone
+        // (ext/simplexml 008: "Invalid expression", not "XPath error :
+        // Invalid expression"). The pre-fix delivery classified the INSTALLED
+        // default func as a custom channel, so handler-less callers (xmllint,
+        // plain C) saw the bare message instead of the formatted stream.
         let delivery = match globals::get_generic_error_func() {
+            Some(f)
+                if crate::abi::data_globals::default_generic_error_func()
+                    .map_or(false, |d| d as usize == f as usize) =>
+            {
+                GenericDelivery::Stream
+            }
             Some(f) => GenericDelivery::Custom(f, globals::get_generic_error_ctx()),
             None => GenericDelivery::Stream,
         };

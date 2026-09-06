@@ -872,30 +872,26 @@ unsafe fn eval_xpath_expr(cli: &Cli, expr: &str, doc: *mut _xmlDoc) -> c_int {
         free_cstr(e);
         return 10;
     }
-    // Core XPath functions are served by the static lookup table (Phase 16.5.9).
-    let obj = xmlXPathEvalExpression(e as *const xmlChar, ctxt);
+    // UPSTREAM-PARITY (xmllint.c doXPathQuery): the expression is compiled
+    // first with xmlXPathCtxtCompile — a compile failure prints "XPath
+    // compilation failure" — then evaluated with xmlXPathCompiledEval — an
+    // evaluation failure prints "XPath evaluation failure". The engine's
+    // raise already streamed the "XPath error : <message>" line through the
+    // default handler before the NULL return (R-XPATH-ERRMSG tracks the
+    // compile-time context/caret lines upstream prints after the message).
+    let comp = libxml_rs::xml::xpath::exports::xmlXPathCtxtCompile(ctxt, e as *const xmlChar);
     free_cstr(e);
+    if comp.is_null() {
+        eprintln!("XPath compilation failure");
+        xmlXPathFreeContext(ctxt);
+        return 10;
+    }
+    // UPSTREAM-PARITY (xmllint.c): the context node is the document node
+    // (xmlNodePtr) doc before evaluating.
+    (*ctxt).node = doc as *mut _xmlNode;
+    let obj = libxml_rs::xml::xpath::exports::xmlXPathCompiledEval(comp, ctxt);
     if obj.is_null() {
-        // UPSTREAM-PARITY: compile failures print
-        // "XPath error : Invalid expression" + "XPath compilation failure"
-        // (exit 10); evaluation failures print the engine message + "XPath
-        // evaluation failure" (exit 10). The per-expression context line and
-        // caret are tracked as RESIDUAL R-XPATH-ERRMSG.
-        let msg = if !internal.is_null() {
-            let ic = &*internal;
-            ic.error
-                .as_deref()
-                .unwrap_or("Invalid expression")
-                .to_string()
-        } else {
-            "Invalid expression".to_string()
-        };
-        eprintln!("XPath error : {}", msg);
-        if msg == "Invalid expression" {
-            eprintln!("XPath compilation failure");
-        } else {
-            eprintln!("XPath evaluation failure");
-        }
+        eprintln!("XPath evaluation failure");
         xmlXPathFreeContext(ctxt);
         return 10;
     }

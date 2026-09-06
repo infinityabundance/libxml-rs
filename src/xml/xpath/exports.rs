@@ -4725,7 +4725,7 @@ pub unsafe extern "C" fn xmlXPathCtxtCompile(
     };
     match crate::abi::exports_xml2::xpath_compile_store(expr_str) {
         Ok(key) => key,
-        Err(_e) => {
+        Err(e) => {
             if ctxt.is_null() {
                 // UPSTREAM-PARITY (xpath.c xmlXPathCtxtCompile with a NULL
                 // context): fall back to the plain compile delivery (generic
@@ -4735,14 +4735,24 @@ pub unsafe extern "C" fn xmlXPathCtxtCompile(
                 // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt): deliver through
                 // the context's error handler (lxml's XPathClass installs
                 // ctxt->error = _receiveXPathError, so the compile failure
-                // lands in its error_log with "Invalid expression").
+                // lands in its error_log). Upstream compile failures surface
+                // as "Invalid expression" (XPATH_EXPR_ERROR) from the error
+                // table, EXCEPT the recursion-budget failure which reports
+                // "Recursion limit exceeded" (XPATH_RECURSION_LIMIT_EXCEEDED)
+                // — verified against the 2.15.3 oracle (a 500th nested '(').
+                let recursion = e.message == "Recursion limit exceeded";
+                let code = if recursion {
+                    crate::abi::types::XPATH_RECURSION_LIMIT_EXCEEDED
+                } else {
+                    crate::abi::types::XPATH_EXPR_ERROR
+                };
+                let msg = if recursion {
+                    "Recursion limit exceeded"
+                } else {
+                    "Invalid expression"
+                };
                 unsafe {
-                    crate::abi::exports_xml2::raise_xpath_error(
-                        ctxt,
-                        crate::abi::types::XPATH_EXPR_ERROR,
-                        "Invalid expression",
-                        expr_str,
-                    );
+                    crate::abi::exports_xml2::raise_xpath_error(ctxt, code, msg, expr_str);
                 }
                 ptr::null_mut()
             }
