@@ -3309,14 +3309,9 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
     use crate::xml::xpath::context::XPathContext;
     use crate::xml::xpath::types::{NodeSet, XPathValue};
 
-    // Register the XPath 1.0 core function library first (§25): count,
-    // string, substring, concat, etc. Without these, any XPath expression
-    // that invokes a core function (e.g. `count(library/book)`) fails with
-    // an unknown-function error.
-    let core_funcs = crate::xml::xpath::functions::core_functions();
-    for (name, func) in core_funcs {
-        internal.register_function(&name, func);
-    }
+    // The XPath 1.0 core function library (count, string, substring, concat,
+    // …) is served by the static lookup_core_function table (Phase 16.5.9);
+    // only the XSLT/EXSLT additions below are registered into the context map.
 
     // document() — loads an external document (first argument) and returns
     // its root node-set.

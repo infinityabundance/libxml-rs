@@ -571,13 +571,13 @@ const HTML_ELEMENTS: &[HtmlElementInfo] = &[
 /// Case-insensitive lookup of an HTML element by name.
 /// Returns `None` if the element is not in the table (treated as unknown).
 fn html_tag_lookup(name: &str) -> Option<&'static HtmlElementInfo> {
-    // Lowercase the name for comparison
-    let lower: Vec<u8> = name.bytes().map(|b| b.to_ascii_lowercase()).collect();
-    let lower_str = match core::str::from_utf8(&lower) {
-        Ok(s) => s,
-        Err(_) => return None,
-    };
-    HTML_ELEMENTS.iter().find(|info| info.name == lower_str)
+    // Allocation-free, case-insensitive classification (Phase 16.5.8): the
+    // previous implementation lowercased into a Vec<u8>, re-validated UTF-8,
+    // then linearly scanned the static table. HTML tag matching is
+    // ASCII-case-insensitive, so eq_ignore_ascii_case avoids the temporary.
+    HTML_ELEMENTS
+        .iter()
+        .find(|info| info.name.eq_ignore_ascii_case(name))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -973,18 +973,6 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
     let info = html_tag_lookup(tag_lower_str);
 
     let mut current = ctxt.current;
-
-    // Collect the open element names up the tree
-    let mut open_names: Vec<Vec<u8>> = Vec::new();
-    let mut cur = current;
-    while !cur.is_null() {
-        let ctype = unsafe { (*cur).type_ };
-        if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur).name.is_null() } {
-            let name_bytes = unsafe { xmlstr_to_bytes((*cur).name) };
-            open_names.push(name_bytes.to_vec());
-        }
-        cur = unsafe { (*cur).parent };
-    }
 
     // Rule 1: <p> auto-closes before another <p>, and before block elements
     if tag_lower_str == "p" || info.is_some_and(|i| i.flags & HTML_BLOCK != 0) {

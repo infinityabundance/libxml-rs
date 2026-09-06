@@ -6440,11 +6440,8 @@ pub unsafe extern "C" fn xmlXPathNewContext(doc: *mut _xmlDoc) -> *mut _xmlXPath
     let mut internal = Box::new(XPathContext::new(doc));
     // UPSTREAM-PARITY: the standard function library is implicitly available
     // in every context (upstream compiles it in; xmlXPathRegisterAllFunctions
-    // is a no-op since 2.14.0). Without this, core-function calls such as
-    // count() would fail as unknown functions.
-    for (name, func) in crate::xml::xpath::functions::core_functions() {
-        internal.register_function(&name, func);
-    }
+    // is a no-op since 2.14.0). Core built-ins are served by the static
+    // lookup_core_function table (Phase 16.5.9) — no per-context copy.
     internal.c_context = ctxt;
     (*ctxt).extra = Box::into_raw(internal) as *mut c_void;
 

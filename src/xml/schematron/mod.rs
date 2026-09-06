@@ -1178,14 +1178,8 @@ pub unsafe fn schematron_validate_doc(
             return true;
         }
 
-        // Create XPath context
+        // Create XPath context (core functions via static table, Phase 16.5.9)
         let mut xpath_ctxt = XPathContext::new(doc);
-
-        // Register core XPath functions (true, false, not, string, number, etc.)
-        let core_funcs = crate::xml::xpath::functions::core_functions();
-        for (name, func) in core_funcs {
-            xpath_ctxt.register_function(&name, func);
-        }
 
         // Register namespace prefixes
         for (prefix, uri) in &schema.ns {

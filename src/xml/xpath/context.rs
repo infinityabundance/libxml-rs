@@ -475,9 +475,18 @@ impl XPathContext {
     ///
     /// Returns `None` if no such function is registered.
     pub fn lookup_function(&mut self, name: &str) -> Option<&BoxedXPathFunction> {
-        // Check local Rust-side functions first.
+        // Check local Rust-side (consumer-registered / extension) functions
+        // first — this preserves the upstream override contract (a consumer
+        // may register a same-named function that shadows a built-in).
         if self.functions.contains_key(name) {
             return self.functions.get(name);
+        }
+
+        // Core XPath 1.0 built-ins (static, allocation-free — Phase 16.5.9).
+        // The ordinary context no longer copies ~27 core functions into its
+        // own map at creation.
+        if let Some(f) = crate::xml::xpath::functions::lookup_core_function(name) {
+            return Some(f);
         }
 
         // Namespaced fallback (XSLT extension functions, EXSLT, ...): the

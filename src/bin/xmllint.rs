@@ -872,14 +872,7 @@ unsafe fn eval_xpath_expr(cli: &Cli, expr: &str, doc: *mut _xmlDoc) -> c_int {
         free_cstr(e);
         return 10;
     }
-    // Register the core function library (needed for count(), etc.).
-    let internal = (*ctxt).extra as *mut libxml_rs::xml::xpath::context::XPathContext;
-    if !internal.is_null() {
-        let funcs = libxml_rs::xml::xpath::functions::core_functions();
-        for (name, func) in funcs {
-            (*internal).register_function(&name, func);
-        }
-    }
+    // Core XPath functions are served by the static lookup table (Phase 16.5.9).
     let obj = xmlXPathEvalExpression(e as *const xmlChar, ctxt);
     free_cstr(e);
     if obj.is_null() {

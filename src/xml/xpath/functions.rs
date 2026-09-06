@@ -65,8 +65,9 @@
 //! than upstream (e.g. empty node-sets to string) — R-000114 proved the
 //! string-value rules are observable.
 
-use crate::xml::xpath::context::XPathContext;
+use crate::xml::xpath::context::{BoxedXPathFunction, XPathContext};
 use crate::xml::xpath::types::{node_string_value, string_to_number, NodeSet, XPathValue};
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 /// Type alias for XPath functions.
@@ -74,46 +75,68 @@ use std::collections::HashMap;
 /// Functions receive already-evaluated arguments as `XPathValue` slices.
 pub type XPathFunction = fn(&mut XPathContext, &[XPathValue]) -> Result<XPathValue, String>;
 
-/// Get all registered XPath core functions.
-pub fn core_functions() -> HashMap<String, XPathFunction> {
-    let mut funcs: HashMap<String, XPathFunction> = HashMap::new();
-
+/// The XPath 1.0 core function library, as a static `(name, fn)` slice.
+///
+/// Phase 16.5.9: these are built-ins and must not be rebuilt/reboxed into a
+/// fresh `HashMap` for every new context. The slice is the single source of
+/// truth; `lookup_core_function` consults a lazily-built static table so the
+/// hot path is a hash lookup with zero per-context allocation.
+pub static CORE_FUNCTION_SLICE: &[(&str, XPathFunction)] = &[
     // Node set functions (§4.1)
-    funcs.insert("last".into(), fn_last);
-    funcs.insert("position".into(), fn_position);
-    funcs.insert("count".into(), fn_count);
-    funcs.insert("id".into(), fn_id);
-    funcs.insert("local-name".into(), fn_local_name);
-    funcs.insert("namespace-uri".into(), fn_namespace_uri);
-    funcs.insert("name".into(), fn_name);
-
+    ("last", fn_last),
+    ("position", fn_position),
+    ("count", fn_count),
+    ("id", fn_id),
+    ("local-name", fn_local_name),
+    ("namespace-uri", fn_namespace_uri),
+    ("name", fn_name),
     // String functions (§4.2)
-    funcs.insert("string".into(), fn_string);
-    funcs.insert("concat".into(), fn_concat);
-    funcs.insert("starts-with".into(), fn_starts_with);
-    funcs.insert("contains".into(), fn_contains);
-    funcs.insert("substring-before".into(), fn_substring_before);
-    funcs.insert("substring-after".into(), fn_substring_after);
-    funcs.insert("substring".into(), fn_substring);
-    funcs.insert("string-length".into(), fn_string_length);
-    funcs.insert("normalize-space".into(), fn_normalize_space);
-    funcs.insert("translate".into(), fn_translate);
-
+    ("string", fn_string),
+    ("concat", fn_concat),
+    ("starts-with", fn_starts_with),
+    ("contains", fn_contains),
+    ("substring-before", fn_substring_before),
+    ("substring-after", fn_substring_after),
+    ("substring", fn_substring),
+    ("string-length", fn_string_length),
+    ("normalize-space", fn_normalize_space),
+    ("translate", fn_translate),
     // Boolean functions (§4.3)
-    funcs.insert("boolean".into(), fn_boolean);
-    funcs.insert("not".into(), fn_not);
-    funcs.insert("true".into(), fn_true);
-    funcs.insert("false".into(), fn_false);
-    funcs.insert("lang".into(), fn_lang);
-
+    ("boolean", fn_boolean),
+    ("not", fn_not),
+    ("true", fn_true),
+    ("false", fn_false),
+    ("lang", fn_lang),
     // Number functions (§4.4)
-    funcs.insert("number".into(), fn_number);
-    funcs.insert("sum".into(), fn_sum);
-    funcs.insert("floor".into(), fn_floor);
-    funcs.insert("ceiling".into(), fn_ceiling);
-    funcs.insert("round".into(), fn_round);
+    ("number", fn_number),
+    ("sum", fn_sum),
+    ("floor", fn_floor),
+    ("ceiling", fn_ceiling),
+    ("round", fn_round),
+];
 
-    funcs
+static CORE_FUNCTION_TABLE: Lazy<HashMap<&'static str, BoxedXPathFunction>> = Lazy::new(|| {
+    CORE_FUNCTION_SLICE
+        .iter()
+        .map(|&(name, f)| (name, Box::new(f) as BoxedXPathFunction))
+        .collect()
+});
+
+/// Look up a core XPath 1.0 built-in by name (allocation-free; the table is
+/// built once and shared across every context).
+pub fn lookup_core_function(name: &str) -> Option<&'static BoxedXPathFunction> {
+    CORE_FUNCTION_TABLE.get(name)
+}
+
+/// The XPath 1.0 core function library as a name→fn map.
+///
+/// Kept for call sites/tests that need a `HashMap`; new hot-path code should
+/// prefer [`lookup_core_function`] to avoid the per-context rebuild.
+pub fn core_functions() -> HashMap<String, XPathFunction> {
+    CORE_FUNCTION_SLICE
+        .iter()
+        .map(|&(name, f)| (name.to_string(), f))
+        .collect()
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
