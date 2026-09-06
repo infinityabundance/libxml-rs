@@ -1,0 +1,95 @@
+name: ci
+
+# libxml-rs drop-in regression gate. The single source of truth for "did a
+# change regress the library" is `tools/courts/regression.sh`, which runs the
+# unit/integration suite (including the proptest fuzz smoke) and links the
+# three-DSO drop-in in release. This workflow adds the oracle-vs-candidate
+# Pareto matrix and a coverage-guided fuzz smoke on nightly.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test + release link + bench compile (stable)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # Regression gate: unit + integration + proptest fuzz smoke.
+      - name: cargo test --lib
+        run: cargo test --lib
+
+      # The three-DSO drop-in actually links in release (custom linker wrapper
+      # + facade generation exercise the full packaging path).
+      - name: cargo build --release --lib
+        run: cargo build --release --lib
+
+      # Criterion benchmarks must at least compile (criterion needs unwind,
+      # which [profile.bench] provides independently of the release cdylib).
+      - name: cargo bench --no-run
+        run: cargo bench --bench benchmarks --no-run
+
+      # Fail-closed regression gate (equivalent to the two commands above, run
+      # as the authoritative assertion). Kept separate so a failure is legible.
+      - name: regression court
+        run: sh tools/courts/regression.sh
+
+  fuzz:
+    name: coverage-guided fuzz smoke (nightly)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@nightly
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+
+      # Each target compiles against libFuzzer and runs a 30-second smoke so
+      # a broken target (rather than a found crash) fails the job.
+      - name: fuzz parse (30s)
+        run: cargo fuzz run parse -- -max_total_time=30
+
+      - name: fuzz html (30s)
+        run: cargo fuzz run html -- -max_total_time=30
+
+      - name: fuzz xpath (30s)
+        run: cargo fuzz run xpath -- -max_total_time=30
+
+  pareto:
+    name: oracle-vs-candidate Pareto matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # Build the optimized candidate DSOs, then run the matrix in the minimal
+      # Docker image that also ships the upstream oracle at /usr/local.
+      - name: build release drop-in
+        run: cargo build --release --lib
+
+      - name: Pareto matrix (docker)
+        run: sh tools/bench/run_in_docker.sh target/bench-matrix
+
+      - name: upload matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-matrix
+          path: target/bench-matrix/
