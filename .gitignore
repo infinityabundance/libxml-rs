@@ -1,6 +1,10 @@
 # Rust build artifacts
 target/
 
+# Cargo-fuzz is a detached workspace (publish=false); its lockfile is a
+# generated local artifact, not part of the reproducible published build.
+fuzz/Cargo.lock
+
 # Python bytecode
 __pycache__/
 *.pyc
