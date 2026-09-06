@@ -2041,6 +2041,16 @@ pub(crate) unsafe fn copy_node_deep(ctxt: *mut _xsltTransformContext, node: *mut
             child = next;
         }
         (*ctxt).insert = saved_insert;
+    } else if typ == XML_DOCUMENT_NODE as c_int || typ == XML_HTML_DOCUMENT_NODE as c_int {
+        // Document node: copy its children (the root element and any
+        // top-level nodes). `xsl:copy-of select="document('')"` must emit
+        // the stylesheet's root element (lxml test_xslt_document_*).
+        let mut child = (*node).children;
+        while !child.is_null() {
+            let next = (*child).next;
+            copy_node_deep(ctxt, child);
+            child = next;
+        }
     }
 }
 
@@ -3317,6 +3327,22 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
         };
         let tctxt = ctx.func_lookup_data as *mut _xsltTransformContext;
         if tctxt.is_null() {
+            return Ok(XPathValue::NodeSet(NodeSet::new()));
+        }
+        // UPSTREAM-PARITY (functions.c xsltDocumentFunction): an empty URI
+        // (document('')) selects the STYLESHEET document itself, not a
+        // resolver/loader round-trip. Without this, lxml's test_xslt_document
+        // family (which loads document('') from a file) returns an empty
+        // result tree.
+        if value.is_empty() {
+            unsafe {
+                let style = (*tctxt).style;
+                if !style.is_null() && !(*style).doc.is_null() {
+                    let mut ns = NodeSet::new();
+                    ns.push((*style).doc as *mut _xmlNode);
+                    return Ok(XPathValue::NodeSet(ns));
+                }
+            }
             return Ok(XPathValue::NodeSet(NodeSet::new()));
         }
         unsafe {
