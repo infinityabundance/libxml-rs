@@ -136,6 +136,20 @@ fn push_state(ctxt: *mut _xmlParserCtxt) -> parking_lot::MappedMutexGuard<'stati
     })
 }
 
+/// Non-creating read of the push-state flag used by the cleanup path.
+///
+/// `free_parser_ctxt` must NOT insert a default `PushState` merely to discover
+/// whether the parser created an internal registry doc (Phase 16.5.1): the
+/// normal synchronous `xmlReadMemory` lifecycle never creates push state, so a
+/// creating lookup here allocates a HashMap entry on every single parse just so
+/// it can be removed a line later.
+fn push_state_flag(ctxt: *mut _xmlParserCtxt) -> bool {
+    PUSH_STATE
+        .lock()
+        .get(&(ctxt as usize))
+        .map_or(false, |st| st.internal_doc_created)
+}
+
 /// Record that the parser created the internal SAX-compat registry document
 /// (XML_DOC_INTERNAL) on `ctxt->myDoc`, so `free_parser_ctxt` can reclaim it
 /// without dereferencing a possibly caller-freed pointer.
@@ -400,7 +414,7 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
         // (set at creation) instead of dereferencing `ctxt->myDoc`, which the
         // caller may already have freed — upstream xmlFreeParserCtxt never
         // touches myDoc, and caller-owned documents are never reclaimed here.
-        let reclaim_internal_doc = push_state(ctxt).internal_doc_created;
+        let reclaim_internal_doc = push_state_flag(ctxt);
         // Drop incremental-push state so a later context allocated at the
         // same address starts clean (SP-14.3.1-3).
         free_push_state(ctxt);
