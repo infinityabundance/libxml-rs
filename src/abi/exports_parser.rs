@@ -417,6 +417,11 @@ unsafe fn ctxt_read_doc(
             return ptr::null_mut();
         }
         let doc = (*ctxt).myDoc;
+        // UPSTREAM-PARITY (xmlDoRead/xmlCtxtReadMemory): the parsed document
+        // is returned to the CALLER; the context no longer owns it. Nulling
+        // myDoc here prevents xmlCtxtReset (the next ctxt_read_doc call) from
+        // double-freeing a doc the caller already freed (parse_ctx_reuse).
+        (*ctxt).myDoc = ptr::null_mut();
         if !doc.is_null() && !url.is_null() {
             (*doc).URL = string::xml_strdup(url as *const xmlChar);
         }

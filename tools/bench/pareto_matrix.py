@@ -52,13 +52,39 @@ CPUSET = os.environ.get("BENCH_CPUSET", "0")
 CONFIDENCE = float(os.environ.get("BENCH_CONFIDENCE", "0.95"))
 
 # operation -> approximate input sizes (bytes)
+# Decomposed per §16.3: each lifecycle phase is a separate surface.
 GRID = {
-    "parse": [1024, 16384, 131072],
-    "xpath": [1024, 16384],
-    "serialize": [1024, 16384],
-    "html": [1024, 16384],
-    "validate": [1024, 16384],
-    "xslt": [256, 1024],
+    "parse_e2e": [1024, 16384, 131072],
+    "parse_ctx_create": [1024],
+    "parse_ctx_reuse": [1024, 16384],
+    "tree_destroy": [1024, 16384],
+
+    "xpath_e2e": [1024, 16384],
+    "xpath_ctx_create": [1024, 16384],
+    "xpath_compile": [1024],
+    "xpath_eval_adhoc": [1024, 16384],
+    "xpath_eval_compiled": [1024, 16384],
+    "xpath_obj_free": [1024],
+
+    "serialize_e2e": [1024, 16384],
+    "serialize_only": [1024, 16384],
+    "serialize_formatted": [1024, 16384],
+    "serialize_unformatted": [1024, 16384],
+
+    "validate_e2e": [1024, 16384],
+    "validate_only": [1024, 16384],
+    "dtd_parse_compile": [1024, 16384],
+
+    "xslt_e2e": [256, 1024],
+    "xslt_compile": [1024],
+    "xslt_apply": [256, 1024],
+    "xslt_serialize": [256, 1024],
+
+    "html_e2e": [1024, 16384],
+    "html_malformed": [1024, 16384],
+
+    "xmlreader_stream": [1024, 16384],
+    "sax_push": [1024, 16384],
 }
 
 # Warmup iterations (enough to warm allocator pools / page cache, not timed).

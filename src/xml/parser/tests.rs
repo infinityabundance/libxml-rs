@@ -557,6 +557,40 @@ fn test_undeclared_entity_fatal_without_extsubset_or_perefs() {
     }
 }
 
+// ── Phase 16.3: parser-context reuse must not double-free the returned doc ──
+
+/// Reusing one `xmlParserCtxt` across multiple `xmlCtxtReadMemory` calls, with
+/// the caller freeing each returned document before the next read, must not
+/// double-free. The context relinquishes ownership of the returned doc
+/// (myDoc is nulled on the success path), so the next `xmlCtxtReset` does not
+/// free a doc the caller already freed.
+///
+/// # Safety
+///
+/// - The static buffer is valid for every read; each returned doc is freed by
+///   the caller before the next read; the context is freed once at the end.
+#[test]
+fn test_parse_ctx_reuse_no_double_free() {
+    unsafe {
+        let ctxt = crate::abi::exports_parser::xmlNewParserCtxt();
+        assert!(!ctxt.is_null());
+        let xml = b"<root><item id=\"a\">x</item><item id=\"b\">y</item></root>";
+        for _ in 0..3 {
+            let doc = crate::abi::exports_parser::xmlCtxtReadMemory(
+                ctxt,
+                xml.as_ptr() as *const i8,
+                xml.len() as i32,
+                core::ptr::null(),
+                core::ptr::null(),
+                0,
+            );
+            assert!(!doc.is_null());
+            crate::xml::tree::free_doc(doc);
+        }
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+    }
+}
+
 // ── KEY-3 regression guard (PI / XML-decl routing + reserved-name codes) ────
 
 /// `<?xml` is an XML declaration only at the logical document start with a
