@@ -406,6 +406,62 @@ pub fn xsltTransformError(
     }
 }
 
+/// Emit an `xsl:message` payload through the transform error handler (or the
+/// global `xsltGenericError` channel), WITHOUT moving the transform context
+/// out of the OK state.
+///
+/// Upstream `xsltMessage` (transform.c 1.1.45) routes the message to
+/// `ctxt->error` when a per-context handler is installed (lxml's
+/// `xsltSetTransformErrorFunc` / `_receiveXSLTError`), otherwise to the
+/// global generic channel, and does NOT emit a context line — only the raw
+/// message bytes, via `handler(errctx, "%s", message)`. The context only
+/// leaves OK here when the `terminate` attribute is `"yes"` (handled by the
+/// caller, `process_message`).
+///
+/// # Safety
+///
+/// - `ctxt` must be NULL or a valid `_xsltTransformContext`; its `error` /
+///   `errctx` fields are read and a registered handler must be a valid
+///   extern "C" function pointer callable with `errctx` and the message.
+pub fn xsltEmitMessage(ctxt: *mut _xsltTransformContext, msg: &[u8]) {
+    let mut cmsg = msg.to_vec();
+    cmsg.push(0);
+    let per_ctxt = if ctxt.is_null() {
+        None
+    } else {
+        // SAFETY: ctxt must be a valid _xsltTransformContext.
+        unsafe { (*ctxt).error }
+    };
+    let (handler, errctx) = match per_ctxt {
+        Some(h) => {
+            let ctx = if ctxt.is_null() {
+                ptr::null_mut()
+            } else {
+                // SAFETY: ctxt must be a valid _xsltTransformContext.
+                unsafe { (*ctxt).errctx }
+            };
+            (Some(h), ctx)
+        }
+        None => (
+            unsafe { crate::abi::data_globals::xsltGenericError },
+            unsafe { crate::abi::data_globals::xsltGenericErrorContext },
+        ),
+    };
+    if let Some(handler) = handler {
+        let hv: unsafe extern "C" fn(*mut c_void, *const c_char, ...) =
+            unsafe { core::mem::transmute(handler) };
+        unsafe {
+            hv(
+                errctx,
+                c"%s".as_ptr() as *const c_char,
+                cmsg.as_ptr() as *const c_char,
+            )
+        };
+    } else {
+        let _ = unsafe { libc::write(2, cmsg.as_ptr() as *const libc::c_void, msg.len()) };
+    }
+}
+
 /// Emit the error-context line (upstream xsltPrintErrorContext) through the
 /// registered handler with the upstream printf format, or to stderr when no
 /// handler is installed. The five format variants mirror xsltutils.c

@@ -2768,9 +2768,13 @@ pub(crate) unsafe fn process_param(ctxt: *mut _xsltTransformContext, inst: *mut 
 pub(crate) unsafe fn process_message(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
     let content = node_get_content((*inst).children);
     if !content.is_null() {
-        // Write the message to stderr.
+        // UPSTREAM-PARITY (transform.c xsltMessage): the message is emitted
+        // through the transform error handler (ctxt->error) or the global
+        // generic channel, NOT raw stderr — lxml's _receiveXSLTError and
+        // php's xsl_libxslt_error_handler only capture it via that route.
         let len = libc::strlen(content as *const libc::c_char) as usize;
-        let _ = libc::write(2, content as *const libc::c_void, len);
+        let bytes = core::slice::from_raw_parts(content as *const u8, len);
+        crate::xslt::errors::xsltEmitMessage(ctxt, bytes);
         // terminate attribute: if "yes", stop the transformation.
         let terminate = get_prop(inst, c"terminate".as_ptr() as *const xmlChar);
         if !terminate.is_null() {
