@@ -499,6 +499,7 @@ unsafe fn node_set_to_internal(ns: *mut _xmlNodeSet) -> NodeSet {
             out.push(unsafe { *tab.add(i as usize) });
         }
     }
+    out.sort();
     out
 }
 

@@ -176,6 +176,10 @@ fn eval_relative_path(
         ctx.context_list = saved_list;
     }
 
+    // The per-context-node concatenation is append-only and may overlap across
+    // context nodes; restore document order + uniqueness once (NodeSet::push
+    // no longer sorts/dedups per insert).
+    result.sort();
     Ok(XPathValue::NodeSet(result))
 }
 

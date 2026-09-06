@@ -126,6 +126,11 @@ pub unsafe fn traverse_axis(
         }
     }
 
+    // Forward axes already append in document order; reverse axes append in
+    // reverse document order and are normalized here. NodeSet::push is
+    // append-only (O(1)); this single sort/dedup at the boundary restores the
+    // document-order/unique invariant without the per-push re-sort.
+    result.sort();
     result
 }
 

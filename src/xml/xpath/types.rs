@@ -71,6 +71,7 @@
 use crate::abi::structs::_xmlNode;
 use crate::abi::types::xmlElementType;
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::ffi::c_int;
 use std::ptr;
 
@@ -199,12 +200,17 @@ impl NodeSet {
         self.nodes.iter().any(|n| n.0 == node)
     }
 
-    /// Add a node to the set, maintaining document order and uniqueness.
+    /// Append a node to the set.
+    ///
+    /// This is O(1) and does NOT deduplicate or sort. Callers that need the
+    /// document-order/unique invariant (axis results are already unique and
+    /// ordered, but unions and relative-path concatenations are not) call
+    /// [`sort`](Self::sort) once at the boundary. Deferring the sort avoids
+    /// the O(n² log n) node-set construction cost — the Phase 15.1 XPath perf
+    /// cliff (`count(//item)` was ~1000× slower than the oracle because every
+    /// push re-sorted the growing set).
     pub fn push(&mut self, node: *mut _xmlNode) {
-        if !self.nodes.iter().any(|n| n.0 == node) {
-            self.nodes.push(XPathNode(node));
-            self.sort();
-        }
+        self.nodes.push(XPathNode(node));
     }
 
     /// Extend with another node-set.
@@ -225,9 +231,16 @@ impl NodeSet {
     /// guarantees; the oracle-observed symptom is rotated results on the
     /// second of two transforms in one process.
     pub fn sort(&mut self) {
+        // Dedup by pointer first (matching the old per-push membership check:
+        // first occurrence wins), then order by document order. `retain` keeps
+        // the first occurrence and drops subsequent duplicates before the sort,
+        // so dedup is independent of the comparator's namespace-node Equal
+        // quirk (which would otherwise fail to make identical namespace copies
+        // adjacent for `dedup()`).
+        let mut seen: HashSet<usize> = HashSet::with_capacity(self.nodes.len());
+        self.nodes.retain(|n| seen.insert(n.0 as usize));
         self.nodes
             .sort_by(|a, b| unsafe { compare_document_order(a.0, b.0) });
-        self.nodes.dedup();
     }
 
     /// Convert to raw C ABI node-set.
