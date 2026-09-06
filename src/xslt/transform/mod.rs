@@ -882,6 +882,16 @@ pub unsafe fn xsltProcessInstruction(
                         let ctx_h =
                             crate::xslt::extensions::xsltFindExtElement(ctxt, (*inst).name, ns_ptr);
                         if !ctx_h.is_null() {
+                            // UPSTREAM-PARITY (transform.c xsltProcessOneNode /
+                            // xsltExtElementPreCompTest): the registered
+                            // xsltTransformFunction is invoked with the
+                            // transform context, the CURRENT context node
+                            // (ctxt->node), the extension-element instance,
+                            // and NULL for the precomputed data (per-context
+                            // registrations never carry a comp block).
+                            let func: crate::abi::exports_xslt_compile::xsltTransformFunction =
+                                core::mem::transmute(ctx_h);
+                            func(ctxt, (*ctxt).node, inst, ptr::null_mut());
                             return 0;
                         }
                         // Global module-element table
@@ -1020,7 +1030,12 @@ pub(crate) unsafe fn process_xslt_instruction(
                     ns_cstr.as_ptr() as *const xmlChar,
                 );
                 if !found.is_null() {
-                    // Invoke the extension element (Phase 8: full bridge).
+                    // UPSTREAM-PARITY: dispatch a registered extension element
+                    // (this branch is reached for non-XSLT-namespace unknown
+                    // elements routed through process_xslt_instruction).
+                    let func: crate::abi::exports_xslt_compile::xsltTransformFunction =
+                        core::mem::transmute(found);
+                    func(ctxt, (*ctxt).node, inst, ptr::null_mut());
                     return 0;
                 }
             }

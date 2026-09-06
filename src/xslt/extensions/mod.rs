@@ -166,9 +166,7 @@ pub unsafe extern "C" fn xsltRegisterExtElement(
     ctxt: *mut _xsltTransformContext,
     name: *const xmlChar,
     NS_uri: *const xmlChar,
-    f: Option<
-        unsafe extern "C" fn(*mut c_void, *mut c_void, *mut _xmlNode, *mut c_void, *mut _xmlNode),
-    >,
+    f: Option<crate::abi::exports_xslt_compile::xsltTransformFunction>,
 ) -> c_int {
     if ctxt.is_null() || name.is_null() || NS_uri.is_null() {
         return -1;

@@ -489,7 +489,15 @@ unsafe fn register_global_value(
         };
         match unsafe { stylesheet_param_raw_key(style, name.as_bytes(), uri.as_deref()) } {
             Some(raw_key) => String::from_utf8_lossy(&raw_key).into_owned(),
-            None => return, // Inert: no stylesheet xsl:param declares this name.
+            // UPSTREAM-PARITY (xsltEvalUserParams): a caller parameter is
+            // registered even when the stylesheet does NOT declare a matching
+            // xsl:param (lxml test_xslt_parameters passes bar="'Bar'" to a
+            // stylesheet that just references $bar). A plain (namespace-less)
+            // caller name binds under its own raw name. A namespaced caller
+            // parameter with no declaration cannot be mapped to a prefixed
+            // reference, so it stays inert (the shadowing guard).
+            None if uri.is_none() => name.clone(),
+            None => return,
         }
     } else {
         name.clone()
