@@ -1,0 +1,182 @@
+{
+  "schema": "phase-16-baseline/1",
+  "generated": "2026-09-06T21:20:00+01:00",
+  "candidate": {
+    "git_sha": "2848ced0a24de843a46e397ed9bfafe7cb208968",
+    "git_short_sha": "2848ced0",
+    "branch": "main",
+    "last_commit_subject": "gitignore: fuzz/Cargo.lock (detached cargo-fuzz workspace)",
+    "working_tree": "clean",
+    "build": {
+      "profile_release": {
+        "lto": true,
+        "codegen_units": 1,
+        "panic": "abort",
+        "strip": "symbols"
+      },
+      "profile_bench": {
+        "panic": "unwind"
+      },
+      "custom_linker": "tools/packaging/linker-wrapper.sh",
+      "linker_target": "x86_64-unknown-linux-gnu"
+    }
+  },
+  "oracle": {
+    "identity": "libxml2 2.15.3 + libxslt 1.1.45",
+    "libxml2_version": "2.15.3",
+    "libxslt_version": "1.1.45",
+    "libxml2_dso": "libxml2.so.16.1.3 (SONAME libxml2.so.16)",
+    "libxslt_dso": "libxslt.so.1.1.45 (SONAME libxslt.so.1)",
+    "install_prefix": "/usr/local",
+    "build_script": "oracle/build.sh",
+    "compiler": "GCC 12.2.0 (Debian 12.2.0-14+deb12u1)",
+    "libxml2_configure": [
+      "--prefix=/usr/local", "--enable-shared", "--enable-static",
+      "--with-threads", "--with-thread-alloc", "--with-http", "--with-ftp",
+      "--with-catalog", "--with-schemas", "--with-schematron", "--with-regexps",
+      "--with-modules", "--with-xinclude", "--with-xpath", "--with-xptr",
+      "--with-c14n", "--with-html", "--with-reader", "--with-writer",
+      "--with-valid", "--with-relaxng", "--with-icu", "--with-iconv",
+      "--with-zlib", "--with-lzma", "--with-python=no", "--without-debug",
+      "--without-mem-debug", "--without-run-debug", "--with-output",
+      "--with-sax1", "--with-legacy"
+    ],
+    "libxslt_configure": [
+      "--prefix=/usr/local", "--enable-shared", "--enable-static",
+      "--with-libxml-prefix=/usr/local", "--with-plugins", "--without-debug",
+      "--without-mem-debug", "--without-crypto", "--without-python"
+    ]
+  },
+  "host": {
+    "rustc": "1.98.0 (88d9e12ae 2026-08-18)",
+    "rustc_commit": "88d9e12ae178fab0fb5cc050a94da85685d449ea",
+    "llvm": "22.1.8",
+    "c_compiler": "cc (GCC) 16.2.1 20260810",
+    "linker": "GNU ld (GNU Binutils) 2.47",
+    "libc": "glibc 2.44",
+    "kernel": "Linux 7.2.2-1-cachyos x86_64 (PREEMPT_DYNAMIC)",
+    "os": "CachyOS (Arch-derived)",
+    "cpu": {
+      "model": "AMD Ryzen 7 9800X3D 8-Core Processor",
+      "vendor": "AuthenticAMD",
+      "family": "Zen 5",
+      "microcode": "0xb404035",
+      "physical_cores": 8,
+      "logical_cpus": 16,
+      "sockets": 1,
+      "smt": true,
+      "threads_per_core": 2,
+      "numa_nodes": 1,
+      "numa_node0_cpus": "0-15",
+      "l1d": "384 KiB (8 x 48 KiB)",
+      "l1i": "256 KiB (8 x 32 KiB)",
+      "l2": "8 MiB (8 x 1 MiB)",
+      "l3": "96 MiB (1 instance, 3D V-Cache)",
+      "scaling_driver": "amd-pstate-epp",
+      "governor": "performance",
+      "boost_cpb": true,
+      "max_frequency_khz": 5271622,
+      "simd_flags": [
+        "avx", "avx2", "avx512f", "avx512dq", "avx512ifma", "avx512cd",
+        "avx512bw", "avx512vl", "avx_vnni", "avx512_bf16", "avx512vbmi",
+        "avx512_vbmi2", "avx512_vnni", "avx512_bitalg", "avx512_vpopcntdq",
+        "avx512_vp2intersect"
+      ]
+    },
+    "memory": {
+      "total_gib": 125,
+      "numa_node0_mb": 128450,
+      "swap_gib": 125
+    },
+    "gpu": {
+      "present": true,
+      "model": "NVIDIA GeForce RTX 4080 SUPER (AD103, rev a1)",
+      "vram_mib": 16376,
+      "driver": "NVIDIA 610.57.04",
+      "cuda_umd_version": "13.3",
+      "nvidia_smi": true,
+      "nvcc": false,
+      "cuda_toolkit": false,
+      "note": "Driver API present; CUDA toolkit (nvcc) absent. GPU backend must use driver API (dynamically resolved) or toolkit must be installed."
+    },
+    "storage": {
+      "project_disk": "nvme1n1 KINGSTON SNV2S2000G (1.8 TB NVMe)",
+      "mount": "/mnt/1tb_kingston",
+      "secondary_nvme": "nvme0n1 CT2000T705SSD3 (1.8 TB)"
+    },
+    "tooling": {
+      "perf": false,
+      "cargo_asm": false,
+      "cargo_flamegraph": false,
+      "hyperfine": false,
+      "cargo_fuzz": true,
+      "cargo_llvm_cov": true,
+      "docker": "Docker version 29.1.5"
+    }
+  },
+  "consumer_runtimes_host": {
+    "python": "3.14.7",
+    "ruby": "3.4.10",
+    "php": "8.5.9 (NTS)"
+  },
+  "benchmark_environment": {
+    "cflags": "-O1 -g0",
+    "lang": "C.UTF-8",
+    "lc_all": "C.UTF-8",
+    "pythonioencoding": "utf-8",
+    "pythonutf8": 1,
+    "backend_overrides": "none yet (Phase 16 will introduce LIBXML_RS_*)"
+  },
+  "existing_harness": {
+    "files": [
+      "benches/benchmarks.rs",
+      "tools/bench/harness.c",
+      "tools/bench/pareto_matrix.py",
+      "tools/bench/run_in_docker.sh"
+    ],
+    "limitations": [
+      "fixed small iteration counts (no auto-calibration to minimum duration)",
+      "oracle typically runs before candidate (no A/B/B/A alternation)",
+      "no CPU pinning / thermal-frequency capture",
+      "no confidence intervals",
+      "no raw-sample retention"
+    ],
+    "baseline_matrix_note": "candidate slower than oracle on every synthetic op; raw at target/bench-matrix/matrix.json"
+  },
+  "baseline_matrix_speedups": {
+    "parse_1k": 0.397,
+    "parse_16k": 0.279,
+    "parse_128k": 0.267,
+    "xpath_16k": 0.126,
+    "html_16k": 0.633,
+    "serialize_16k": 0.316,
+    "validate_16k": 0.270,
+    "xslt_1k": 0.413
+  },
+  "hot_paths": {
+    "src/xml/parser/state.rs": 6592,
+    "src/xml/parser/tokenizer.rs": 2166,
+    "src/xml/parser/input.rs": 2024,
+    "src/xml/parser/helpers.rs": 1207,
+    "src/xml/html/mod.rs": 4212,
+    "src/xml/tree/mod.rs": 7094,
+    "src/xml/xpath/exports.rs": 5284,
+    "src/xml/xpath/eval.rs": 1110,
+    "src/xml/xpath/context.rs": 1353,
+    "src/xml/xpath/axes.rs": 772,
+    "src/xml/xpath/functions.rs": 685,
+    "src/abi/allocator.rs": 1799
+  },
+  "five_consumer_correctness_status": {
+    "php": "0 failures (Phase 14 sealed; re-gate required after shared-engine change)",
+    "lxml": "~164 candidate-driven failures at Phase 15.1 baseline; test_xslt 51 -> 18 this session; not sealed",
+    "nokogiri": "2 SIGSEGV crash sites + HTML5/CSS failures; not sealed",
+    "debian_reverse_deps": "0 missing symbols; 5 reverse-deps load & run; runtime smoke pending",
+    "bind9": "not started"
+  },
+  "test_counts": {
+    "cargo_test_lib_passed": 1258,
+    "cargo_test_lib_failed": 0,
+    "cargo_test_lib_ignored": 1
+  }
+}
