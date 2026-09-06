@@ -1,0 +1,82 @@
+{
+  "schema": "performance-atlas/1",
+  "title": "libxml-rs Phase 16 Performance Atlas",
+  "speedup_convention": "oracle_time / candidate_time",
+  "speedup_gt_1_means": "candidate_faster",
+  "provider_isolation": {
+    "rule": "oracle and candidate never loaded into the same address space for measurement",
+    "criterion_scope": "candidate internals only (single provider)"
+  },
+  "row_schema": {
+    "required_fields": [
+      "provider",
+      "candidate_sha",
+      "oracle_identity",
+      "operation",
+      "consumer",
+      "corpus_file",
+      "corpus_category",
+      "bytes",
+      "encoding",
+      "backend",
+      "simd_isa",
+      "thread_count",
+      "cuda_state",
+      "cache_mode",
+      "trial_count",
+      "iterations",
+      "median_ns",
+      "mean_ns",
+      "stddev_ns",
+      "mad_ns",
+      "p50_ns",
+      "p95_ns",
+      "p99_ns",
+      "throughput_bytes_per_sec",
+      "confidence_interval",
+      "speedup",
+      "rss_kib",
+      "cpu_time_ns",
+      "wall_time_ns",
+      "result_hash",
+      "result_valid",
+      "host_fingerprint"
+    ],
+    "enums": {
+      "provider": [
+        "oracle", "candidate", "candidate-scalar", "candidate-avx2",
+        "candidate-avx512", "candidate-rayon", "candidate-cuda", "candidate-auto"
+      ],
+      "consumer": [
+        "harness", "xmllint", "xsltproc", "python3-lxml", "ruby-nokogiri", "php"
+      ],
+      "backend": ["scalar", "avx2", "avx512", "auto", "cuda", "rayon", "auto-cpu"],
+      "cache_mode": ["warm", "cold"],
+      "cuda_state": ["off", "forced", "auto-selected", "not-supported"]
+    }
+  },
+  "classification": {
+    "exploratory_confidence": 0.95,
+    "final_confidence": 0.99,
+    "practical_noise_ratio": 1.05,
+    "verdicts": {
+      "SIGNIFICANT_WIN": "final CI entirely above +practical_noise",
+      "PRACTICAL_WIN": "exploratory CI entirely above +practical_noise (final not yet established)",
+      "TIE": "CI overlaps [1/practical_noise, practical_noise]",
+      "PRACTICAL_REGRESSION": "exploratory CI entirely below 1/practical_noise",
+      "SIGNIFICANT_REGRESSION": "final CI entirely below 1/practical_noise"
+    }
+  },
+  "aggregation": {
+    "primary": "equal-weighted workload/category geometric mean",
+    "speedup_combination": "geometric_mean",
+    "bytes_weighted_throughput": "separate metric, not headline"
+  },
+  "evidence_layout": {
+    "raw": "courts/receipts/phase-16/raw/",
+    "profiles": "courts/receipts/phase-16/profiles/",
+    "matrices": "courts/receipts/phase-16/matrices/",
+    "atlas_md": "atlas/PERFORMANCE_ATLAS.md",
+    "atlas_json": "atlas/PERFORMANCE_ATLAS.json"
+  }
+}
