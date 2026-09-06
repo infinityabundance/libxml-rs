@@ -545,6 +545,62 @@ pub(crate) unsafe fn input_from_memory_named(
     InputBuffer::from_memory(slice, uri_str.as_deref())
 }
 
+/// §16.5.2 zero-copy variant of [`input_from_memory`]: the returned
+/// `InputBuffer` BORROWS the caller's `buffer` instead of copying it.
+/// Only the one-call synchronous front-ends (`xmlReadMemory`, `xmlReadDoc`,
+/// `xmlSAXParseMemory`, …) may use this — they create, parse and free the
+/// parser context inside one exported call, so the borrow (and the C-visible
+/// `_xmlParserInput` pointers into it) never outlives the call.
+///
+/// # Safety
+///
+/// - `buffer` must be valid for reads of at least `size` bytes and must stay
+///   valid until the parse consuming the returned buffer has finished.
+/// - If `size` is negative or `buffer` is NULL, no borrow happens (an empty
+///   owned buffer is returned).
+pub(crate) unsafe fn input_from_memory_borrowed(buffer: *const c_char, size: c_int) -> InputBuffer {
+    let slice = if size > 0 && !buffer.is_null() {
+        // SAFETY: Caller guarantees `buffer` points to at least `size` readable bytes.
+        unsafe { std::slice::from_raw_parts(buffer as *const u8, size as usize) }
+    } else {
+        &[]
+    };
+    // SAFETY: see fn docs — the caller's buffer outlives the synchronous parse.
+    unsafe { InputBuffer::from_memory_borrowed(slice, None) }
+}
+
+/// §16.5.2 zero-copy variant of [`input_from_memory_named`] — see
+/// [`input_from_memory_borrowed`] for the lifetime contract.
+///
+/// # Safety
+///
+/// - `buffer` must be valid for reads of at least `size` bytes and must stay
+///   valid until the parse consuming the returned buffer has finished.
+/// - `uri` must be a valid NUL-terminated C string, or NULL.
+pub(crate) unsafe fn input_from_memory_named_borrowed(
+    buffer: *const c_char,
+    size: c_int,
+    uri: *const c_char,
+) -> InputBuffer {
+    let slice = if size > 0 && !buffer.is_null() {
+        // SAFETY: Caller guarantees `buffer` points to at least `size` readable bytes.
+        unsafe { std::slice::from_raw_parts(buffer as *const u8, size as usize) }
+    } else {
+        &[]
+    };
+    let uri_str = if !uri.is_null() {
+        // SAFETY: Caller guarantees `uri` is a valid C string.
+        unsafe { std::ffi::CStr::from_ptr(uri) }
+            .to_str()
+            .ok()
+            .map(|s| s.to_string())
+    } else {
+        None
+    };
+    // SAFETY: see fn docs — the caller's buffer outlives the synchronous parse.
+    unsafe { InputBuffer::from_memory_borrowed(slice, uri_str.as_deref()) }
+}
+
 /// Create an `InputBuffer` from a file path.
 ///
 /// Returns `Ok(InputBuffer)` on success, or `Err(())` if the file cannot be

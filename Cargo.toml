@@ -54,6 +54,13 @@ path = "src/bin/xsltproc.rs"
 name = "abi_mirror"
 path = "examples/abi_mirror.rs"
 
+# §16.5.2 allocation probe (courts/receipts/phase-16): a counting global
+# allocator measures the Rust-side bytes a parse allocates, isolating the
+# input-copy elimination of the borrowed synchronous memory path.
+[[example]]
+name = "alloc_probe"
+path = "examples/alloc_probe.rs"
+
 [[bench]]
 name = "benchmarks"
 harness = false

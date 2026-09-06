@@ -2766,7 +2766,11 @@ pub unsafe extern "C" fn xmlReadDoc(
         return ptr::null_mut();
     }
     let len = crate::xml::string::xml_strlen(cur);
-    let input = crate::xml::parser::helpers::input_from_memory(cur as *const c_char, len as c_int);
+    // §16.5.2: xmlReadDoc creates, parses and frees its own context inside
+    // this call, so the input BORROWS the caller's string (zero copy); the
+    // caller's buffer is only required to stay valid for the call.
+    let input =
+        crate::xml::parser::helpers::input_from_memory_borrowed(cur as *const c_char, len as c_int);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     (*ctxt).options = options;
     if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
@@ -2962,8 +2966,14 @@ pub unsafe extern "C" fn xmlReadMemory(
         return ptr::null_mut();
     }
     // UPSTREAM-PARITY: the URL becomes the input's filename (feeds the
-    // `file:line:` error prefix and doc->URL).
-    let mut input = crate::xml::parser::helpers::input_from_memory_named(buffer, size, URL);
+    // `file:line:` error prefix and doc->URL). §16.5.2: xmlReadMemory owns
+    // its context for the duration of this call, so the input BORROWS the
+    // caller's buffer — zero copies on the ordinary UTF-8 path (the caller's
+    // memory only has to stay valid for the call, exactly like upstream's
+    // xmlReadMemory streaming contract). A caller-supplied `encoding` below
+    // converts to an owned transcoded buffer when it applies.
+    let mut input =
+        crate::xml::parser::helpers::input_from_memory_named_borrowed(buffer, size, URL);
     // UPSTREAM-PARITY (xmlReadMemory -> xmlCtxtReadMemory): an explicit
     // `encoding` argument switches the input before parsing (lxml/KIND-2/4
     // python strings arrive as raw UTF-16/UCS-4). Best-effort: unknown
@@ -3167,7 +3177,10 @@ pub unsafe extern "C" fn xmlSAXParseDoc(
         (*ctxt).options |= 1; // XML_PARSE_RECOVER
     }
     let len = crate::xml::string::xml_strlen(cur);
-    let input = crate::xml::parser::helpers::input_from_memory(cur as *const c_char, len as c_int);
+    // §16.5.2 zero-copy: xmlSAXParseDoc creates, parses and frees its own
+    // context inside this call — the input borrows the caller's string.
+    let input =
+        crate::xml::parser::helpers::input_from_memory_borrowed(cur as *const c_char, len as c_int);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     crate::xml::parser::helpers::parse_document(ctxt);
     let doc = (*ctxt).myDoc;
@@ -3208,16 +3221,16 @@ pub unsafe extern "C" fn xmlSAXParseDocWithData(
         (*ctxt).options |= 1; // XML_PARSE_RECOVER
     }
     let len = crate::xml::string::xml_strlen(cur);
-    let input = crate::xml::parser::helpers::input_from_memory(cur as *const c_char, len as c_int);
+    // §16.5.2 zero-copy: xmlSAXParseDocWithData owns its context for this
+    // call — the input borrows the caller's string.
+    let input =
+        crate::xml::parser::helpers::input_from_memory_borrowed(cur as *const c_char, len as c_int);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     crate::xml::parser::helpers::parse_document(ctxt);
     let doc = (*ctxt).myDoc;
     crate::xml::parser::helpers::free_parser_ctxt(ctxt);
     doc
 }
-
-/// Parse an XML file (SAX1) with user data (upstream parser.h
-/// `xmlSAXParseFileWithData`).
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -3312,7 +3325,9 @@ pub unsafe extern "C" fn xmlSAXParseMemoryWithData(
         (*ctxt).recovery = 1;
         (*ctxt).options |= 1; // XML_PARSE_RECOVER
     }
-    let input = crate::xml::parser::helpers::input_from_memory(buffer, size);
+    // §16.5.2 zero-copy: xmlSAXParseMemoryWithData owns its context for this
+    // call — the input borrows the caller's buffer.
+    let input = crate::xml::parser::helpers::input_from_memory_borrowed(buffer, size);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     crate::xml::parser::helpers::parse_document(ctxt);
     let doc = (*ctxt).myDoc;
@@ -3411,7 +3426,9 @@ pub unsafe extern "C" fn xmlSAXParseMemory(
         (*ctxt).recovery = 1;
         (*ctxt).options |= 1;
     }
-    let input = crate::xml::parser::helpers::input_from_memory(buffer, size);
+    // §16.5.2 zero-copy: xmlSAXParseMemory owns its context for this call —
+    // the input borrows the caller's buffer.
+    let input = crate::xml::parser::helpers::input_from_memory_borrowed(buffer, size);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     crate::xml::parser::helpers::parse_document(ctxt);
     let doc = (*ctxt).myDoc;

@@ -1,0 +1,30 @@
+{
+  "subphase": "16.5.2",
+  "title": "Borrowed synchronous memory input",
+  "date": "2026-09-06",
+  "sha": "see git HEAD",
+  "status": "IMPLEMENTED",
+  "baseline_cost": "two full input copies per memory parse (buf.to_vec + InputSource::Memory mirror clone)",
+  "design": {
+    "storage": "InputBytes { Owned(Vec<u8>), Borrowed(&'static [u8]) }",
+    "mutations_convert_to_owned": ["push_bytes", "convert_declared_native_encoding", "convert_via_registry", "convert_detected_utf16", "apply_name_encoding_override", "apply_explicit_input_encoding", "duplicate_for_reparse"],
+    "borrowed_front_ends": ["xmlReadDoc", "xmlReadMemory", "xmlParseDoc", "xmlParseMemory", "xmlRecoverDoc", "xmlRecoverMemory", "xmlSAXParseDoc", "xmlSAXParseDocWithData", "xmlSAXParseMemory", "xmlSAXParseMemoryWithData"],
+    "owned_front_ends_unchanged": ["xmlCtxtReadMemory", "xmlCtxtReadDoc", "xmlCreateDocParserCtxt", "xmlCreateMemoryParserCtxt", "xmlCreatePushParserCtxt", "xmlCtxtResetPush", "reader", "html"]
+  },
+  "evidence": {
+    "tool": "examples/alloc_probe.rs (counting #[global_allocator])",
+    "document": "<r>xxxx…</r> of size N",
+    "rows": [
+      { "input_bytes": 1048576, "xmlReadMemory_rust_alloc_bytes": 1051095, "xmlCtxtReadMemory_rust_alloc_bytes": 2099668, "delta_input_copy": 1048573 },
+      { "input_bytes": 2097152, "xmlReadMemory_rust_alloc_bytes": 2099671, "xmlCtxtReadMemory_rust_alloc_bytes": 4196820, "delta_input_copy": 2097149 },
+      { "input_bytes": 4194304, "xmlReadMemory_rust_alloc_bytes": 4196823, "xmlCtxtReadMemory_rust_alloc_bytes": 8391124, "delta_input_copy": 4194301 }
+    ],
+    "conclusion": "borrowed xmlReadMemory allocates ~N (no input copy); owned xmlCtxtReadMemory allocates ~2N (one upstream-parity input copy)"
+  },
+  "gates": {
+    "cargo_test_lib": "1259 passed / 0 failed / 1 ignored",
+    "fuzz_parse": "381686 execs clean (ASan, borrowed path exercised)",
+    "fuzz_html": "663450 execs clean",
+    "fuzz_xpath": "617525 execs clean"
+  }
+}

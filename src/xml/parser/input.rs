@@ -276,6 +276,73 @@ impl std::error::Error for InputError {}
 // InputBuffer
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/// Owned-or-borrowed byte storage of an [`InputBuffer`] (§16.5.2 — borrowed
+/// synchronous memory input).
+///
+/// The ownership model is explicit:
+///
+/// - [`InputBytes::Owned`] — the buffer owns a private, growable byte
+///   vector: push parsing (chunks accumulate across calls), file/IO sources,
+///   transcoded input, and probe-reparse duplicates.
+/// - [`InputBytes::Borrowed`] — the buffer borrows a caller-owned region for
+///   the duration of the synchronous parse that consumes it (`xmlReadMemory`
+///   & the other one-call front-ends): zero allocation on the ordinary
+///   UTF-8 whole-buffer path. A borrowed buffer must never outlive its
+///   parse — every mutation path (`push_bytes`, transcoding, override,
+///   reparse) first converts to Owned, and the one-call front-ends free
+///   their context (and therefore the buffer) before returning.
+///
+/// Reads go through [`Deref`](core::ops::Deref), so `len()`/indexing/slicing
+/// behave like the former `Vec<u8>` field; only the mutation points are
+/// explicit about ownership.
+#[derive(Debug)]
+enum InputBytes {
+    Owned(Vec<u8>),
+    /// See [`InputBytes`] docs for the lifetime contract.
+    Borrowed(&'static [u8]),
+}
+
+impl core::ops::Deref for InputBytes {
+    type Target = [u8];
+
+    fn deref(&self) -> &[u8] {
+        match self {
+            InputBytes::Owned(v) => v,
+            InputBytes::Borrowed(s) => s,
+        }
+    }
+}
+
+impl InputBytes {
+    /// Total byte length (const-friendly, no Deref in const fns).
+    const fn data_len(&self) -> usize {
+        match self {
+            InputBytes::Owned(v) => v.len(),
+            InputBytes::Borrowed(s) => s.len(),
+        }
+    }
+
+    /// Return the bytes as a mutable owned `Vec`, converting a Borrowed
+    /// buffer by copying (§16.5.2: copy only when mutation requires it).
+    fn make_owned(&mut self) -> &mut Vec<u8> {
+        if let InputBytes::Borrowed(s) = self {
+            *self = InputBytes::Owned(s.to_vec());
+        }
+        match self {
+            InputBytes::Owned(v) => v,
+            InputBytes::Borrowed(_) => unreachable!(),
+        }
+    }
+
+    /// Take the bytes as an owned `Vec` (Borrowed copies; Owned moves).
+    fn take_owned(&mut self) -> Vec<u8> {
+        match self {
+            InputBytes::Owned(v) => core::mem::take(v),
+            InputBytes::Borrowed(s) => s.to_vec(),
+        }
+    }
+}
+
 /// Internal safe representation of an XML input source with position tracking.
 ///
 /// This type is NOT `#[repr(C)]`. It is an internal implementation detail that
@@ -292,8 +359,9 @@ impl std::error::Error for InputError {}
 pub(crate) struct InputBuffer {
     /// The raw input source.
     source: InputSource,
-    /// The complete buffered data (after any encoding conversion to UTF-8).
-    data: Vec<u8>,
+    /// The complete buffered data (after any encoding conversion to UTF-8),
+    /// owned or borrowed (§16.5.2 — see [`InputBytes`]).
+    data: InputBytes,
     /// Current byte position in `data`.
     pos: usize,
     /// Current line number (1-based).
@@ -331,7 +399,7 @@ impl std::fmt::Debug for InputBuffer {
             .field("col", &self.col)
             .field("encoding", &self.encoding)
             .field("filename", &self.filename)
-            .field("len", &self.data.len())
+            .field("len", &self.data.data_len())
             .field("bom_consumed", &self.bom_consumed)
             .field("converted_to_utf8", &self.converted_to_utf8)
             .finish()
@@ -343,14 +411,21 @@ impl InputBuffer {
 
     /// Create an `InputBuffer` from an in-memory byte slice.
     ///
-    /// The bytes are copied into an owned buffer. BOM and encoding detection
-    /// are performed during construction.
+    /// The bytes are copied into an owned buffer (§16.5.2: this is the
+    /// multi-phase / long-lived path — push parsing, caller-owned contexts,
+    /// reader input — where the input must outlive the call). BOM and
+    /// encoding detection are performed during construction.
     pub fn from_memory(buf: &[u8], uri: Option<&str>) -> Self {
         let data = buf.to_vec();
         let filename = uri.map(|s| s.to_string());
         let mut ib = InputBuffer {
-            source: InputSource::Memory(data.clone()),
-            data,
+            // The InputSource::Memory payload is never read back for a memory
+            // buffer (read_chunk returns 0 and read_all is only used by the
+            // file/callback constructors), so no mirror copy is kept (§16.5.2:
+            // the previous `Memory(data.clone())` duplicated the whole input
+            // on every memory parse).
+            source: InputSource::Memory(Vec::new()),
+            data: InputBytes::Owned(data),
             pos: 0,
             line: 1,
             col: 1,
@@ -361,6 +436,50 @@ impl InputBuffer {
             decl_pending: false,
             io_failed: false,
         };
+        ib.detect_bom_and_encoding();
+        ib
+    }
+
+    /// Create an `InputBuffer` that BORROWS `buf` for the duration of the
+    /// parse that consumes it — the §16.5.2 zero-copy path for the ordinary
+    /// synchronous whole-buffer front-ends (`xmlReadMemory`, `xmlReadDoc`,
+    /// `xmlSAXParseMemory`, …).
+    ///
+    /// No copy happens unless a later step needs owned bytes (a non-UTF-8
+    /// BOM/declaration transcode or a caller encoding override converts to
+    /// Owned inside the constructor/override, and push/reparse are never
+    /// used by these front-ends).
+    ///
+    /// # SAFETY
+    ///
+    /// - `buf` must stay valid and unmoved until the InputBuffer is dropped.
+    /// - The caller must guarantee the buffer is consumed within the same
+    ///   synchronous parse call (these front-ends create, parse and free the
+    ///   parser context inside one exported call, so the boxed buffer — and
+    ///   the C-visible `_xmlParserInput` base/cur/end pointers into `buf` —
+    ///   never outlive the call). Multi-phase APIs (`xmlCreateDocParserCtxt`,
+    ///   `xmlCtxtReadMemory` on a caller-owned context, push parsing, the
+    ///   reader) MUST use [`InputBuffer::from_memory`], which copies.
+    pub unsafe fn from_memory_borrowed(buf: &[u8], uri: Option<&str>) -> Self {
+        // SAFETY: see fn contract — the region outlives this buffer's use.
+        let static_buf: &'static [u8] =
+            unsafe { core::mem::transmute::<&[u8], &'static [u8]>(buf) };
+        let filename = uri.map(|s| s.to_string());
+        let mut ib = InputBuffer {
+            source: InputSource::Memory(Vec::new()),
+            data: InputBytes::Borrowed(static_buf),
+            pos: 0,
+            line: 1,
+            col: 1,
+            encoding: Encoding::None,
+            filename,
+            bom_consumed: false,
+            converted_to_utf8: false,
+            decl_pending: false,
+            io_failed: false,
+        };
+        // BOM/declaration detection may transcode (Borrowed → Owned) for
+        // non-UTF-8 inputs; the plain UTF-8/ASCII path stays zero-copy.
         ib.detect_bom_and_encoding();
         ib
     }
@@ -385,24 +504,20 @@ impl InputBuffer {
         // processes it.
         if self.converted_to_utf8 && !matches!(self.encoding, Encoding::Utf8 | Encoding::Ascii) {
             if let Some(src_name) = self.legacy_source_encoding_name() {
-                if let InputSource::Memory(d) = &mut self.source {
-                    d.extend_from_slice(bytes);
-                }
                 let tail = crate::xml::encoding::decode_whole_buffer_declared(&src_name, bytes);
                 if let Ok(conv) = tail {
-                    self.data.extend_from_slice(&conv);
+                    self.data.make_owned().extend_from_slice(&conv);
                     return;
                 }
                 // Undecodable tail: append raw; the tokenizer reports the
                 // invalid-character error.
-                self.data.extend_from_slice(bytes);
+                self.data.make_owned().extend_from_slice(bytes);
                 return;
             }
         }
-        self.data.extend_from_slice(bytes);
-        if let InputSource::Memory(d) = &mut self.source {
-            d.extend_from_slice(bytes);
-        }
+        // Appending makes the buffer owned (§16.5.2 — push chunks cannot
+        // borrow caller memory across xmlParseChunk calls).
+        self.data.make_owned().extend_from_slice(bytes);
         // Re-run detection when the first real bytes arrive (the buffer was
         // constructed empty) or when an in-progress `<?xml` declaration may
         // have just completed on this push (KEY-1: a BOM-less declared
@@ -420,8 +535,10 @@ impl InputBuffer {
     /// completing parse over an identical buffer).
     pub(crate) fn duplicate_for_reparse(&self) -> InputBuffer {
         InputBuffer {
-            source: InputSource::Memory(self.data.clone()),
-            data: self.data.clone(),
+            // A reparse duplicate always OWNS its bytes (the original may be
+            // a §16.5.2 borrowed buffer whose region is call-scoped).
+            source: InputSource::Memory(Vec::new()),
+            data: InputBytes::Owned(self.data.to_vec()),
             pos: self.pos,
             line: self.line,
             col: self.col,
@@ -450,7 +567,7 @@ impl InputBuffer {
 
         let mut ib = InputBuffer {
             source,
-            data,
+            data: InputBytes::Owned(data),
             pos: 0,
             line: 1,
             col: 1,
@@ -478,7 +595,7 @@ impl InputBuffer {
 
         let mut ib = InputBuffer {
             source,
-            data,
+            data: InputBytes::Owned(data),
             pos: 0,
             line: 1,
             col: 1,
@@ -493,6 +610,7 @@ impl InputBuffer {
         Ok(ib)
     }
 
+    /// A failed input source (I/O error at open time).
     /// Create an `InputBuffer` whose source failed to produce data (read
     /// callback returned an error). The parser raises an I/O error at the
     /// first grow — mirroring upstream — instead of reporting an empty
@@ -500,7 +618,7 @@ impl InputBuffer {
     pub const fn failed_source() -> Self {
         InputBuffer {
             source: InputSource::Memory(Vec::new()),
-            data: Vec::new(),
+            data: InputBytes::Owned(Vec::new()),
             pos: 0,
             line: 1,
             col: 1,
@@ -699,8 +817,10 @@ impl InputBuffer {
         }
         match &self.encoding {
             Encoding::Iso8859_1 => {
-                let raw = std::mem::take(&mut self.data);
-                self.data = crate::xml::encoding::latin1_to_utf8(&raw);
+                // take_owned: an Owned buffer moves its Vec out (no copy); a
+                // Borrowed buffer copies once, then becomes Owned (§16.5.2).
+                let raw = self.data.take_owned();
+                self.data = InputBytes::Owned(crate::xml::encoding::latin1_to_utf8(&raw));
                 self.converted_to_utf8 = true;
             }
             Encoding::Ascii => {
@@ -729,7 +849,8 @@ impl InputBuffer {
         }
         match crate::xml::encoding::decode_whole_buffer_declared(name, &self.data) {
             Ok(conv) => {
-                self.data = conv;
+                // The converted stream is always owned (§16.5.2).
+                self.data = InputBytes::Owned(conv);
                 self.pos = 0;
                 self.col = 1;
                 self.bom_consumed = false;
@@ -754,7 +875,9 @@ impl InputBuffer {
     /// buffer (including the BOM, which the converters skip) is decoded to
     /// UTF-8 and the position resets to the start of the converted stream.
     fn convert_detected_utf16(&mut self) {
-        let raw = self.data.clone();
+        // Read-only decode source; the buffer itself stays Borrowed on
+        // failure and becomes Owned(conv) on success (§16.5.2).
+        let raw = self.data.to_vec();
         let converted = match self.encoding {
             Encoding::Utf16Le => crate::xml::encoding::utf16le_to_utf8(&raw),
             Encoding::Utf16Be => crate::xml::encoding::utf16be_to_utf8(&raw),
@@ -762,7 +885,7 @@ impl InputBuffer {
         };
         match converted {
             Ok(conv) => {
-                self.data = conv;
+                self.data = InputBytes::Owned(conv);
                 self.pos = 0;
                 self.col = 1;
                 self.bom_consumed = false;
@@ -802,12 +925,12 @@ impl InputBuffer {
             "iso-8859-1" | "iso8859-1" | "latin1" | "latin-1" => {
                 Some(crate::xml::encoding::latin1_to_utf8(&self.data))
             }
-            "us-ascii" | "ascii" => Some(self.data.clone()),
+            "us-ascii" | "ascii" => Some(self.data.to_vec()),
             _ => None,
         };
         match converted {
             Some(conv) => {
-                self.data = conv;
+                self.data = InputBytes::Owned(conv);
                 self.pos = 0;
                 self.col = 1;
                 self.line = 1;
@@ -850,7 +973,9 @@ impl InputBuffer {
                 Some(crate::xml::encoding::latin1_to_utf8(&self.data))
             }
             crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_ASCII
-            | crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF8 => Some(self.data.clone()),
+            | crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF8 => {
+                Some(self.data.to_vec())
+            }
             // Other registry-served encodings (ISO-8859-2..16, Shift_JIS,
             // EUC-JP, ISO-2022-JP, UCS-2, EBCDIC ...): whole-buffer decode
             // through the registered input handler (R-000157).
@@ -865,7 +990,7 @@ impl InputBuffer {
         };
         match converted {
             Some(conv) => {
-                self.data = conv;
+                self.data = InputBytes::Owned(conv);
                 self.pos = 0;
                 self.col = 1;
                 self.line = 1;
@@ -1218,7 +1343,7 @@ impl InputBuffer {
 
     /// Check if the input has been fully consumed.
     pub const fn is_eof(&self) -> bool {
-        self.pos >= self.data.len()
+        self.pos >= self.data.data_len()
     }
 
     /// Return the remaining unconsumed bytes.
@@ -1233,7 +1358,7 @@ impl InputBuffer {
 
     /// Return the total length of the buffered data in bytes.
     pub const fn len(&self) -> usize {
-        self.data.len()
+        self.data.data_len()
     }
 
     /// Return the filename or URI, if known.
@@ -1266,17 +1391,21 @@ impl InputBuffer {
     ///   dropped or mutably borrowed.
     /// - The `base`, `cur`, and `end` pointers point into stable storage.
     pub unsafe fn populate_parser_input(&self, input: &mut _xmlParserInput) {
-        let data_ptr = self.data.as_ptr();
+        // SAFETY notes in the fn docs; for a Borrowed buffer the base points
+        // into the caller's region, which the one-call front-ends guarantee
+        // stays alive through the parse (§16.5.2).
+        let bytes: &[u8] = &self.data;
+        let data_ptr = bytes.as_ptr();
         let base = data_ptr as *const crate::abi::types::xmlChar;
         let cur = unsafe { data_ptr.add(self.pos) as *const crate::abi::types::xmlChar };
-        let end = unsafe { data_ptr.add(self.data.len()) as *const crate::abi::types::xmlChar };
+        let end = unsafe { data_ptr.add(bytes.len()) as *const crate::abi::types::xmlChar };
 
         input.base = base;
         input.cur = cur;
         input.end = end;
         input.line = self.line as c_int;
         input.col = self.col as c_int;
-        input.length = self.data.len() as c_int;
+        input.length = bytes.len() as c_int;
         input.consumed = self.pos as c_ulong;
         input.filename = self
             .filename
@@ -1295,18 +1424,19 @@ impl InputBuffer {
     ///   `_xmlParserInput`; the `base`/`cur`/`end` pointers written into
     ///   `input` borrow `self.data`, so the buffer must stay alive and not
     ///   be mutated or reallocated while the parser input is in use.
-    pub const unsafe fn populate_parser_input_without_filename(&self, input: &mut _xmlParserInput) {
-        let data_ptr = self.data.as_ptr();
+    pub unsafe fn populate_parser_input_without_filename(&self, input: &mut _xmlParserInput) {
+        let bytes: &[u8] = &self.data;
+        let data_ptr = bytes.as_ptr();
         let base = data_ptr as *const crate::abi::types::xmlChar;
         let cur = unsafe { data_ptr.add(self.pos) as *const crate::abi::types::xmlChar };
-        let end = unsafe { data_ptr.add(self.data.len()) as *const crate::abi::types::xmlChar };
+        let end = unsafe { data_ptr.add(bytes.len()) as *const crate::abi::types::xmlChar };
 
         input.base = base;
         input.cur = cur;
         input.end = end;
         input.line = self.line as c_int;
         input.col = self.col as c_int;
-        input.length = self.data.len() as c_int;
+        input.length = bytes.len() as c_int;
         input.consumed = self.pos as c_ulong;
     }
 
