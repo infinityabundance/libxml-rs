@@ -677,23 +677,37 @@ unsafe extern "C" fn xmlMemStrdupDefault(str: *const c_char) -> *mut c_void {
 #[cfg(target_os = "linux")]
 macro_rules! alloc_slot_reader {
     ($reader:ident, $cname:expr, $t:ty) => {
+        /// §16.5.10 allocator-bridge hot path: cache the ADDRESS of the
+        /// process-visible (core DSO's) exported allocator slot — NOT the
+        /// function value it currently holds. The slot's contents are
+        /// reassigned by `xmlMemSetup` / direct `xmlMalloc = ...`
+        /// assignments and every allocation must observe the CURRENT hook,
+        /// but the slot's address is fixed for the process lifetime, so
+        /// reading through the cached address preserves mutation semantics
+        /// (a fresh value per call) while dropping the per-allocation
+        /// dlsym'd accessor invocation.
         fn $reader() -> Option<*mut $t> {
             use std::sync::OnceLock;
             type Acc = unsafe extern "C" fn() -> *mut $t;
-            static ACC: OnceLock<Option<Acc>> = OnceLock::new();
-            let acc = *ACC.get_or_init(|| {
+            // usize storage keeps the static Sync/Send (raw fn pointers are
+            // not); the value is a plain pointer-sized slot address.
+            static ACC: OnceLock<Option<usize>> = OnceLock::new();
+            let slot = *ACC.get_or_init(|| {
                 // SAFETY: dlsym(RTLD_DEFAULT) returns the exported accessor
                 // address or NULL; the transmute (pointer-sized) is sound.
+                // The accessor runs exactly ONCE, lazily, to learn the slot
+                // address; the slot itself is process-lifetime storage.
                 unsafe {
                     let sym = libc::dlsym(libc::RTLD_DEFAULT, ($cname).as_ptr());
                     if sym.is_null() {
                         None
                     } else {
-                        Some(std::mem::transmute::<*mut c_void, Acc>(sym))
+                        let acc = std::mem::transmute::<*mut c_void, Acc>(sym);
+                        Some(acc() as usize)
                     }
                 }
             });
-            acc.map(|a| unsafe { a() })
+            slot.map(|a| a as *mut $t)
         }
     };
 }
