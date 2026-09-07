@@ -65,6 +65,7 @@
 
 pub(crate) mod helpers;
 pub(crate) mod input;
+pub(crate) mod scan;
 pub(crate) mod state;
 
 #[cfg(test)]

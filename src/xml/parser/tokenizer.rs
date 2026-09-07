@@ -2266,26 +2266,20 @@ impl XmlTokenizer {
             if self.input.depth() < start_depth {
                 break;
             }
-            // §16.5.6 contiguous text scanning: most text bytes are printable
-            // ASCII that needs no per-character decision — never '<'/'&'
-            // (run breaks), never ']' (the `]]>` lookahead), never CR/LF (no
-            // §2.11 EOL substitution or line/col change), and always a valid
-            // XML Char that decodes to itself. Bulk-scan the run (a tight
-            // scalar byte loop the compiler vectorizes; SIMD structural
-            // scanning arrives in §16.7) and extend the pending segment in
-            // one step. The re-parse split boundary (split_chars_at) is the
-            // only state that may break a run mid-bytes, so the fast path
-            // yields to the per-char loop when it is active.
+            // §16.5.6/§16.7 contiguous text scanning: most text bytes are
+            // printable ASCII that needs no per-character decision — never
+            // '<'/'&' (run breaks), never ']' (the `]]>` lookahead), never
+            // CR/LF (no §2.11 EOL substitution or line/col change), and
+            // always a valid XML Char that decodes to itself. The run is
+            // found by the runtime-dispatched structural scanner
+            // (scalar/AVX2/AVX-512BW — §16.7) and extends the pending
+            // segment in one step. The re-parse split boundary
+            // (split_chars_at) is the only state that may break a run
+            // mid-bytes, so the fast path yields to the per-char loop when
+            // it is active.
             if self.split_chars_at.is_none() {
-                let run = self
-                    .input
-                    .current_ref()
-                    .remaining()
-                    .iter()
-                    .take_while(|&&b| {
-                        (0x20..=0x7E).contains(&b) && b != b'<' && b != b'&' && b != b']'
-                    })
-                    .count();
+                let remaining = self.input.current_ref().remaining();
+                let run = crate::xml::parser::scan::text_run_len_auto(remaining);
                 if run > 0 {
                     self.input.skip_linebreak_free(run);
                     continue;
