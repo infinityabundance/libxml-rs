@@ -635,7 +635,9 @@ impl XmlTokenizer {
         loop {
             match self.input.peek_char() {
                 Some(c) if c.is_ascii_whitespace() && c != '\0' => {
-                    self.input.read_char();
+                    // §16.5.5: the char was just decoded by peek_char —
+                    // consume without a second decode.
+                    self.input.consume_peeked();
                 }
                 _ => break,
             }
@@ -1091,11 +1093,12 @@ impl XmlTokenizer {
             }
             match self.input.peek_char() {
                 Some(c) if c == quote => {
-                    self.input.read_char();
+                    // §16.5.5: consume the already-peeked char.
+                    self.input.consume_peeked();
                     return (value, true);
                 }
                 Some('&') => {
-                    self.input.read_char();
+                    self.input.consume_peeked();
                     value.push(b'&');
                     let mut name = Vec::new();
                     loop {
@@ -1103,14 +1106,15 @@ impl XmlTokenizer {
                             Some(c) if is_name_byte(c as u8) => {
                                 value.push(c as u8);
                                 name.push(c as u8);
-                                self.input.read_char();
+                                // §16.5.5: already peeked — no second decode.
+                                self.input.consume_peeked();
                             }
                             _ => break,
                         }
                     }
                     if self.input.peek_char() == Some(';') {
                         value.push(b';');
-                        self.input.read_char();
+                        self.input.consume_peeked();
                     } else if !name.is_empty() {
                         // upstream xmlParseEntityRefInternal inside
                         // xmlParseAttValueInternal: RAW != ';'.
@@ -1163,7 +1167,8 @@ impl XmlTokenizer {
                         c
                     };
                     Self::push_char(&mut value, out);
-                    self.input.read_char();
+                    // §16.5.5: already peeked — no second decode.
+                    self.input.consume_peeked();
                 }
                 None => return (value, false),
             }
@@ -2309,10 +2314,11 @@ impl XmlTokenizer {
                         );
                         // Skip the offending character (upstream NEXTL after
                         // the error) — it is dropped from the content, so the
-                        // pending clean segment materializes.
+                        // pending clean segment materializes. (Already peeked
+                        // above — §16.5.5 consume without a second decode.)
                         below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
                         self.flush_clean_segment(&mut owned, seg_start, pos_before);
-                        self.input.read_char();
+                        self.input.consume_peeked();
                         seg_start = self.input.current_pos().2;
                         continue;
                     }
@@ -2322,7 +2328,9 @@ impl XmlTokenizer {
                     if c == '\n' && self.input.peek_raw() == Some(b'\r') {
                         below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
                         self.flush_clean_segment(&mut owned, seg_start, pos_before);
-                        self.input.read_char();
+                        // Already peeked above — consume without a second
+                        // decode (§16.5.5).
+                        self.input.consume_peeked();
                         if let Some(v) = owned.as_mut() {
                             v.push(b'\n');
                         }
@@ -2348,7 +2356,9 @@ impl XmlTokenizer {
                             );
                         }
                     }
-                    self.input.read_char();
+                    // Already peeked above — consume without a second decode
+                    // (§16.5.5).
+                    self.input.consume_peeked();
                     below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
                     // §16.5.3: nothing is appended here — clean bytes stay in
                     // the pending segment `[seg_start, pos)` and are flushed
@@ -2449,7 +2459,9 @@ impl XmlTokenizer {
                     || c as u32 >= 0x80
             };
             if ok {
-                self.input.read_char();
+                // §16.5.5: the char was decoded by the peek above — consume
+                // without a second decode.
+                self.input.consume_peeked();
                 Self::push_char(&mut name, c);
                 first = false;
             } else {

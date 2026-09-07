@@ -1114,8 +1114,22 @@ impl InputBuffer {
     /// - Tab advances col by 1 (libxml2 behavior).
     pub fn read_char(&mut self) -> Option<char> {
         let c = self.peek_char_inner()?;
-        self.advance_past_char(c);
+        self.advance_past_char();
         Some(c)
+    }
+
+    /// §16.5.5 decode-once: advance past the character at the current
+    /// position WITHOUT decoding it. The caller must have just peeked the
+    /// same character via [`peek_char`](Self::peek_char) with no intervening
+    /// mutation, so the full UTF-8 decode has already happened once — this
+    /// consume only needs the leading-byte length (position/line/col
+    /// semantics are byte-for-byte identical to `read_char`). Hot scanner
+    /// loops that peek-then-consume per character (text runs, names,
+    /// whitespace, attribute values) must use this instead of a second
+    /// `read_char` decode.
+    pub fn consume_peeked(&mut self) {
+        debug_assert!(self.pos < self.data.len(), "consume_peeked after EOF");
+        self.advance_past_char();
     }
 
     /// Return the next UTF-8 character without advancing.
@@ -1264,8 +1278,12 @@ impl InputBuffer {
         }
     }
 
-    /// Advance position past a character, updating line/col tracking.
-    fn advance_past_char(&mut self, c: char) {
+    /// Advance position past the character at the current position, updating
+    /// line/col tracking. Source-byte driven: the tab/regular-character
+    /// branches both advance the column by 1, so the decoded character is
+    /// never needed here (§16.5.5 — `read_char`/`consume_peeked` decode
+    /// exactly once, up front).
+    fn advance_past_char(&mut self) {
         let byte_len = self.char_len();
         let old_pos = self.pos;
         self.pos += byte_len;
@@ -1283,11 +1301,8 @@ impl InputBuffer {
             }
             self.line += 1;
             self.col = 1;
-        } else if c == '\t' {
-            // Tab: advance col (libxml2 treats tab as single column)
-            self.col += 1;
         } else {
-            // Regular character
+            // Tab, regular character, multi-byte character: one column.
             self.col += 1;
         }
     }
@@ -1669,6 +1684,14 @@ impl InputStack {
     pub fn read_char(&mut self) -> Option<char> {
         self.pop_exhausted();
         self.inputs[self.current].read_char()
+    }
+
+    /// §16.5.5: advance past the character the caller just peeked on the
+    /// current input WITHOUT decoding it again (see [`InputBuffer::consume_peeked`]).
+    /// The caller must have peeked the same character with no intervening
+    /// mutation, and the current input must not have been popped in between.
+    pub fn consume_peeked(&mut self) {
+        self.inputs[self.current].consume_peeked();
     }
 
     /// Peek at the next character from the current input without advancing.
