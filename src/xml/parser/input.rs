@@ -1162,6 +1162,16 @@ impl InputBuffer {
         }
     }
 
+    /// §16.5.6: advance `n` bytes that the caller has bulk-scanned and
+    /// proven free of line breaks (`\n`/`\r` — a printable-ASCII text run),
+    /// bumping the column once per byte (each byte is one character here).
+    /// The caller guarantees `self.pos + n <= self.data.len()`.
+    pub(crate) fn skip_linebreak_free(&mut self, n: usize) {
+        debug_assert!(self.pos + n <= self.data.len());
+        self.pos += n;
+        self.col += n;
+    }
+
     /// Internal peek implementation.
     fn peek_char_inner(&self) -> Option<char> {
         if self.pos >= self.data.len() {
@@ -1712,6 +1722,12 @@ impl InputStack {
     pub fn skip_raw_bytes(&mut self, n: usize) {
         self.pop_exhausted();
         self.inputs[self.current].skip_raw_bytes(n);
+    }
+
+    /// §16.5.6: advance `n` line-break-free bytes of the current input (see
+    /// [`InputBuffer::skip_linebreak_free`]).
+    pub(crate) fn skip_linebreak_free(&mut self, n: usize) {
+        self.inputs[self.current].skip_linebreak_free(n);
     }
 
     /// Pop any exhausted pushed inputs so that the current input always has
