@@ -1172,6 +1172,40 @@ impl InputBuffer {
         self.col += n;
     }
 
+    /// §16.6 scalar engine: consume a run of ASCII whitespace (space, tab,
+    /// CR, LF, form feed) with line/column semantics IDENTICAL to per-char
+    /// `read_char` — a CRLF pair counts as ONE line break (the
+    /// `advance_past_char` CR branch consumes the LF), every other byte
+    /// advances the column by one. Returns the bytes consumed (0 when the
+    /// current byte is not whitespace). Stops at the first non-whitespace
+    /// byte or EOF; never decodes.
+    pub(crate) fn skip_ascii_whitespace(&mut self) -> usize {
+        let start = self.pos;
+        while self.pos < self.data.len() {
+            match self.data[self.pos] {
+                b'\n' => {
+                    self.pos += 1;
+                    self.line += 1;
+                    self.col = 1;
+                }
+                b'\r' => {
+                    self.pos += 1;
+                    if self.pos < self.data.len() && self.data[self.pos] == b'\n' {
+                        self.pos += 1;
+                    }
+                    self.line += 1;
+                    self.col = 1;
+                }
+                b' ' | b'\t' | 0x0C => {
+                    self.pos += 1;
+                    self.col += 1;
+                }
+                _ => break,
+            }
+        }
+        self.pos - start
+    }
+
     /// Internal peek implementation.
     fn peek_char_inner(&self) -> Option<char> {
         if self.pos >= self.data.len() {
@@ -1702,6 +1736,24 @@ impl InputStack {
     /// mutation, and the current input must not have been popped in between.
     pub fn consume_peeked(&mut self) {
         self.inputs[self.current].consume_peeked();
+    }
+
+    /// §16.6 scalar engine: consume an ASCII-whitespace run across the
+    /// stack with the same line/col semantics as the per-character
+    /// whitespace loop (a CRLF pair is one line break; an exhausted pushed
+    /// input whose whitespace run continues in the parent is popped, exactly
+    /// like the old peek+read loop).
+    pub(crate) fn skip_ascii_whitespace(&mut self) {
+        loop {
+            self.pop_exhausted();
+            self.inputs[self.current].skip_ascii_whitespace();
+            // Continue across an exhausted non-base input only when the
+            // whitespace run reached its end (a following byte may still be
+            // whitespace in the parent input).
+            if self.inputs.len() <= 1 || !self.inputs[self.current].is_eof() {
+                return;
+            }
+        }
     }
 
     /// Peek at the next character from the current input without advancing.

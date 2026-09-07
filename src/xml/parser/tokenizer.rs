@@ -630,18 +630,10 @@ impl XmlTokenizer {
         }
     }
 
-    /// Skip whitespace characters (space, tab, CR, LF).
+    /// Skip whitespace characters (space, tab, CR, LF, form feed) — §16.6
+    /// bulk byte-run scan with per-char-identical line/col semantics.
     fn skip_whitespace(&mut self) {
-        loop {
-            match self.input.peek_char() {
-                Some(c) if c.is_ascii_whitespace() && c != '\0' => {
-                    // §16.5.5: the char was just decoded by peek_char —
-                    // consume without a second decode.
-                    self.input.consume_peeked();
-                }
-                _ => break,
-            }
-        }
+        self.input.skip_ascii_whitespace();
     }
 
     // ── Tag/markup scanning ─────────────────────────────────────────────────
@@ -2453,10 +2445,42 @@ impl XmlTokenizer {
 
     // ── Name scanning ───────────────────────────────────────────────────────
 
+    /// §16.6 scalar fast path: whether `b` is an ASCII XML Name character
+    /// that may follow the first character (alphanumerics plus `. - _ : +`).
+    #[inline]
+    fn ascii_name_byte(b: u8) -> bool {
+        b.is_ascii_alphanumeric() || b == b'.' || b == b'-' || b == b'_' || b == b':' || b == b'+'
+    }
+
     /// Scan an XML Name.
     fn scan_name(&mut self) -> Vec<u8> {
         let mut name = Vec::new();
         let mut first = true;
+        // §16.6 scalar engine: real names are overwhelmingly ASCII. When the
+        // first byte is an ASCII NameStartChar (letter/'_'/':'), bulk-scan the
+        // ASCII continuation bytes in one tight pass (no per-char UTF-8
+        // decode); a name that starts non-ASCII (any byte >= 0x80 is a
+        // NameStartChar) or whose ASCII prefix is followed by a multi-byte
+        // char falls back to the per-char loop below for the remainder. The
+        // consumed bytes are ASCII name chars, so none can be a line break
+        // (safe for `skip_linebreak_free`).
+        if let Some(b0) = self.input.peek_raw() {
+            if b0 < 0x80 && (b0.is_ascii_alphabetic() || b0 == b'_' || b0 == b':') {
+                let remaining = self.input.current_ref().remaining();
+                let run = remaining
+                    .iter()
+                    .take_while(|&&b| Self::ascii_name_byte(b))
+                    .count();
+                if run > 0 {
+                    name.extend_from_slice(&remaining[..run]);
+                    self.input.skip_linebreak_free(run);
+                    // The name already has at least one character: any tail
+                    // (e.g. a multi-byte continuation) is handled by the
+                    // per-char loop with `first == false`.
+                    first = false;
+                }
+            }
+        }
 
         loop {
             if self.input.is_eof() {
