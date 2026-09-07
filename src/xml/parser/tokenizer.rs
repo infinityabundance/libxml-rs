@@ -1070,7 +1070,24 @@ impl XmlTokenizer {
                             None,
                         );
                     }
-                    Self::push_char(&mut value, c);
+                    // UPSTREAM-PARITY (parser.c xmlParseAttValueInternal, XML
+                    // spec 3.3.3 Attribute-Value Normalization): a literal
+                    // whitespace character (#x20, #xD, #xA, #x9) is processed
+                    // by appending a single #x20 to the normalized value —
+                    // for EVERY attribute type (the CDATA-vs-other distinction
+                    // only controls the later collapse/trim in
+                    // substitute_refs). EOL handling (§2.11, xmlCurrentChar)
+                    // already delivered any literal CR as a single LF, so
+                    // \\t and \\n are the only control whitespace that reach
+                    // this arm; each becomes exactly one space, and literal
+                    // spaces (0x20) pass through unchanged (CDATA values keep
+                    // space runs raw).
+                    let out = if c == '\t' || c == '\n' || c == '\r' {
+                        ' '
+                    } else {
+                        c
+                    };
+                    Self::push_char(&mut value, out);
                     self.input.read_char();
                 }
                 None => return (value, false),
@@ -1668,7 +1685,21 @@ impl XmlTokenizer {
 
     /// Scan a DOCTYPE body (after `<!DOCTYPE`).
     fn scan_doctype_body(&mut self) -> XmlToken {
-        let mut content = Vec::new();
+        // §16.5.3 byte model: the DOCTYPE body is TRANSPORT — parse_dtd
+        // re-scans these raw bytes to populate the DTD's declaration tables
+        // and entity values. Unlike element content it is NOT subject to the
+        // xmlCurrentChar EOL substitution: upstream scans the internal
+        // subset with raw-byte macros and keeps literal CRLF bytes in
+        // entity/notation values (XML spec 2.11 only mandates EOL
+        // normalization for *parsed* content — the document/entity re-parse
+        // applies it later, when an entity is expanded). The capture must
+        // therefore be a raw source range, not decoded re-encoded chars
+        // (per-char decode dropped the LF of every CRLF pair and substituted
+        // nothing for standalone CR). Because every consumed byte between
+        // the opening and the depth-0 '>' is part of the body (that '>' is
+        // the only consumed byte not included), the content is exactly the
+        // source slice [start, '>'-position).
+        let content_start = self.input.current_pos().2;
         let mut depth: usize = 0;
         let mut closed = false;
 
@@ -1686,20 +1717,23 @@ impl XmlTokenizer {
                 Some('[') => {
                     depth += 1;
                     self.input.read_char();
-                    content.push(b'[');
                 }
                 Some(']') => {
                     depth = depth.saturating_sub(1);
                     self.input.read_char();
-                    content.push(b']');
                 }
-                Some(c) => {
+                Some(_) => {
                     self.input.read_char();
-                    Self::push_char(&mut content, c);
                 }
                 None => break,
             }
         }
+
+        let content = self
+            .input
+            .current_ref()
+            .raw_range(content_start, self.input.current_pos().2)
+            .to_vec();
 
         XmlToken::DocType {
             content,
@@ -2164,3 +2198,5 @@ fn is_valid_char_ref(codepoint: u32) -> bool {
         || (0xE000..=0xFFFD).contains(&codepoint)
         || (0x10000..=0x10FFFF).contains(&codepoint)
 }
+
+

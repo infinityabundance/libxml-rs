@@ -1883,3 +1883,199 @@ fn test_pi_data_keeps_trailing_space_skips_all_leading_blanks() {
         tree::free_doc(doc);
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EOL normalization (§16.5.3 byte model — oracle-verified against libxml2
+// 2.15.3 via the node-dump probe)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// XML spec 2.11 End-of-Line Handling, implemented at decode time by
+/// upstream `xmlCurrentChar` (parserInternals.c): every literal CR (with or
+/// without a following LF) is delivered to the parser as a single LF. The
+/// candidate mirrors the substitution in `InputBuffer::peek_char_inner`, so
+/// text runs, CDATA sections, comments and PI data all carry `\n` — never a
+/// raw `\r` — for CRLF/CR sources. Oracle-verified: `<a>one\r\ntwo\rthree\n
+/// four</a>` → single text node "one\ntwo\nthree\nfour".
+///
+/// # Safety
+///
+/// - The static buffers are valid for the parse; `read_memory_ctx` returns an
+///   owned doc (freed via `tree::free_doc`); walked nodes stay valid for the
+///   check.
+#[test]
+fn test_eol_normalization_in_text_cdata_comment_pi() {
+    unsafe {
+        // ── Element text: CRLF, standalone CR and LF all become '\n'.
+        let (doc, wf, _err) = read_memory_ctx(b"<a>one\r\ntwo\rthree\nfour</a>", 0);
+        assert!(!doc.is_null());
+        assert_eq!(wf, 1);
+        let root = crate::xml::tree::doc_get_root_element(doc);
+        let text = (*root).children;
+        assert_eq!(
+            (*text).type_,
+            crate::abi::types::xmlElementType::XML_TEXT_NODE as c_int
+        );
+        assert_eq!(
+            crate::xml::string::xmlstr_to_bytes((*text).content),
+            b"one\ntwo\nthree\nfour"
+        );
+        tree::free_doc(doc);
+
+        // ── CDATA + comment bodies: CRLF becomes '\n' (no raw CR anywhere).
+        let (doc, wf, _err) = read_memory_ctx(b"<a><![CDATA[cd\r\ndata]]><!--cm\r\nnt--></a>", 0);
+        assert!(!doc.is_null());
+        assert_eq!(wf, 1);
+        let root = crate::xml::tree::doc_get_root_element(doc);
+        let mut ch = (*root).children;
+        // The default handler turns CDATA content into text merged with any
+        // surrounding text; a standalone CDATA section may surface as a text
+        // or CDATA node. Walk all children asserting each normalized piece.
+        let mut saw_cdata = false;
+        let mut saw_comment = false;
+        while !ch.is_null() {
+            use crate::abi::types::xmlElementType as ET;
+            match (*ch).type_ {
+                t if t == ET::XML_TEXT_NODE as i32 => {
+                    saw_cdata = true;
+                    assert_eq!(
+                        crate::xml::string::xmlstr_to_bytes((*ch).content),
+                        b"cd\ndata"
+                    );
+                }
+                t if t == ET::XML_CDATA_SECTION_NODE as i32 => {
+                    saw_cdata = true;
+                    assert_eq!(
+                        crate::xml::string::xmlstr_to_bytes((*ch).content),
+                        b"cd\ndata"
+                    );
+                }
+                t if t == ET::XML_COMMENT_NODE as i32 => {
+                    saw_comment = true;
+                    assert_eq!(
+                        crate::xml::string::xmlstr_to_bytes((*ch).content),
+                        b"cm\nnt"
+                    );
+                }
+                _ => {}
+            }
+            ch = (*ch).next;
+        }
+        assert!(saw_cdata, "CDATA content must be present");
+        assert!(saw_comment, "comment must be present");
+        tree::free_doc(doc);
+
+        // ── PI data: CRLF becomes '\n'.
+        let (doc, _wf, _err) = read_memory_ctx(b"<r><?t one\r\ntwo?></r>", 0);
+        assert!(!doc.is_null());
+        let root = crate::xml::tree::doc_get_root_element(doc);
+        let pi = (*root).children;
+        assert_eq!(
+            (*pi).type_,
+            crate::abi::types::xmlElementType::XML_PI_NODE as c_int
+        );
+        assert_eq!(
+            crate::xml::string::xmlstr_to_bytes((*pi).content),
+            b"one\ntwo"
+        );
+        tree::free_doc(doc);
+    }
+}
+
+/// XML spec 3.3.3 Attribute-Value Normalization: a literal whitespace char
+/// (#x20/#xD/#xA/#x9) becomes a single #x20 — for EVERY attribute type. The
+/// oracle (2.15.3, verified via node probe) turns literal `\t`, `\n` and CR
+/// (incl. CRLF) in a plain CDATA attribute into single spaces while literal
+/// space runs survive unchanged and `&#9;`/`&#10;`/`&#13;` character
+/// references stay literal control chars.
+///
+/// # Safety
+///
+/// - Buffers are static/owned for the parse; returned docs are freed.
+#[test]
+fn test_attr_value_literal_whitespace_becomes_space() {
+    unsafe {
+        let xml = b"<a t=\"v\tw\" n=\"v\nw\" c=\"v\rw\" crlf=\"v\r\nw\" r=\"v&#9;w&#10;x&#13;y\" sp=\"a  b\"/>";
+        let (doc, wf, _err) = read_memory_ctx(xml, 0);
+        assert!(!doc.is_null());
+        assert_eq!(wf, 1);
+        let root = crate::xml::tree::doc_get_root_element(doc);
+        let get = |name: &[u8]| -> Vec<u8> {
+            let mut a = (*root).properties;
+            while !a.is_null() {
+                if crate::xml::string::xmlstr_to_bytes((*a).name) == name {
+                    // Attribute value = the concatenation of child text.
+                    let mut out = Vec::new();
+                    let mut c = (*a).children;
+                    while !c.is_null() {
+                        if !(*c).content.is_null() {
+                            out.extend_from_slice(&crate::xml::string::xmlstr_to_bytes(
+                                (*c).content,
+                            ));
+                        }
+                        c = (*c).next;
+                    }
+                    return out;
+                }
+                a = (*a).next;
+            }
+            Vec::new()
+        };
+        assert_eq!(get(b"t"), b"v w");
+        assert_eq!(get(b"n"), b"v w");
+        assert_eq!(get(b"c"), b"v w");
+        assert_eq!(get(b"crlf"), b"v w");
+        assert_eq!(get(b"r"), b"v\tw\nx\ry"); // refs survive literally
+        assert_eq!(get(b"sp"), b"a  b"); // literal space runs survive
+        tree::free_doc(doc);
+    }
+}
+
+/// The DOCTYPE body is transported RAW to the DTD parser (entity literal
+/// values keep CRLF bytes — upstream scans the internal subset with raw-byte
+/// macros; XML spec 2.11 EOL normalization applies only when an entity is
+/// later EXPANDED as parsed content). Oracle-verified: `<!ENTITY e "ent\r\n
+/// val">` stores `ent\r\nval`, while NOENT expansion of `&e;` in text yields
+/// `ent\nval`.
+///
+/// # Safety
+///
+/// - Buffers are static for the parse; returned docs are freed.
+#[test]
+fn test_doctype_transport_raw_entity_value_but_expansion_normalized() {
+    unsafe {
+        // DTD node serialization must keep the raw CRLF entity value.
+        let xml = b"<!DOCTYPE a [<!ENTITY e \"ent\r\nval\">]><a>&e;</a>";
+        let (doc, wf, _err) = read_memory_ctx(xml, 0);
+        assert!(!doc.is_null());
+        assert_eq!(wf, 1);
+        let dtd = (*doc).intSubset;
+        assert!(!dtd.is_null());
+        let ent = crate::xml::entities::get_entity_from_dtd(
+            dtd,
+            b"e\0".as_ptr() as *const crate::abi::types::xmlChar,
+        );
+        assert!(!ent.is_null());
+        assert_eq!(
+            crate::xml::string::xmlstr_to_bytes((*ent).content),
+            b"ent\r\nval"
+        );
+        tree::free_doc(doc);
+
+        // NOENT expansion re-parses the raw value as parsed content, where
+        // the EOL substitution applies: `ent\nval`.
+        let (doc, wf, _err) = read_memory_ctx(xml, crate::abi::types::XML_PARSE_NOENT);
+        assert!(!doc.is_null());
+        assert_eq!(wf, 1);
+        let root = crate::xml::tree::doc_get_root_element(doc);
+        let text = (*root).children;
+        assert_eq!(
+            (*text).type_,
+            crate::abi::types::xmlElementType::XML_TEXT_NODE as c_int
+        );
+        assert_eq!(
+            crate::xml::string::xmlstr_to_bytes((*text).content),
+            b"ent\nval"
+        );
+        tree::free_doc(doc);
+    }
+}

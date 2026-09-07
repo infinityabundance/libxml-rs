@@ -1347,6 +1347,14 @@ impl XmlParser {
                     None => break,
                 }
             }
+            // A declaration start the scan reaches at the very end of the
+            // fragment (e.g. a truncated `...<` or `<!` with nothing after
+            // it): there is no `>` to find, so there is nothing to parse
+            // (ASan fuzz: `range start index N out of range` — the slice
+            // below must stay in bounds for a 1-byte tail).
+            if i + 2 > data.len() {
+                break;
+            }
             let rest = &data[i + 2..];
             let Some(gt) = find_decl_end(rest) else {
                 break;
@@ -2285,10 +2293,21 @@ impl XmlParser {
                 rest = trim_ascii(&rest[consumed2..]);
                 continue;
             }
-            let (attr_type, _, consumed) = parse_attr_type(rest);
+            let (attr_type, enum_tree, consumed) = parse_attr_type(rest);
             rest = trim_ascii(&rest[consumed..]);
             let (_, default_val, consumed2) = parse_attr_default(rest);
             rest = trim_ascii(&rest[consumed2..]);
+            // UPSTREAM-PARITY: this collector only mirrors the scan to
+            // record declared types/defaults; the enumeration CHAIN built by
+            // parse_attr_type is not attached to any declaration here, so it
+            // must be freed (parse_attlist_decl hands its tree to
+            // add_attribute_decl; this mirror path dropped it — ASan fuzz
+            // leak on enumeration-typed attributes).
+            if !enum_tree.is_null() {
+                unsafe {
+                    crate::xml::dtd::free_enumeration(enum_tree);
+                }
+            }
             // Record the declared type for value normalization (non-CDATA
             // declared types collapse whitespace — c14n inC14N4 NMTOKENS/ID).
             types.push((attr_name.to_vec(), attr_type));

@@ -1154,6 +1154,26 @@ impl InputBuffer {
             return None;
         }
 
+        // UPSTREAM-PARITY (parserInternals.c xmlCurrentChar, XML spec 2.11
+        // End-of-Line Handling): "the literal two-character sequence #xD#xA
+        // or a standalone literal #xD ... must be passed to the application
+        // as the single character #xA." libxml2 performs the substitution at
+        // character-decode time (xmlCurrentChar's `c == '\r'` arm, which also
+        // consumes the LF of a CRLF pair via its `cur++` side effect), so
+        // EVERY parser consumer that reads decoded characters — text runs,
+        // CDATA sections, comments, PI data, attribute values, entity
+        // re-parses — observes `\n` for a source `\r` (with or without a
+        // following `\n`). The candidate mirrors the substitution here, at
+        // the same decode layer; position advancement (advance_past_char) is
+        // source-byte driven and already consumes the CRLF pair, matching
+        // xmlCurrentChar's side effect + NEXTL. Raw-byte reads
+        // (peek_raw/skip_raw_bytes) and source windows are unaffected — they
+        // intentionally see the true source bytes.
+        let b = self.data[self.pos];
+        if b == b'\r' {
+            return Some('\n');
+        }
+
         let remaining = &self.data[self.pos..];
         Self::decode_utf8_char(remaining)
     }
@@ -1354,6 +1374,15 @@ impl InputBuffer {
     /// Return the bytes consumed so far.
     pub fn consumed(&self) -> &[u8] {
         &self.data[..self.pos]
+    }
+
+    /// Return the raw source bytes in `[start, end)` (§16.5.3 byte model:
+    /// DOCTYPE-body capture transports unnormalized source bytes to
+    /// `parse_dtd`). `start`/`end` are absolute byte offsets into the
+    /// buffer's data (as returned by `pos()`); the caller guarantees they
+    /// are in bounds and `start <= end`.
+    pub(crate) fn raw_range(&self, start: usize, end: usize) -> &[u8] {
+        &self.data[start..end]
     }
 
     /// Return the total length of the buffered data in bytes.
@@ -1909,12 +1938,34 @@ mod tests {
         let mut buf = InputBuffer::from_memory(b"a\r\nb", None);
         assert_eq!(buf.read_char(), Some('a'));
         assert_eq!(buf.pos(), (1, 2, 1));
-        // \r should trigger newline; CRLF should consume the \n too
-        assert_eq!(buf.read_char(), Some('\r'));
-        // After \r, we're on line 2, col 1; the \n was consumed
+        // UPSTREAM-PARITY (parserInternals.c xmlCurrentChar, XML spec 2.11):
+        // a literal CR (with or without a following LF) is DELIVERED to the
+        // application as a single LF — the substitution happens at decode
+        // time, so read_char yields '\n', not '\r'.
+        assert_eq!(buf.read_char(), Some('\n'));
+        // After CRLF, we're on line 2, col 1; both bytes were consumed
         assert_eq!(buf.pos(), (2, 1, 3));
         assert_eq!(buf.read_char(), Some('b'));
         assert_eq!(buf.pos(), (2, 2, 4));
+    }
+
+    #[test]
+    fn test_crlf_decode_substitution_forms() {
+        // Standalone CR and CRLF both deliver a single LF; position tracking
+        // matches the source-byte advance (standalone CR consumes 1 byte,
+        // CRLF consumes 2).
+        let mut buf = InputBuffer::from_memory(b"a\rb\r\nc", None);
+        assert_eq!(buf.read_char(), Some('a'));
+        assert_eq!(buf.read_char(), Some('\n')); // standalone CR
+        assert_eq!(buf.pos(), (2, 1, 2));
+        assert_eq!(buf.read_char(), Some('b'));
+        assert_eq!(buf.read_char(), Some('\n')); // CRLF
+        assert_eq!(buf.pos(), (3, 1, 5));
+        assert_eq!(buf.read_char(), Some('c'));
+        // peek_raw sees the true source byte (raw reads are unnormalized).
+        let mut buf = InputBuffer::from_memory(b"\r\n", None);
+        assert_eq!(buf.peek_raw(), Some(b'\r'));
+        assert_eq!(buf.peek_char(), Some('\n'));
     }
 
     // ── Skip ───────────────────────────────────────────────────────────────

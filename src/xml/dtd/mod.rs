@@ -808,6 +808,16 @@ pub unsafe fn add_element_decl(
         if !existing.is_null() {
             let ex = existing as *mut _xmlElement;
             if (*ex).etype != XML_ELEMENT_TYPE_UNDEFINED as c_int {
+                // UPSTREAM-PARITY (valid.c xmlAddElementDecl): when a real
+                // declaration already exists the incoming content model is
+                // NOT attached — upstream frees it before returning the
+                // existing declaration (the caller handed ownership over).
+                // Dropping it here leaked the freshly built tree
+                // (ASan fuzz: malformed-DTD docs whose decls were first
+                // registered by the SAX layer).
+                if !content.is_null() {
+                    free_content_model(content);
+                }
                 return ex;
             }
             // UPSTREAM-PARITY (valid.c xmlAddElementDecl): an UNDEFINED
@@ -1087,7 +1097,7 @@ pub unsafe fn free_element(elem: *mut _xmlElement) {
 /// # SAFETY
 ///
 /// - `tree` must be a valid pointer to an _xmlEnumeration, or NULL.
-unsafe fn free_enumeration(tree: *mut _xmlEnumeration) {
+pub(crate) unsafe fn free_enumeration(tree: *mut _xmlEnumeration) {
     if tree.is_null() {
         return;
     }
@@ -1210,6 +1220,12 @@ pub unsafe fn add_attribute_decl(
         let existing =
             hash::hash_lookup3(d.attributes as *mut hash::HashTable, name, ns, elem_name);
         if !existing.is_null() {
+            // UPSTREAM-PARITY (valid.c xmlAddAttributeDecl): a duplicate
+            // declaration frees the incoming enumeration tree before
+            // returning the existing one (the caller handed ownership over).
+            if !tree.is_null() {
+                free_enumeration(tree);
+            }
             return existing as *mut _xmlAttribute;
         }
 
@@ -1261,8 +1277,10 @@ pub unsafe fn add_attribute_decl(
             if !(*attr).prefix.is_null() {
                 allocator::xmlFreeImpl((*attr).prefix as *mut c_void);
             }
+            if !(*attr).tree.is_null() {
+                free_enumeration((*attr).tree);
+            }
             allocator::xmlFreeImpl(attr as *mut c_void);
-            // Don't free tree - caller still owns it on failure
             return ptr::null_mut();
         }
 
