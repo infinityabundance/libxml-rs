@@ -704,18 +704,23 @@ unsafe fn ch_call0(handler: xmlGenericErrorFunc, data: *mut c_void, fmt: *const 
     // SAFETY: `handler` is a C-compatible generic error callback; per the
     // SysV ABI the callee sees (data, fmt) with no additional registers
     // consumed (rdx/rcx zeroed so a va_list-reading callee finds nothing).
-    // The compiler guarantees 16-byte stack alignment at the asm block, so
-    // the `call` is correctly aligned.
+    // Every register argument is `inlateout` with a discarded result: the
+    // callee clobbers the caller-saved argument registers (rdi/rsi/rdx/rcx
+    // and rax/r8-r11), and an undeclared input clobber is UB — LLVM may
+    // keep a stale input value live across the asm and reuse it after the
+    // call. The §16.7.7 differential court caught exactly that: a
+    // release-only free(stack-pointer) crash in the XML_ERR_INVALID_
+    // ENCODING "Bytes:" fragment loop (the compiler reused the stale `rsi`
+    // "fmt" value as the String buffer pointer for the drop). Memory is an
+    // implicit clobber (the asm is never `nomem`): the handler may write
+    // through FILE state or its own context.
     unsafe {
         core::arch::asm!(
             "xor edx, edx",
             "xor ecx, ecx",
             "call {h}",
             h = in(reg) handler as usize,
-            in("rdi") data,
-            in("rsi") fmt,
-            out("rdx") _, out("rcx") _,
-            lateout("rax") _, lateout("r8") _, lateout("r9") _, lateout("r10") _, lateout("r11") _,
+            inlateout("rdi") data => _, inlateout("rsi") fmt => _, inlateout("rdx") 0usize => _, inlateout("rcx") 0usize => _, lateout("rax") _, lateout("r8") _, lateout("r9") _, lateout("r10") _, lateout("r11") _,
         );
     }
 }
@@ -725,17 +730,14 @@ unsafe fn ch_call0(handler: xmlGenericErrorFunc, data: *mut c_void, fmt: *const 
 #[inline]
 unsafe fn ch_call1(handler: xmlGenericErrorFunc, data: *mut c_void, fmt: *const c_char, a1: usize) {
     // SAFETY: as ch_call0; `a1` lands in the va_list slot after the two
-    // fixed args (rdx).
+    // fixed args (rdx). Inputs are inlateout — the callee clobbers the
+    // caller-saved argument registers (see ch_call0).
     unsafe {
         core::arch::asm!(
             "xor ecx, ecx",
             "call {h}",
             h = in(reg) handler as usize,
-            in("rdi") data,
-            in("rsi") fmt,
-            in("rdx") a1,
-            out("rcx") _,
-            lateout("rax") _, lateout("r8") _, lateout("r9") _, lateout("r10") _, lateout("r11") _,
+            inlateout("rdi") data => _, inlateout("rsi") fmt => _, inlateout("rdx") a1 => _, inlateout("rcx") 0usize => _, lateout("rax") _, lateout("r8") _, lateout("r9") _, lateout("r10") _, lateout("r11") _,
         );
     }
 }
@@ -751,15 +753,13 @@ unsafe fn ch_call2(
     a2: usize,
 ) {
     // SAFETY: as ch_call0; a1/a2 land in the va_list slots (rdx, rcx).
+    // Inputs are inlateout — the callee clobbers the caller-saved argument
+    // registers (see ch_call0).
     unsafe {
         core::arch::asm!(
             "call {h}",
             h = in(reg) handler as usize,
-            in("rdi") data,
-            in("rsi") fmt,
-            in("rdx") a1,
-            in("rcx") a2,
-            lateout("rax") _, lateout("r8") _, lateout("r9") _, lateout("r10") _, lateout("r11") _,
+            inlateout("rdi") data => _, inlateout("rsi") fmt => _, inlateout("rdx") a1 => _, inlateout("rcx") a2 => _, lateout("rax") _, lateout("r8") _, lateout("r9") _, lateout("r10") _, lateout("r11") _,
         );
     }
 }
@@ -786,7 +786,7 @@ unsafe fn format_error_streamed(
     file: *const c_char,
     line: c_int,
     source_window: Option<(&[u8], usize)>,
-    enc_bytes: Option<[u8; 4]>,
+    enc_bytes: Option<([u8; 4], usize)>,
     tail: Option<(c_int, Option<(&[u8], usize)>)>,
 ) {
     // SAFETY: reads the exported C globals (upstream reads the same).
@@ -880,9 +880,9 @@ unsafe fn format_error_streamed(
     // 4b. Invalid-encoding byte dump (upstream xmlFormatError: the first 4
     // bytes at the error position, only for XML_ERR_INVALID_ENCODING).
     if code == XML_ERR_INVALID_ENCODING {
-        if let Some(bytes) = enc_bytes {
+        if let Some((bytes, len)) = enc_bytes {
             ch_call0(handler, data, c"Bytes:".as_ptr() as *const c_char);
-            for b in bytes {
+            for &b in bytes.iter().take(len) {
                 // " 0x%02X"
                 let hex = format!(" 0x{:02X}\0", b);
                 ch_call0(handler, data, hex.as_ptr() as *const c_char);
@@ -1036,7 +1036,7 @@ pub unsafe fn raise_error_streamed(
     int1: c_int,
     msg: *const c_char,
     source_window: Option<(&[u8], usize)>,
-    enc_bytes: Option<[u8; 4]>,
+    enc_bytes: Option<([u8; 4], usize)>,
     delivery: GenericDelivery,
     tail: Option<(c_int, Option<(&[u8], usize)>)>,
 ) {
@@ -1123,7 +1123,7 @@ unsafe fn raise_error_streamed_x86_64(
     int1: c_int,
     msg: *const c_char,
     source_window: Option<(&[u8], usize)>,
-    enc_bytes: Option<[u8; 4]>,
+    enc_bytes: Option<([u8; 4], usize)>,
     delivery: GenericDelivery,
     tail: Option<(c_int, Option<(&[u8], usize)>)>,
 ) {

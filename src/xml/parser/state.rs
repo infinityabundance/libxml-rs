@@ -5951,7 +5951,7 @@ impl XmlParser {
         line: c_int,
         col: c_int,
         window: Option<(Vec<u8>, usize)>,
-        enc_bytes: Option<[u8; 4]>,
+        enc_bytes: Option<([u8; 4], usize)>,
     ) {
         // Incremental probe mode (helpers::parse_chunk) keeps the context
         // bookkeeping — errNo / nbErrors / wellFormed drive the probe's

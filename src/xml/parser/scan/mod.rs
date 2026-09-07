@@ -230,4 +230,123 @@ mod tests {
         let be = select_backend();
         assert!(backend_supported(be), "{:?} must be supported", be);
     }
+
+    /// §16.7.7 deterministic pseudo-random differential: hundreds of
+    /// thousands of adversarial buffers must classify identically across
+    /// every supported backend. Fixed xorshift64 seed (no thread_rng — the
+    /// test must be byte-for-byte reproducible) with byte distributions that
+    /// attack lane boundaries: uniform bytes, printable-heavy text with a
+    /// sprinkled structural byte, pure runs, and lane-clustered lengths.
+    #[test]
+    fn backends_agree_under_prng_fuzz() {
+        let supported: Vec<ScanBackend> =
+            [ScanBackend::Scalar, ScanBackend::Avx2, ScanBackend::Avx512]
+                .into_iter()
+                .filter(|b| backend_supported(*b))
+                .collect();
+        assert!(supported.len() >= 2, "need a vector backend to compare");
+
+        let mut rng = XorShift64(0x16_7_7_7_7_7);
+        let mut data: Vec<u8> = Vec::with_capacity(1 << 20);
+        for iter in 0..400_000u64 {
+            // Length distribution: lane-cluster most cases, but cover the
+            // whole range including long clean runs.
+            let len = match iter % 16 {
+                0..=5 => (rng.next() % 130) as usize,       // 0..=129
+                6..=9 => (rng.next() % 70) as usize + 30,   // 30..=99
+                10..=12 => (rng.next() % 12) as usize + 60, // 60..=71 (two AVX-512 lanes)
+                13 => (rng.next() % 260) as usize,
+                14 => (rng.next() % 4096) as usize,
+                _ => (rng.next() % 64) as usize, // single lane
+            };
+            data.clear();
+            let dist = iter % 8;
+            for i in 0..len {
+                let b = match dist {
+                    // Uniform bytes: every value incl. <, &, ], CR/LF, NUL,
+                    // 0x1F/0x7F, 0x80/0xFF, high ASCII.
+                    0 => (rng.next() & 0xFF) as u8,
+                    // Printable-heavy text: mostly content, occasional
+                    // structural byte at a pseudo-random lane position.
+                    1 => {
+                        if (rng.next() & 0x1F) == 0 {
+                            [b'<', b'&', b']', b'\n', b'\r'][(rng.next() % 5) as usize]
+                        } else {
+                            0x20 + (rng.next() % 0x5F) as u8
+                        }
+                    }
+                    // ASCII text with high bytes sprinkled (UTF-8 lookalikes).
+                    2 => {
+                        if (rng.next() & 0x3F) == 0 {
+                            [0x80, 0xC2, 0xE2, 0xF0, 0xFF][(rng.next() % 5) as usize]
+                        } else {
+                            b'a' + (rng.next() % 26) as u8
+                        }
+                    }
+                    // Whitespace / control mixtures.
+                    3 => [b' ', b'\t', b'\n', b'\r', 0x0C, 0x00, 0x1F][(rng.next() % 7) as usize],
+                    // Pure content bytes (long clean runs).
+                    4 => 0x20 + (rng.next() % 0x5F) as u8,
+                    // Two-byte alphabet cycling: every adjacent pair occurs.
+                    5 => [b'<', b'a', b']'][(rng.next() % 3) as usize],
+                    // All content bytes except a ']' planted at i == len-1
+                    // (run consumes everything but the final byte).
+                    6 => {
+                        if i + 1 == len {
+                            b']'
+                        } else {
+                            b'a'
+                        }
+                    }
+                    // Content until a planted '<' at i == len / 2.
+                    _ => {
+                        if i == len / 2 {
+                            b'<'
+                        } else {
+                            0x30 + (rng.next() % 0x4F) as u8
+                        }
+                    }
+                };
+                data.push(b);
+            }
+            let want = expected(&data);
+            for be in &supported {
+                let got = text_run_len(&data, *be);
+                assert_eq!(
+                    got, want,
+                    "iter {iter} len {len} dist {dist} backend {:?}",
+                    be
+                );
+            }
+            // Slicing from a mid-buffer offset keeps the vector loads
+            // unaligned relative to the allocation start.
+            if len >= 8 {
+                let off = (rng.next() as usize) % 8;
+                let want = expected(&data[off..]);
+                for be in &supported {
+                    assert_eq!(
+                        text_run_len(&data[off..], *be),
+                        want,
+                        "iter {iter} unaligned off {off} len {} backend {:?}",
+                        len - off,
+                        be
+                    );
+                }
+            }
+        }
+    }
+
+    /// Deterministic xorshift64 for the PRNG differential.
+    struct XorShift64(u64);
+
+    impl XorShift64 {
+        fn next(&mut self) -> u64 {
+            let mut x = self.0;
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            self.0 = x;
+            x
+        }
+    }
 }

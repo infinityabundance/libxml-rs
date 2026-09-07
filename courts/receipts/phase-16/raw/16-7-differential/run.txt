@@ -1,0 +1,4 @@
+candidate_sha=08881f49e7056e572eb957b74f4a34095e377fce
+image=libxml-rs/phase14-debian:1
+Linux vanir 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 08:05:11 +0000 x86_64 GNU/Linux
+model name	: AMD Ryzen 7 9800X3D 8-Core Processor

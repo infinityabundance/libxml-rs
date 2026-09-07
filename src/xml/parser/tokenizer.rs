@@ -208,7 +208,7 @@ pub(crate) struct ErrorInfo {
     pub window: Option<(Vec<u8>, usize)>,
     /// For `XML_ERR_INVALID_ENCODING`: the 4 bytes at the error position
     /// (upstream `xmlFormatError` "Bytes:" fragment).
-    pub enc_bytes: Option<[u8; 4]>,
+    pub enc_bytes: Option<([u8; 4], usize)>,
 }
 
 /// The XML tokenizer — scans lexical tokens from the input stack.
@@ -448,7 +448,7 @@ impl XmlTokenizer {
         str2: Option<Vec<u8>>,
         str3: Option<Vec<u8>>,
         int1: c_int,
-        enc_bytes: Option<[u8; 4]>,
+        enc_bytes: Option<([u8; 4], usize)>,
     ) {
         let pos = self.input.current_pos().2;
         self.record_error_at(
@@ -469,7 +469,7 @@ impl XmlTokenizer {
         str3: Option<Vec<u8>>,
         int1: c_int,
         byte_pos: usize,
-        enc_bytes: Option<[u8; 4]>,
+        enc_bytes: Option<([u8; 4], usize)>,
     ) {
         let (line, col) = self.line_col_at(byte_pos);
         let window = self.window_at(byte_pos);
@@ -693,16 +693,40 @@ impl XmlTokenizer {
         let name = self.scan_name();
         self.skip_whitespace();
 
-        // Expect '>'
-        let unterminated = self.input.is_eof();
+        // Expect '>' (upstream xmlParseEndTag2: SKIP_BLANKS then
+        // `(!IS_BYTE_CHAR(RAW)) || (RAW != '>')` → xmlFatalErr(
+        // XML_ERR_GT_REQUIRED) "expected '>'>\n"; only a real '>' is
+        // consumed). EOF is reported by the parser as unterminated.
         if self.input.peek_char() == Some('>') {
             self.input.read_char();
-        }
-
-        XmlToken::EndTag {
-            name,
-            start_pos,
-            unterminated,
+            XmlToken::EndTag {
+                name,
+                start_pos,
+                unterminated: false,
+            }
+        } else if self.input.is_eof() {
+            XmlToken::EndTag {
+                name,
+                start_pos,
+                unterminated: true,
+            }
+        } else {
+            self.record_error(
+                crate::abi::types::XML_FROM_PARSER,
+                crate::abi::types::XML_ERR_GT_REQUIRED,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                "expected '>'\n".to_string(),
+                None,
+                None,
+                None,
+                0,
+                None,
+            );
+            XmlToken::EndTag {
+                name,
+                start_pos,
+                unterminated: false,
+            }
         }
     }
 
@@ -828,13 +852,17 @@ impl XmlTokenizer {
                     self.input.read_char();
                     break;
                 }
-                Some('/') => {
-                    // Self-closing tag: <name .../>
+                Some('/') if self.peek_bytes(2).get(1) == Some(&b'>') => {
+                    // Self-closing tag: <name .../>. UPSTREAM-PARITY
+                    // (parser.c xmlParseStartTag2): the attribute loop only
+                    // stops at '/' when NXT(1) == '>' — any other '/'
+                    // (e.g. `<a/foo>`) is parsed as an attribute, whose
+                    // name scan fails on '/': "error parsing attribute
+                    // name\n" + "Couldn't find end of Start Tag" (the
+                    // `Some(_)` arm below — scan_name on '/' is empty).
                     end_pos = Some(self.input.current_pos().2);
                     self.input.read_char();
-                    if self.input.peek_char() == Some('>') {
-                        self.input.read_char();
-                    }
+                    self.input.read_char();
                     empty = true;
                     break;
                 }
@@ -1141,6 +1169,29 @@ impl XmlTokenizer {
                             None,
                         );
                     }
+                    // UPSTREAM-PARITY (parser.c 2.15
+                    // xmlParseAttValueComplex): a control character that is
+                    // not an XML Char (NUL, 0x1-0x8, 0xB, 0xC, 0xE-0x1F —
+                    // `!IS_BYTE_CHAR`) raises "invalid character in
+                    // attribute value\n" (XML_ERR_INVALID_CHAR) and is
+                    // replaced with U+FFFD in the value (xmlSBufAddReplChar).
+                    let cp = c as u32;
+                    if cp < 0x20 && !matches!(cp, 0x09 | 0x0A | 0x0D) {
+                        self.record_error(
+                            crate::abi::types::XML_FROM_PARSER,
+                            crate::abi::types::XML_ERR_INVALID_CHAR,
+                            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            "invalid character in attribute value\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            cp as c_int,
+                            None,
+                        );
+                        value.extend_from_slice(b"\xEF\xBF\xBD");
+                        self.input.consume_peeked();
+                        continue;
+                    }
                     // UPSTREAM-PARITY (parser.c xmlParseAttValueInternal, XML
                     // spec 3.3.3 Attribute-Value Normalization): a literal
                     // whitespace character (#x20, #xD, #xA, #x9) is processed
@@ -1174,10 +1225,13 @@ impl XmlTokenizer {
     fn record_encoding_error(&mut self) {
         let pos = self.input.current_pos().2;
         let remaining = self.input.current_ref().remaining();
+        // UPSTREAM-PARITY (error.c xmlFormatError "Bytes:" dump): only the
+        // bytes actually present in the input are shown — the loop breaks
+        // at input->end (no zero padding for a sequence truncated by EOF).
         let mut bytes = [0u8; 4];
         for (i, slot) in bytes.iter_mut().enumerate() {
-            if let Some(&b) = remaining.get(i) {
-                *slot = b;
+            if i < remaining.len() {
+                *slot = remaining[i];
             }
         }
         self.record_error_at(
@@ -1190,7 +1244,7 @@ impl XmlTokenizer {
             None,
             0,
             pos,
-            Some(bytes),
+            Some((bytes, remaining.len().min(4))),
         );
     }
 
@@ -2133,16 +2187,33 @@ impl XmlTokenizer {
         }
 
         // ── Entity reference: &name; ─────────────────────────────────────
+        // UPSTREAM-PARITY (parser.c xmlParseEntityRef → xmlParseName): the
+        // name must START with a NameStartChar; `&6…`, `&.…` yield an empty
+        // name → "xmlParseEntityRef: no name\n" (XML_ERR_NAME_REQUIRED) and
+        // the offending byte is NOT consumed (the caret sits on it).
+        // is_name_byte is the continuation set (digits/'.'/'-' allowed only
+        // after the start char).
         let mut name = Vec::new();
         loop {
-            match self.input.peek_char() {
-                Some(c) if is_name_byte(c as u8) => {
-                    content.push(c as u8);
-                    name.push(c as u8);
-                    self.input.read_char();
+            let ok = match self.input.peek_char() {
+                Some(c) => {
+                    let b = c as u8;
+                    if name.is_empty() {
+                        // First char: NameStartChar only.
+                        b.is_ascii_alphabetic() || b == b'_' || b == b':' || b >= 0x80
+                    } else {
+                        is_name_byte(b)
+                    }
                 }
-                _ => break,
+                None => false,
+            };
+            if !ok {
+                break;
             }
+            let c = self.input.peek_char().unwrap();
+            content.push(c as u8);
+            name.push(c as u8);
+            self.input.read_char();
         }
 
         if name.is_empty() {
@@ -2285,9 +2356,51 @@ impl XmlTokenizer {
                     continue;
                 }
             }
-            // Invalid UTF-8 byte: upstream xmlCurrentChar encoding error.
+            // Invalid UTF-8 byte. UPSTREAM-PARITY (parserInternals.c 2.15
+            // xmlCurrentChar + parser.c xmlParseCharDataComplex): two
+            // distinct failure modes —
+            //
+            //  incomplete_sequence: fewer bytes remain in the current input
+            //  than the character needs (avail < 2 for any byte >= 0x80,
+            //  < 3 for a 3-byte lead, < 4 for a 4-byte lead). xmlCurrentChar
+            //  returns 0 without raising; xmlParseCharDataComplex then
+            //  raises a FATAL PARSER-domain XML_ERR_INVALID_CHAR
+            //  "Incomplete UTF-8 sequence starting with %02X\n" per
+            //  offending byte, each consumed alone (NEXTL(1) — a truncated
+            //  3-byte sequence at EOF yields one error per remaining byte),
+            //  and the byte is NOT added to the content (no U+FFFD).
+            //  With `partial` (incremental) parsing no error fires at all.
+            //
+            //  encoding_error: enough bytes are present but they are not
+            //  valid UTF-8 (bad continuation, overlong, surrogate, out of
+            //  range). The I/O-domain XML_ERR_INVALID_ENCODING (81) is
+            //  raised once per input; the byte is consumed and the content
+            //  carries a U+FFFD replacement (xmlCurrentChar returns
+            //  XML_INVALID_CHAR, xmlParseCharDataComplex skips it).
             if let Some(b) = self.input.peek_raw() {
                 if b >= 0x80 && self.input.peek_char().is_none() {
+                    let rem = self.input.current_ref().remaining();
+                    let incomplete = rem.len() < 2
+                        || (b >= 0xE0 && rem.len() < 3)
+                        || (b >= 0xF0 && rem.len() < 4);
+                    if incomplete && !self.silent_truncated {
+                        below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
+                        self.flush_clean_segment(&mut owned, seg_start, pos_before);
+                        self.record_error(
+                            crate::abi::types::XML_FROM_PARSER,
+                            crate::abi::types::XML_ERR_INVALID_CHAR,
+                            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            format!("Incomplete UTF-8 sequence starting with {:02X}\n", b),
+                            None,
+                            None,
+                            None,
+                            b as c_int,
+                            None,
+                        );
+                        self.input.skip_raw_bytes(1);
+                        seg_start = self.input.current_pos().2;
+                        continue;
+                    }
                     self.record_encoding_error();
                     below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
                     // UPSTREAM-PARITY (parserInternals.c xmlCurrentChar
@@ -2312,6 +2425,33 @@ impl XmlTokenizer {
                     let cp = c as u32;
                     // upstream xmlParseCharDataComplex: PCDATA invalid Char.
                     if !is_valid_char_ref(cp) {
+                        // UPSTREAM-PARITY (parserInternals.c 2.15
+                        // xmlCurrentChar, c == 0 branch): a literal NUL
+                        // mid-buffer first raises its own error — "Char 0x0
+                        // out of allowed range\n" — and returns len 1; the
+                        // char-data loop then exits (IS_CHAR(0) false) and
+                        // the post-loop adds "PCDATA invalid Char value 0"
+                        // (both at the NUL's position).
+                        if cp == 0 {
+                            // UPSTREAM-PARITY (parserInternals.c 2.15
+                            // xmlFatalErr): the composed message is
+                            // xmlErrString(XML_ERR_INVALID_CHAR) (
+                            // "Invalid character") + ": " + the info
+                            // string ("Char 0x0 out of allowed range\n",
+                            // with its own trailing newline) — hence the
+                            // doubled newline before the source window.
+                            self.record_error(
+                                crate::abi::types::XML_FROM_PARSER,
+                                crate::abi::types::XML_ERR_INVALID_CHAR,
+                                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                                "Invalid character: Char 0x0 out of allowed range\n\n".to_string(),
+                                None,
+                                None,
+                                None,
+                                0,
+                                None,
+                            );
+                        }
                         self.record_error(
                             crate::abi::types::XML_FROM_PARSER,
                             crate::abi::types::XML_ERR_INVALID_CHAR,
@@ -2354,7 +2494,14 @@ impl XmlTokenizer {
                         // byte is the first ']').
                         let rest = self.peek_bytes(3);
                         if rest.len() == 3 && rest[1] == b']' && rest[2] == b'>' {
-                            self.record_error(
+                            // UPSTREAM-PARITY (parser.c 2.15
+                            // xmlParseCharDataInternal slow path): the error
+                            // is raised mid-scan while input->cur still sits
+                            // at the START of the character-data run (it is
+                            // only committed at the run's callback flush), so
+                            // the printed window/caret point at the run start
+                            // — not at the ']]>'. Record at `seg_start`.
+                            self.record_error_at(
                                 crate::abi::types::XML_FROM_PARSER,
                                 crate::abi::types::XML_ERR_MISPLACED_CDATA_END,
                                 crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
@@ -2363,6 +2510,7 @@ impl XmlTokenizer {
                                 None,
                                 None,
                                 0,
+                                seg_start,
                                 None,
                             );
                         }
@@ -2440,10 +2588,15 @@ impl XmlTokenizer {
     // ── Name scanning ───────────────────────────────────────────────────────
 
     /// §16.6 scalar fast path: whether `b` is an ASCII XML Name character
-    /// that may follow the first character (alphanumerics plus `. - _ : +`).
+    /// that may follow the first character. UPSTREAM-PARITY
+    /// (parserInternals.c xmlParseName / xmlIsNameChar): the ASCII set is
+    /// alphanumerics plus `. - _ :` — NOT `+` (a name stops at `+`; the
+    /// attribute loop then reports "error parsing attribute name" /
+    /// "Specification mandates value for attribute", verified against the
+    /// 2.15.3 oracle by the §16.7.7 differential court).
     #[inline]
     fn ascii_name_byte(b: u8) -> bool {
-        b.is_ascii_alphanumeric() || b == b'.' || b == b'-' || b == b'_' || b == b':' || b == b'+'
+        b.is_ascii_alphanumeric() || b == b'.' || b == b'-' || b == b'_' || b == b':'
     }
 
     /// Scan an XML Name.
@@ -2486,17 +2639,18 @@ impl XmlTokenizer {
                 None => break,
             };
 
-            // XML Name characters (upstream xmlParseName): the first byte
-            // must be a NameStartChar (letter, '_', ':' or any byte >= 0x80);
-            // subsequent bytes may also be digits, '.', '-', '+', '_', ':'
-            // (the '+' is accepted by libxml2's lenient IS_CHAR check).
+            // XML Name characters (upstream xmlParseName / xmlIsNameChar):
+            // the first byte must be a NameStartChar (letter, '_', ':' or
+            // any byte >= 0x80); subsequent bytes may also be digits, '.',
+            // '-', '_', ':' — NOT '+' (the §16.7.7 oracle court proved
+            // names stop at '+': `<a+b/>` fails with "error parsing
+            // attribute name" on 2.15.3).
             let ok = if first {
                 c.is_alphabetic() || c == '_' || c == ':' || c as u32 >= 0x80
             } else {
                 c.is_alphanumeric()
                     || c == '.'
                     || c == '-'
-                    || c == '+'
                     || c == '_'
                     || c == ':'
                     || c as u32 >= 0x80

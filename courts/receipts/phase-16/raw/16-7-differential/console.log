@@ -1,0 +1,38 @@
+generated 1116 docs into /scanout/corpus
+corpus: 1191 documents
+probe oracle rc=0 rows=22222 err=2655
+probe scalar rc=0 rows=22222 err=2633
+probe avx2 rc=0 rows=22222 err=2633
+probe avx512 rc=0 rows=22222 err=2633
+G1 PASS backend-invariance: scalar == avx2 (stdout+stderr)
+G1 PASS backend-invariance: scalar == avx512 (stdout+stderr)
+G2 PASS oracle == candidate(scalar): out byte-identical
+G2 DIFF oracle vs candidate(scalar): err differs (174 candidate-only lines)
+1,3d0
+< /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inNsXml.xml:1: parser error : xml:id : attribute value 23 is not an NCName
+< <foo xmlns="http://z0" xml:id="23">
+<                                   ^
+43,54d39
+< /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inNsXml_c14nDefault.xml:1: parser error : xml:id : attribute value 23 is not an NCName
+< <foo xmlns="http://z0" xml:id="23">
+<                                   ^
+< /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inNsXml_c14nPrefix.xml:1: parser error : xml:id : attribute value 23 is not an NCName
+< <n0:foo xmlns:n0="http://z0" xml:id="23">
+<                                         ^
+< /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inNsXml_c14nPrefixQname.xml:1: parser error : xml:id : attribute value 23 is not an NCName
+< <n0:foo xmlns:n0="http://z0" xml:id="23">
+<                                         ^
+< /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inNsXml_c14nQname.xml:1: parser error : xml:id : attribute value 23 is not an NCName
+< <foo xmlns="http://z0" xml:id="23">
+<                                   ^
+61,63c46
+< /court/suites/phase14/sources/nokogiri/test/files/bogus.xml:1: parser error : Document is empty
+< 
+c31192dfd524158a4ae2a94f0d79a653d144cf83942acfbb3fecc4a76a163840  out-avx2
+c31192dfd524158a4ae2a94f0d79a653d144cf83942acfbb3fecc4a76a163840  out-avx512
+c31192dfd524158a4ae2a94f0d79a653d144cf83942acfbb3fecc4a76a163840  out-oracle
+c31192dfd524158a4ae2a94f0d79a653d144cf83942acfbb3fecc4a76a163840  out-scalar
+1bececba73c56cc7f87e75514539609263012fab059fa78cedb77222192541b5  err-avx2
+1bececba73c56cc7f87e75514539609263012fab059fa78cedb77222192541b5  err-avx512
+f16fcffd676de77b4c59a67479ca026c92a3dd1f741b97932699bfa3babf0f11  err-oracle
+1bececba73c56cc7f87e75514539609263012fab059fa78cedb77222192541b5  err-scalar
