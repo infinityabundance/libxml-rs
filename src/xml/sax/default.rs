@@ -1270,15 +1270,13 @@ pub(crate) mod default_sax_handler {
             // the parent's LAST child when it is a text node (xmlNodeAddContent).
             // An interrupted character-data stream (e.g. an entity reference)
             // is never compact, so the merge promotes compact content to heap.
-            let mut last = (*parent).children;
-            if !last.is_null() {
-                while !(*last).next.is_null() {
-                    last = (*last).next;
-                }
-                if (*last).type_ == XML_TEXT_NODE as c_int {
-                    merge_into_text_node(last, ch, len);
-                    return;
-                }
+            // §16.5: the last child is parent->last — O(1) — never a sibling
+            // walk (a root with N element children + inter-element whitespace
+            // runs was O(N) per text event = O(N²) per document).
+            let last = (*parent).last;
+            if !last.is_null() && (*last).type_ == XML_TEXT_NODE as c_int {
+                merge_into_text_node(last, ch, len);
+                return;
             }
 
             let text = parser_new_text_node(ctxt, ch, len, false);

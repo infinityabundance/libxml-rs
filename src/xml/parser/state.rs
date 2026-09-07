@@ -77,7 +77,7 @@ use crate::abi::types::xmlElementTypeVal::*;
 use crate::abi::types::xmlEntityType::*;
 use crate::abi::types::*;
 use crate::xml::parser::input::{InputBuffer, InputStack};
-use crate::xml::parser::tokenizer::{XmlToken, XmlTokenizer};
+use crate::xml::parser::tokenizer::{XmlText, XmlToken, XmlTokenizer};
 use crate::xml::sax::dispatch::SaxDispatcher;
 use core::ptr;
 use std::os::raw::{c_char, c_int, c_ulong, c_void};
@@ -859,10 +859,10 @@ impl XmlParser {
                     }
                     self.sax_pi(&target, &data);
                 }
-                XmlToken::Characters(data) => {
+                XmlToken::Characters(text) => {
                     // Upstream misc stops at the first non-blank character;
                     // whitespace-only runs are skipped.
-                    if data.iter().any(|&b| !b.is_ascii_whitespace()) {
+                    if !self.text_is_whitespace_only(&text) {
                         if unsafe { (*self.ctxt).wellFormed } != 0 {
                             self.raise_error_at(
                                 XML_FROM_PARSER,
@@ -2732,8 +2732,8 @@ impl XmlParser {
                     }
                     self.sax_pi(&target, &data);
                 }
-                XmlToken::Characters(data) => {
-                    if data.iter().any(|&b| !b.is_ascii_whitespace()) {
+                XmlToken::Characters(text) => {
+                    if !self.text_is_whitespace_only(&text) {
                         // UPSTREAM-PARITY (parser.c XML_PARSER_EPILOG): the
                         // fatal "Extra content" is raised only when no prior
                         // error was recorded (errNo == XML_ERR_OK) — a prior
@@ -3007,21 +3007,11 @@ impl XmlParser {
                     stack.push(cur);
                     cur = child;
                 }
-                XmlToken::Characters(data) => {
-                    if !data.is_empty() {
-                        // UPSTREAM-PARITY (parser.c xmlCharacters): with
-                        // XML_PARSE_NOBLANKS (keepBlanks == 0) a
-                        // whitespace-only run is dropped before the SAX
-                        // characters event fires.
-                        let keep_blanks = unsafe { (*self.ctxt).keepBlanks } != 0;
-                        if keep_blanks
-                            || !data
-                                .iter()
-                                .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
-                        {
-                            self.sax_characters(&data);
-                        }
-                    }
+                XmlToken::Characters(text) => {
+                    // §16.5.3: sax_characters_text applies the NOBLANKS
+                    // whitespace gate and dispatches with a raw pointer into
+                    // the input for pure runs (no C-string copy).
+                    self.sax_characters_text(&text);
                 }
                 XmlToken::Comment { data, unterminated } => {
                     if unterminated && (self.probe || self.partial_delivery) {
@@ -4459,16 +4449,17 @@ impl XmlParser {
                                 } else {
                                     ptr::null_mut()
                                 };
-                                // NOTE: name_cstr must NOT be freed here — the
-                                // entity-ref node built below duplicates it
-                                // (xml_strdup at the node-name assignment) and
-                                // the single xmlFreeImpl at the end of the
-                                // reference arm is the real owner (Phase 16
-                                // ASan fuzz fix: an early free made xml_strdup
-                                // copy from a freed block the allocator had
-                                // already reissued — an overlapping
-                                // copy_nonoverlapping UB panic in the php
-                                // gh12223 simplexml gate).
+                                // NOTE: name_cstr must NOT be freed before the
+                                // entity-ref node duplicates it (xml_strdup at
+                                // the node-name assignment) — an early free
+                                // made xml_strdup copy from a freed block the
+                                // allocator had already reissued (an
+                                // overlapping copy_nonoverlapping UB panic in
+                                // the php gh12223 simplexml gate). It IS freed
+                                // on every path past the strdup (incl. the
+                                // early Err returns below — ASan fuzz: a
+                                // recursive parse_entity_content error leaked
+                                // the reference name).
                                 if !ent2.is_null() {
                                     // Window for a possible loop raise: the
                                     // referencing entity's content at the
@@ -4483,7 +4474,16 @@ impl XmlParser {
                                         let at = (i + semi_rel + 2).min(clen);
                                         crate::xml::parser::tokenizer::window_at_data(cdata, at)
                                     };
-                                    self.parse_entity_content(ent2, ref_win)?;
+                                    if self.parse_entity_content(ent2, ref_win).is_err() {
+                                        if !name_cstr.is_null() {
+                                            unsafe {
+                                                crate::abi::allocator::xmlFreeImpl(
+                                                    name_cstr as *mut c_void,
+                                                );
+                                            }
+                                        }
+                                        return Err(());
+                                    }
                                     // UPSTREAM-PARITY (parser.c xmlParseReference):
                                     // every general-entity reference is subject to
                                     // the amplification check; the accumulation
@@ -4495,6 +4495,13 @@ impl XmlParser {
                                         &mut (*ent).expandedSize,
                                         after as c_ulong,
                                     ) {
+                                        if !name_cstr.is_null() {
+                                            unsafe {
+                                                crate::abi::allocator::xmlFreeImpl(
+                                                    name_cstr as *mut c_void,
+                                                );
+                                            }
+                                        }
                                         return Err(());
                                     }
                                     // Recursive-sum contribution (upstream
@@ -4540,6 +4547,17 @@ impl XmlParser {
                         i += semi_rel + 2;
                         continue;
                     }
+                    // A '&' with NO ';' remaining in the content: there is
+                    // no reference to resolve. Upstream rejects a bare '&'
+                    // in entity VALUES at declaration time ("EntityValue:
+                    // '&' forbidden..."), so content like this only arises
+                    // from malformed DTDs; treat the byte as literal text so
+                    // the scan ALWAYS progresses (ASan fuzz timeout: the
+                    // copy loop below stops at '&', so a trailing/bare '&'
+                    // stalled the whole parse forever).
+                    pending.push(b'&');
+                    i += 1;
+                    continue;
                 }
                 let start = i;
                 while i < bytes.len() && bytes[i] != b'&' {
@@ -4608,9 +4626,9 @@ impl XmlParser {
                     }
                     self.sax_pi(&target, &data);
                 }
-                XmlToken::Characters(data) => {
+                XmlToken::Characters(text) => {
                     // Only whitespace is allowed in the epilog
-                    if data.iter().any(|&b| !b.is_ascii_whitespace()) {
+                    if !self.text_is_whitespace_only(&text) {
                         self.set_error(
                             XML_ERR_DOCUMENT_END,
                             "Non-whitespace characters after root element",
@@ -5497,7 +5515,73 @@ impl XmlParser {
         );
     }
 
-    /// Fire `characters` SAX event.
+    /// Resolve an [`XmlText`] to its bytes (§16.5.3): an owned payload
+    /// returns the Vec; a span reads the base input's data range (valid for
+    /// the token's lifetime — see [`XmlText`]'s safety contract; the parser
+    /// consumes each Characters/CDATA/Comment token synchronously in the
+    /// same loop iteration that produced it).
+    fn resolve_text<'a>(&'a self, t: &'a XmlText) -> &'a [u8] {
+        match t {
+            XmlText::Owned(v) => v,
+            XmlText::Span { start, end } => self.tokenizer.input().base_input_range(*start, *end),
+        }
+    }
+
+    /// §16.5.3 whitespace test over a token payload: whether EVERY byte is
+    /// XML whitespace (the NOBLANKS / prolog / epilog gates).
+    fn text_is_whitespace_only(&self, t: &XmlText) -> bool {
+        let b = self.resolve_text(t);
+        b.iter()
+            .all(|&x| x == b' ' || x == b'\t' || x == b'\n' || x == b'\r')
+    }
+
+    /// Fire `characters` SAX event from a token payload (§16.5.3). A pure
+    /// base-input run dispatches with a pointer into the input data — no
+    /// C-string copy — exactly like upstream, which hands the SAX
+    /// `characters` handler `input->cur + len` (never a NUL-terminated
+    /// copy; the handler copies what it keeps). Also applies the
+    /// XML_PARSE_NOBLANKS gate (a whitespace-only run is dropped when
+    /// keepBlanks == 0) — upstream xmlCharacters.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; the resolved bytes of `text` are live for
+    ///   the (synchronous) dispatch.
+    fn sax_characters_text(&mut self, text: &XmlText) {
+        if self.sax_blocked() || text.is_empty() || self.below_delivery_boundary() {
+            return;
+        }
+        let keep_blanks = unsafe { (*self.ctxt).keepBlanks } != 0;
+        // Resolve under a shared reborrow and reduce to raw parts so the
+        // borrow ends before the &mut self dispatch below. The NOBLANKS
+        // whitespace scan runs ONLY when keepBlanks == 0 — the default path
+        // must not pay a per-byte scan over every text run (criterion
+        // parse/327793 regression: an unconditional `.all()` cost ~2% at
+        // the largest size).
+        let (ch, len, all_ws) = {
+            let bytes = self.resolve_text(text);
+            let all_ws = if keep_blanks {
+                false
+            } else {
+                bytes
+                    .iter()
+                    .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
+            };
+            (
+                bytes.as_ptr() as *const xmlChar,
+                bytes.len() as c_int,
+                all_ws,
+            )
+        };
+        if all_ws {
+            return;
+        }
+        self.sax_characters_parts(ch, len);
+    }
+
+    /// Fire `characters` SAX event for a caller-owned byte slice (entity
+    /// replacement content, character references).
     ///
     /// # Safety
     ///
@@ -5505,31 +5589,25 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
     ///   call.
     fn sax_characters(&mut self, data: &[u8]) {
-        if self.sax_blocked() || data.is_empty() || self.below_delivery_boundary() {
+        if data.is_empty() {
             return;
         }
-        self.sync_input_position();
-        unsafe {
-            let sax = &*(*self.ctxt).sax;
-            let ctx = (*self.ctxt).userData;
-            let data_cstr = Self::vec_to_cstr_null(data);
-            SaxDispatcher::characters(sax, ctx, data_cstr, data.len() as c_int);
-            // SAX callbacks are synchronous: the buffer is only needed for the
-            // call (Phase 16 ASan fuzz fix).
-            if !data_cstr.is_null() {
-                crate::abi::allocator::xmlFreeImpl(data_cstr as *mut c_void);
-            }
-        }
+        self.sax_characters_parts(data.as_ptr() as *const xmlChar, data.len() as c_int);
     }
 
-    /// Fire `comment` SAX event.
+    /// Dispatch a `characters` SAX event with an explicit pointer + length
+    /// (§16.5.3: the pointer may point into the input data or a token's
+    /// owned buffer — the callback contract is `(ch, len)` and synchronous;
+    /// no NUL termination is required or guaranteed, matching upstream).
     ///
     /// # Safety
     ///
-    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
-    ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
-    ///   call.
-    fn sax_comment(&mut self, data: &[u8]) {
+    /// - `ch` must be a valid pointer to `len` readable bytes, live for the
+    ///   (synchronous) dispatch; `self.ctxt` must be valid and initialized.
+    fn sax_characters_parts(&mut self, ch: *const xmlChar, len: c_int) {
+        if ch.is_null() || len <= 0 {
+            return;
+        }
         if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
@@ -5537,7 +5615,35 @@ impl XmlParser {
         unsafe {
             let sax = &*(*self.ctxt).sax;
             let ctx = (*self.ctxt).userData;
-            let data_cstr = Self::vec_to_cstr_null(data);
+            SaxDispatcher::characters(sax, ctx, ch, len);
+        }
+    }
+
+    /// Fire `comment` SAX event from a token payload (§16.5.3: resolves the
+    /// payload, then builds the NUL-terminated string the comment callback
+    /// requires).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; the resolved bytes of `text` are live while
+    ///   the (synchronous) dispatch runs.
+    fn sax_comment(&mut self, data: &XmlText) {
+        if self.sax_blocked() || self.below_delivery_boundary() {
+            return;
+        }
+        let data_cstr: *const xmlChar = {
+            let bytes = self.resolve_text(data);
+            if bytes.is_empty() {
+                ptr::null()
+            } else {
+                Self::vec_to_cstr_null(bytes)
+            }
+        };
+        self.sync_input_position();
+        unsafe {
+            let sax = &*(*self.ctxt).sax;
+            let ctx = (*self.ctxt).userData;
             SaxDispatcher::comment(sax, ctx, data_cstr);
             if !data_cstr.is_null() {
                 crate::abi::allocator::xmlFreeImpl(data_cstr as *mut c_void);
@@ -5572,23 +5678,27 @@ impl XmlParser {
         }
     }
 
-    /// Fire `cdataBlock` SAX event.
+    /// Fire `cdataBlock` SAX event from a token payload (§16.5.3: resolves
+    /// the payload to raw parts — no C-string copy; the CDATA callbacks are
+    /// `(ch, len)`).
     ///
     /// # Safety
     ///
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
-    ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
-    ///   call.
-    fn sax_cdata(&mut self, data: &[u8]) {
+    ///   valid `sax`/`userData`; the resolved bytes of `data` are live while
+    ///   the (synchronous) dispatch runs.
+    fn sax_cdata(&mut self, data: &XmlText) {
         if self.sax_blocked() || data.is_empty() || self.below_delivery_boundary() {
             return;
         }
+        let (ch, len) = {
+            let bytes = self.resolve_text(data);
+            (bytes.as_ptr() as *const xmlChar, bytes.len() as c_int)
+        };
         self.sync_input_position();
         unsafe {
             let sax = &*(*self.ctxt).sax;
             let ctx = (*self.ctxt).userData;
-            let data_cstr = Self::vec_to_cstr_null(data);
-            let len = data.len() as c_int;
             // UPSTREAM-PARITY (parser.c xmlParseCDSect): the CDATA content
             // goes to the cdataBlock callback unless it is NULL or
             // XML_PARSE_NOCDATA is set, in which case it falls back to the
@@ -5598,12 +5708,9 @@ impl XmlParser {
             let use_chars = sax.cdataBlock.is_none()
                 || ((*self.ctxt).options & crate::abi::types::XML_PARSE_NOCDATA) != 0;
             if use_chars {
-                SaxDispatcher::characters(sax, ctx, data_cstr, len);
+                SaxDispatcher::characters(sax, ctx, ch, len);
             } else {
-                SaxDispatcher::cdata_block(sax, ctx, data_cstr, len);
-            }
-            if !data_cstr.is_null() {
-                crate::abi::allocator::xmlFreeImpl(data_cstr as *mut c_void);
+                SaxDispatcher::cdata_block(sax, ctx, ch, len);
             }
         }
     }

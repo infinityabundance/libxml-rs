@@ -111,7 +111,7 @@ pub(crate) enum XmlToken {
 
     /// Comment: `<!-- ... -->` (carries whether the comment was cut off by
     /// the end of the available input).
-    Comment { data: Vec<u8>, unterminated: bool },
+    Comment { data: XmlText, unterminated: bool },
 
     /// Processing instruction: `<?target ...?>`, with the byte offset of
     /// the leading `<?` (for document-level "invalid element name" errors)
@@ -128,16 +128,60 @@ pub(crate) enum XmlToken {
     /// CDATA section: `<![CDATA[ ... ]]>` (carries the `<` byte offset and
     /// whether the section was terminated).
     Cdata {
-        data: Vec<u8>,
+        data: XmlText,
         unterminated: bool,
         start_pos: usize,
     },
 
     /// Character data (text content).
-    Characters(Vec<u8>),
+    Characters(XmlText),
 
     /// Entity or character reference (`&name;`, `&#123;`, `&#xAB;`).
     Reference(Vec<u8>),
+}
+
+/// Character data payload of a content token (§16.5.3 token-span
+/// architecture): either patched owned bytes or a byte span over the source
+/// input — the tokenizer must not allocate merely to describe bytes that
+/// already exist in the input.
+///
+/// # Span validity contract
+///
+/// A [`XmlText::Span`] `{ start, end }` indexes the data of the buffer the
+/// run was scanned from. Spans are produced ONLY by body scanners running at
+/// the BASE input (depth 0) whose run consumed no patch event (invalid-char
+/// / invalid-UTF-8 replacement, a source CR whose EOL substitution changes
+/// the delivered byte, or a construct that drops bytes). The token is
+/// consumed synchronously by the parser in the same loop iteration that
+/// produced it (Characters/CDATA/Comment tokens are never pushed back —
+/// only StartTag is), and the base buffer's data cannot be mutated between
+/// token production and consumption (`push_bytes` only happens between
+/// parse calls). Entity-content runs (depth > 0) never produce spans: an
+/// exhausted pushed input is popped and dropped, so those runs materialize
+/// owned bytes.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum XmlText {
+    /// Patched bytes (or a clean entity-content run copied once).
+    Owned(Vec<u8>),
+    /// `[start, end)` byte offsets into the base input's data.
+    Span { start: usize, end: usize },
+}
+
+impl XmlText {
+    /// Byte length of the payload.
+    #[inline]
+    pub(crate) fn len(&self) -> usize {
+        match self {
+            XmlText::Owned(v) => v.len(),
+            XmlText::Span { start, end } => end - start,
+        }
+    }
+
+    /// Whether the payload is empty.
+    #[inline]
+    pub(crate) fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 /// A parser error recorded by the tokenizer at its exact detection point
@@ -377,6 +421,17 @@ impl XmlTokenizer {
     /// Return the current position as `(line, col, byte_offset)`.
     pub fn current_pos(&self) -> (usize, usize, usize) {
         self.input.current_pos()
+    }
+
+    /// §16.5.3: resolve a token payload ([`XmlText`]) to its bytes — an
+    /// owned payload returns the Vec; a span reads the base input's data
+    /// range. Valid while the token is alive (see [`XmlText`]'s safety
+    /// contract).
+    pub(crate) fn text_bytes<'a>(&'a self, t: &'a XmlText) -> &'a [u8] {
+        match t {
+            XmlText::Owned(v) => v,
+            XmlText::Span { start, end } => self.input.base_input_range(*start, *end),
+        }
     }
 
     // ── Error recording ─────────────────────────────────────────────────────
@@ -1497,7 +1552,7 @@ impl XmlTokenizer {
             return XmlToken::Eof;
         }
 
-        XmlToken::Characters(content)
+        XmlToken::Characters(XmlText::Owned(content))
     }
 
     /// Scan a comment body (after `<!--`).
@@ -1517,27 +1572,134 @@ impl XmlTokenizer {
                 .any(|w| w == b"-->")
         {
             return XmlToken::Comment {
-                data: Vec::new(),
+                data: XmlText::Owned(Vec::new()),
                 unterminated: true,
             };
         }
-        let mut content = Vec::new();
+        // §16.5.3: a comment body INSIDE a pushed (entity-content) input
+        // uses the legacy per-char owned path — the body may run past the
+        // entity boundary (auto-pop) into the outer input, so no source
+        // segment offsets can describe it. Only base-input bodies (never
+        // popped mid-scan) can use the span/pending model.
+        if !self.input.at_base_input() {
+            let mut content = Vec::new();
+            let mut unterminated = false;
+            loop {
+                if self.input.is_eof() {
+                    unterminated = true;
+                    break;
+                }
+                // Check for `-->`
+                if self.input.peek_char() == Some('-') {
+                    let err_pos = self.input.current_pos().2;
+                    self.input.read_char();
+                    if self.input.peek_char() == Some('-') {
+                        self.input.read_char();
+                        if self.input.peek_char() == Some('>') {
+                            self.input.read_char();
+                            break;
+                        }
+                        let mut preview: Vec<u8> = content.clone();
+                        preview.truncate(50);
+                        let msg = format!(
+                            "Double hyphen within comment: <!--{}\n",
+                            String::from_utf8_lossy(&preview)
+                        );
+                        self.record_error_at(
+                            crate::abi::types::XML_FROM_PARSER,
+                            crate::abi::types::XML_ERR_HYPHEN_IN_COMMENT,
+                            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            msg,
+                            None,
+                            None,
+                            None,
+                            0,
+                            err_pos,
+                            None,
+                        );
+                        continue;
+                    }
+                    content.push(b'-');
+                    continue;
+                }
+                match self.input.read_char() {
+                    Some(c) => Self::push_char(&mut content, c),
+                    None => break,
+                }
+            }
+            if unterminated && !self.silent_truncated {
+                self.record_error(
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_COMMENT_NOT_FINISHED,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "Comment not terminated\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                    None,
+                );
+            }
+            return XmlToken::Comment {
+                data: XmlText::Owned(content),
+                unterminated,
+            };
+        }
+        // §16.5.3 owned-or-span state (see scan_characters): comments at the
+        // base input whose bytes all reach the content verbatim are spans;
+        // the double-hyphen WFC error drops two hyphens, so it materializes.
+        let at_base = true;
+        let mut owned: Option<Vec<u8>> = None;
+        let mut seg_start = self.input.current_pos().2;
+        // Byte offset just past the last CONTENT byte: the `-->` terminator
+        // is consumed before the break, so the span must end at the first
+        // '-' of the terminator, not at the post-consumption position.
+        let mut content_end = seg_start;
         let mut unterminated = false;
 
         loop {
             if self.input.is_eof() {
                 unterminated = true;
+                content_end = self.input.current_pos().2;
                 break;
+            }
+            // §2.11/encoding-error patches shared with text scanning.
+            if let Some(b) = self.input.peek_raw() {
+                if b >= 0x80 && self.input.peek_char().is_none() {
+                    self.record_encoding_error();
+                    self.flush_clean_segment(&mut owned, seg_start, self.input.current_pos().2);
+                    self.input.skip_raw_bytes(1);
+                    if let Some(v) = owned.as_mut() {
+                        v.extend_from_slice(b"\xEF\xBF\xBD");
+                    }
+                    seg_start = self.input.current_pos().2;
+                    continue;
+                }
+            }
+            let c = match self.input.peek_char() {
+                Some(c) => c,
+                None => break,
+            };
+            if c == '\n' && self.input.peek_raw() == Some(b'\r') {
+                // §2.11: literal CR is delivered as LF.
+                self.flush_clean_segment(&mut owned, seg_start, self.input.current_pos().2);
+                self.input.read_char();
+                if let Some(v) = owned.as_mut() {
+                    v.push(b'\n');
+                }
+                seg_start = self.input.current_pos().2;
+                continue;
             }
 
             // Check for `-->`
-            if self.input.peek_char() == Some('-') {
+            if c == '-' {
                 let err_pos = self.input.current_pos().2;
                 self.input.read_char();
                 if self.input.peek_char() == Some('-') {
                     self.input.read_char();
                     if self.input.peek_char() == Some('>') {
                         self.input.read_char();
+                        content_end = err_pos;
                         break;
                     }
                     // UPSTREAM-PARITY (parser.c xmlParseCommentComplex): a
@@ -1545,9 +1707,13 @@ impl XmlTokenizer {
                     // WFC error "Double hyphen within comment: <!--%.50s\n"
                     // (XML_ERR_HYPHEN_IN_COMMENT); parsing continues past
                     // the two hyphens, which are NOT part of the content.
-                    // R-000166.
-                    let mut preview: Vec<u8> = content.clone();
-                    preview.truncate(50);
+                    // R-000166. The dropped hyphens are a patch: materialize
+                    // the pending segment first (the error preview reads it).
+                    self.flush_clean_segment(&mut owned, seg_start, err_pos);
+                    let preview: Vec<u8> = match &owned {
+                        Some(v) => v.iter().copied().take(50).collect(),
+                        None => Vec::new(),
+                    };
                     let msg = format!(
                         "Double hyphen within comment: <!--{}\n",
                         String::from_utf8_lossy(&preview)
@@ -1564,14 +1730,19 @@ impl XmlTokenizer {
                         err_pos,
                         None,
                     );
+                    seg_start = self.input.current_pos().2;
                     continue;
                 }
-                content.push(b'-');
+                // Single '-' is ordinary content: it stays in the pending
+                // segment (bulk-flushed at the next patch / finish).
                 continue;
             }
 
             match self.input.read_char() {
-                Some(c) => Self::push_char(&mut content, c),
+                Some(_c) => {
+                    // §16.5.3: clean bytes stay pending in `[seg_start, pos)`
+                    // and are bulk-flushed at the next patch / finish.
+                }
                 None => break,
             }
         }
@@ -1597,7 +1768,7 @@ impl XmlTokenizer {
         }
 
         XmlToken::Comment {
-            data: content,
+            data: self.finish_text_run(&mut owned, seg_start, content_end, at_base),
             unterminated,
         }
     }
@@ -1617,39 +1788,132 @@ impl XmlTokenizer {
                 .any(|w| w == b"]]>")
         {
             return XmlToken::Cdata {
-                data: Vec::new(),
+                data: XmlText::Owned(Vec::new()),
                 unterminated: true,
                 start_pos,
             };
         }
-        let mut content = Vec::new();
+        // §16.5.3: a CDATA body inside a pushed (entity-content) input uses
+        // the legacy per-char owned path (the body may run past the entity
+        // boundary via auto-pop). Only base-input bodies can span.
+        if !self.input.at_base_input() {
+            let mut content = Vec::new();
+            let mut unterminated = false;
+            loop {
+                if self.input.is_eof() {
+                    unterminated = true;
+                    break;
+                }
+                // Check for `]]>`
+                if self.input.peek_char() == Some(']') {
+                    self.input.read_char();
+                    if self.input.peek_char() == Some(']') {
+                        self.input.read_char();
+                        if self.input.peek_char() == Some('>') {
+                            self.input.read_char();
+                            break;
+                        }
+                        content.push(b']');
+                        content.push(b']');
+                        continue;
+                    }
+                    content.push(b']');
+                    continue;
+                }
+                match self.input.read_char() {
+                    Some(c) => Self::push_char(&mut content, c),
+                    None => break,
+                }
+            }
+            if unterminated && !self.silent_truncated {
+                self.record_error(
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_CDATA_NOT_FINISHED,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "Premature end of data in CDATA section\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                    None,
+                );
+            }
+            return XmlToken::Cdata {
+                data: XmlText::Owned(content),
+                unterminated,
+                start_pos,
+            };
+        }
+        // §16.5.3 owned-or-span state (see scan_characters): CDATA content at
+        // the base input is a span when no byte was patched; `]` sequences
+        // are delivered verbatim (only the `]]>` terminator ends the run).
+        let at_base = true;
+        let mut owned: Option<Vec<u8>> = None;
+        let mut seg_start = self.input.current_pos().2;
+        // Byte offset just past the last CONTENT byte: the `]]>` terminator
+        // is consumed before the break, so the span must end at the first
+        // ']' of the terminator.
+        let mut content_end = seg_start;
         let mut unterminated = false;
 
         loop {
             if self.input.is_eof() {
                 unterminated = true;
+                content_end = self.input.current_pos().2;
                 break;
+            }
+            // §2.11/encoding-error patches shared with text scanning.
+            if let Some(b) = self.input.peek_raw() {
+                if b >= 0x80 && self.input.peek_char().is_none() {
+                    self.record_encoding_error();
+                    self.flush_clean_segment(&mut owned, seg_start, self.input.current_pos().2);
+                    self.input.skip_raw_bytes(1);
+                    if let Some(v) = owned.as_mut() {
+                        v.extend_from_slice(b"\xEF\xBF\xBD");
+                    }
+                    seg_start = self.input.current_pos().2;
+                    continue;
+                }
+            }
+            let c = match self.input.peek_char() {
+                Some(c) => c,
+                None => break,
+            };
+            if c == '\n' && self.input.peek_raw() == Some(b'\r') {
+                // §2.11: literal CR is delivered as LF.
+                self.flush_clean_segment(&mut owned, seg_start, self.input.current_pos().2);
+                self.input.read_char();
+                if let Some(v) = owned.as_mut() {
+                    v.push(b'\n');
+                }
+                seg_start = self.input.current_pos().2;
+                continue;
             }
 
             // Check for `]]>`
-            if self.input.peek_char() == Some(']') {
+            if c == ']' {
+                let term_start = self.input.current_pos().2;
                 self.input.read_char();
                 if self.input.peek_char() == Some(']') {
                     self.input.read_char();
                     if self.input.peek_char() == Some('>') {
                         self.input.read_char();
+                        content_end = term_start;
                         break;
                     }
-                    content.push(b']');
-                    content.push(b']');
+                    // `]]` not followed by `>`: both are ordinary content
+                    // and stay in the pending segment (bulk-flushed later).
                     continue;
                 }
-                content.push(b']');
+                // Single ']' is ordinary content (pending segment).
                 continue;
             }
 
             match self.input.read_char() {
-                Some(c) => Self::push_char(&mut content, c),
+                Some(_c) => {
+                    // §16.5.3: clean bytes stay pending in `[seg_start, pos)`
+                    // and are bulk-flushed at the next patch / finish.
+                }
                 None => break,
             }
         }
@@ -1677,7 +1941,7 @@ impl XmlTokenizer {
         }
 
         XmlToken::Cdata {
-            data: content,
+            data: self.finish_text_run(&mut owned, seg_start, content_end, at_base),
             unterminated,
             start_pos,
         }
@@ -1911,8 +2175,15 @@ impl XmlTokenizer {
     /// "PCDATA invalid Char value %d\n" (9, int1 = value) for invalid
     /// characters (the offending char is skipped), and the I/O encoding
     /// error (81) for invalid UTF-8 bytes (the byte is skipped).
+    ///
+    /// §16.5.3: the run is returned as an [`XmlText::Span`] of the base
+    /// input when it needed no patching (source bytes == delivered bytes);
+    /// any patch (invalid char, encoding-error replacement, or a source CR
+    /// whose §2.11 EOL substitution turns it into an LF) materializes the
+    /// bytes collected so far and switches to an owned buffer. Entity-
+    /// content runs (depth > 0) never span: their buffer may be auto-popped
+    /// and dropped at the run end, so they materialize owned bytes.
     fn scan_characters(&mut self) -> XmlToken {
-        let mut content = Vec::new();
         // UPSTREAM-PARITY (SAX2 entity boundary): when character data comes out
         // of a substituted general entity (an input pushed by xmlParseReference)
         // the parser emits a discrete SAX `characters` run for the entity
@@ -1924,6 +2195,7 @@ impl XmlTokenizer {
         // tail into the same token; break the run when the scan crosses back
         // below its starting depth.
         let start_depth = self.input.depth();
+        let at_base = self.input.at_base_input();
         // SP-14.3.1-6: whether any byte of the CURRENT run was consumed
         // strictly below the split offset. Only a run that begins in the
         // already-delivered prefix and crosses the boundary is split there; a
@@ -1931,8 +2203,32 @@ impl XmlTokenizer {
         // whole (splitting it would emit one character per token and turn
         // text merges into O(n²) appends).
         let mut below_split = false;
+        // §16.5.3 owned-or-span state: `owned` is None while the delivered
+        // bytes equal the source bytes since `seg_start` (a byte offset into
+        // the buffer the run is scanned from). Invariant: bytes in
+        // `[seg_start, pos)` are pending — never yet delivered. Delivery
+        // happens ONLY as bulk segment flushes (at a patch, before an entity
+        // input is popped, and at finish); patched bytes (EOL `\n`, U+FFFD)
+        // are appended explicitly after flushing, with `seg_start` advanced
+        // past them. A run with no patch at all is a span (base) or one bulk
+        // copy (entity).
+        let mut owned: Option<Vec<u8>> = None;
+        let mut seg_start = self.input.current_pos().2;
+        // Set when the run crossed an entity-content boundary (the pre-pop
+        // flush below completed the owned buffer at the boundary).
+        let mut crossed_pop = false;
 
         loop {
+            // An exhausted pushed (entity-content) input is about to be
+            // auto-popped by is_eof() below; its bytes are only reachable
+            // before the pop, so flush the pending segment first (base
+            // inputs are never popped).
+            if !at_base && self.input.current_ref().is_eof() {
+                let end = self.input.current_pos().2;
+                self.flush_clean_segment(&mut owned, seg_start, end);
+                seg_start = end;
+                crossed_pop = true;
+            }
             if self.input.is_eof() {
                 break;
             }
@@ -1958,12 +2254,18 @@ impl XmlTokenizer {
                 if b >= 0x80 && self.input.peek_char().is_none() {
                     self.record_encoding_error();
                     below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
-                    self.input.skip_raw_bytes(1);
                     // UPSTREAM-PARITY (parserInternals.c xmlCurrentChar
                     // encoding_error): the byte is consumed and replaced
                     // with XML_INVALID_CHAR (U+FFFD) in the character data
-                    // — not dropped (the tree carries the replacement).
-                    content.extend_from_slice(b"\xEF\xBF\xBD");
+                    // — not dropped (the tree carries the replacement). The
+                    // replacement differs from the source, so the pending
+                    // segment materializes first.
+                    self.flush_clean_segment(&mut owned, seg_start, pos_before);
+                    self.input.skip_raw_bytes(1);
+                    if let Some(v) = owned.as_mut() {
+                        v.extend_from_slice(b"\xEF\xBF\xBD");
+                    }
+                    seg_start = self.input.current_pos().2;
                     continue;
                 }
             }
@@ -1986,9 +2288,25 @@ impl XmlTokenizer {
                             None,
                         );
                         // Skip the offending character (upstream NEXTL after
-                        // the error).
+                        // the error) — it is dropped from the content, so the
+                        // pending clean segment materializes.
                         below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
+                        self.flush_clean_segment(&mut owned, seg_start, pos_before);
                         self.input.read_char();
+                        seg_start = self.input.current_pos().2;
+                        continue;
+                    }
+                    // §2.11 EOL handling: a literal CR is delivered as an LF
+                    // (the CRLF pair is consumed as one advance), so the
+                    // delivered byte differs from the source — a patch.
+                    if c == '\n' && self.input.peek_raw() == Some(b'\r') {
+                        below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
+                        self.flush_clean_segment(&mut owned, seg_start, pos_before);
+                        self.input.read_char();
+                        if let Some(v) = owned.as_mut() {
+                            v.push(b'\n');
+                        }
+                        seg_start = self.input.current_pos().2;
                         continue;
                     }
                     // upstream: ']]>' is reported when cur is at the first ']'.
@@ -2012,13 +2330,70 @@ impl XmlTokenizer {
                     }
                     self.input.read_char();
                     below_split |= pos_before < self.split_chars_at.unwrap_or(usize::MAX);
-                    Self::push_char(&mut content, c);
+                    // §16.5.3: nothing is appended here — clean bytes stay in
+                    // the pending segment `[seg_start, pos)` and are flushed
+                    // in bulk at the next patch / pop / finish.
                 }
                 None => break,
             }
         }
 
-        XmlToken::Characters(content)
+        // After a boundary-crossing pop the owned buffer is complete (the
+        // pre-pop flush captured everything); the current position belongs to
+        // the OUTER input, so it must not extend the run.
+        let end = if crossed_pop {
+            seg_start
+        } else {
+            self.input.current_pos().2
+        };
+        XmlToken::Characters(self.finish_text_run(&mut owned, seg_start, end, at_base))
+    }
+
+    /// §16.5.3: finish a text/body run. Flushes the pending tail
+    /// `[seg_start, end)` into `owned` when the run already materialized;
+    /// then returns: a never-patched BASE-input run as a span; a never-
+    /// patched entity run (whose buffer may be dropped on pop) and any
+    /// patched run as owned bytes. `end` is the byte offset just past the
+    /// last CONTENT byte — for body scanners whose terminator is consumed
+    /// before the break (comments `-->`, CDATA `]]>`) the caller passes the
+    /// pre-terminator position.
+    fn finish_text_run(
+        &self,
+        owned: &mut Option<Vec<u8>>,
+        seg_start: usize,
+        end: usize,
+        at_base: bool,
+    ) -> XmlText {
+        if owned.is_some() && end > seg_start {
+            self.flush_clean_segment(owned, seg_start, end);
+        }
+        match owned.take() {
+            Some(v) => XmlText::Owned(v),
+            None => {
+                if at_base {
+                    XmlText::Span {
+                        start: seg_start,
+                        end,
+                    }
+                } else {
+                    XmlText::Owned(self.input.current_ref().raw_range(seg_start, end).to_vec())
+                }
+            }
+        }
+    }
+
+    /// §16.5.3: append the source bytes `[start, end)` of the current input
+    /// buffer to `owned`, materializing the buffer on first use. Called at
+    /// the first patch point of a run (and before an entity input is
+    /// auto-popped); after materialization the caller appends patched bytes
+    /// explicitly and keeps `seg_start` advanced past them.
+    fn flush_clean_segment(&self, owned: &mut Option<Vec<u8>>, start: usize, end: usize) {
+        if owned.is_none() {
+            *owned = Some(Vec::new());
+        }
+        if let Some(v) = owned.as_mut() {
+            v.extend_from_slice(self.input.current_ref().raw_range(start, end));
+        }
     }
 
     // ── Name scanning ───────────────────────────────────────────────────────
@@ -2198,5 +2573,3 @@ fn is_valid_char_ref(codepoint: u32) -> bool {
         || (0xE000..=0xFFFD).contains(&codepoint)
         || (0x10000..=0x10FFFF).contains(&codepoint)
 }
-
-

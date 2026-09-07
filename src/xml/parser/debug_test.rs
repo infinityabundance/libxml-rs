@@ -42,7 +42,7 @@ mod debug_test {
     use crate::xml::parser::helpers;
     use crate::xml::parser::input::InputBuffer;
     use crate::xml::parser::input::InputStack;
-    use crate::xml::parser::tokenizer::{XmlToken, XmlTokenizer};
+    use crate::xml::parser::tokenizer::{XmlText, XmlToken, XmlTokenizer};
 
     #[test]
     fn test_tokenizer_simple() {
@@ -89,11 +89,52 @@ mod debug_test {
         let token = tok.next_token_raw();
         assert!(matches!(token, XmlToken::Characters(_)));
         if let XmlToken::Characters(text) = &token {
-            assert_eq!(text.as_slice(), b"Hello");
+            // §16.5.3: a clean base-input run is a SPAN — resolve it through
+            // the tokenizer to compare bytes.
+            assert_eq!(tok.text_bytes(text), b"Hello");
         }
 
         let token = tok.next_token_raw();
         assert!(matches!(token, XmlToken::EndTag { .. }));
+    }
+
+    /// §16.5.3 token-span regression: a clean base-input text run must be a
+    /// SPAN (no tokenizer allocation), a CRLF-patched run must be OWNED with
+    /// the EOL-normalized bytes, and an entity-content run must be OWNED.
+    #[test]
+    fn test_token_span_model() {
+        // Pure run -> Span over the base input.
+        let data = b"<a>Hello</a>";
+        let stack = InputStack::new(InputBuffer::from_memory(data, None));
+        let mut tok = XmlTokenizer::new(stack);
+        let _ = tok.next_token(); // <a>
+        let token = tok.next_token_raw();
+        match &token {
+            XmlToken::Characters(XmlText::Span { start, end }) => {
+                assert_eq!(
+                    tok.text_bytes(&XmlText::Span {
+                        start: *start,
+                        end: *end,
+                    }),
+                    b"Hello"
+                );
+            }
+            other => panic!("expected a Span, got {:?}", other),
+        }
+
+        // CRLF-patched run -> Owned with '\n' (the source differs from the
+        // delivered bytes, so a span is impossible).
+        let data = b"<a>ab\r\ncd</a>";
+        let stack = InputStack::new(InputBuffer::from_memory(data, None));
+        let mut tok = XmlTokenizer::new(stack);
+        let _ = tok.next_token();
+        let token = tok.next_token_raw();
+        match &token {
+            XmlToken::Characters(XmlText::Owned(v)) => {
+                assert_eq!(v, b"ab\ncd");
+            }
+            other => panic!("expected Owned, got {:?}", other),
+        }
     }
 
     /// Regression court (11.1-X R-000165): `ctxt._private` is application

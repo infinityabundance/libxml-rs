@@ -1605,6 +1605,21 @@ impl InputStack {
         self.current == 0
     }
 
+    /// §16.5.3: byte range `[start, end)` of the BASE input's data — the
+    /// storage a tokenizer [`XmlText::Span`] refers to.
+    ///
+    /// # Safety contract
+    ///
+    /// The range is valid while the base buffer is alive and its data is
+    /// unmutated. Spans are produced only by base-input body runs and are
+    /// consumed synchronously by the parser in the same loop iteration that
+    /// produced them (Characters/CDATA/Comment tokens are never pushed back
+    /// — only StartTag is), and `push_bytes` only happens between parse
+    /// calls, so the bytes stay valid for the token's whole lifetime.
+    pub(crate) fn base_input_range(&self, start: usize, end: usize) -> &[u8] {
+        self.inputs[0].raw_range(start, end)
+    }
+
     /// Resolve the error location the way upstream `xmlCtxtVErr` does
     /// (parserInternals.c 2.15): use the current input's filename/line/col,
     /// but when the current input has no filename and the stack is nested
