@@ -988,25 +988,45 @@ impl XmlTokenizer {
         // upstream: duplicate attribute names are detected after the tag
         // (RAW still at '>' or '/') → "Attribute %s redefined\n" (42),
         // str1 = name.
-        let mut seen: Vec<Vec<u8>> = Vec::new();
         let dup_pos = end_pos.unwrap_or_else(|| self.input.current_pos().2);
-        for (an, _) in &attributes {
-            if seen.iter().any(|s| s == an) {
-                self.record_error_at(
-                    crate::abi::types::XML_FROM_PARSER,
-                    crate::abi::types::XML_ERR_ATTRIBUTE_REDEFINED,
-                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                    format!("Attribute {} redefined\n", String::from_utf8_lossy(an)),
-                    Some(an.clone()),
-                    None,
-                    None,
-                    0,
-                    dup_pos,
-                    None,
-                );
-                break;
+        // §16.5.4: the duplicate scan compares attribute NAME BYTES in place
+        // — the names are already owned inside `attributes`, so the previous
+        // per-name `Vec` clone into a `seen` list cost one heap allocation
+        // per attribute on EVERY tag. Real tags carry few attributes, where a
+        // nested slice compare beats hashing; only pathological attribute
+        // counts (> 8) pay for a hash set, keeping the worst case O(k).
+        let dup_attr: Option<usize> = if attributes.len() >= 8 {
+            let mut seen: std::collections::HashSet<&[u8]> =
+                std::collections::HashSet::with_capacity(attributes.len() * 2);
+            attributes
+                .iter()
+                .position(|(an, _)| !seen.insert(an.as_slice()))
+        } else {
+            let mut found = None;
+            'outer: for i in 1..attributes.len() {
+                for j in 0..i {
+                    if attributes[i].0 == attributes[j].0 {
+                        found = Some(i);
+                        break 'outer;
+                    }
+                }
             }
-            seen.push(an.clone());
+            found
+        };
+        if let Some(dup) = dup_attr {
+            let an = &attributes[dup].0;
+            self.record_error_at(
+                crate::abi::types::XML_FROM_PARSER,
+                crate::abi::types::XML_ERR_ATTRIBUTE_REDEFINED,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                format!("Attribute {} redefined\n", String::from_utf8_lossy(an)),
+                Some(an.clone()),
+                None,
+                None,
+                0,
+                dup_pos,
+                None,
+            );
         }
 
         if unterminated {
