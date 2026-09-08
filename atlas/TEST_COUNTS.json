@@ -1,10 +1,10 @@
 {
  "schema": "test-counts-1",
  "generator": "tools/evidence/test_counts.py",
- "generated": "2026-09-05T21:56:16Z",
+ "generated": "2026-09-08T03:13:04Z",
  "cargo_test_lib": {
   "status": "ok",
-  "passed": 1256,
+  "passed": 1267,
   "failed": 0,
   "ignored": 1
  },
@@ -26,6 +26,8 @@
   "EXSLT sets": 4,
   "EXSLT strings": 6,
   "EXSLT registry": 3,
+  "fuzz::fuzz_html_read_memory_no_panic": 1,
+  "fuzz::fuzz_xml_read_memory_no_panic": 1,
   "Automata": 16,
   "C14N": 39,
   "Catalog": 22,
@@ -42,7 +44,7 @@
   "I/O": 45,
   "List": 8,
   "Memory": 2,
-  "XML parser + SAX": 80,
+  "XML parser + SAX": 89,
   "XML Reader": 38,
   "Regex": 44,
   "RELAX NG": 56,

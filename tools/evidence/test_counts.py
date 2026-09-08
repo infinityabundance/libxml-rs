@@ -90,7 +90,8 @@ MODULE_DISPLAY = {
 
 
 def run(cmd):
-    r = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT, timeout=3600)
+    r = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT, timeout=3600,
+                       errors="replace")
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 

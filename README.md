@@ -1,6 +1,6 @@
 # libxml-rs
 
-**Phase 11: Historical matrix — semantic epochs for libxml2/libxslt behavior.**
+**Phase 16: Performance parity — SIMD structural scanning, differential courts, and the five-consumer drop-in.**
 
 Custodial native-Rust reimplementation of the **libxml2 + libxslt** ecosystem:
 a forensic reconstruction of observable behavior, implemented in native Rust,
@@ -13,7 +13,115 @@ historical lifetimes.
 
 ---
 
-## Current Status: Phase 11 — Historical matrix (§85)
+## Current Status: Phase 16 — performance parity
+
+Phase 16 treats performance as a forensic parity surface: every claim is a
+measured, statistically classified row against a **frozen canonical oracle**
+(libxml2 2.15.3 + libxslt 1.1.45, built into the `libxml-rs/phase14-debian`
+court image), with the convention `speedup = oracle_time / candidate_time`.
+Evidence lives in `atlas/PERFORMANCE_ATLAS.md` / `.json` and
+`courts/receipts/phase-16/` (baseline, profiling, per-change receipts, raw
+matrices). Work so far, in phase order:
+
+- **§16.0/16.4 — baseline + profiling**: `PHASE-16-BASELINE.md`/`.json`
+  (host/build fingerprints, frozen-oracle identity), `PHASE-16-4-PROFILING.md`.
+- **§16.5/16.6 — scalar engine**: XML 2.11/3.3.3 byte-model fidelity;
+  owned-or-span text tokens (character runs reference the base input instead
+  of copying); decode-once scanner loops; contiguous printable-ASCII text
+  scanning; duplicate-attribute detection without per-name clones;
+  allocator bridge caches the hook-slot *address*; borrowed synchronous
+  memory input; bulk ASCII name + whitespace scanning. Also removed a
+  default-handler O(N²) text-merge and a bare-`&` infinite loop found along
+  the way.
+- **§16.7 — SIMD structural scanning** (`src/xml/parser/scan/`): the
+  printable-ASCII text-run classifier is runtime-dispatched across three
+  byte-identical backends — scalar reference, AVX2 (32-byte lanes), and
+  AVX-512BW (64-byte k-masks) — selected once per process
+  (`LIBXML_RS_SCAN_BACKEND=scalar|avx2|avx512|auto` diagnostic override).
+  The §16.7.7 differential court parses 1191 adversarial + fixture
+  documents under every backend and the oracle: backend-invariance
+  (stdout+stderr) is byte-identical and candidate parse trees match the
+  oracle byte-for-byte.
+- **Bugs the court caught and fixed**: a release-only crash (the streamed
+  generic-error asm trampolines declared caller-saved argument registers as
+  plain inputs — LLVM reused a stale register, so every
+  `XML_ERR_INVALID_ENCODING` raise freed a stack pointer) and seven
+  error-path parity gaps (incomplete UTF-8 at EOF, the `Bytes:` dump
+  length, the `]]>` caret at the run start, NUL/control characters in text
+  and attribute values, `+` no longer accepted in XML names, self-closing
+  `/` requiring `>`, end tags requiring `>`).
+- **§16.7.5 — AVX-512 policy evidence**: an alternating-order, taskset-pinned
+  matrix shows no end-to-end AVX-512 advantage over AVX2 on this Zen 5 host
+  for element-heavy documents; `auto` therefore stays on AVX2 (no
+  manufactured width win). Raw rows:
+  `courts/receipts/phase-16/raw/scan-backend-matrix.csv`.
+- **Known blocker (documented)**: `xmlParseChunk` re-parses the whole
+  accumulated input per non-final chunk (`helpers.rs parse_chunk`, the
+  SP-14.3.1-6 PHP expat-compat design), which is O(N²) on long chunked
+  feeds (oracle: linear 1.6 GB/s; candidate 96 s vs 0.05 s at 80 MB). It
+  blocks the lxml `iterparse` large-document test and the §16.12.3 lxml
+  iterparse consumer benchmark — the next big mover
+  (`courts/receipts/phase-16/16-7-7-push-reparse.md`).
+- **Performance infrastructure**: Criterion benches (`benches/`),
+  provider-isolated oracle/candidate harness + Pareto matrix
+  (`tools/bench/`), per-backend fuzz targets (`fuzz/`), and the
+  five-consumer court surface (xmllint, xsltproc, python3-lxml,
+  ruby-nokogiri, PHP) with the corpus/court machinery in
+  `courts/suites/phase16/`.
+
+Latest gates: `cargo test --lib` 1267 passed / 0 failed; PHP six-extension
+six-gate 1250 passed / 0 failed; CLI xmllint differential 46/48 (2
+pre-existing); per-backend parse fuzz clean.
+
+### Published artifacts
+
+- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.46`
+- GitHub: <https://github.com/infinityabundance/libxml-rs>
+
+### Oracle verification
+
+The frozen canonical oracle — libxml2 2.15.3 and libxslt 1.1.45 — is built
+from source into the `libxml-rs/phase14-debian` court image (12 further
+historical libxml2 releases live under `oracle/historical/` for the Phase-11
+epoch matrix). The candidate (`libxml-rs`) does not link against system
+libxml2/libxslt — verified by the oracle contamination court.
+
+### Phase 15 — four-consumer drop-in status
+
+Phase 15 drove the consumer drop-in push toward zero failures across the
+four runtime consumers (lxml, php, nokogiri, debian) against the frozen
+oracle. Snapshot (`courts/receipts/phase-15/FOUR-CONSUMER-STATUS.md`, plus
+`CURRENT-STATE.md` / `LXML-COURT-BASELINE.md`):
+
+- **php — 0 failures (sealed in Phase 14)**; re-gated after every shared
+  engine change (currently 1250/0).
+- **lxml** — the candidate gap clustered in the XSLT/EXSLT engine and
+  validation surfaces; the oracle passes the full suite (2007 tests / 0
+  failures), the candidate is blocked on the Phase-16 push-parse item
+  above for its large-`iterparse` test.
+- **nokogiri** — the oracle passes its suite (2831 runs / 0 failures);
+  candidate crash sites (XPath extension-function dispatch, SAX context
+  creation) were isolated and fixed progressively.
+- **debian / drop-in** — runtime substitution verified in the debian court
+  container; ltrace-driven symbol analysis drove the missing-surface fills
+  (xmlBuf API, legacy SAX1 handlers, exported global aliases, xz/encoding
+  helpers) and the versioned-SONAME coexistence work.
+
+### Phase 14 — downstream custodian validation courts
+
+Phase 14 built the consumer validation courts (lxml / Nokogiri / PHP /
+Debian inside minimal docker VMs) and drove the PHP six-extension gate from
+321 failures to **zero (NTS and ZTS)** — DOM (classic + modern),
+SimpleXML, XML expat-compat, XMLReader, XMLWriter and XSL, family by family
+(receipts `courts/receipts/phase-14/php-14-NN-*/`; the ZTS seal required the
+R-000177 cross-DSO loader-slot bridge so the whole-archive libxslt facade
+sees the streams loader PHP registers through the core). Green-gate
+configuration: 1290 tests / 1250 passed / 40 skipped / 0 failed, identical
+file list on both sides. The frozen-oracle court image
+(`libxml-rs/phase14-debian`, libxml2 2.15.3 + libxslt 1.1.45) and the
+consumer source trees became the substrate every later phase gates on.
+
+### Phase 11 (historical)
 
 Phase 11 delivers the cross-version archaeology of **§41 (historical oracle matrix), §42
 (version fingerprints), §51 (multi-version triangulation)**. Per §85:
@@ -192,7 +300,7 @@ byte-for-byte against the system libxml2 2.15.3 binaries:
 - **DTD validation diagnostics** — `--valid` output (messages, caret placement, exit codes) matches the oracle for both no-DTD and declaration errors
 - **Entity expansion** — `--noent` re-parses declared-entity content through the input stack (nested references and markup entities included), matching upstream trees
 - **HTML serialization** — meta-charset insertion, upstream formatting rules (p/pre/param never formatted, single-child and inline elements inline), HTML document headers
-- **1188 passing tests**: `cargo test --lib` — 0 failures
+- **1267 passing tests**: `cargo test --lib` — 0 failures
 - **Differential oracle parity**: a 44-case CLI suite (`target/difftest_summary.sh`) is **byte-identical** to the system tools (stdout + stderr + exit codes), plus a 30+ case edge corpus (entities, DTDs, HTML, compact/no-compact, debug dumps, XPath)
 
 ### Phase 9 (historical)
@@ -213,7 +321,7 @@ process-wide EXSLT registry (`exsltRegisterAll`, mirroring upstream):
 - **`exsltRegisterAll` C ABI export** — mirrors upstream; `xsltproc` calls it at startup
 - **`xsltproc` CLI** — full option surface (`--param`, `--stringparam`, `--output`, `--noout`, `--html`, `--encoding`, `--xinclude`, `--profile`, `--maxdepth`, `--maxvars`, `--nonet`, `--nowrite`, …) with upstream exit codes (1–11)
 - **RTF support** — variables with inline content become context-owned result tree fragments; `exsl:node-set($var)/path` navigation works
-- **1188 passing tests**: `cargo test --lib` — 0 failures
+- **1267 passing tests**: `cargo test --lib` — 0 failures
 - **Differential oracle parity**: a 12-case `xsltproc` corpus (basic transform, `count()`/AVTs, `exsl:node-set`/`math:`/`set:`/`str:`, predicates, attribute string-values, `xsl:if`/`xsl:when`, numbering, descending `xsl:sort`, `key()`, `call-template` with params, `method="html"`) is **byte-identical** to the system libxslt 1.1.45 `xsltproc` (stdout + exit codes)
 
 ### Underlying subsystem fixes landed during Phase 9
@@ -255,32 +363,6 @@ Subsystem fixes landed during Phase 8:
 
 All six Phase 8 residuals are documented in [`atlas/RESIDUAL_LEDGER.md`](atlas/RESIDUAL_LEDGER.md) (R-000101–R-000106).
 
-### Build
-
-```sh
-cargo build                          # Build library + CLI binaries
-cargo build --lib                    # Build only the library
-cargo test --lib                     # Run library tests (1188 passing)
-
-# Test C consumer compilation against our headers:
-gcc -I include courts/suites/sanity/ABI-STRUCT-NODE-0001-abicheck.c -o /tmp/abicheck
-clang -I include courts/suites/sanity/ABI-ENUM-0001-enumcheck.c -o /tmp/enumcheck
-
-# Build and run oracle container:
-docker build -f docker/Dockerfile.oracle -t libxml-rs/oracle:2.12.0 docker/
-```
-
-### Published artifacts
-
-- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.38`
-- GitHub: <https://github.com/infinityabundance/libxml-rs>
-
-### Oracle verification
-
-The oracle Docker container builds libxml2 2.12.0 and libxslt 1.1.39 from source.
-The candidate (`libxml-rs`) does not link against system libxml2/libxslt — verified
-by the oracle contamination court.
-
 ---
 
 ## Test coverage by subsystem
@@ -289,23 +371,23 @@ by the oracle contamination court.
 | Subsystem | Tests |
 |-----------|------:|
 | XPath 1.0 | 128 |
-| URI | 69 |
-| Encoding | 65 |
-| XML Schema (XSD) | 62 |
+| XML parser + SAX | 89 |
+| Encoding | 79 |
+| URI | 70 |
+| XML Schema (XSD) | 64 |
 | DTD validation | 56 |
 | RELAX NG | 56 |
-| XML parser + SAX | 54 |
 | XSLT patterns | 46 |
-| I/O | 44 |
+| I/O | 45 |
 | Regex | 44 |
 | Schematron | 40 |
 | C14N | 39 |
-| XML Reader | 37 |
+| XML Reader | 38 |
+| Tree/ownership | 36 |
 | DTD | 35 |
+| HTML | 33 |
 | Entities | 31 |
-| HTML | 31 |
-| Tree/ownership | 29 |
-| XSLT transform | 26 |
+| XSLT transform | 27 |
 | XInclude | 23 |
 | Catalog | 22 |
 | XML Writer | 20 |
@@ -318,16 +400,17 @@ by the oracle contamination court.
 | Compatibility profiles | 9 |
 | EXSLT dates | 9 |
 | Hash | 9 |
+| ABI (xml2 exports) | 8 |
 | ABI (xslt exports) | 8 |
 | List | 8 |
 | Dictionary | 7 |
 | EXSLT saxon | 7 |
 | Globals | 7 |
+| Serialization | 7 |
 | EXSLT strings | 6 |
 | String | 6 |
 | EXSLT math | 5 |
 | Errors | 5 |
-| Serialization | 5 |
 | XSLT compiler | 5 |
 | XSLT params | 5 |
 | XSLT security | 5 |
@@ -338,7 +421,6 @@ by the oracle contamination court.
 | XSLT variables/params | 4 |
 | EXSLT registry | 3 |
 | XSLT sorting | 3 |
-| ABI (xml2 exports) | 2 |
 | ABI data globals | 2 |
 | EXSLT dynamic | 2 |
 | Memory | 2 |
@@ -347,11 +429,16 @@ by the oracle contamination court.
 | XSLT keys | 2 |
 | XSLT namespace alias | 2 |
 | XSLT whitespace | 2 |
+| abi::exports_html | 2 |
+| abi::structs | 2 |
 | EXSLT functions | 1 |
 | XSLT documents | 1 |
 | XSLT imports | 1 |
 | XSLT misc (attrs) | 1 |
-| **Total (1188 passing, 0 failed)** | |
+| abi::exports_parser | 1 |
+| fuzz::fuzz_html_read_memory_no_panic | 1 |
+| fuzz::fuzz_xml_read_memory_no_panic | 1 |
+| **Total (1267 passing, 0 failed)** | |
 <!-- GENERATED-TESTCOVERAGE:END -->
 
 ---
@@ -365,33 +452,32 @@ libxml-rs/
 │   ├── lib.rs              # Library entry point
 │   ├── abi/                # C ABI compatibility layer (§4, §14)
 │   ├── xml/                # libxml2 implementation (§1, §3, §31)
+│   │   └── parser/         # scanner (scalar/AVX2/AVX-512 §16.7), tokenizer, state
 │   ├── xslt/               # libxslt implementation (§31–§34)
 │   ├── exslt/              # EXSLT modules (§35)
 │   ├── compatibility/      # Historical profiles, quirks, platform (§68, §69)
+│   ├── internal/           # Internal helpers
 │   └── bin/                # CLI tools: xmllint, xmlcatalog, xsltproc (§36)
 ├── include/                # Compatible C headers (§15)
-├── atlas/                  # Forensic archive (§7–§12)
-│   ├── releases/           # Release manifests per version
-│   ├── api/                # Public API inventories
-│   ├── abi/                # ABI snapshots
-│   ├── symbols/            # Symbol table comparisons
-│   ├── config/             # Build configuration profiles
-│   ├── standards/          # Standards mapping
-│   ├── HISTORY.md          # Complete release history
-│   ├── LORE.md             # Undocumented behavior archive
-│   ├── QUIRKS.md           # Confirmed compatibility quirks
+├── benches/                # Criterion microbenchmarks (§16.2)
+├── examples/               # ABI-mirror / allocator probe measurements
+├── atlas/                  # Forensic archive (§7–§12) + generated evidence
 │   ├── PARITY_MATRIX.md    # Current parity status
 │   ├── RESIDUAL_LEDGER.md  # Unexplained differences
-│   └── SECURITY_HISTORY.md # Vulnerability custody
+│   ├── PERFORMANCE_ATLAS.md  # Phase-16 performance evidence spec
+│   └── …                   # release/api/abi/symbols/config inventories, epochs
 ├── oracle/                 # Reproducible upstream build environment (§39)
 ├── courts/                 # Differential testing framework (§40–§50)
-│   ├── schema.json         # Casefile schema
-│   ├── suites/             # Court case suites
-│   ├── receipts/           # Execution receipts
-│   └── tools/              # Court runner
-├── tools/                  # Archaeology and analysis tooling
-│   ├── archaeology/        # manifest.py, apiatlas.py, symbols.py, delta.py, profileconfig.py
-│   └── courts/             # Court runner
+│   ├── suites/             # Court suites incl. phase14 (consumers) + phase16
+│   ├── receipts/           # Execution receipts (phase-14/15/16 …)
+│   └── cli/                # xmllint/xmlcatalog/xsltproc CLI differential runner
+├── tools/
+│   ├── bench/              # Provider-isolated Pareto harness + docker court (§16.2)
+│   ├── evidence/           # Generated-ledger/README-count generators
+│   ├── packaging/          # facade-gen.sh (whole-archive libxslt/libexslt),
+│   │                       #   linker wrapper, version-script profiles
+│   └── …                   # archaeology, courts
+├── fuzz/                   # cargo-fuzz targets (parse/html/xpath; ASan)
 ├── docker/                 # Reproducible Docker oracle images
 ├── docs/                   # Technical documentation
 └── archaeology/            # Upstream git clones (immutable, offline)
@@ -404,8 +490,21 @@ libxml-rs/
 ```sh
 cargo build              # Build the library and CLI binaries
 cargo build --lib        # Build only the library
-cargo test --lib         # Run library tests (1188 passing)
+cargo test --lib         # Run library tests (1267 passing)
 cargo build --release    # Optimized build (LTO, panic=abort)
+
+# Test C consumer compilation against our headers:
+gcc -I include courts/suites/sanity/ABI-STRUCT-NODE-0001-abicheck.c -o /tmp/abicheck
+clang -I include courts/suites/sanity/ABI-ENUM-0001-enumcheck.c -o /tmp/enumcheck
+
+# Release packaging: build the core, then regenerate the whole-archive
+# libxslt.so.1/libexslt.so.0 facades (always re-run after core edits — the
+# facade link is timestamp-skipped by cargo):
+cargo build --release --lib
+sh tools/packaging/facade-gen.sh target/release
+
+# Build the frozen-oracle court image (libxml2 2.15.3 + libxslt 1.1.45):
+docker build -f docker/Dockerfile.oracle -t libxml-rs/phase14-debian:1 docker/
 ```
 
 The crate builds as `cdylib` + `staticlib` + `rlib`; the build script also
@@ -435,7 +534,7 @@ at your option.
 | Subsystem census | 85 subsystems classified; verdicts: IMPLEMENTED_UNVERIFIED 43, PARTIAL 42 (evidence: atlas/SUBSYSTEM_CENSUS.json) |
 | Surface reconciliation | libxml2: doxygen 1374 / AST 1403 / DSO 1395 functions; libxslt: 235 / 231 / 232 (evidence: atlas/SURFACE_RECONCILIATION.json) |
 | Historical surface epochs | libxml2 2785 entities across 11 boundaries (evidence: atlas/HISTORICAL_SURFACE_EPOCHS.json) |
-| Test coverage | 1188 passing, 0 failed, 1 ignored (`cargo test --lib`, evidence: atlas/TEST_COUNTS.json) |
+| Test coverage | 1267 passing, 0 failed, 1 ignored (`cargo test --lib`, evidence: atlas/TEST_COUNTS.json) |
 | C headers | gcc & clang header-compile courts green (596/596, evidence: courts/receipts/header-compile-*) |
 | CLI parity | `xmllint` + `xmlcatalog` + `xsltproc` differential oracle parity (evidence: courts/receipts/CLI-*) |
 | Oracle infrastructure | 12 historical libxml2 + 5 libxslt oracles + system 2.15.3/1.1.45/0.8.25 oracles; evidence: oracle/historical, atlas/DOXYGEN_SURFACE_ATLAS.json |
