@@ -1,7 +1,8 @@
 # Phase 16.7.8 slice 0 — push-parser differential court + baseline divergence inventory
 
 Date: 2026-09-09
-Commit: (this commit)
+Commit: (slice 0: this file's first commit; slice 0.1: court hardening,
+rerun on the unchanged parser, corrected baseline below)
 Gate: `sh courts/suites/phase16/pushdiff-run.sh` (host) →
 `pushdiff-differential.sh` (inside `libxml-rs/phase14-debian:1`)
 
@@ -38,19 +39,58 @@ Corpus = the 136 generated docs + phase-14 fixture XMLs ≤ 32 KiB
 (210 documents). Chunking plans are picked by document size so that
 single-byte chunking (every byte offset a chunk boundary) is applied to
 every document ≤ 9 KiB while larger fixtures use fixed/random plans.
-
-## Baseline result (candidate == current HEAD before 16.7.8)
-
-| metric | value |
-|---|---|
-| cells (document × plan × sax-mode) | 2624 |
-| diverging cells | 2619 |
-| event-level divergences (startDocument/startElement/characters/error records differ between calls) | 2461 |
-| REFEED-only divergences (identical feed/events; only the post-finish refeed differs) | 74 |
-| other (instate/rc line diffs only) | 84 |
-
 Raw streams: `raw/pushdiff/oracle-*`, `cand-*`, per-cell diffs in
 `raw/pushdiff/diffs/`, `summary.txt`.
+
+## Slice 0.1 — court hardening (before freezing the baseline)
+
+The recorder defects below were corrected BEFORE the baseline was frozen;
+slice 0.1 reran the UNCHANGED parser and re-measured. The divergence
+classes and counts are essentially identical (2619/2624 before and after),
+confirming the inventory is structural and did not depend on the bugs.
+
+1. **DTD callback ABI (fixed)**: `entityDeclSAXFunc` is six arguments
+   (ctx, name, type, publicId, systemId, content) — the recorder had seven
+   with shifted semantics; `attributeDecl` now receives the real
+   `xmlEnumerationPtr` and `elementDecl` the real `xmlElementContentPtr`.
+   The probe previously declared those as `const xmlChar *` and would have
+   run `xmlStrlen` over struct memory (UB).
+2. **Canonical recorders**: `xmlElementContent` trees are serialized
+   structurally (`{t=<type> o=<ocur> ...}` recursive — never as strings)
+   and `xmlEnumeration` chains as `one|two|three`; a wrong-but-non-NULL
+   enumeration/content tree now diffs.
+3. **Full SAX2 attribute tuples**: every attribute prints all five
+   components (localname, prefix, URI, value with the (value, end)
+   length convention, end-present flag) in order; namespace resolution
+   differences are now visible even when local names/values match.
+4. **More of the observable SAX surface**: `notationDecl`,
+   `unparsedEntityDecl`, `reference`, `ignorableWhitespace` recorders
+   added (SAX1 and SAX2 tables). (SAX1 `attribute` does not exist in
+   libxml2 ≥ 2.9's `xmlSAXHandler` and is not registered.)
+5. **Deterministic random plans**: the PRNG is seeded ONCE per
+   document+plan and advanced per split — previously it was reset every
+   iteration, so `rN` degenerated to a fixed-size chunking.
+6. **Strict compilation**: the probe builds with `-Wall -Wextra -Werror`
+   against each provider's own headers (no `-w` hiding ABI drift).
+7. **Per-cell timeout**: every provider cell runs under a bounded
+   `timeout`; a timeout is a first-class differential failure
+   (TIMEOUT/CRASH), never a hang of the campaign.
+
+## Corrected baseline (unchanged parser, hardened court)
+
+| metric | value |
+|---|---:|
+| cells (document × plan × sax-mode) | 2624 |
+| diverging cells | 2619 |
+| event-level divergences (startDocument/startElement/characters/DTD-decl/error records differ between calls) | 2470 |
+| REFEED-only divergences (identical feed/events; only the post-finish refeed differs) | 75 |
+| other (instate/rc line diffs only) | 74 |
+
+Sanity: same aggregate as the pre-hardening run (2619/2624) — the three
+systematic classes below are independent of the corrected recorders.
+With the hardened recorders the DTD-declaration cells (elementDecl
+content models, attributeDecl enumeration chains, entityDecl) now compare
+exactly, and they too diverge on event timing, not on content.
 
 ## What the divergences are (three systematic classes)
 
@@ -101,6 +141,19 @@ element frames — across `xmlParseChunk` calls and only ever scan new
 bytes, mirroring `xmlParseTryOrFinish`) is therefore a CORRECTNESS fix as
 well as the O(N²) fix. This court is the gate every 16.7.8 slice must keep
 green: after each change, `cells=… diffs=0`.
+
+## Acceptance criteria for 16.7.8 (expanded)
+
+G1  oracle == candidate per-call trace (this court, sax2)
+G2  oracle == candidate per-call trace (sax1)
+G3  all deterministic random chunk plans (rN) green
+G4  every-byte boundary coverage (b1 on all docs ≤ 9 KiB) green
+G5  no ASan/UBSan/Valgrind findings on the push path
+G6  pushscale.c is O(N) (20/40/80 MB curve ~linear)
+G7  lxml suite passes (oracle baseline 2007/0) — large iterparse unblocked
+G8  nokogiri push/SAX passes
+G9  PHP six-gate remains 0 failures (1250/0)
+G10 cargo test --lib green (1267)
 
 ## Next slices
 

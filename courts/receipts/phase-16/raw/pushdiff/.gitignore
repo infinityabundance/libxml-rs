@@ -1,3 +1,8 @@
 oracle-*
 cand-*
 diffs/
+corpus/
+probe-*
+docs.list
+console.log
+summary.txt

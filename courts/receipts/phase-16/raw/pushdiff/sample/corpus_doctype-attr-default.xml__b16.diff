@@ -1,0 +1,32 @@
+==== corpus/doctype-attr-default.xml mode=b16 ====
+3a4
+> endDocument
+5a7,8
+> startDocument
+> endDocument
+7a11,12
+> startDocument
+> endDocument
+9a15,16
+> startDocument
+> endDocument
+13,17c20,23
+< attributeDecl elem=a name=t type=9 def=1 val=l enum=l|m
+< attributeDecl elem=a name=u type=1 def=3 val= enum=
+< attributeDecl elem=a name=v type=2 def=2 val= enum=
+< externalSubset name=a ext= sys=
+< < CALL 4 rc=0 err=0 wf=1 in=6
+---
+> startDocument
+> internalSubset name=a ext= sys=
+> endDocument
+> < CALL 4 rc=0 err=0 wf=1 in=7
+18a25
+> internalSubset name=a ext= sys=
+20a28
+> endDocument
+26,27c34
+< error dom=1 code=5 level=3 file= line=2 i1=0 i2=18 str1= str2= str3= msg=Extra content at the end of the document\n
+< < REFEED rc=5 err=5 wf=0 in=-1
+---
+> < REFEED rc=0 err=0 wf=1 in=-1
