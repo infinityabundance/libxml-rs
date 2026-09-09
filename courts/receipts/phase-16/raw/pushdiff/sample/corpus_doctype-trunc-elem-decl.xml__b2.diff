@@ -1,0 +1,61 @@
+==== corpus/doctype-trunc-elem-decl.xml mode=b2 ====
+3c3,5
+< < CALL 0 rc=0 err=0 wf=1 in=0
+---
+> startDocument
+> endDocument
+> < CALL 0 rc=0 err=0 wf=1 in=7
+6c8,9
+< < CALL 1 rc=0 err=0 wf=1 in=1
+---
+> endDocument
+> < CALL 1 rc=0 err=0 wf=1 in=7
+8c11,13
+< < CALL 2 rc=0 err=0 wf=1 in=1
+---
+> startDocument
+> endDocument
+> < CALL 2 rc=0 err=0 wf=1 in=7
+10c15,17
+< < CALL 3 rc=0 err=0 wf=1 in=1
+---
+> startDocument
+> endDocument
+> < CALL 3 rc=0 err=0 wf=1 in=7
+11a19,20
+> startDocument
+> endDocument
+13a23,24
+> startDocument
+> endDocument
+15a27,28
+> startDocument
+> endDocument
+17a31,32
+> startDocument
+> endDocument
+19a35,36
+> startDocument
+> endDocument
+21a39,40
+> startDocument
+> endDocument
+23a43,44
+> startDocument
+> endDocument
+25a47,48
+> startDocument
+> endDocument
+27a51,52
+> startDocument
+> endDocument
+29a55,56
+> startDocument
+> endDocument
+31a59,60
+> startDocument
+> endDocument
+33a63,64
+> startDocument
+> endDocument
+35a67,68

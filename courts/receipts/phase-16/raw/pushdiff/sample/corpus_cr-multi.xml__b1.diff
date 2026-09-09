@@ -1,0 +1,61 @@
+==== corpus/cr-multi.xml mode=b1 ====
+3c3,5
+< < CALL 0 rc=0 err=0 wf=1 in=0
+---
+> startDocument
+> endDocument
+> < CALL 0 rc=0 err=0 wf=1 in=7
+5c7,9
+< < CALL 1 rc=0 err=0 wf=1 in=0
+---
+> startDocument
+> endDocument
+> < CALL 1 rc=0 err=0 wf=1 in=7
+7,10d10
+< < CALL 2 rc=0 err=0 wf=1 in=0
+< > CALL 3 len=1
+< < CALL 3 rc=0 err=0 wf=1 in=0
+< > CALL 4 len=1
+12a13,18
+> < CALL 2 rc=0 err=0 wf=1 in=7
+> > CALL 3 len=1
+> characters len=1 [\n]
+> < CALL 3 rc=0 err=0 wf=1 in=7
+> > CALL 4 len=1
+> characters len=1 [\n]
+15c21
+< characters len=1 [\n]
+---
+> endDocument
+18c24,25
+< < CALL 6 rc=0 err=0 wf=1 in=6
+---
+> endDocument
+> < CALL 6 rc=0 err=0 wf=1 in=7
+20c27,28
+< < CALL 7 rc=0 err=0 wf=1 in=6
+---
+> endDocument
+> < CALL 7 rc=0 err=0 wf=1 in=7
+22c30,31
+< < CALL 8 rc=0 err=0 wf=1 in=6
+---
+> endDocument
+> < CALL 8 rc=0 err=0 wf=1 in=7
+24c33,34
+< < CALL 9 rc=0 err=0 wf=1 in=6
+---
+> endDocument
+> < CALL 9 rc=0 err=0 wf=1 in=7
+26c36,37
+< < CALL 10 rc=0 err=0 wf=1 in=6
+---
+> endDocument
+> < CALL 10 rc=0 err=0 wf=1 in=7
+28c39,40
+< < CALL 11 rc=0 err=0 wf=1 in=6
+---
+> endDocument
+> < CALL 11 rc=0 err=0 wf=1 in=7
+30c42,43
+< < CALL 12 rc=0 err=0 wf=1 in=6

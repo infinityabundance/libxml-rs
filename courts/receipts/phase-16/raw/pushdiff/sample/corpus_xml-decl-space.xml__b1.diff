@@ -1,0 +1,61 @@
+==== corpus/xml-decl-space.xml mode=b1 ====
+3c3,5
+< < CALL 0 rc=0 err=0 wf=1 in=0
+---
+> startDocument
+> endDocument
+> < CALL 0 rc=0 err=0 wf=1 in=7
+5c7,9
+< < CALL 1 rc=0 err=0 wf=1 in=0
+---
+> startDocument
+> error dom=1 code=46 level=3 file= line=1 i1=0 i2=3 str1= str2= str3= msg=xmlParsePI : no target name\n
+> < CALL 1 rc=0 err=46 wf=0 in=1
+7c11
+< < CALL 2 rc=0 err=0 wf=1 in=0
+---
+> < CALL 2 rc=46 err=46 wf=0 in=1
+9c13
+< < CALL 3 rc=0 err=0 wf=1 in=17
+---
+> < CALL 3 rc=46 err=46 wf=0 in=1
+11c15
+< < CALL 4 rc=0 err=0 wf=1 in=17
+---
+> < CALL 4 rc=46 err=46 wf=0 in=1
+13c17
+< < CALL 5 rc=0 err=0 wf=1 in=17
+---
+> < CALL 5 rc=46 err=46 wf=0 in=1
+15c19
+< < CALL 6 rc=0 err=0 wf=1 in=17
+---
+> < CALL 6 rc=46 err=46 wf=0 in=1
+17c21
+< < CALL 7 rc=0 err=0 wf=1 in=17
+---
+> < CALL 7 rc=46 err=46 wf=0 in=1
+19c23
+< < CALL 8 rc=0 err=0 wf=1 in=17
+---
+> < CALL 8 rc=46 err=46 wf=0 in=1
+21c25
+< < CALL 9 rc=0 err=0 wf=1 in=17
+---
+> < CALL 9 rc=46 err=46 wf=0 in=1
+23c27
+< < CALL 10 rc=0 err=0 wf=1 in=17
+---
+> < CALL 10 rc=46 err=46 wf=0 in=1
+25c29
+< < CALL 11 rc=0 err=0 wf=1 in=17
+---
+> < CALL 11 rc=46 err=46 wf=0 in=1
+27c31
+< < CALL 12 rc=0 err=0 wf=1 in=17
+---
+> < CALL 12 rc=46 err=46 wf=0 in=1
+29c33
+< < CALL 13 rc=0 err=0 wf=1 in=17
+---
+> < CALL 13 rc=46 err=46 wf=0 in=1

@@ -1,0 +1,25 @@
+==== corpus/text-cr-chunkend.xml mode=b3 ====
+3,4d2
+< < CALL 0 rc=0 err=0 wf=1 in=0
+< > CALL 1 len=3
+6a5,7
+> < CALL 0 rc=0 err=0 wf=1 in=7
+> > CALL 1 len=3
+> characters len=2 [\nm]
+8a10
+> characters len=3 [id\n]
+11,13c13,15
+< characters len=4 [\nmid]
+< characters len=1 [\n]
+< < CALL 3 rc=0 err=0 wf=1 in=9
+---
+> characters len=5 [\nmid\n]
+> endDocument
+> < CALL 3 rc=0 err=0 wf=1 in=7
+15a18
+> endDocument
+21,22c24
+< error dom=1 code=5 level=3 file= line=3 i1=0 i2=6 str1= str2= str3= msg=Extra content at the end of the document\n
+< < REFEED rc=5 err=5 wf=0 in=-1
+---
+> < REFEED rc=0 err=0 wf=1 in=-1
