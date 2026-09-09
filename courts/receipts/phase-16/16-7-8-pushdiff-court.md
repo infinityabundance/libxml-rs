@@ -92,6 +92,62 @@ With the hardened recorders the DTD-declaration cells (elementDecl
 content models, attributeDecl enumeration chains, entityDecl) now compare
 exactly, and they too diverge on event timing, not on content.
 
+## Slice 0.2 — more lifecycle surfaces; extended baseline (still the
+unchanged parser)
+
+New coverage in the court before slice 1 (reviewer items 1–5):
+
+1. **Constructor-initial chunk** (`C<plan>`): the first split goes to
+   `xmlCreatePushParserCtxt(chunk, size, …)` and parsing continues via
+   `xmlParseChunk` — the API's other lifecycle entrance. Corpus plans
+   cover constructor bytes `"<"`, `"<a"`, `"<?xml…"`, complete
+   documents, and (via the CR corpus) a trailing `\r`.
+2. **`xmlCtxtResetPush` cells** (`Rz<plan>` empty reset then parse B;
+   `Ri<plan>` reset with whole B then only the terminating call):
+   six shape-different document pairs × 3 plans each, both directions
+   (DTD ↔ namespaces, CR line endings ↔ attr-heavy, error doc ↔ CDATA,
+   Unicode content) — stale element/namespace/DTD/CR/UTF-8 state must
+   not leak across the reset.
+3. **Logical-cursor trace on every call** (new invariant): after every
+   chunk the trace records input offset (`cur - base`), line, col,
+   inputNr and nameNr. The oracle must equal the candidate in parser
+   position after EVERY chunk, not merely in emitted events.
+4. **Zero-length non-final injections** (`<plan>zK`): K
+   `xmlParseChunk(NULL, 0, 0)` calls after every real chunk — a
+   suspension must not finish/emit/reset anything.
+5. **`xmlStopParser` cells** (`-S K`): stop inside the K-th start-element
+   callback; every later chunk must be refused with the recorded error.
+6. The receipt nit: single-byte chunking now covers docs ≤ 9216 bytes
+   (9 KiB, matching the script).
+
+### Extended baseline (unchanged parser)
+
+| metric | value |
+|---|---:|
+| cells | 3449 |
+| diverging cells | 3449 |
+| with event-level diffs | 3380 |
+| cursor-field-only diffs (identical event streams; only p/l/col/i/n differ) | 69 |
+
+Adding the cursor invariant moved the result from 2619/2624 to 3449/3449:
+no cell is compatible at the level of parser position, not merely events.
+Notable new evidence:
+
+- **nameNr inflation confirmed**: in the `-S 2` stop cell the oracle
+  rests at `n=2` (its real open stack) while the candidate reports
+  `n=6` — every whole-buffer re-parse pushes the already-open names
+  again (the candidate's name stack is only balanced across calls when
+  the doc completes, and stays stale when it does not).
+- The `xmlns: URI … is not absolute` warning fires on a different call
+  in the candidate (each re-parse re-raises/re-times it).
+- Oracle `p` (cur − base) is bounded by `xmlParserShrink` (> 4096 →
+  base advances); the candidate's buffer position accounting must mirror
+  that to satisfy the invariant on documents longer than 4 KiB.
+- Stop cells: the oracle refuses every post-stop chunk with rc=errNo
+  (111); the candidate's first post-stop call reports errNo 111 but
+  rc=0 (its disableSAX gate returns after re-parsing).
+
+## Acceptance criteria for 16.7.8 (expanded)
 ## What the divergences are (three systematic classes)
 
 ### 1. The candidate fires startDocument / endDocument on the wrong calls

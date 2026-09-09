@@ -1,39 +1,57 @@
 /* pushdiff-probe.c — §16.7.8 push-parser differential driver.
  *
- * Feeds a document to xmlCreatePushParserCtxt + xmlParseChunk under a
+ * Feeds documents to xmlCreatePushParserCtxt + xmlParseChunk under a
  * chosen chunking plan and prints ONE deterministic, merged trace:
- * per-call return codes / errNo / wellFormed / instate, interleaved with
- * every SAX event and structured error record in handler-invocation
- * order. Every record is fflush'ed immediately and goes through a single
- * FILE*, so the oracle and the candidate produce byte-comparable streams
- * from the same driver binary.
+ * per-call return codes / errNo / wellFormed / instate / logical cursor
+ * (input offset, line, col, inputNr, nameNr), interleaved with every SAX
+ * event and structured error record in handler-invocation order. Every
+ * record is fflush'ed immediately and goes through a single FILE*, so the
+ * oracle and the candidate produce byte-comparable streams from the same
+ * driver binary.
  *
  * This is the ground-truth gate for the incremental push parser (16.7.8):
- * oracle == candidate, per call, per chunking. It is compiled with
- * -Wall -Wextra -Werror and every callback uses the EXACT prototype from
- * the provider's own headers (no -w, no ABI drift).
+ * oracle == candidate, per call, per chunking. Compiled with
+ * -Wall -Wextra -Werror against each provider's own headers (exact
+ * callback prototypes, no ABI drift).
  *
- * Handlers are exact recorders, not reformatters:
- *   - SAX2 attributes: all five components (localname, prefix, URI,
- *     value with the (value, end) length convention, end-present flag),
- *     full ordering preserved, nb_ns/nb_att/nb_def in the header;
- *   - DTD declarations: xmlElementContent trees are serialized
- *     canonically (type, ocur, name, prefix, c1, c2 — recursive) and
- *     xmlEnumeration chains are recorded as one|two|three — never treated
- *     as C strings;
- *   - text/cdata/comment/PI bytes escaped (\n \r \t \\ \xNN), so no byte
- *     is ambiguous.
+ * Lifecycle surfaces covered (slice 0.2):
+ *   - constructor-initial chunk  (C prefix: first split goes to
+ *     xmlCreatePushParserCtxt; parsing continues via xmlParseChunk)
+ *   - xmlCtxtResetPush           (R prefix: two-document cells — parse A,
+ *     then reset-empty (Rz, feed B under the plan) or reset-with-whole-B
+ *     (Ri, B is the reset chunk and only FINAL follows); stale state must
+ *     not leak across the reset)
+ *   - zero-length non-final calls (zK suffix: K xmlParseChunk(NULL,0,0)
+ *     injected after every real chunk — must not finish/emit/reset)
+ *   - xmlStopParser              (-S K: stop after the K-th start element;
+ *     later chunks must be refused with the recorded error)
+ *   - cursor trace on every call (input cur-base / line / col / inputNr /
+ *     nameNr) — the parser's logical position must match after EVERY
+ *     chunk, not merely the emitted events.
  *
- * Usage: pushdiff-probe [-s sax1|sax2] <chunkmode> <file> [file ...]
- *   chunkmode:
+ * Exact recorders: SAX2 attributes print all five components (localname,
+ * prefix, URI, value with the (value, end) length convention, end-present
+ * flag); DTD xmlElementContent trees serialize canonically (type, ocur,
+ * name, prefix, c1, c2 — recursive) and xmlEnumeration chains as
+ * one|two|three; text/cdata/comment/PI bytes are escaped (\n \r \t \\ \xNN).
+ *
+ * Usage:
+ *   pushdiff-probe [-s sax1|sax2] [-S stopN] <chunkmode> <file> [file ...]
+ *   chunkmode:  [C][R[z|i]] bN | rSEED[-span] [zK]
  *     bN      fixed N-byte chunks (last chunk = remainder)
  *     rS      random splits, seed S (split sizes 1..64 bytes)
  *     rS-span random splits, seed S, split sizes 1..span bytes
- *   (default -s sax2)
+ *     C       pass the first split to xmlCreatePushParserCtxt instead of
+ *             the first xmlParseChunk
+ *     zK      inject K zero-length non-final calls after each real chunk
+ *     Rz      reset mode: two files per cell; after A finishes,
+ *             xmlCtxtResetPush(NULL, 0) then parse B under the plan
+ *     Ri      reset mode: after A finishes, xmlCtxtResetPush(whole B),
+ *             then only the terminating call
  *
- * Every plan feeds the document as terminate=0 chunks and then sends ONE
- * terminating call (empty when the last chunk ended exactly at the end of
- * the document), then one REFEED call on the finished context.
+ * Every plan ends with one terminating call (empty when the last chunk
+ * ended exactly at the end of the document), then one REFEED call on the
+ * finished context.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,11 +61,14 @@
 #include <libxml/tree.h>
 #include <libxml/xmlerror.h>
 
-/* ctxt->instate is XML_DEPRECATED_MEMBER in the 2.15 headers; reading it
- * is intentional (it is an observable of the incremental machine). */
+/* ctxt->instate/nameNr are XML_DEPRECATED_MEMBER in the 2.15 headers;
+ * reading them is intentional (observables of the incremental machine). */
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 static FILE *TR;
+static xmlParserCtxtPtr CUR; /* the live context (xmlStopParser target) */
+static int STOP_AFTER = 0;   /* 0 = never stop; else stop at the K-th start */
+static int STARTS = 0;       /* start-element counter, reset per document */
 
 static void esc_bytes(const xmlChar *s, int len) {
     int i;
@@ -71,6 +92,14 @@ static void esc_str(const xmlChar *s) {
 static void rec_sd(void *ctx) { (void)ctx; fprintf(TR, "startDocument\n"); fflush(TR); }
 static void rec_ed(void *ctx) { (void)ctx; fprintf(TR, "endDocument\n"); fflush(TR); }
 
+static void maybe_stop(void) {
+    if (STOP_AFTER > 0 && ++STARTS == STOP_AFTER) {
+        fprintf(TR, "! xmlStopParser\n");
+        fflush(TR);
+        xmlStopParser(CUR);
+    }
+}
+
 /* ── SAX2 elements ─────────────────────────────────────────────────── */
 
 static void rec_s2(void *ctx, const xmlChar *local, const xmlChar *pref,
@@ -78,6 +107,7 @@ static void rec_s2(void *ctx, const xmlChar *local, const xmlChar *pref,
                    int nb_att, int nb_def, const xmlChar **atts) {
     int i;
     (void)ctx;
+    maybe_stop();
     fprintf(TR, "startElementNs local=[");
     esc_bytes(local, local ? (int)xmlStrlen(local) : 0);
     fprintf(TR, "] prefix=");
@@ -93,11 +123,6 @@ static void rec_s2(void *ctx, const xmlChar *local, const xmlChar *pref,
         fprintf(TR, "}");
     }
     for (i = 0; i < nb_att * 5; i += 5) {
-        /* SAX2 attribute values follow the (value, end) convention: the
-         * bytes are only valid during the callback and may not be
-         * NUL-terminated. Real consumers copy with the end pointer when
-         * present — the recorder does the same. atts[i+4] is the value
-         * END pointer (NULL means NUL-terminated). */
         const xmlChar *v = atts[i + 3];
         size_t vlen = v ? (atts[i + 4] ? (size_t)(atts[i + 4] - v)
                                        : (size_t)xmlStrlen(v))
@@ -134,6 +159,7 @@ static void rec_e2(void *ctx, const xmlChar *local, const xmlChar *pref,
 static void rec_s1(void *ctx, const xmlChar *name, const xmlChar **atts) {
     int i;
     (void)ctx;
+    maybe_stop();
     fprintf(TR, "startElement [");
     esc_bytes(name, name ? (int)xmlStrlen(name) : 0);
     fprintf(TR, "]");
@@ -236,10 +262,9 @@ static void rec_extsubset(void *ctx, const xmlChar *name, const xmlChar *Externa
 }
 
 /* Canonical xmlElementContent serializer: never treats the content tree
- * as a C string. Every node prints as
- *   {t=<type> o=<ocur> <body>}
- * where body is empty for PCDATA, "name=… prefix=…" for ELEMENT, and
- * "a=<sub> b=<sub>" for SEQ/OR — fully recursive, exact, and readable. */
+ * as a C string. Every node prints as {t=<type> o=<ocur> <body>} where
+ * body is empty for PCDATA, "name=… prefix=…" for ELEMENT, and
+ * "a=<sub> b=<sub>" for SEQ/OR — fully recursive and exact. */
 static void dump_elem_content(xmlElementContentPtr c) {
     if (c == NULL) { fprintf(TR, "nil"); return; }
     fprintf(TR, "{t=%d o=%d ", (int)c->type, (int)c->ocur);
@@ -419,6 +444,85 @@ static unsigned int rnd(unsigned int m) {
     return (unsigned int)((rng_state >> 33) % m);
 }
 
+/* ── plan ──────────────────────────────────────────────────────────── */
+
+enum PlanKind { PLAN_FIXED, PLAN_RANDOM };
+
+struct Plan {
+    enum PlanKind kind;
+    size_t fixed_n;
+    unsigned long seed;
+    unsigned int span;
+    int ctor_init;    /* first split goes to xmlCreatePushParserCtxt */
+    int zero_after;   /* K zero-length non-final calls after each chunk */
+    int reset_kind;   /* 0 none, 1 Rz (empty reset), 2 Ri (whole-B reset) */
+};
+
+static int parse_plan(const char *mode, struct Plan *p) {
+    const char *m = mode;
+    memset(p, 0, sizeof(*p));
+    p->kind = PLAN_FIXED;
+    p->fixed_n = 1;
+    p->seed = 1;
+    p->span = 64;
+    if (*m == 'C') { p->ctor_init = 1; m++; }
+    if (*m == 'R') {
+        m++;
+        if (*m == 'z') { p->reset_kind = 1; m++; }
+        else if (*m == 'i') { p->reset_kind = 2; m++; }
+        else return -1;
+    }
+    if (*m == 'b') {
+        p->kind = PLAN_FIXED;
+        p->fixed_n = (size_t)strtoul(m + 1, NULL, 10);
+        if (p->fixed_n == 0) p->fixed_n = 1;
+        while (*m && *m != 'z') m++;
+    } else if (*m == 'r') {
+        char *endp;
+        p->kind = PLAN_RANDOM;
+        p->seed = strtoul(m + 1, &endp, 10);
+        if (*endp == '-') p->span = (unsigned int)strtoul(endp + 1, NULL, 10);
+        if (p->seed == 0) p->seed = 1;
+        if (p->span == 0) p->span = 1;
+        while (*m && *m != 'z') m++;
+    } else {
+        return -1;
+    }
+    if (*m == 'z') {
+        p->zero_after = (int)strtoul(m + 1, NULL, 10);
+        if (p->zero_after < 0) p->zero_after = 0;
+    }
+    return 0;
+}
+
+static size_t next_split(struct Plan *p, size_t remaining) {
+    size_t n;
+    if (p->kind == PLAN_FIXED) {
+        n = remaining < p->fixed_n ? remaining : p->fixed_n;
+    } else {
+        n = 1 + rnd(p->span);
+        if (n > remaining) n = remaining;
+    }
+    return n;
+}
+
+/* ── per-call tail: rc + errNo + wellFormed + instate + logical cursor ─ */
+
+static void tail(const char *lbl, int idx, int rc, xmlParserCtxtPtr c) {
+    xmlParserInputPtr in = c->input;
+    fprintf(TR, "< %s %d rc=%d err=%d wf=%d in=%d",
+            lbl, idx, rc, c->errNo, c->wellFormed, c->instate);
+    if (in != NULL) {
+        fprintf(TR, " p=%ld l=%d col=%d i=%d n=%d",
+                (long)(in->cur - in->base), in->line, in->col,
+                c->inputNr, c->nameNr);
+    } else {
+        fprintf(TR, " p=-1 l=-1 col=-1 i=-1 n=%d", c->nameNr);
+    }
+    fprintf(TR, "\n");
+    fflush(TR);
+}
+
 static int read_file(const char *path, unsigned char **out, size_t *outlen) {
     FILE *f = fopen(path, "rb");
     unsigned char *buf;
@@ -439,14 +543,41 @@ static int read_file(const char *path, unsigned char **out, size_t *outlen) {
     return 0;
 }
 
+/* Feed one document (or a range of it) under the plan through
+ * xmlParseChunk, injecting zero-length calls per the plan. Returns the
+ * number of real chunks fed (for the caller's labels). */
+static int feed_doc(struct Plan *p, xmlParserCtxtPtr c,
+                    const unsigned char *doc, size_t dlen, size_t start,
+                    const char *lbl) {
+    size_t off = start;
+    int call = 0;
+    int z;
+    while (off < dlen) {
+        size_t n = next_split(p, dlen - off);
+        fprintf(TR, "> %s %d len=%zu\n", lbl, call, n);
+        fflush(TR);
+        {
+            int rc = xmlParseChunk(c, (const char *)doc + off, (int)n, 0);
+            tail(lbl, call, rc, c);
+        }
+        off += n;
+        call++;
+        for (z = 0; z < p->zero_after; z++) {
+            fprintf(TR, "> %s %d ZERO\n", lbl, call);
+            fflush(TR);
+            {
+                int rc = xmlParseChunk(c, NULL, 0, 0);
+                tail(lbl, call, rc, c);
+            }
+        }
+    }
+    return call;
+}
+
 int main(int argc, char **argv) {
     int sax1 = 0;
     int iarg = 1;
-    const char *mode;
-    unsigned int span = 64;
-    unsigned long seed = 0;
-    int fixed = 0;
-    size_t fixed_n = 1;
+    struct Plan plan;
     xmlSAXHandler h;
     int fi;
 
@@ -457,88 +588,145 @@ int main(int argc, char **argv) {
         if (strcmp(argv[2], "sax1") == 0) sax1 = 1;
         iarg = 3;
     }
-    mode = argv[iarg];
+    if (strcmp(argv[iarg], "-S") == 0) {
+        if (argc < iarg + 3) return 1;
+        STOP_AFTER = atoi(argv[iarg + 1]);
+        iarg += 2;
+    }
+    if (iarg >= argc) return 1;
+    if (parse_plan(argv[iarg], &plan) != 0) {
+        fprintf(TR, "bad-mode %s\n", argv[iarg]);
+        return 1;
+    }
     iarg++;
 
-    /* Parse the chunking plan once (fixed N, or random seed[-span]). */
-    if (mode[0] == 'b') {
-        fixed = 1;
-        fixed_n = (size_t)strtoul(mode + 1, NULL, 10);
-        if (fixed_n == 0) fixed_n = 1;
-    } else if (mode[0] == 'r') {
-        char *endp;
-        seed = strtoul(mode + 1, &endp, 10);
-        if (*endp == '-') span = (unsigned int)strtoul(endp + 1, NULL, 10);
-        if (seed == 0) seed = 1;
-        if (span == 0) span = 1;
-    } else {
-        fprintf(TR, "bad-mode %s\n", mode);
-        return 1;
+    if (sax1) sax1_table(&h); else sax2_table(&h);
+
+    if (plan.reset_kind) {
+        /* Two files per cell. A is parsed under the plan and finished;
+         * then the context is reset (empty, or with whole B) and B is
+         * parsed; stale A state must not leak into B. */
+        int nfiles = argc - iarg;
+        if (nfiles < 2 || (nfiles % 2) != 0) return 1;
+        for (fi = iarg; fi + 1 < argc; fi += 2) {
+            unsigned char *da, *db;
+            size_t la, lb;
+            xmlParserCtxtPtr c;
+            if (read_file(argv[fi], &da, &la) != 0 ||
+                read_file(argv[fi + 1], &db, &lb) != 0) {
+                fprintf(TR, "== %s unreadable\n", argv[fi]);
+                fflush(TR);
+                continue;
+            }
+            fprintf(TR, "== RESET %s(%zu) -> %s(%zu) mode=%s\n",
+                    argv[fi], la, argv[fi + 1], lb, argv[iarg - 1]);
+            fflush(TR);
+            c = xmlCreatePushParserCtxt(&h, NULL, NULL, 0, NULL);
+            if (!c) { fprintf(TR, "no-ctxt\n"); fflush(TR); continue; }
+            xmlCtxtSetErrorHandler(c, rec_err, NULL);
+            CUR = c;
+            STARTS = 0;
+            rng_state = plan.seed;
+            /* Parse document A under the plan. */
+            feed_doc(&plan, c, da, la, 0, "A");
+            fprintf(TR, "> A-FINAL\n");
+            fflush(TR);
+            {
+                int rc = xmlParseChunk(c, NULL, 0, 1);
+                tail("A-FINAL", 0, rc, c);
+            }
+            /* Reset. */
+            if (plan.reset_kind == 1) {
+                fprintf(TR, "> RESET(empty)\n");
+                fflush(TR);
+                {
+                    int rc = xmlCtxtResetPush(c, NULL, 0, NULL, NULL);
+                    tail("RESET", 0, rc, c);
+                }
+                STARTS = 0;
+                rng_state = plan.seed;
+                feed_doc(&plan, c, db, lb, 0, "B");
+            } else {
+                fprintf(TR, "> RESET(whole-B)\n");
+                fflush(TR);
+                {
+                    int rc = xmlCtxtResetPush(c, (const char *)db, (int)lb,
+                                              NULL, NULL);
+                    tail("RESET", 0, rc, c);
+                }
+            }
+            fprintf(TR, "> B-FINAL\n");
+            fflush(TR);
+            {
+                int rc = xmlParseChunk(c, NULL, 0, 1);
+                tail("B-FINAL", 0, rc, c);
+            }
+            fprintf(TR, "> REFEED\n");
+            fflush(TR);
+            {
+                int rc = xmlParseChunk(c, (const char *)db, (int)lb, 1);
+                tail("REFEED", 0, rc, c);
+            }
+            xmlFreeParserCtxt(c);
+            free(da);
+            free(db);
+        }
+        return 0;
     }
 
     for (fi = iarg; fi < argc; fi++) {
         unsigned char *doc;
         size_t dlen;
-        const char *path = argv[fi];
         size_t off = 0;
-        int call = 0;
+        xmlParserCtxtPtr c;
 
-        if (read_file(path, &doc, &dlen) != 0) {
-            fprintf(TR, "== %s unreadable\n", path);
+        if (read_file(argv[fi], &doc, &dlen) != 0) {
+            fprintf(TR, "== %s unreadable\n", argv[fi]);
             fflush(TR);
             continue;
         }
-        fprintf(TR, "== %s bytes=%zu mode=%s\n", path, dlen, mode);
+        fprintf(TR, "== %s bytes=%zu mode=%s\n", argv[fi], dlen, argv[iarg - 1]);
         fflush(TR);
 
-        if (sax1) sax1_table(&h); else sax2_table(&h);
-        xmlParserCtxtPtr c = xmlCreatePushParserCtxt(&h, NULL, NULL, 0, NULL);
-        if (!c) { fprintf(TR, "no-ctxt\n"); fflush(TR); free(doc); continue; }
-        xmlCtxtSetErrorHandler(c, rec_err, NULL);
-
-        /* Seed the PRNG ONCE per document+plan: successive split sizes
-         * come from the advancing generator, never a reset sequence. */
-        rng_state = seed;
-
-        while (off < dlen) {
-            size_t this_chunk;
-            int rc;
-            if (fixed) {
-                this_chunk = dlen - off < fixed_n ? dlen - off : fixed_n;
-            } else {
-                this_chunk = 1 + rnd(span);
-                if (this_chunk > dlen - off) this_chunk = dlen - off;
-            }
-            fprintf(TR, "> CALL %d len=%zu\n", call, this_chunk);
+        /* Constructor-initial chunk: the first split goes to
+         * xmlCreatePushParserCtxt; parsing continues via xmlParseChunk. */
+        if (plan.ctor_init && dlen > 0) {
+            size_t n;
+            rng_state = plan.seed;
+            n = next_split(&plan, dlen);
+            fprintf(TR, "> CTOR len=%zu\n", n);
             fflush(TR);
-            rc = xmlParseChunk(c, (const char *)doc + off, (int)this_chunk, 0);
-            fprintf(TR, "< CALL %d rc=%d err=%d wf=%d in=%d\n",
-                    call, rc, c->errNo, c->wellFormed, c->instate);
-            fflush(TR);
-            off += this_chunk;
-            call++;
+            c = xmlCreatePushParserCtxt(&h, NULL, (const char *)doc, (int)n, NULL);
+            if (!c) { fprintf(TR, "no-ctxt\n"); fflush(TR); free(doc); continue; }
+            xmlCtxtSetErrorHandler(c, rec_err, NULL);
+            CUR = c;
+            STARTS = 0;
+            tail("CTOR", 0, c->errNo, c);
+            off = n;
+            /* The constructor's chunk is the first split; the plan keeps
+             * its own rng state so subsequent splits advance normally. */
+        } else {
+            c = xmlCreatePushParserCtxt(&h, NULL, NULL, 0, NULL);
+            if (!c) { fprintf(TR, "no-ctxt\n"); fflush(TR); free(doc); continue; }
+            xmlCtxtSetErrorHandler(c, rec_err, NULL);
+            CUR = c;
+            STARTS = 0;
+            rng_state = plan.seed;
         }
-        /* Terminating call (possibly empty), exactly like real consumers. */
+
+        feed_doc(&plan, c, doc, dlen, off, "CALL");
+
+        fprintf(TR, "> FINAL\n");
+        fflush(TR);
         {
-            int rc;
-            fprintf(TR, "> FINAL\n");
-            fflush(TR);
-            rc = xmlParseChunk(c, NULL, 0, 1);
-            fprintf(TR, "< FINAL rc=%d err=%d wf=%d in=%d\n",
-                    rc, c->errNo, c->wellFormed, c->instate);
-            fflush(TR);
+            int rc = xmlParseChunk(c, NULL, 0, 1);
+            tail("FINAL", 0, rc, c);
         }
-        /* Reuse probe: a second identical feed on the finished context —
-         * the oracle raises "Extra content" for the pushed bytes (EOF
-         * state + terminate); gh12254's parse-twice surface. */
+        fprintf(TR, "> REFEED\n");
+        fflush(TR);
         {
-            int rc;
-            fprintf(TR, "> REFEED\n");
-            fflush(TR);
-            rc = xmlParseChunk(c, (const char *)doc, (int)dlen, 1);
-            fprintf(TR, "< REFEED rc=%d err=%d wf=%d in=%d\n",
-                    rc, c->errNo, c->wellFormed, c->instate);
-            fflush(TR);
+            int rc = xmlParseChunk(c, (const char *)doc, (int)dlen, 1);
+            tail("REFEED", 0, rc, c);
         }
         xmlFreeParserCtxt(c);
         free(doc);

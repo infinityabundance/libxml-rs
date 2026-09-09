@@ -1,61 +1,61 @@
 ==== corpus/cr-multi.xml mode=b1 ====
 3c3,5
-< < CALL 0 rc=0 err=0 wf=1 in=0
+< < CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
 ---
 > startDocument
 > endDocument
-> < CALL 0 rc=0 err=0 wf=1 in=7
+> < CALL 0 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
 5c7,9
-< < CALL 1 rc=0 err=0 wf=1 in=0
+< < CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
 ---
 > startDocument
 > endDocument
-> < CALL 1 rc=0 err=0 wf=1 in=7
+> < CALL 1 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
 7,10d10
-< < CALL 2 rc=0 err=0 wf=1 in=0
+< < CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
 < > CALL 3 len=1
-< < CALL 3 rc=0 err=0 wf=1 in=0
+< < CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
 < > CALL 4 len=1
-12a13,18
-> < CALL 2 rc=0 err=0 wf=1 in=7
+13,14c13,14
+< < CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+< > CALL 5 len=1
+---
+> < CALL 2 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=2
 > > CALL 3 len=1
-> characters len=1 [\n]
-> < CALL 3 rc=0 err=0 wf=1 in=7
+16c16,22
+< < CALL 5 rc=0 err=0 wf=1 in=7 p=5 l=2 col=1 i=1 n=1
+---
+> < CALL 3 rc=0 err=0 wf=1 in=7 p=4 l=2 col=1 i=1 n=4
 > > CALL 4 len=1
 > characters len=1 [\n]
-15c21
-< characters len=1 [\n]
----
+> < CALL 4 rc=0 err=0 wf=1 in=7 p=5 l=2 col=1 i=1 n=6
+> > CALL 5 len=1
 > endDocument
+> < CALL 5 rc=0 err=0 wf=1 in=7 p=5 l=2 col=1 i=1 n=8
 18c24,25
-< < CALL 6 rc=0 err=0 wf=1 in=6
+< < CALL 6 rc=0 err=0 wf=1 in=6 p=5 l=2 col=1 i=1 n=1
 ---
 > endDocument
-> < CALL 6 rc=0 err=0 wf=1 in=7
+> < CALL 6 rc=0 err=0 wf=1 in=7 p=5 l=2 col=1 i=1 n=10
 20c27,28
-< < CALL 7 rc=0 err=0 wf=1 in=6
+< < CALL 7 rc=0 err=0 wf=1 in=6 p=5 l=2 col=1 i=1 n=1
 ---
 > endDocument
-> < CALL 7 rc=0 err=0 wf=1 in=7
+> < CALL 7 rc=0 err=0 wf=1 in=7 p=5 l=2 col=1 i=1 n=12
 22c30,31
-< < CALL 8 rc=0 err=0 wf=1 in=6
+< < CALL 8 rc=0 err=0 wf=1 in=6 p=5 l=2 col=1 i=1 n=1
 ---
 > endDocument
-> < CALL 8 rc=0 err=0 wf=1 in=7
+> < CALL 8 rc=0 err=0 wf=1 in=7 p=5 l=2 col=1 i=1 n=14
 24c33,34
-< < CALL 9 rc=0 err=0 wf=1 in=6
+< < CALL 9 rc=0 err=0 wf=1 in=6 p=5 l=2 col=1 i=1 n=1
 ---
 > endDocument
-> < CALL 9 rc=0 err=0 wf=1 in=7
+> < CALL 9 rc=0 err=0 wf=1 in=7 p=5 l=2 col=1 i=1 n=16
 26c36,37
-< < CALL 10 rc=0 err=0 wf=1 in=6
+< < CALL 10 rc=0 err=0 wf=1 in=6 p=5 l=2 col=1 i=1 n=1
 ---
 > endDocument
-> < CALL 10 rc=0 err=0 wf=1 in=7
+> < CALL 10 rc=0 err=0 wf=1 in=7 p=5 l=2 col=1 i=1 n=18
 28c39,40
-< < CALL 11 rc=0 err=0 wf=1 in=6
----
-> endDocument
-> < CALL 11 rc=0 err=0 wf=1 in=7
-30c42,43
-< < CALL 12 rc=0 err=0 wf=1 in=6
+< < CALL 11 rc=0 err=0 wf=1 in=6 p=5 l=2 col=1 i=1 n=1
