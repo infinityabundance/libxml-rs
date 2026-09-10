@@ -1,0 +1,19 @@
+== /court/suites/phase16/shadow-corpus/shadow-cdata.xml bytes=24 mode=b257
+> CALL 0 len=24
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=startElementNs p=2 c=0 abs=2
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=cdataBlock p=20 c=0 abs=20
+cdata len=5 [x<y&z]
+! cb=endElementNs p=24 c=0 abs=24
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=24 l=1 col=25 i=1 n=0 c=0 abs=24 pos0=0 line0=1 col0=25 byte0=24 win0=0 wsize0=24 woff0=24 wbytes0=[<a><![CDATA[x<y&z]]></a>]
+> FINAL
+! cb=endDocument p=24 c=0 abs=24
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=24 l=1 col=25 i=1 n=0 c=0 abs=24 pos0=0 line0=1 col0=25 byte0=24 win0=0 wsize0=24 woff0=24 wbytes0=[<a><![CDATA[x<y&z]]></a>]
+> REFEED
+! cb=error p=24 c=0 abs=24
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=25 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=24 l=1 col=25 i=1 n=0 c=0 abs=24 pos0=0 line0=1 col0=25 byte0=24 win0=0 wsize0=48 woff0=24 wbytes0=[<a><![CDATA[x<y&z]]></a><a><![CDATA[x<y&z]]></a>]

@@ -1,0 +1,23 @@
+== /court/suites/phase16/shadow-corpus/shadow-pi.xml bytes=34 mode=b257
+> CALL 0 len=34
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=processingInstruction p=13 c=0 abs=13
+pi target=pi data=before
+! cb=startElementNs p=15 c=0 abs=15
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=processingInstruction p=29 c=0 abs=29
+pi target=pi data=inside
+! cb=characters p=30 c=0 abs=30
+characters len=1 [x]
+! cb=endElementNs p=34 c=0 abs=34
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=34 l=1 col=35 i=1 n=0 c=0 abs=34 pos0=0 line0=1 col0=35 byte0=34 win0=0 wsize0=34 woff0=34 wbytes0=[<?pi before?><a><?pi inside?>x</a>]
+> FINAL
+! cb=endDocument p=34 c=0 abs=34
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=34 l=1 col=35 i=1 n=0 c=0 abs=34 pos0=0 line0=1 col0=35 byte0=34 win0=0 wsize0=34 woff0=34 wbytes0=[<?pi before?><a><?pi inside?>x</a>]
+> REFEED
+! cb=error p=34 c=0 abs=34
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=35 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=34 l=1 col=35 i=1 n=0 c=0 abs=34 pos0=0 line0=1 col0=35 byte0=34 win0=0 wsize0=68 woff0=34 wbytes0=[<?pi before?><a><?pi inside?>x</a><?pi before?><a><?pi inside?>x</a>]

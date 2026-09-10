@@ -1,0 +1,39 @@
+== /court/suites/phase16/shadow-corpus/shadow-comment.xml bytes=39 mode=b5
+> CALL 0 len=5
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=5 woff0=0 wbytes0=[<!--t]
+> CALL 1 len=5
+! cb=comment p=10 c=0 abs=10
+comment [top]
+< CALL 1 rc=0 err=0 wf=1 in=1 p=10 l=1 col=11 i=1 n=0 c=0 abs=10 pos0=0 line0=1 col0=11 byte0=10 win0=0 wsize0=10 woff0=10 wbytes0=[<!--top-->]
+> CALL 2 len=5
+! cb=startElementNs p=12 c=0 abs=12
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 2 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=15 woff0=13 wbytes0=[<!--top--><a><!]
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=20 woff0=13 wbytes0=[<!--top--><a><!--mid]
+> CALL 4 len=5
+! cb=comment p=23 c=0 abs=23
+comment [mid]
+! cb=characters p=24 c=0 abs=24
+characters len=1 [x]
+< CALL 4 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1 c=0 abs=24 pos0=0 line0=1 col0=25 byte0=24 win0=0 wsize0=25 woff0=24 wbytes0=[<!--top--><a><!--mid-->x<]
+> CALL 5 len=5
+! cb=endElementNs p=28 c=0 abs=28
+endElementNs local=[a] prefix= uri=
+< CALL 5 rc=0 err=0 wf=1 in=14 p=28 l=1 col=29 i=1 n=0 c=0 abs=28 pos0=0 line0=1 col0=29 byte0=28 win0=0 wsize0=30 woff0=28 wbytes0=[<!--top--><a><!--mid-->x</a><!]
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=14 p=28 l=1 col=29 i=1 n=0 c=0 abs=28 pos0=0 line0=1 col0=29 byte0=28 win0=0 wsize0=35 woff0=28 wbytes0=[<!--top--><a><!--mid-->x</a><!--tai]
+> CALL 7 len=4
+! cb=comment p=39 c=0 abs=39
+comment [tail]
+< CALL 7 rc=0 err=0 wf=1 in=14 p=39 l=1 col=40 i=1 n=0 c=0 abs=39 pos0=0 line0=1 col0=40 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!--top--><a><!--mid-->x</a><!--tail-->]
+> FINAL
+! cb=endDocument p=39 c=0 abs=39
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=39 l=1 col=40 i=1 n=0 c=0 abs=39 pos0=0 line0=1 col0=40 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!--top--><a><!--mid-->x</a><!--tail-->]
+> REFEED
+! cb=error p=39 c=0 abs=39
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=40 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=39 l=1 col=40 i=1 n=0 c=0 abs=39 pos0=0 line0=1 col0=40 byte0=39 win0=0 wsize0=78 woff0=39 wbytes0=[<!--top--><a><!--mid-->x</a><!--tail--><!--top--><a><!--mid-->x</a><!--tail-->]

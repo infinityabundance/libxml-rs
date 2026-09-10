@@ -1,0 +1,21 @@
+== /court/suites/phase16/shadow-corpus/shadow-pi-reserved.xml bytes=11 mode=b2
+> CALL 0 len=2
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=2 woff0=0 wbytes0=[<?]
+> CALL 1 len=2
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=4 woff0=0 wbytes0=[<?xm]
+> CALL 2 len=2
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=6 woff0=0 wbytes0=[<?xml?]
+> CALL 3 len=2
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=error p=5 c=0 abs=5
+error dom=1 code=64 level=3 file= line=1 i1=0 i2=6 str1= str2= str3= msg=XML declaration allowed only at the start of the document\n
+< CALL 3 rc=64 err=64 wf=0 in=1 p=7 l=1 col=8 i=1 n=0 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=8 woff0=7 wbytes0=[<?xml?><]
+> CALL 4 len=2
+< CALL 4 rc=64 err=64 wf=0 in=1 p=7 l=1 col=8 i=1 n=0 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=8 woff0=7 wbytes0=[<?xml?><]
+> CALL 5 len=1
+< CALL 5 rc=64 err=64 wf=0 in=1 p=7 l=1 col=8 i=1 n=0 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=8 woff0=7 wbytes0=[<?xml?><]
+> FINAL
+< FINAL 0 rc=64 err=64 wf=0 in=1 p=7 l=1 col=8 i=1 n=0 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=8 woff0=7 wbytes0=[<?xml?><]
+> REFEED
+< REFEED 0 rc=64 err=64 wf=0 in=1 p=7 l=1 col=8 i=1 n=0 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=8 woff0=7 wbytes0=[<?xml?><]

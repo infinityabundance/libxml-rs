@@ -1,0 +1,17 @@
+== /court/suites/phase16/shadow-corpus/shadow-decl-full.xml bytes=59 mode=b257
+> CALL 0 len=59
+! cb=startDocument p=55 c=0 abs=55
+startDocument
+! cb=startElementNs p=57 c=0 abs=57
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=endElementNs p=59 c=0 abs=59
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=59 l=1 col=60 i=1 n=0 c=0 abs=59 pos0=0 line0=1 col0=60 byte0=59 win0=0 wsize0=59 woff0=59 wbytes0=[<?xml version="1.0" encoding="UTF-8" standalone="yes"?><a/>]
+> FINAL
+! cb=endDocument p=59 c=0 abs=59
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=59 l=1 col=60 i=1 n=0 c=0 abs=59 pos0=0 line0=1 col0=60 byte0=59 win0=0 wsize0=59 woff0=59 wbytes0=[<?xml version="1.0" encoding="UTF-8" standalone="yes"?><a/>]
+> REFEED
+! cb=error p=59 c=0 abs=59
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=60 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=59 l=1 col=60 i=1 n=0 c=0 abs=59 pos0=0 line0=1 col0=60 byte0=59 win0=0 wsize0=80 woff0=59 wbytes0=[<?xml version="1.0" encoding="UTF-8" standalone="yes"?><a/><?xml version="1.0" e]

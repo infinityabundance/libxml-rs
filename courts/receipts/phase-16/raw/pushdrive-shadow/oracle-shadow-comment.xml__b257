@@ -1,0 +1,25 @@
+== /court/suites/phase16/shadow-corpus/shadow-comment.xml bytes=39 mode=b257
+> CALL 0 len=39
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=comment p=10 c=0 abs=10
+comment [top]
+! cb=startElementNs p=12 c=0 abs=12
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=comment p=23 c=0 abs=23
+comment [mid]
+! cb=characters p=24 c=0 abs=24
+characters len=1 [x]
+! cb=endElementNs p=28 c=0 abs=28
+endElementNs local=[a] prefix= uri=
+! cb=comment p=39 c=0 abs=39
+comment [tail]
+< CALL 0 rc=0 err=0 wf=1 in=14 p=39 l=1 col=40 i=1 n=0 c=0 abs=39 pos0=0 line0=1 col0=40 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!--top--><a><!--mid-->x</a><!--tail-->]
+> FINAL
+! cb=endDocument p=39 c=0 abs=39
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=39 l=1 col=40 i=1 n=0 c=0 abs=39 pos0=0 line0=1 col0=40 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!--top--><a><!--mid-->x</a><!--tail-->]
+> REFEED
+! cb=error p=39 c=0 abs=39
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=40 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=39 l=1 col=40 i=1 n=0 c=0 abs=39 pos0=0 line0=1 col0=40 byte0=39 win0=0 wsize0=78 woff0=39 wbytes0=[<!--top--><a><!--mid-->x</a><!--tail--><!--top--><a><!--mid-->x</a><!--tail-->]

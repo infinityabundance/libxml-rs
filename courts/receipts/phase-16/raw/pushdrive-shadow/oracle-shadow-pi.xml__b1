@@ -1,0 +1,89 @@
+== /court/suites/phase16/shadow-corpus/shadow-pi.xml bytes=34 mode=b1
+> CALL 0 len=1
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=1 woff0=0 wbytes0=[<]
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=2 woff0=0 wbytes0=[<?]
+> CALL 2 len=1
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=3 woff0=0 wbytes0=[<?p]
+> CALL 3 len=1
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=4 woff0=0 wbytes0=[<?pi]
+> CALL 4 len=1
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=5 woff0=0 wbytes0=[<?pi ]
+> CALL 5 len=1
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=6 woff0=0 wbytes0=[<?pi b]
+> CALL 6 len=1
+< CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=7 woff0=0 wbytes0=[<?pi be]
+> CALL 7 len=1
+< CALL 7 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=8 woff0=0 wbytes0=[<?pi bef]
+> CALL 8 len=1
+< CALL 8 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=9 woff0=0 wbytes0=[<?pi befo]
+> CALL 9 len=1
+< CALL 9 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=10 woff0=0 wbytes0=[<?pi befor]
+> CALL 10 len=1
+< CALL 10 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=11 woff0=0 wbytes0=[<?pi before]
+> CALL 11 len=1
+< CALL 11 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=12 woff0=0 wbytes0=[<?pi before?]
+> CALL 12 len=1
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=processingInstruction p=13 c=0 abs=13
+pi target=pi data=before
+< CALL 12 rc=0 err=0 wf=1 in=1 p=13 l=1 col=14 i=1 n=0 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=13 woff0=13 wbytes0=[<?pi before?>]
+> CALL 13 len=1
+< CALL 13 rc=0 err=0 wf=1 in=1 p=13 l=1 col=14 i=1 n=0 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=14 woff0=13 wbytes0=[<?pi before?><]
+> CALL 14 len=1
+< CALL 14 rc=0 err=0 wf=1 in=6 p=13 l=1 col=14 i=1 n=0 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=15 woff0=13 wbytes0=[<?pi before?><a]
+> CALL 15 len=1
+! cb=startElementNs p=15 c=0 abs=15
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 15 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=16 woff0=16 wbytes0=[<?pi before?><a>]
+> CALL 16 len=1
+< CALL 16 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=17 woff0=16 wbytes0=[<?pi before?><a><]
+> CALL 17 len=1
+< CALL 17 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=18 woff0=16 wbytes0=[<?pi before?><a><?]
+> CALL 18 len=1
+< CALL 18 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=19 woff0=16 wbytes0=[<?pi before?><a><?p]
+> CALL 19 len=1
+< CALL 19 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=20 woff0=16 wbytes0=[<?pi before?><a><?pi]
+> CALL 20 len=1
+< CALL 20 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=21 woff0=16 wbytes0=[<?pi before?><a><?pi ]
+> CALL 21 len=1
+< CALL 21 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=22 woff0=16 wbytes0=[<?pi before?><a><?pi i]
+> CALL 22 len=1
+< CALL 22 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=23 woff0=16 wbytes0=[<?pi before?><a><?pi in]
+> CALL 23 len=1
+< CALL 23 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=24 woff0=16 wbytes0=[<?pi before?><a><?pi ins]
+> CALL 24 len=1
+< CALL 24 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=25 woff0=16 wbytes0=[<?pi before?><a><?pi insi]
+> CALL 25 len=1
+< CALL 25 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=26 woff0=16 wbytes0=[<?pi before?><a><?pi insid]
+> CALL 26 len=1
+< CALL 26 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=27 woff0=16 wbytes0=[<?pi before?><a><?pi inside]
+> CALL 27 len=1
+< CALL 27 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1 c=0 abs=16 pos0=0 line0=1 col0=17 byte0=16 win0=0 wsize0=28 woff0=16 wbytes0=[<?pi before?><a><?pi inside?]
+> CALL 28 len=1
+! cb=processingInstruction p=29 c=0 abs=29
+pi target=pi data=inside
+< CALL 28 rc=0 err=0 wf=1 in=7 p=29 l=1 col=30 i=1 n=1 c=0 abs=29 pos0=0 line0=1 col0=30 byte0=29 win0=0 wsize0=29 woff0=29 wbytes0=[<?pi before?><a><?pi inside?>]
+> CALL 29 len=1
+< CALL 29 rc=0 err=0 wf=1 in=7 p=29 l=1 col=30 i=1 n=1 c=0 abs=29 pos0=0 line0=1 col0=30 byte0=29 win0=0 wsize0=30 woff0=29 wbytes0=[<?pi before?><a><?pi inside?>x]
+> CALL 30 len=1
+! cb=characters p=30 c=0 abs=30
+characters len=1 [x]
+< CALL 30 rc=0 err=0 wf=1 in=7 p=30 l=1 col=31 i=1 n=1 c=0 abs=30 pos0=0 line0=1 col0=31 byte0=30 win0=0 wsize0=31 woff0=30 wbytes0=[<?pi before?><a><?pi inside?>x<]
+> CALL 31 len=1
+< CALL 31 rc=0 err=0 wf=1 in=9 p=30 l=1 col=31 i=1 n=1 c=0 abs=30 pos0=0 line0=1 col0=31 byte0=30 win0=0 wsize0=32 woff0=30 wbytes0=[<?pi before?><a><?pi inside?>x</]
+> CALL 32 len=1
+< CALL 32 rc=0 err=0 wf=1 in=9 p=30 l=1 col=31 i=1 n=1 c=0 abs=30 pos0=0 line0=1 col0=31 byte0=30 win0=0 wsize0=33 woff0=30 wbytes0=[<?pi before?><a><?pi inside?>x</a]
+> CALL 33 len=1
+! cb=endElementNs p=34 c=0 abs=34
+endElementNs local=[a] prefix= uri=
+< CALL 33 rc=0 err=0 wf=1 in=14 p=34 l=1 col=35 i=1 n=0 c=0 abs=34 pos0=0 line0=1 col0=35 byte0=34 win0=0 wsize0=34 woff0=34 wbytes0=[<?pi before?><a><?pi inside?>x</a>]
+> FINAL
+! cb=endDocument p=34 c=0 abs=34
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=34 l=1 col=35 i=1 n=0 c=0 abs=34 pos0=0 line0=1 col0=35 byte0=34 win0=0 wsize0=34 woff0=34 wbytes0=[<?pi before?><a><?pi inside?>x</a>]
+> REFEED
+! cb=error p=34 c=0 abs=34
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=35 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=34 l=1 col=35 i=1 n=0 c=0 abs=34 pos0=0 line0=1 col0=35 byte0=34 win0=0 wsize0=68 woff0=34 wbytes0=[<?pi before?><a><?pi inside?>x</a><?pi before?><a><?pi inside?>x</a>]

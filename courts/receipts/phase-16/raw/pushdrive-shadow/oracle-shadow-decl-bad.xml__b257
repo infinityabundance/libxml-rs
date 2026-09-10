@@ -1,0 +1,9 @@
+== /court/suites/phase16/shadow-corpus/shadow-decl-bad.xml bytes=25 mode=b257
+> CALL 0 len=25
+! cb=error p=19 c=0 abs=19
+error dom=1 code=108 level=3 file= line=1 i1=0 i2=20 str1=2.0 str2= str3= msg=Unsupported version '2.0'\n
+< CALL 0 rc=108 err=108 wf=0 in=1 p=21 l=1 col=22 i=1 n=0 c=0 abs=21 pos0=0 line0=1 col0=22 byte0=21 win0=0 wsize0=25 woff0=21 wbytes0=[<?xml version="2.0"?><a/>]
+> FINAL
+< FINAL 0 rc=108 err=108 wf=0 in=1 p=21 l=1 col=22 i=1 n=0 c=0 abs=21 pos0=0 line0=1 col0=22 byte0=21 win0=0 wsize0=25 woff0=21 wbytes0=[<?xml version="2.0"?><a/>]
+> REFEED
+< REFEED 0 rc=108 err=108 wf=0 in=1 p=21 l=1 col=22 i=1 n=0 c=0 abs=21 pos0=0 line0=1 col0=22 byte0=21 win0=0 wsize0=25 woff0=21 wbytes0=[<?xml version="2.0"?><a/>]

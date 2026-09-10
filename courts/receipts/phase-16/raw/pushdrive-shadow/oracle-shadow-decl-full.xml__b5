@@ -1,0 +1,39 @@
+== /court/suites/phase16/shadow-corpus/shadow-decl-full.xml bytes=59 mode=b5
+> CALL 0 len=5
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=5 woff0=0 wbytes0=[<?xml]
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=10 woff0=0 wbytes0=[<?xml vers]
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=15 woff0=0 wbytes0=[<?xml version="]
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=20 woff0=0 wbytes0=[<?xml version="1.0" ]
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=25 woff0=0 wbytes0=[<?xml version="1.0" encod]
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=30 woff0=0 wbytes0=[<?xml version="1.0" encoding="]
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=35 woff0=0 wbytes0=[<?xml version="1.0" encoding="UTF-8]
+> CALL 7 len=5
+< CALL 7 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=40 woff0=0 wbytes0=[<?xml version="1.0" encoding="UTF-8" sta]
+> CALL 8 len=5
+< CALL 8 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=45 woff0=0 wbytes0=[<?xml version="1.0" encoding="UTF-8" standalo]
+> CALL 9 len=5
+< CALL 9 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=50 woff0=0 wbytes0=[<?xml version="1.0" encoding="UTF-8" standalone="y]
+> CALL 10 len=5
+! cb=startDocument p=55 c=0 abs=55
+startDocument
+< CALL 10 rc=0 err=0 wf=1 in=1 p=55 l=1 col=56 i=1 n=0 c=0 abs=55 pos0=0 line0=1 col0=56 byte0=55 win0=0 wsize0=55 woff0=55 wbytes0=[<?xml version="1.0" encoding="UTF-8" standalone="yes"?>]
+> CALL 11 len=4
+! cb=startElementNs p=57 c=0 abs=57
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=endElementNs p=59 c=0 abs=59
+endElementNs local=[a] prefix= uri=
+< CALL 11 rc=0 err=0 wf=1 in=14 p=59 l=1 col=60 i=1 n=0 c=0 abs=59 pos0=0 line0=1 col0=60 byte0=59 win0=0 wsize0=59 woff0=59 wbytes0=[<?xml version="1.0" encoding="UTF-8" standalone="yes"?><a/>]
+> FINAL
+! cb=endDocument p=59 c=0 abs=59
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=59 l=1 col=60 i=1 n=0 c=0 abs=59 pos0=0 line0=1 col0=60 byte0=59 win0=0 wsize0=59 woff0=59 wbytes0=[<?xml version="1.0" encoding="UTF-8" standalone="yes"?><a/>]
+> REFEED
+! cb=error p=59 c=0 abs=59
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=60 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=59 l=1 col=60 i=1 n=0 c=0 abs=59 pos0=0 line0=1 col0=60 byte0=59 win0=0 wsize0=80 woff0=59 wbytes0=[<?xml version="1.0" encoding="UTF-8" standalone="yes"?><a/><?xml version="1.0" e]

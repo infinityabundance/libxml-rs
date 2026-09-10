@@ -1,0 +1,29 @@
+== /court/suites/phase16/shadow-corpus/shadow-decl.xml bytes=29 mode=b5
+> CALL 0 len=5
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=5 woff0=0 wbytes0=[<?xml]
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=10 woff0=0 wbytes0=[<?xml vers]
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=15 woff0=0 wbytes0=[<?xml version="]
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=20 woff0=0 wbytes0=[<?xml version="1.0"?]
+> CALL 4 len=5
+! cb=startDocument p=21 c=0 abs=21
+startDocument
+! cb=startElementNs p=23 c=0 abs=23
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 4 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1 c=0 abs=24 pos0=0 line0=1 col0=25 byte0=24 win0=0 wsize0=25 woff0=24 wbytes0=[<?xml version="1.0"?><a>x]
+> CALL 5 len=4
+! cb=characters p=25 c=0 abs=25
+characters len=1 [x]
+! cb=endElementNs p=29 c=0 abs=29
+endElementNs local=[a] prefix= uri=
+< CALL 5 rc=0 err=0 wf=1 in=14 p=29 l=1 col=30 i=1 n=0 c=0 abs=29 pos0=0 line0=1 col0=30 byte0=29 win0=0 wsize0=29 woff0=29 wbytes0=[<?xml version="1.0"?><a>x</a>]
+> FINAL
+! cb=endDocument p=29 c=0 abs=29
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=29 l=1 col=30 i=1 n=0 c=0 abs=29 pos0=0 line0=1 col0=30 byte0=29 win0=0 wsize0=29 woff0=29 wbytes0=[<?xml version="1.0"?><a>x</a>]
+> REFEED
+! cb=error p=29 c=0 abs=29
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=30 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=29 l=1 col=30 i=1 n=0 c=0 abs=29 pos0=0 line0=1 col0=30 byte0=29 win0=0 wsize0=58 woff0=29 wbytes0=[<?xml version="1.0"?><a>x</a><?xml version="1.0"?><a>x</a>]
