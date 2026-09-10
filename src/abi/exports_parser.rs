@@ -826,6 +826,8 @@ pub unsafe extern "C" fn xmlCtxtResetPush(
         };
         let input = InputBuffer::for_push(slice, uri);
         helpers::setup_parser_input(ctxt, input);
+        // Re-armed push context (see xmlCreatePushParserCtxt).
+        helpers::mark_push_context(ctxt);
 
         if !encoding.is_null() {
             let handler = encoding::find_encoding_handler(encoding as *const xmlChar);
@@ -1430,6 +1432,9 @@ pub unsafe extern "C" fn xmlCreatePushParserCtxt(
         };
         let input = InputBuffer::for_push(slice, uri);
         helpers::setup_parser_input(ctxt, input);
+        // This is a push context: the persistent driver's eligibility gate
+        // (helpers.rs). Recorded after `xmlCtxtReset`, which clears the map.
+        helpers::mark_push_context(ctxt);
         ctxt
     }
 }

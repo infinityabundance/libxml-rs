@@ -85,6 +85,7 @@ use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero};
 use crate::abi::callbacks::{xmlInputCloseCallback, xmlInputReadCallback};
 use crate::abi::structs::{_xmlParserCtxt, _xmlParserInput, _xmlParserInputBuffer, _xmlSAXHandler};
 use crate::xml::parser::input::{InputBuffer, InputStack};
+use crate::xml::parser::push::PushMachine;
 use crate::xml::parser::state::XmlParser;
 use crate::xml::sax::xmlSAX2InitDefaultSAXHandler;
 
@@ -144,6 +145,13 @@ struct PushState {
     /// byte. Cleared by `free_push_state` (xmlCtxtReset/free), never leaked
     /// across a context reset.
     pending_crs: usize,
+    /// Whether this context is a PUSH context in the `xmlParseChunk` sense —
+    /// created by `xmlCreatePushParserCtxt` or re-armed by `xmlCtxtResetPush`.
+    /// Upstream identifies the shape through `ctxt->input->buf != NULL`; the
+    /// candidate's inputs are not `_xmlParserInputBuffer`-backed, so the fact
+    /// is recorded at the two constructors instead. It is the primary
+    /// eligibility gate for the persistent driver (§16.7.8).
+    push_context: bool,
 }
 
 static PUSH_STATE: once_cell::sync::Lazy<parking_lot::Mutex<HashMap<usize, PushState>>> =
@@ -153,6 +161,191 @@ fn push_state(ctxt: *mut _xmlParserCtxt) -> parking_lot::MappedMutexGuard<'stati
     parking_lot::MutexGuard::map(PUSH_STATE.lock(), |m| {
         m.entry(ctxt as usize).or_insert_with(PushState::default)
     })
+}
+
+/// Record that `ctxt` is a push context (see [`PushState::push_context`]).
+pub(crate) fn mark_push_context(ctxt: *mut _xmlParserCtxt) {
+    push_state(ctxt).push_context = true;
+}
+
+fn is_push_context(ctxt: *mut _xmlParserCtxt) -> bool {
+    PUSH_STATE
+        .lock()
+        .get(&(ctxt as usize))
+        .is_some_and(|st| st.push_context)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// The persistent push driver (§16.7.8)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Upstream `xmlParseChunk` keeps ONE `xmlParserCtxt` whose `instate`, open-element
+// stack, namespace scope and input buffer survive across calls; each call runs
+// `xmlParseTryOrFinish` from wherever the previous one parked. The historical
+// candidate engine re-parsed the WHOLE accumulated buffer on every call (an
+// O(N²) that the §16.7.8 profiling found at 96 s for an 80 MB push), with
+// silent probes and suppression to hide the re-delivery.
+//
+// The persistent session below replaces that for eligible contexts: it holds
+// the driver (`XmlParser`) and its `PushMachine` alive across calls, so each
+// call scans only the newly materialized bytes.
+
+/// One live persistent push session: the driver holds the input stack (and the
+/// decoder state) and the machine holds the phase, the open-element stack and
+/// the lookahead continuation.
+struct PushSession {
+    parser: Box<XmlParser>,
+    machine: Box<PushMachine>,
+}
+
+// The session is keyed by context pointer and only ever touched under the map
+// lock plus the owner thread's calls; a parser context is not thread-safe in
+// upstream either (the same invariant as [`StashPtr`]).
+unsafe impl Send for PushSession {}
+unsafe impl Sync for PushSession {}
+
+static PUSH_SESSIONS: once_cell::sync::Lazy<parking_lot::Mutex<HashMap<usize, PushSession>>> =
+    once_cell::sync::Lazy::new(Default::default);
+
+/// Drop the persistent session for `ctxt`, if any (xmlCtxtReset / free).
+pub(crate) fn free_push_session(ctxt: *mut _xmlParserCtxt) {
+    PUSH_SESSIONS.lock().remove(&(ctxt as usize));
+}
+
+/// Parse options that make a context INELIGIBLE for the persistent driver.
+///
+/// The rule must be decidable from CONTEXT STATE alone, before the first
+/// observable event: a document's later constructs can reveal features the
+/// driver does not model, and once an event has escaped there is no road back
+/// to replay (re-parsing would re-deliver it). "This document has been simple
+/// so far" is therefore never an eligibility test.
+///
+/// The mask is deliberately conservative and names every option that can change
+/// PARSING semantics — recovery, entity/DTD handling, validation, pedantic
+/// diagnostics, blank handling, SAX1 forcing, network/resource policy, the
+/// resource limits, and the tree/serialization modes the driver's shared
+/// routines do not model. Contexts that request any of them stay on the replay
+/// engine, unchanged, so the flip cannot regress them.
+///
+/// Options that only affect error DELIVERY (`NOERROR`, `NOWARNING`), name
+/// interning (`NODICT`), compact node storage (`COMPACT`) or the tokenizer's
+/// version rule (`OLD10`) are allowed: they are honored by the same shared
+/// routines the replay engine calls.
+const PUSH_PERSISTENT_UNSUPPORTED_OPTIONS: c_int = crate::abi::types::XML_PARSE_RECOVER
+    | crate::abi::types::XML_PARSE_NOENT
+    | crate::abi::types::XML_PARSE_DTDLOAD
+    | crate::abi::types::XML_PARSE_DTDATTR
+    | crate::abi::types::XML_PARSE_DTDVALID
+    | crate::abi::types::XML_PARSE_PEDANTIC
+    | crate::abi::types::XML_PARSE_NOBLANKS
+    | crate::abi::types::XML_PARSE_SAX1
+    | crate::abi::types::XML_PARSE_XINCLUDE
+    | crate::abi::types::XML_PARSE_NONET
+    | crate::abi::types::XML_PARSE_NSCLEAN
+    | crate::abi::types::XML_PARSE_NOCDATA
+    | crate::abi::types::XML_PARSE_NOXINCNODE
+    | crate::abi::types::XML_PARSE_NOBASEFIX
+    | crate::abi::types::XML_PARSE_HUGE
+    | crate::abi::types::XML_PARSE_OLDSAX
+    | crate::abi::types::XML_PARSE_IGNORE_ENC
+    | crate::abi::types::XML_PARSE_BIG_LINES;
+
+/// Whether `ctxt` may commit to the persistent driver (see
+/// [`PUSH_PERSISTENT_UNSUPPORTED_OPTIONS`]).
+fn push_persistent_eligible(ctxt: *mut _xmlParserCtxt) -> bool {
+    unsafe {
+        if ctxt.is_null() || !is_push_context(ctxt) {
+            return false;
+        }
+        let c = &*ctxt;
+        if (c.options & PUSH_PERSISTENT_UNSUPPORTED_OPTIONS) != 0 {
+            return false;
+        }
+        if c.validate != 0 || c.html != 0 || c.parseMode != 0 {
+            return false;
+        }
+        // The base document only: a context that already has inputs pushed
+        // below it (external DTD/entity) is not one the driver adopted.
+        if c.inputNr > 1 || c.input.is_null() {
+            return false;
+        }
+        true
+    }
+}
+
+/// One persistent `xmlParseChunk` call.
+///
+/// # Safety
+///
+/// `ctxt` must be a valid, initialised `_xmlParserCtxt` for which
+/// [`push_persistent_eligible`] holds.
+unsafe fn push_persistent_chunk(ctxt: *mut _xmlParserCtxt, chunk: &[u8], terminate: bool) -> c_int {
+    // UPSTREAM-PARITY (parser.c xmlParseChunk, `end_in_lf`): a NON-final chunk
+    // whose last byte is `\r` WITHHOLDS that byte from this call's parse —
+    // upstream pushes `size - 1` bytes, runs `xmlParseTryOrFinish`, and only
+    // THEN re-pushes the `\r` into the buffer, leaving the cursor where it
+    // was. The byte is therefore present at the buffer end (visible to the
+    // window accessors) but is parsed by a LATER call. That is what keeps a
+    // CRLF pair split across two chunks one line break and stops a lone
+    // trailing `\r` from being turned into an EOL by the call that received
+    // it.
+    let (feed, deferred_cr) = if !terminate && !chunk.is_empty() && chunk[chunk.len() - 1] == b'\r'
+    {
+        (&chunk[..chunk.len() - 1], true)
+    } else {
+        (chunk, false)
+    };
+
+    // Take the session OUT of the map for the duration of the parse. Holding
+    // the map lock across callbacks would deadlock the moment a resource
+    // loader or a handler re-enters the parser on another context.
+    let mut session = match PUSH_SESSIONS.lock().remove(&(ctxt as usize)) {
+        Some(s) => s,
+        None => {
+            // First eligible chunk: adopt the input the constructor stashed.
+            let base = {
+                let ptr = take_stashed_input_buffer(ctxt);
+                if ptr.is_null() {
+                    InputBuffer::for_push(&[], None)
+                } else {
+                    // SAFETY: ptr is a valid Box<InputBuffer> from Box::into_raw.
+                    unsafe { *Box::from_raw(ptr) }
+                }
+            };
+            let parser =
+                unsafe { XmlParser::new_with_flags(InputStack::new(base), ctxt, false, false) };
+            PushSession {
+                parser: Box::new(parser),
+                machine: Box::new(PushMachine::new()),
+            }
+        }
+    };
+
+    session
+        .parser
+        .push_persistent(&mut session.machine, feed, terminate);
+
+    if deferred_cr {
+        // Re-push the withheld `\r` WITHOUT parsing it (upstream
+        // `xmlBufUpdateInput` keeps the cursor; only `end` moves).
+        session.parser.base_input_mut().push_bytes_ex(b"\r", false);
+        // SAFETY: ctxt is a valid, initialised context.
+        unsafe { session.parser.publish_input_window() };
+    }
+
+    // The session survives the call: a finished or failed context must still
+    // refuse later chunks with the recorded outcome, exactly like a live one.
+    PUSH_SESSIONS.lock().insert(ctxt as usize, session);
+
+    // UPSTREAM-PARITY (parser.c xmlParseChunk tail): the call reports the
+    // recorded error once the document is no longer well-formed, 0 otherwise.
+    unsafe {
+        if (*ctxt).wellFormed == 0 {
+            (*ctxt).errNo
+        } else {
+            0
+        }
+    }
 }
 
 /// Non-creating read of the push-state flag used by the cleanup path.
@@ -196,6 +389,10 @@ fn restore_start_well_formed(ctxt: *mut _xmlParserCtxt) {
 /// Drop the incremental-push state for `ctxt`, if any.
 pub(crate) fn free_push_state(ctxt: *mut _xmlParserCtxt) {
     PUSH_STATE.lock().remove(&(ctxt as usize));
+    // The persistent session shares the same lifecycle: xmlCtxtReset and
+    // xmlFreeParserCtxt both route through here, and neither may leave a
+    // driver adopted against a context whose input was replaced or freed.
+    free_push_session(ctxt);
 }
 
 /// Stash the boxed input buffer for `ctxt` (takes ownership of `buf`).
@@ -855,13 +1052,34 @@ pub(crate) unsafe fn parse_chunk(
         return unsafe { (*ctxt).errNo };
     }
 
+    // ═══ The persistent driver (§16.7.8) ═══════════════════════════════════
+    //
+    // A context that is eligible for the persistent engine is parsed by it
+    // from its FIRST observable event — the decision is made from context
+    // state alone (see `push_persistent_eligible`), never from what the
+    // document has contained so far, because switching engines after state
+    // has escaped could only re-derive it (the replay re-parses from byte
+    // zero). The `disableSAX` guard above is upstream's own early return and
+    // is shared; the EOF guard below is REPLAY-ONLY — upstream pushes the
+    // bytes and still runs the terminating checks, so a REFEED onto a
+    // finished context reports "Extra content at the end of the document"
+    // (the driver's `terminate_document`/`check_eof` reproduce that), while
+    // the replay must not re-parse from byte zero after EOF.
+    if push_persistent_eligible(ctxt) {
+        // SAFETY: the eligibility rule guaranteed a valid, initialised push
+        // context.
+        return unsafe { push_persistent_chunk(ctxt, chunk_slice, terminate != 0) };
+    }
+
     // UPSTREAM-PARITY (parser.c xmlParseTryOrFinish `case XML_PARSER_EOF`):
-    // a context that finished a complete document stays at XML_PARSER_EOF,
-    // so every later xmlParseChunk parses nothing and reports the previous
-    // outcome (0 when well-formed). gh12254 calls xml_parse_into_struct twice
-    // on the same parser; the second call must not fire the element events
-    // again (SP-14.3.1-7). Incomplete parses never set instate = EOF, so the
-    // multi-call incremental flows are unaffected.
+    // REPLAY-ONLY. A context that finished a complete document stays at
+    // XML_PARSER_EOF, so every later xmlParseChunk parses nothing and reports
+    // the previous outcome (0 when well-formed). gh12254 calls
+    // xml_parse_into_struct twice on the same parser; the second call must not
+    // fire the element events again (SP-14.3.1-7). Incomplete parses never set
+    // instate = EOF, so the multi-call incremental flows are unaffected. The
+    // persistent driver reaches the same conclusion through its phase loop,
+    // but must still run the terminating block, so it is dispatched above.
     if unsafe { (*ctxt).instate } == crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int
     {
         if unsafe { (*ctxt).wellFormed } == 0 {

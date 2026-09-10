@@ -1597,13 +1597,24 @@ fn test_push_completed_context_refuses_reparse() {
             crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int
         );
         // Second parse of the same document on the same context: no events.
+        //
+        // UPSTREAM-PARITY (verified against libxml2 2.15.3): the context rests
+        // at XML_PARSER_EOF, so xmlParseTryOrFinish parses nothing — but
+        // xmlParseChunk still PUSHES the bytes and the terminating block runs
+        // xmlParserCheckEOF, which raises "Extra content at the end of the
+        // document" (5) because the buffer now has unread bytes. The oracle
+        // reports `rc2=5 err=5 wf=0 in=-1 starts=1`; the previous expectation
+        // of 0 was the replay engine's early `instate == EOF` return, which
+        // skipped the byte push and the terminating checks.
         let rc2 = crate::abi::exports_xml2::xmlParseChunk(
             ctxt,
             doc.as_ptr() as *const i8,
             doc.len() as c_int,
             1,
         );
-        assert_eq!(rc2, 0);
+        assert_eq!(rc2, 5, "extra content on a finished context");
+        assert_eq!(unsafe { (*ctxt).errNo }, 5);
+        assert_eq!(unsafe { (*ctxt).wellFormed }, 0);
         assert_eq!(SAX1_STARTS.with(|c| c.get()), 1, "no second open");
         assert_eq!(SAX1_ENDS.with(|c| c.get()), 1, "no second close");
         crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);

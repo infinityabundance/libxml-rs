@@ -569,6 +569,15 @@ impl XmlTokenizer {
         core::mem::take(&mut self.errors)
     }
 
+    /// The codes of the diagnostics recorded by the last scan, WITHOUT
+    /// consuming them. The push driver uses this to distinguish two failures
+    /// that present identically as an unterminated start tag but end in
+    /// different upstream states (see `pushdrive::open_start_tag`).
+    #[allow(dead_code)]
+    pub(crate) fn peek_error_codes(&self) -> Vec<c_int> {
+        self.errors.iter().map(|e| e.code).collect()
+    }
+
     /// Whether the current input has no bytes at all (upstream
     /// `xmlParseDocument` `CUR == 0` check → "Document is empty").
     pub fn is_input_empty(&self) -> bool {

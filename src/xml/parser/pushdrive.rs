@@ -112,12 +112,16 @@
 //! structurally, but CR patching and the exact callback split positions at
 //! that boundary are not claimed as parity).
 //!
-//! # Not yet wired into `xmlParseChunk`
+//! # Wiring
 //!
-//! `helpers::parse_chunk` still replays. A context must be committed to this
-//! path BEFORE its first observable event, so the driver is exercised by a
-//! dedicated court until the grammar covers a coherent subset; whole contexts
-//! then flip over at once.
+//! `helpers::parse_chunk` dispatches an ELIGIBLE context to this driver from
+//! its first observable event and never switches engines afterwards (see
+//! `helpers::push_persistent_eligible`: a push context with options the driver
+//! models). The decision is CONTEXT-LEVEL, not "this document has been simple
+//! so far" — a later construct can reveal a feature the driver does not
+//! model, and once an event has escaped there is no road back to replay
+//! because a replay would re-deliver it. Contexts that request an option the
+//! driver does not model stay on the historical replay engine, unchanged.
 
 use crate::abi::types::{
     xmlErrorLevel, xmlParserInputState, XML_ERR_DOCUMENT_EMPTY, XML_ERR_DOCUMENT_END,
@@ -142,7 +146,7 @@ const BIG_BUFFER_SIZE: usize = 300;
 /// phase, event count, or element-stack depth). Anything else is a spin and
 /// fails the court rather than hanging it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(dead_code)] // returned to the court; the production caller lands with the wiring step
+#[allow(dead_code)] // the liveness court matches on every variant; production uses a subset
 pub(crate) enum StepOutcome {
     /// Consumed bytes and/or moved the phase and/or dispatched events.
     Advanced,
@@ -160,12 +164,12 @@ pub(crate) enum StepOutcome {
     Unsupported,
 }
 
-// COURT-ONLY until the wiring step: every method below is reached from
-// `pushdrive::tests` and from nothing else, because a context must be
-// committed to this path BEFORE its first observable event and cannot retreat
-// to replay mid-document. `parse_chunk` therefore stays on replay until the
-// persistent grammar covers a coherent subset, at which point whole contexts
-// flip over and this allowance is removed.
+// The driver is wired into `xmlParseChunk` for eligible contexts
+// (`helpers::push_persistent_chunk`), but the allowance stays: the court and
+// the machine's diagnostics (`total_scan_work`, `accounting_violation`,
+// `events_dispatched`, ...) reach accessors production never calls, and an
+// ineligible context deliberately keeps the replay engine (see
+// `push_persistent_eligible`).
 #[allow(dead_code)]
 impl XmlParser {
     /// Feed `chunk` (raw source) into the persistent base input and run one
@@ -740,10 +744,15 @@ impl XmlParser {
         // "Start tag expected" diagnostic lives).
         if machine.phase() == xmlParserInputState::XML_PARSER_EPILOG {
             self.check_eof(machine, XML_ERR_DOCUMENT_END);
-            if !machine.is_fatal() {
-                self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
-                self.finish_document(machine);
-            }
+            // UPSTREAM-PARITY (xmlParseTryOrFinish's MISC/PROLOG/EPILOG arm):
+            // `if (ctxt->instate == XML_PARSER_EPILOG) { if (errNo == OK)
+            // xmlFatalErr(DOCUMENT_END); instate = EOF; xmlFinishDocument(); }`
+            // — the EOF transition and xmlFinishDocument run REGARDLESS of
+            // whether the extra-content error was just raised, so endDocument
+            // still fires (its dispatch ignores disableSAX; the two-roots
+            // cell).
+            self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
+            self.finish_document(machine);
         } else {
             self.set_phase(machine, xmlParserInputState::XML_PARSER_START_TAG);
         }
@@ -879,6 +888,10 @@ impl XmlParser {
         self.tokenizer().set_silent_truncated(!terminate);
         let token = self.tokenizer().next_token_raw();
         self.tokenizer().set_silent_truncated(false);
+        // Character-data diagnostics ("PCDATA invalid Char value", the I/O
+        // encoding error for invalid UTF-8) are raised as the run is scanned;
+        // flush them before the run is delivered.
+        self.flush_push_errors();
         match token {
             XmlToken::Characters(text) => {
                 self.sax_characters_text(&text);
@@ -900,6 +913,11 @@ impl XmlParser {
             } => (name, unterminated),
             _ => return self.unsupported(machine, "end tag"),
         };
+        // End-tag scan diagnostics (e.g. the missing '>' the tokenizer saw, an
+        // invalid name) are raised by upstream xmlParseEndTag2 inline; the
+        // driver scanned the whole construct, so it flushes them here with the
+        // cursor repositioned to each diagnostic.
+        self.flush_push_errors();
         let top = machine
             .open_elements()
             .last()
@@ -988,12 +1006,47 @@ impl XmlParser {
                 _ => return self.unsupported(machine, "start tag"),
             };
         if unterminated {
-            // The tokenizer recorded the real diagnostics; upstream's
-            // xmlParseStartTag2 returned NULL -> EOF + xmlFinishDocument.
+            // The tokenizer recorded the real diagnostics (a name longer than
+            // XML_MAX_NAME_LENGTH, an unquoted/duplicate attribute, a tag cut
+            // off by the end of the input). Upstream raises them INLINE during
+            // xmlParseStartTag2, so they must be flushed here — before the
+            // refusal — or the fatal would be swallowed and the parse would
+            // report success (the push name-length-limit test).
+            let codes = self.tokenizer().peek_error_codes();
+            self.flush_push_errors();
+            // Two upstream failures present identically here but end in
+            // DIFFERENT states, so they must be told apart by the diagnostic
+            // the tokenizer recorded:
+            //
+            //   XML_ERR_GT_REQUIRED — xmlParseStartTag2 parsed the NAME and
+            //     failed on the tag END. It does NOT return NULL: the push
+            //     arm falls through to `if (ctxt->nameNr == 0) instate =
+            //     XML_PARSER_EPILOG else CONTENT`, and no xmlFinishDocument
+            //     runs. xmlParseChunk then returns errNo at its
+            //     errNo/disableSAX guard, so no endDocument fires and the
+            //     context rests at that phase (the starttag-trunc cell).
+            //
+            //   anything else (XML_ERR_NAME_REQUIRED, a truncated tag with no
+            //     '>' at all) — xmlParseStartTag2 returned NULL, and the arm
+            //     sets `instate = XML_PARSER_EOF; xmlFinishDocument(ctxt)`,
+            //     so endDocument DOES fire (raw-high-name).
+            if codes.contains(&crate::abi::types::XML_ERR_GT_REQUIRED) {
+                let phase = if machine.open_elements().is_empty() {
+                    xmlParserInputState::XML_PARSER_EPILOG
+                } else {
+                    xmlParserInputState::XML_PARSER_CONTENT
+                };
+                self.set_phase(machine, phase);
+                return StepOutcome::Fatal;
+            }
             self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
             self.finish_document(machine);
             return StepOutcome::Fatal;
         }
+        // Diagnostics recorded while scanning the tag (attribute syntax,
+        // namespace warnings) are raised by upstream xmlParseStartTag2 BEFORE
+        // the start-element event, so flush them before dispatching it.
+        self.flush_push_errors();
         match self.parse_element_start(name, attributes, attr_end, attr_start, end_pos, empty) {
             Ok(open) => {
                 machine.note_event();
