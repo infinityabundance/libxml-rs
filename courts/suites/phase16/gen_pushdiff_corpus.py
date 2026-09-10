@@ -182,6 +182,15 @@ def main():
         # byte \r appears at position multiples of several small chunk sizes.
         "cr-multi.xml": "<a>\r\n" + "\r\n".join("<b k=\"%d\"/>" % i for i in range(20)) + "\r\n</a>\r\n",
         "cr-solo-multi.xml": "<a>" + "x\ry\rz\r" * 10 + "</a>",
+        # Slice-1 CR-chain regressions: CONSECUTIVE raw CRs must not
+        # collapse (a withheld-CR flag would lose a byte). These exercise
+        # CR->CR->data, CR->CR->CR->data, CR->CR->final and CR->CR->tags
+        # under the b1/zK/rN plans.
+        "cr-cr.xml": "<a>x\r\ry</a>",
+        "cr-cr-cr.xml": "<a>x\r\r\ry</a>",
+        "cr-cr-final.xml": "<a>x\r\r",
+        "cr-cr-tags.xml": "<a>x\r\r<b/>y</a>",
+        "cr-crlf-mix.xml": "<a>x\r\r\n\r\ny</a>",
     }
     for name, content in sorted(docs.items()):
         w(out, name, content)

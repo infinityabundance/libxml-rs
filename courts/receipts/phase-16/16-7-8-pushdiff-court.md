@@ -196,39 +196,59 @@ gate is diffs = 0 after the stateful rewrite.
 
 ## Slice 1 (in progress) — replay-era class fixes + newly surfaced classes
 
-Step 1/1a: `end_in_lf` trailing-CR deferral (`PushState::pending_cr`,
-`parse_chunk`). The targeted CR behavior is correct: a withheld `\r` is
-consumed only when the call brings bytes or terminates, so a ZERO-LENGTH
-non-final call leaves it parked — verified against the oracle across
-`cr-multi` / `text-crlf` / `text-cr-chunkend` / `text-lone-cr` ×
-`b1z2` / `b64z2` / `r17z1`: **zero character events on zero-length calls
-on both sides**. This is NOT “class 3 closed”: the cells still diverge on
-classes 1/5 below, and `pending_cr` is transitional scaffolding (the
-persistent machine keeps the byte in the input buffer and parks the
-cursor before it instead).
+Step 1/1a: `end_in_lf` trailing-CR deferral (`PushState::pending_crs`,
+`parse_chunk`). The withheld CR bytes are COUNTED, not flagged: consecutive
+raw CRs must not collapse (upstream keeps every one in the buffer, so
+`<a>x\r\ry</a>` fed as `<a>x\r`, `\r`, `y</a>` leaves two unread CRs).
+Slice-1 corpus additions `cr-cr.xml`, `cr-cr-cr.xml`, `cr-cr-final.xml`,
+`cr-cr-tags.xml`, `cr-crlf-mix.xml` exercise CR→CR→data,
+CR→CR→CR→data, CR→CR→final, CR→CR→tags and CR→zero→CR→data under the
+existing `b1`/`zK`/`rN` plans (these are slice-1 cells on top of the
+frozen slice-0 baseline of 4042, which is not reopened).
 
-### 5. Character-data event segmentation at EOLs (newly surfaced)
+The targeted CR behavior is correct: a withheld CR is consumed only when
+the call brings bytes or terminates, so a ZERO-LENGTH non-final call
+leaves it parked — verified against the oracle across `cr-multi` /
+`text-crlf` / `text-cr-chunkend` / `text-lone-cr` × `b1z2` / `b64z2` /
+`r17z1`: **zero character events on zero-length calls on both sides**.
+This is NOT “class 3 closed”: the cells still diverge on classes 1/5, and
+the withheld-CR bookkeeping is transitional scaffolding (the persistent
+machine keeps the bytes in the input buffer and parks the cursor before
+them instead).
+
+### 5. Character-data callback segmentation around raw CR / CRLF normalization
 
 Extracting each trace's (call → `characters` event) sequence shows the
-oracle splits character data at every CR/LF — upstream
-`xmlParseCharDataInternal` flushes the callback at each EOL while
-tracking line/column — while the candidate merges the run:
+oracle splits character data when it meets a **raw CR** (upstream
+`xmlParseCharDataInternal`: a raw `0x0D` leaves the accelerated scan loop
+and reaches `invoke_callback`, which flushes the current run and then
+consumes the CR/CRLF so the normalized `\n` heads the NEXT callback).
+Plain LF does NOT split: the fast path advances over `0x0A` runs and
+increments line/column without dispatching. So
 
 ```text
+one\r\ntwo\r\nthree\r\n
 oracle   : [one] [\ntwo] [\nthree] [\n]
 candidate: [one\ntwo\nthree\n]
 ```
 
-Independent of chunking and of the CR shim (visible with the whole
-document in one `b64` chunk). Full parity therefore requires reproducing
-upstream's per-EOL callback segmentation, not only the push lifecycle.
+(An earlier wording of this class said “splits at every CR/LF” — that was
+wrong: only the raw-CR path flushes.) The candidate merges the run;
+reproducing upstream's segmentation requires the scanner to end the
+current `Characters` token at a raw CR and let the next token begin at
+that CR (normalizing CR/CRLF to `\n`). Independent of chunking: visible
+with the whole document in one `b64` chunk, and relevant to every SAX
+consumer, not only push parsing.
 
 ## What the divergences are (five systematic classes)
 
-All four have the same architectural root cause — the whole-buffer replay
+Classes 1–4 share one architectural root cause — the whole-buffer replay
 design, which runs a complete-document parser on every non-final call —
-but they are independently observable behaviors. The stateful engine must
-close each one.
+and each is independently observable in the push trace. Class 5 is
+different in kind: it is a **character-data scanner / SAX event
+segmentation** issue, observable with the whole document in a single
+chunk, and therefore does **not** require replay or chunk boundaries to
+occur. Both matter for a drop-in custodian.
 
 ### 1. Lifecycle / event-timing mismatch
 

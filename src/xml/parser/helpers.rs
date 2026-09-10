@@ -125,19 +125,25 @@ struct PushState {
     /// `free_parser_ctxt` — caller-owned documents are never dereferenced or
     /// freed there (upstream xmlFreeParserCtxt ignores myDoc entirely).
     internal_doc_created: bool,
-    /// A trailing `\r` withheld from the accumulated input (upstream
-    /// `xmlParseChunk`'s `end_in_lf`, parser.c): a NON-final chunk ending in
-    /// `\r` has that byte held back — upstream decrements the pushed size,
-    /// runs `xmlParseTryOrFinish`, and only THEN re-pushes the `\r`. The byte
-    /// is therefore present in the buffer but unparsed at the end of the
-    /// call, so a CRLF pair split across two chunks still normalizes to one
-    /// `\n` and a lone trailing `\r` is not turned into an EOL by the call
-    /// that received it. The candidate parses the whole accumulated buffer
-    /// on every call, so the equivalent behavior is to withhold the byte and
-    /// prepend it to the next call's chunk (byte order then matches
-    /// upstream's buffer exactly). Cleared by `free_push_state`
-    /// (xmlCtxtReset/free), never leaked across a context reset.
-    pending_cr: bool,
+    /// Count of trailing `\r` bytes withheld from the accumulated input
+    /// (upstream `xmlParseChunk`'s `end_in_lf`, parser.c): a NON-final chunk
+    /// ending in `\r` has that byte held back — upstream decrements the
+    /// pushed size, runs `xmlParseTryOrFinish`, and only THEN re-pushes the
+    /// `\r`. The byte is therefore present in the buffer but unparsed at the
+    /// end of the call, so a CRLF pair split across two chunks still
+    /// normalizes to one `\n` and a lone trailing `\r` is not turned into an
+    /// EOL by the call that received it. The candidate parses the whole
+    /// accumulated buffer on every call, so the equivalent behavior is to
+    /// withhold the byte(s) and prepend them to the next call's chunk (byte
+    /// order then matches upstream's buffer exactly).
+    ///
+    /// A COUNT, not a flag: consecutive CRs must not collapse. Upstream
+    /// keeps every withheld `\r` in the buffer (call 1 appends CR₁, call 2
+    /// appends CR₂ after its parse), so `<a>x\r\ry</a>` fed as `<a>x\r`,
+    /// `\r`, `y</a>` leaves two unread CRs, not one — a `bool` would lose a
+    /// byte. Cleared by `free_push_state` (xmlCtxtReset/free), never leaked
+    /// across a context reset.
+    pending_crs: usize,
 }
 
 static PUSH_STATE: once_cell::sync::Lazy<parking_lot::Mutex<HashMap<usize, PushState>>> =
@@ -888,25 +894,33 @@ pub(crate) unsafe fn parse_chunk(
     // !terminate), so a document ending in `\r` still processes it.
     //
     // A withheld `\r` is consumed only when this call gives the parser more
-    // to do: a nonempty chunk (the `\r` becomes parseable input followed by
-    // the new bytes) or a terminating call (the `\r` is final input). A
-    // ZERO-LENGTH non-final call must leave it parked: upstream's
-    // xmlParseTryOrFinish finds no `<`/`&` for the lone `\r`
-    // (xmlParseLookupCharData returns 0) and consumes nothing — flushing it
-    // here would deliver the EOL one zero-length call too early.
-    let mut deferred_cr = false;
+    // to do: a nonempty chunk (the `\r`s become parseable input followed by
+    // the new bytes) or a terminating call (the `\r`s are final input). A
+    // ZERO-LENGTH non-final call must leave them parked: upstream's
+    // xmlParseTryOrFinish finds no `<`/`&` for a lone `\r`
+    // (xmlParseLookupCharData returns 0) and consumes nothing — flushing
+    // them here would deliver the EOL one zero-length call too early.
+    // The withheld bytes are COUNTED (pending_crs), not flagged: consecutive
+    // CRs must not collapse (upstream keeps every one in the buffer).
+    let mut deferred_crs: usize = 0;
     let mut slice = chunk_slice;
     if terminate == 0 && !slice.is_empty() && slice[slice.len() - 1] == b'\r' {
-        deferred_cr = true;
+        deferred_crs = 1;
         slice = &slice[..slice.len() - 1];
     }
-    let had_pending_cr = push_state(ctxt).pending_cr;
-    let restore_cr = had_pending_cr && (!slice.is_empty() || terminate != 0);
-    // The new trailing `\r` (if any) stays parked; an old one stays parked
-    // when this call could not consume it.
-    push_state(ctxt).pending_cr = deferred_cr || (had_pending_cr && !restore_cr);
-    if restore_cr {
-        base.push_bytes(b"\r");
+    let had_pending_crs = push_state(ctxt).pending_crs;
+    let restore_crs = had_pending_crs > 0 && (!slice.is_empty() || terminate != 0);
+    // The new trailing `\r` (if any) stays parked; the old ones stay parked
+    // when this call could not consume them.
+    push_state(ctxt).pending_crs = if restore_crs {
+        deferred_crs
+    } else {
+        had_pending_crs + deferred_crs
+    };
+    if restore_crs {
+        for _ in 0..had_pending_crs {
+            base.push_bytes(b"\r");
+        }
     }
 
     // Append the chunk to the accumulated input (upstream xmlParseChunk
