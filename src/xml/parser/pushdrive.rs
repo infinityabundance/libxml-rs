@@ -55,7 +55,8 @@
 //! ```text
 //! START      -> the raw-source availability gate, then XML_DECL
 //! XML_DECL   -> XML declaration (or the default version), startDocument, MISC
-//! MISC       -> whitespace, comments, PIs, then the root start tag
+//! MISC       -> whitespace, comments, PIs, DOCTYPE, then the root start tag
+//! DTD        -> the internal subset, once it is all available
 //! START_TAG  -> simple / self-closing / nested start tags
 //! CONTENT    -> character data, comments, PIs, CDATA, child start tags, end tags
 //! END_TAG    -> end tags
@@ -63,10 +64,18 @@
 //! EOF        -> REFEED ("Extra content at the end of the document")
 //! ```
 //!
-//! DOCTYPE, the internal subset and entity references are reported as
+//! Entity and character REFERENCES are reported as
 //! [`StepOutcome::Unsupported`] — a LOUD fatal, never a silent fallback to
-//! replay. Their availability scans (`lookup_gt`, `lookup_char`) are
-//! implemented so the constructs park correctly rather than mis-scanning.
+//! replay. Their availability scan (`lookup_char`) is implemented so the
+//! construct parks correctly rather than mis-scanning.
+//!
+//! DOCTYPE is modelled in upstream's TWO phases: the declaration HEAD (which
+//! records the root/external identifiers and fires `internalSubset`) is parsed
+//! as soon as it is available, then `XML_PARSER_DTD` waits for the WHOLE
+//! internal subset — upstream's deliberately non-progressive
+//! `xmlParseLookupInternalSubset` — before parsing it and firing
+//! `externalSubset`. DTD declaration callbacks are dispatched with the cursor
+//! repositioned to their own declaration, because upstream fires them inline.
 //!
 //! The XML declaration, comments, PIs and CDATA are NOT re-implemented: the
 //! driver only performs upstream's availability gate and then runs the SAME
@@ -315,6 +324,7 @@ impl XmlParser {
             xmlParserInputState::XML_PARSER_START_TAG => self.step_start_tag(machine, terminate),
             xmlParserInputState::XML_PARSER_CONTENT => self.step_content(machine, terminate),
             xmlParserInputState::XML_PARSER_END_TAG => self.step_end_tag(machine, terminate),
+            xmlParserInputState::XML_PARSER_DTD => self.step_doctype_subset(machine, terminate),
             xmlParserInputState::XML_PARSER_EOF => StepOutcome::Complete,
             _ => self.unsupported(machine, "parser phase"),
         }
@@ -522,6 +532,97 @@ impl XmlParser {
         unsafe { (*self.ctxt_raw()).disableSAX != 0 }
     }
 
+    /// `XML_PARSER_MISC`'s DOCTYPE arm: scan the declaration HEAD, record the
+    /// root/external identifiers and fire `internalSubset`, then either enter
+    /// `XML_PARSER_DTD` (an internal subset follows) or finish the DOCTYPE and
+    /// move to PROLOG. Upstream splits exactly here.
+    fn step_doctype_decl(&mut self, machine: &mut PushMachine, terminate: bool) -> StepOutcome {
+        self.tokenizer().set_silent_truncated(!terminate);
+        let token = self.tokenizer().scan_doctype_decl();
+        self.tokenizer().set_silent_truncated(false);
+        // The scan advanced the cursor; upstream's `internalSubset` callback
+        // reads `input->cur` at that point.
+        unsafe { self.publish_input_window() };
+        self.flush_push_errors();
+        let XmlToken::DocTypeDecl {
+            content,
+            has_subset,
+            ..
+        } = token
+        else {
+            return self.unsupported(machine, "DOCTYPE declaration");
+        };
+        let Ok((root_name, ext_id, sys_id, _)) = self.parse_doctype_decl(&content) else {
+            self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
+            self.finish_document(machine);
+            return StepOutcome::Fatal;
+        };
+        if has_subset {
+            // The subset is parsed in `XML_PARSER_DTD`, on a later step and
+            // possibly a later call.
+            self.set_phase(machine, xmlParserInputState::XML_PARSER_DTD);
+            return StepOutcome::Advanced;
+        }
+        // No subset: consume the `>` the head stopped at (upstream's
+        // `if (RAW == '>') NEXT;`), then report and finish the DOCTYPE.
+        if self.push_byte_at(0) == b'>' {
+            let _ = self.tokenizer().input_mut().current().read_char();
+        }
+        unsafe { self.publish_input_window() };
+        self.flush_push_errors();
+        if self
+            .finish_doctype(&root_name, ext_id.as_deref(), sys_id.as_deref())
+            .is_err()
+        {
+            self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
+            self.finish_document(machine);
+            return StepOutcome::Fatal;
+        }
+        self.set_phase(machine, xmlParserInputState::XML_PARSER_PROLOG);
+        StepOutcome::Advanced
+    }
+
+    /// `case XML_PARSER_DTD`: the internal subset, once upstream's
+    /// non-progressive `xmlParseLookupInternalSubset` says it is all here.
+    fn step_doctype_subset(&mut self, machine: &mut PushMachine, terminate: bool) -> StepOutcome {
+        if !terminate && !self.lookup_internal_subset(machine) {
+            return StepOutcome::Parked;
+        }
+        // The absolute offset of the subset's `[` (the cursor is still on it),
+        // so the DTD declaration callbacks can be positioned at their own
+        // declaration the way upstream fires them.
+        let subset_abs = self.push_bounds().1 as usize;
+        self.tokenizer().set_silent_truncated(!terminate);
+        let token = self.tokenizer().scan_doctype_subset();
+        self.tokenizer().set_silent_truncated(false);
+        unsafe { self.publish_input_window() };
+        self.flush_push_errors();
+        let XmlToken::DocTypeSubset { content, .. } = token else {
+            return self.unsupported(machine, "internal subset");
+        };
+        if self
+            .parse_internal_subset(&content, Some(subset_abs))
+            .is_err()
+        {
+            self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
+            self.finish_document(machine);
+            return StepOutcome::Fatal;
+        }
+        // The identifiers recorded at the declaration HEAD (upstream passes
+        // `ctxt->intSubName, ctxt->extSubSystem, ctxt->extSubURI`).
+        let (root_name, ext_id, sys_id) = self.doctype_decl_ids();
+        if self
+            .finish_doctype(&root_name, ext_id.as_deref(), sys_id.as_deref())
+            .is_err()
+        {
+            self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
+            self.finish_document(machine);
+            return StepOutcome::Fatal;
+        }
+        self.set_phase(machine, xmlParserInputState::XML_PARSER_PROLOG);
+        StepOutcome::Advanced
+    }
+
     /// Scan and dispatch one processing instruction. The availability gate is
     /// the CALLER's (`xmlParseLookupString(ctxt, 2, "?>", 2)`); this runs the
     /// tokenizer's PI scan and the recorder `sax_pi`.
@@ -622,7 +723,7 @@ impl XmlParser {
                         if !terminate && !self.lookup_gt(machine) {
                             return StepOutcome::Parked;
                         }
-                        return self.unsupported(machine, "DOCTYPE");
+                        return self.step_doctype_decl(machine, terminate);
                     }
                 }
                 // Not a construct we recognize: fall through to the tail.
@@ -929,6 +1030,97 @@ impl XmlParser {
     }
 
     /// Upstream `xmlParseLookupCharData`: is a `<` or `&` present?
+    /// Upstream `xmlParseLookupInternalSubset`: is the WHOLE internal subset
+    /// (through `] S? >`) available? Upstream refuses progressive parsing of the
+    /// subset, but the lookup itself still carries a continuation
+    /// (`checkIndex` + `endCheckState`) so it resumes rather than restarting,
+    /// including a bounded 3-byte rescan that detects `<!--`/`-->` split across
+    /// chunks.
+    fn lookup_internal_subset(&self, machine: &mut PushMachine) -> bool {
+        let (data_len, pos) = self.push_bounds();
+        let (mut at, mut state) = match machine.parked_construct() {
+            ParkedConstruct::Subset { checked, state }
+                if valid_continuation(checked, pos, data_len) =>
+            {
+                (checked, state)
+            }
+            // `if (ctxt->checkIndex == 0) cur = ctxt->input->cur + 1;`
+            _ => (pos + 1, 0u8),
+        };
+        let mut start = at;
+        let scan_from = at;
+        let rem = self.push_slice_from(at);
+        let mut i = 0usize;
+        let mut found = false;
+        while i < rem.len() {
+            let cur = rem[i];
+            let n1 = rem.get(i + 1).copied().unwrap_or(0);
+            let n2 = rem.get(i + 2).copied().unwrap_or(0);
+            if state == b'-' {
+                if cur == b'-' && n1 == b'-' && n2 == b'>' {
+                    state = 0;
+                    i += 3;
+                    start = scan_from + i as u64;
+                    continue;
+                }
+            } else if state == b']' {
+                if cur == b'>' {
+                    found = true;
+                    break;
+                }
+                if is_xml_blank(cur) {
+                    state = b' ';
+                } else if cur != b']' {
+                    state = 0;
+                    start = scan_from + i as u64;
+                    continue;
+                }
+            } else if state == b' ' {
+                if cur == b'>' {
+                    found = true;
+                    break;
+                }
+                if !is_xml_blank(cur) {
+                    state = 0;
+                    start = scan_from + i as u64;
+                    continue;
+                }
+            } else if state != 0 {
+                if cur == state {
+                    state = 0;
+                    start = scan_from + i as u64 + 1;
+                }
+            } else if cur == b'<' {
+                if n1 == b'!' && n2 == b'-' && rem.get(i + 3) == Some(&b'-') {
+                    state = b'-';
+                    i += 4;
+                    start = scan_from + i as u64;
+                    continue;
+                }
+            } else if cur == b'"' || cur == b'\'' || cur == b']' {
+                state = cur;
+            }
+            i += 1;
+        }
+        at = scan_from + i as u64;
+        machine.note_scan_work((at - scan_from) as usize);
+        if found {
+            machine.reset_construct();
+            return true;
+        }
+        // Rescan the three last characters to detect `<!--` and `-->` split
+        // across chunks.
+        if state == 0 || state == b'-' {
+            if at - start < 3 {
+                at = start;
+            } else {
+                at -= 3;
+            }
+        }
+        machine.park_construct(ParkedConstruct::Subset { checked: at, state });
+        false
+    }
+
     fn lookup_char_data(&self, machine: &mut PushMachine) -> bool {
         let (data_len, pos) = self.push_bounds();
         let at = match machine.parked_construct() {
@@ -1204,6 +1396,17 @@ mod tests {
             8,
         ),
         ("cdata", b"<a><![CDATA[x<y&z]]></a>", 5),
+        // DOCTYPE, both shapes. The event count excludes the DTD declaration
+        // callbacks (internalSubset / externalSubset / elementDecl): the driver
+        // models them as DTD work, not as parser events, exactly like the
+        // recursive parser. The oracle-shadow court compares those callbacks
+        // line-for-line.
+        ("doctype", b"<!DOCTYPE a><a/>", 4),
+        (
+            "doctype-subset",
+            b"<!DOCTYPE a [<!ELEMENT a EMPTY>]><a/>",
+            4,
+        ),
     ];
 
     struct CtxtGuard(*mut _xmlParserCtxt);

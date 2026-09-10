@@ -870,6 +870,12 @@ impl XmlParser {
                         (*self.ctxt).instate = XML_PARSER_PROLOG;
                     }
                 }
+                // The two-phase DOCTYPE tokens exist only for the push driver
+                // (`scan_doctype_decl` / `scan_doctype_subset`); the recursive
+                // prolog always produces the whole-body `DocType` above.
+                XmlToken::DocTypeDecl { .. } | XmlToken::DocTypeSubset { .. } => {
+                    return Err(());
+                }
                 XmlToken::Comment { data, unterminated } => {
                     // UPSTREAM-PARITY (SP-14.3.1-8, gh20439_1): a comment cut
                     // off by the end of the available input (no `-->`) is a
@@ -1073,6 +1079,30 @@ impl XmlParser {
     ///   matches the SAX handler's expectations; `content` is a byte slice
     ///   owned by the caller and live for the call.
     fn parse_dtd(&mut self, content: &[u8]) -> Result<(), ()> {
+        let (root_name, ext_id, sys_id, has_internal) = self.parse_doctype_decl(content)?;
+        if has_internal {
+            self.parse_internal_subset(content, None)?;
+        }
+        self.finish_doctype(&root_name, ext_id.as_deref(), sys_id.as_deref())
+    }
+
+    /// The `<!DOCTYPE name (ExternalID)?` HEAD, mirroring upstream
+    /// `xmlParseDocTypeDecl`: extract and record the root name and the external
+    /// identifiers (on the CONTEXT, not via the SAX handler — that is what
+    /// `externalSubset` and `xmlCtxtGetDocTypeDecl` read), then fire
+    /// `internalSubset`. Returns `(root, ext, sys, has_internal)`.
+    ///
+    /// The push driver calls this and [`Self::parse_internal_subset`] in
+    /// SEPARATE passes, because upstream sets `XML_PARSER_DTD` between them.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` whose `sax`
+    ///   pointer is valid; `content` is a byte slice live for the call.
+    pub(crate) fn parse_doctype_decl(
+        &mut self,
+        content: &[u8],
+    ) -> Result<(Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>, bool), ()> {
         unsafe {
             (*self.ctxt).instate = XML_PARSER_DTD;
             (*self.ctxt).inSubset = 1;
@@ -1101,6 +1131,33 @@ impl XmlParser {
         if ext_id.is_some() || sys_id.is_some() {
             unsafe {
                 (*self.ctxt).hasExternalSubset = 1;
+            }
+        }
+
+        // `ctxt->intSubName = name; ctxt->extSubURI = URI; ctxt->extSubSystem =
+        // publicId;` — the context owns the strings (extSubURI/extSubSystem are
+        // released by xmlCtxtReset/free_parser_ctxt).
+        unsafe {
+            if !(*self.ctxt).intSubName.is_null() {
+                crate::abi::allocator::xmlFreeImpl((*self.ctxt).intSubName as *mut c_void);
+                (*self.ctxt).intSubName = ptr::null();
+            }
+            if !(*self.ctxt).extSubURI.is_null() {
+                crate::abi::allocator::xmlFreeImpl((*self.ctxt).extSubURI as *mut c_void);
+                (*self.ctxt).extSubURI = ptr::null_mut();
+            }
+            if !(*self.ctxt).extSubSystem.is_null() {
+                crate::abi::allocator::xmlFreeImpl((*self.ctxt).extSubSystem as *mut c_void);
+                (*self.ctxt).extSubSystem = ptr::null_mut();
+            }
+            if !root_name.is_empty() {
+                (*self.ctxt).intSubName = Self::vec_to_cstr(&root_name);
+            }
+            if let Some(sys) = sys_id.as_ref() {
+                (*self.ctxt).extSubURI = Self::vec_to_cstr(sys);
+            }
+            if let Some(ext) = ext_id.as_ref() {
+                (*self.ctxt).extSubSystem = Self::vec_to_cstr(ext);
             }
         }
 
@@ -1141,11 +1198,50 @@ impl XmlParser {
             }
         }
 
-        // If there's an internal subset, parse it
-        if has_internal {
-            self.parse_internal_subset(content)?;
-        }
+        Ok((root_name, ext_id, sys_id, has_internal))
+    }
 
+    /// The DOCTYPE identifiers recorded by [`Self::parse_doctype_decl`], as
+    /// owned copies — upstream `externalSubset` reads
+    /// `ctxt->intSubName, ctxt->extSubSystem, ctxt->extSubURI` off the context,
+    /// so the push driver needs them across the `XML_PARSER_DTD` boundary.
+    pub(crate) fn doctype_decl_ids(&self) -> (Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>) {
+        unsafe {
+            let c = &*self.ctxt;
+            let root = Self::cstr_to_vec(c.intSubName);
+            let ext = Self::cstr_to_vec(c.extSubSystem as *const xmlChar);
+            let sys = Self::cstr_to_vec(c.extSubURI as *const xmlChar);
+            (
+                root,
+                if ext.is_empty() { None } else { Some(ext) },
+                if sys.is_empty() { None } else { Some(sys) },
+            )
+        }
+    }
+
+    /// Copy a NUL-terminated `xmlChar` string into an owned `Vec`.
+    fn cstr_to_vec(p: *const xmlChar) -> Vec<u8> {
+        if p.is_null() {
+            return Vec::new();
+        }
+        unsafe {
+            let mut n = 0usize;
+            while *p.add(n) != 0 {
+                n += 1;
+            }
+            std::slice::from_raw_parts(p, n).to_vec()
+        }
+    }
+
+    /// The `externalSubset` callback plus the external-subset LOAD, then
+    /// `inSubset = 0` — upstream's tail of the MISC DOCTYPE arm and of
+    /// `XML_PARSER_DTD`.
+    pub(crate) fn finish_doctype(
+        &mut self,
+        root_name: &[u8],
+        ext_id: Option<&[u8]>,
+        sys_id: Option<&[u8]>,
+    ) -> Result<(), ()> {
         // If there's an external ID (PUBLIC or SYSTEM) and the parser is in a
         // state that requires the external subset, parse it (upstream
         // xmlSAX2ExternalSubset: `ctxt->validate || (loadsubset & ~XML_SKIP_IDS)`
@@ -1156,14 +1252,52 @@ impl XmlParser {
             c.validate != 0 || (c.loadsubset & !crate::abi::constants::XML_SKIP_IDS) != 0
         };
         if (ext_id.is_some() || sys_id.is_some()) && want_ext {
-            self.parse_external_subset(&root_name, ext_id.as_deref(), sys_id.as_deref())?;
+            self.parse_external_subset(root_name, ext_id, sys_id)?;
+        } else {
+            // upstream still reports the external subset through the SAX
+            // callback (the default handler may load it): mirror the callback
+            // itself, with the context's recorded identifiers.
+            self.fire_external_subset(root_name, ext_id, sys_id);
         }
 
         unsafe {
             (*self.ctxt).inSubset = 0;
         }
-
         Ok(())
+    }
+
+    /// Fire `externalSubset` with the given identifiers (upstream passes
+    /// `ctxt->intSubName, ctxt->extSubSystem, ctxt->extSubURI`).
+    pub(crate) fn fire_external_subset(
+        &mut self,
+        root_name: &[u8],
+        ext_id: Option<&[u8]>,
+        sys_id: Option<&[u8]>,
+    ) {
+        if self.is_sax_disabled() {
+            return;
+        }
+        let name_cstr = if root_name.is_empty() {
+            ptr::null()
+        } else {
+            Self::vec_to_cstr_null(root_name)
+        };
+        let ext_cstr = ext_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+        let sys_cstr = sys_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+        unsafe {
+            let sax = &*(*self.ctxt).sax;
+            let ctx = (*self.ctxt).userData;
+            SaxDispatcher::external_subset(sax, ctx, name_cstr, ext_cstr, sys_cstr);
+        }
+        if !name_cstr.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void) };
+        }
+        if !ext_cstr.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(ext_cstr as *mut c_void) };
+        }
+        if !sys_cstr.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(sys_cstr as *mut c_void) };
+        }
     }
 
     /// Parse the internal DTD subset (content between `[` and `]`).
@@ -1178,7 +1312,11 @@ impl XmlParser {
     ///   `myDoc` is NULL or a valid `_xmlDoc`; when non-NULL its `intSubset`
     ///   must be NULL or a valid `_xmlDtd` (the DTD is passed to the
     ///   `parse_*_decl` helpers, which require it valid and non-NULL).
-    fn parse_internal_subset(&mut self, content: &[u8]) -> Result<(), ()> {
+    pub(crate) fn parse_internal_subset(
+        &mut self,
+        content: &[u8],
+        abs_base: Option<usize>,
+    ) -> Result<(), ()> {
         // Mark that we're parsing the DTD
         unsafe {
             (*self.ctxt).inSubset = 1;
@@ -1210,7 +1348,8 @@ impl XmlParser {
         // SAX_COMPAT_MODE document + "fake" intSubset and register the entity
         // via xmlSAX2EntityDecl).
         let mut dtd = Self::current_int_subset_opt(unsafe { (*self.ctxt).myDoc });
-        self.process_dtd_fragment(&mut dtd, subset, 0, false);
+        let subset_abs = abs_base.map(|b| b + open + 1);
+        self.process_dtd_fragment(&mut dtd, subset, 0, false, subset_abs);
 
         // UPSTREAM-PARITY (parser.c xmlParseElementDecl): a `<!ELEMENT name`
         // cut off by the end of the available input (no content model, no
@@ -1319,6 +1458,7 @@ impl XmlParser {
         data: &[u8],
         depth: usize,
         ext: bool,
+        abs_base: Option<usize>,
     ) {
         let mut i = 0usize;
         while i < data.len() {
@@ -1436,9 +1576,13 @@ impl XmlParser {
                 None => raw_args,
             };
             if kw.eq_ignore_ascii_case(b"ELEMENT") {
-                if let Some(d) = *dtd {
-                    Self::parse_element_decl(d, args);
-                }
+                // Upstream fires `elementDecl` from `xmlParseElementDecl`
+                // whether or not a document (hence an intSubset) exists: an
+                // expat-compat/external-handler parse still receives the
+                // callback. Only the REGISTRATION needs the DTD, and
+                // `add_element_decl` ignores a NULL one.
+                let decl_end_abs = abs_base.map(|b| b + i + 2 + gt + 1);
+                self.parse_element_decl((*dtd).unwrap_or(ptr::null_mut()), args, decl_end_abs);
             } else if kw.eq_ignore_ascii_case(b"ENTITY") {
                 // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): WHICH
                 // declarations are registered into the parser's entity
@@ -1535,7 +1679,7 @@ impl XmlParser {
                     if !c.is_null() {
                         let len = crate::abi::exports_xml2::xmlStrlen(c);
                         let text = core::slice::from_raw_parts(c, len as usize);
-                        self.process_dtd_fragment(dtd, text, depth + 1, false);
+                        self.process_dtd_fragment(dtd, text, depth + 1, false, None);
                     }
                 }
                 t if t == XML_EXTERNAL_PARAMETER_ENTITY as c_int => {
@@ -1544,7 +1688,7 @@ impl XmlParser {
                         let sys_str = crate::xml::string::xmlstr_to_string(sys as *const xmlChar);
                         if let Some(p) = self.resolve_dtd_path(sys_str.as_bytes()) {
                             if let Ok(content) = std::fs::read(&p) {
-                                self.process_dtd_fragment(dtd, &content, depth + 1, true);
+                                self.process_dtd_fragment(dtd, &content, depth + 1, true, None);
                             }
                         }
                     }
@@ -1854,7 +1998,7 @@ impl XmlParser {
     ///   initialized (`dtd::add_element_decl` may insert into them); `args`
     ///   is a byte slice owned by the caller, live for the call; the
     ///   temporary `name_cstr` is freed before returning.
-    fn parse_element_decl(dtd: *mut _xmlDtd, args: &[u8]) {
+    fn parse_element_decl(&mut self, dtd: *mut _xmlDtd, args: &[u8], decl_end_abs: Option<usize>) {
         let args = trim_ascii(args);
         if args.is_empty() {
             return;
@@ -1869,21 +2013,17 @@ impl XmlParser {
             return;
         }
         let name_cstr = Self::vec_to_cstr_null(name);
-        unsafe {
-            let elem = if model.eq_ignore_ascii_case(b"EMPTY") {
-                crate::xml::dtd::add_element_decl(
-                    dtd,
-                    name_cstr,
-                    XML_ELEMENT_TYPE_EMPTY as c_int,
-                    ptr::null_mut(),
-                )
+        // UPSTREAM-PARITY (parser.c xmlParseElementDecl): build the declaration,
+        // report it through `sax->elementDecl`, and only then record it. The
+        // default handler is a deliberate no-op here and the tables are filled
+        // directly below, so a CUSTOM handler sees exactly the callback upstream
+        // sends — which is what the oracle-shadow court's `elementDecl` lines
+        // check.
+        let announced: Option<(c_int, *mut _xmlElementContent)> =
+            if model.eq_ignore_ascii_case(b"EMPTY") {
+                Some((XML_ELEMENT_TYPE_EMPTY as c_int, ptr::null_mut()))
             } else if model.eq_ignore_ascii_case(b"ANY") {
-                crate::xml::dtd::add_element_decl(
-                    dtd,
-                    name_cstr,
-                    XML_ELEMENT_TYPE_ANY as c_int,
-                    ptr::null_mut(),
-                )
+                Some((XML_ELEMENT_TYPE_ANY as c_int, ptr::null_mut()))
             } else if model.starts_with(b"(") {
                 let (content, is_mixed) = Self::parse_content_model(model);
                 let etype = if is_mixed {
@@ -1891,11 +2031,39 @@ impl XmlParser {
                 } else {
                     XML_ELEMENT_TYPE_ELEMENT as c_int
                 };
-                crate::xml::dtd::add_element_decl(dtd, name_cstr, etype, content)
+                Some((etype, content))
             } else {
-                ptr::null_mut()
+                None
             };
-            let _ = elem;
+        unsafe {
+            if let Some((etype, content)) = announced {
+                if !self.is_sax_disabled() {
+                    // Upstream fires the callback with the input at the END of
+                    // the declaration (`xmlParseElementDecl` has already
+                    // consumed its `>`); the push driver's subset scan is
+                    // slice-based, so it repositions the published window for
+                    // the dispatch.
+                    let (line, col, saved) = self.tokenizer.input_mut().current_ref().pos();
+                    if let Some(abs) = decl_end_abs {
+                        self.tokenizer
+                            .input_mut()
+                            .current()
+                            .set_diagnostic_position(abs, line, col);
+                    }
+                    self.publish_input_window();
+                    let sax = &*(*self.ctxt).sax;
+                    let ctx = (*self.ctxt).userData;
+                    SaxDispatcher::element_decl(sax, ctx, name_cstr, etype, content);
+                    if decl_end_abs.is_some() {
+                        self.tokenizer
+                            .input_mut()
+                            .current()
+                            .set_diagnostic_position(saved, line, col);
+                        self.publish_input_window();
+                    }
+                }
+                let _ = crate::xml::dtd::add_element_decl(dtd, name_cstr, etype, content);
+            }
             crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
         }
     }
@@ -2615,7 +2783,7 @@ impl XmlParser {
         // PIs, inline parameter-entity references and decl-level PE refs
         // (nested external PEs included).
         let mut dtd_opt = Some(dtd);
-        self.process_dtd_fragment(&mut dtd_opt, &content, 0, true);
+        self.process_dtd_fragment(&mut dtd_opt, &content, 0, true, None);
     }
 
     /// Resolve a DTD system id to a filesystem path, honoring a relative

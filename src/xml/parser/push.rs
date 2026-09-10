@@ -152,6 +152,12 @@ pub(crate) enum ParkedConstruct {
     /// Scanning for a single character (`>` in an end tag, `;` in a
     /// reference).
     Char { needle: u8, checked: u64 },
+    /// Scanning for the end of a DOCTYPE internal subset. Upstream
+    /// `xmlParseLookupInternalSubset` carries TWO continuation values —
+    /// `checkIndex` and `endCheckState` — because the scan is a state machine
+    /// over `<!-- -->`, quoted literals and a trailing `] S? >`. `state` is
+    /// that `endCheckState` (0, `-`, `]`, ` `, `"`, `'`).
+    Subset { checked: u64, state: u8 },
 }
 
 /// One open element, parked across calls so the next chunk resumes the

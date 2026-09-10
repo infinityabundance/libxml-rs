@@ -108,8 +108,8 @@ const WINDOW_MODES: &[&str] = &["b1024", "b4096", "b1024i"];
 /// Documents at or below this many bytes use [`SMALL_MODES`]. Duplicates the
 /// launcher's threshold on purpose (see [`SMALL_MODES`]).
 const SMALL_DOC_MAX: usize = 200;
-/// 14 small x 10 + 2 long x 4 + 8 window x 3.
-const SHADOW_CELL_TOTAL: usize = 172;
+/// 17 small x 10 + 2 long x 4 + 8 window x 3.
+const SHADOW_CELL_TOTAL: usize = 202;
 
 /// Documents whose FULL diagnostic records (message payload included) are
 /// asserted, not just their canonical form.
@@ -337,6 +337,159 @@ unsafe extern "C" fn on_reference(_ctx: *mut c_void, name: *const xmlChar) {
     emit(format!("reference [{}]", unsafe { esc_str(name) }));
 }
 
+// ── DTD declaration recorders (the probe's rec_intsubset..rec_unparsed) ──────
+
+unsafe extern "C" fn on_internal_subset(
+    _ctx: *mut c_void,
+    name: *const xmlChar,
+    ext_id: *const xmlChar,
+    sys_id: *const xmlChar,
+) {
+    cbmark("internalSubset");
+    emit(format!(
+        "internalSubset name={} ext={} sys={}",
+        unsafe { esc_str(name) },
+        unsafe { esc_str(ext_id) },
+        unsafe { esc_str(sys_id) }
+    ));
+}
+
+unsafe extern "C" fn on_external_subset(
+    _ctx: *mut c_void,
+    name: *const xmlChar,
+    ext_id: *const xmlChar,
+    sys_id: *const xmlChar,
+) {
+    cbmark("externalSubset");
+    emit(format!(
+        "externalSubset name={} ext={} sys={}",
+        unsafe { esc_str(name) },
+        unsafe { esc_str(ext_id) },
+        unsafe { esc_str(sys_id) }
+    ));
+}
+
+unsafe extern "C" fn on_entity_decl(
+    _ctx: *mut c_void,
+    name: *const xmlChar,
+    type_: c_int,
+    public_id: *const xmlChar,
+    system_id: *const xmlChar,
+    content: *mut xmlChar,
+) {
+    cbmark("entityDecl");
+    emit(format!(
+        "entityDecl name={} type={type_} pub={} sys={} content={}",
+        unsafe { esc_str(name) },
+        unsafe { esc_str(public_id) },
+        unsafe { esc_str(system_id) },
+        unsafe { esc_str(content as *const xmlChar) }
+    ));
+}
+
+/// Canonical xmlElementContent serializer, mirroring the probe's
+/// `dump_elem_content` (recursive, never a C string).
+unsafe fn dump_elem_content(c: *mut crate::abi::structs::_xmlElementContent, out: &mut String) {
+    if c.is_null() {
+        out.push_str("nil");
+        return;
+    }
+    let node = unsafe { &*c };
+    out.push_str(&format!("{{t={} o={} ", node.type_, node.ocur));
+    match node.type_ {
+        4 => out.push_str("#PCDATA"),
+        3 => {
+            out.push_str("name=");
+            out.push_str(&unsafe { esc_str(node.name) });
+            out.push_str(" prefix=");
+            out.push_str(&unsafe { esc_str(node.prefix) });
+        }
+        1 | 2 => {
+            out.push_str("a=");
+            unsafe { dump_elem_content(node.c1, out) };
+            out.push_str(" b=");
+            unsafe { dump_elem_content(node.c2, out) };
+        }
+        other => out.push_str(&format!("type{other}")),
+    }
+    out.push('}');
+}
+
+unsafe extern "C" fn on_element_decl(
+    _ctx: *mut c_void,
+    name: *const xmlChar,
+    type_: c_int,
+    content: *mut crate::abi::structs::_xmlElementContent,
+) {
+    cbmark("elementDecl");
+    let mut line = format!("elementDecl name={} type={type_} content=", unsafe {
+        esc_str(name)
+    });
+    unsafe { dump_elem_content(content, &mut line) };
+    emit(line);
+}
+
+unsafe extern "C" fn on_attribute_decl(
+    _ctx: *mut c_void,
+    elem: *const xmlChar,
+    fullname: *const xmlChar,
+    type_: c_int,
+    def: c_int,
+    default_value: *const xmlChar,
+    tree: *mut crate::abi::structs::_xmlEnumeration,
+) {
+    cbmark("attributeDecl");
+    let mut line = format!(
+        "attributeDecl elem={} name={} type={type_} def={def} val={} enum=",
+        unsafe { esc_str(elem) },
+        unsafe { esc_str(fullname) },
+        unsafe { esc_str(default_value) }
+    );
+    let mut e = tree;
+    let mut first = true;
+    while !e.is_null() {
+        if !first {
+            line.push('|');
+        }
+        first = false;
+        line.push_str(&unsafe { esc_str((*e).name) });
+        e = unsafe { (*e).next };
+    }
+    emit(line);
+}
+
+unsafe extern "C" fn on_notation_decl(
+    _ctx: *mut c_void,
+    name: *const xmlChar,
+    public_id: *const xmlChar,
+    system_id: *const xmlChar,
+) {
+    cbmark("notationDecl");
+    emit(format!(
+        "notationDecl name={} pub={} sys={}",
+        unsafe { esc_str(name) },
+        unsafe { esc_str(public_id) },
+        unsafe { esc_str(system_id) }
+    ));
+}
+
+unsafe extern "C" fn on_unparsed_entity_decl(
+    _ctx: *mut c_void,
+    name: *const xmlChar,
+    public_id: *const xmlChar,
+    system_id: *const xmlChar,
+    notation_name: *const xmlChar,
+) {
+    cbmark("unparsedEntityDecl");
+    emit(format!(
+        "unparsedEntityDecl name={} pub={} sys={} nota={}",
+        unsafe { esc_str(name) },
+        unsafe { esc_str(public_id) },
+        unsafe { esc_str(system_id) },
+        unsafe { esc_str(notation_name) }
+    ));
+}
+
 /// Structured-error recorder, byte-compatible with the probe's `rec_err`.
 ///
 /// Installing this puts diagnostics into the SAME ordered stream as the SAX
@@ -386,6 +539,13 @@ unsafe fn install_recorder(ctxt: *mut _xmlParserCtxt) {
         (*h).cdataBlock = Some(on_cdata);
         (*h).processingInstruction = Some(on_pi);
         (*h).reference = Some(on_reference);
+        (*h).internalSubset = Some(on_internal_subset);
+        (*h).externalSubset = Some(on_external_subset);
+        (*h).entityDecl = Some(on_entity_decl);
+        (*h).attributeDecl = Some(on_attribute_decl);
+        (*h).elementDecl = Some(on_element_decl);
+        (*h).notationDecl = Some(on_notation_decl);
+        (*h).unparsedEntityDecl = Some(on_unparsed_entity_decl);
         // SAX2 dispatch requires the magic and a startElementNs slot.
         (*h).initialized = XML_SAX2_MAGIC as u32;
     }

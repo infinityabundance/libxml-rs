@@ -78,6 +78,26 @@ pub(crate) enum XmlToken {
         unterminated: bool,
     },
 
+    /// The HEAD of a `<!DOCTYPE` declaration, scanned the way upstream
+    /// `xmlParseDocTypeDecl` does: it stops AT a `[` (leaving it unconsumed) or
+    /// just past the closing `>` when there is no internal subset. The push
+    /// driver needs the two phases separately because upstream sets
+    /// `XML_PARSER_DTD` between them.
+    DocTypeDecl {
+        /// `name (ExternalID)?` — the bytes between `<!DOCTYPE` and the stop.
+        content: Vec<u8>,
+        /// A `[` was found: the internal subset follows.
+        has_subset: bool,
+        /// The declaration ended with `>`.
+        closed: bool,
+    },
+
+    /// The internal subset, from its `[` through its matching `]` (the closing
+    /// `>` is consumed but not part of `content`). Scanned only when the whole
+    /// subset is available — upstream `xmlParseLookupInternalSubset` refuses
+    /// progressive parsing of the subset.
+    DocTypeSubset { content: Vec<u8>, closed: bool },
+
     /// Start tag: `<name ...>` or `<name ... />`
     ///
     /// `unterminated` marks a tag that never reached `>`/`/>` (upstream
@@ -2088,6 +2108,133 @@ impl XmlTokenizer {
             content,
             unterminated: !closed,
         }
+    }
+
+    /// Scan the HEAD of a `<!DOCTYPE` declaration, mirroring upstream
+    /// `xmlParseDocTypeDecl`: consume `<!DOCTYPE`, then the bytes up to (but not
+    /// including) a depth-0 `[`, or through the depth-0 `>` when there is no
+    /// internal subset. Quoted literals are skipped so a `[`/`>` inside a
+    /// SYSTEM/PUBLIC id does not terminate the head.
+    pub fn scan_doctype_decl(&mut self) -> XmlToken {
+        // Consume "<!DOCTYPE" (9 bytes).
+        for _ in 0..9 {
+            if self.input.is_eof() {
+                break;
+            }
+            self.input.read_char();
+        }
+        let content_start = self.input.current_pos().2;
+        let mut quote: u8 = 0;
+        let mut has_subset = false;
+        let mut closed = false;
+        loop {
+            if self.input.is_eof() {
+                break;
+            }
+            let c = self.input.peek_char().unwrap_or('\0') as u8;
+            if quote == 0 && c == b'>' {
+                // Leave the cursor AT the `>`: upstream fires `internalSubset`
+                // with `RAW == '>'` still unconsumed (the MISC arm does
+                // `if (RAW == '>') NEXT;` afterwards).
+                closed = true;
+                break;
+            }
+            if quote == 0 && c == b'[' {
+                // Leave the cursor AT the `[`: upstream sets XML_PARSER_DTD and
+                // xmlParseInternalSubset consumes it.
+                has_subset = true;
+                break;
+            }
+            if c == b'"' || c == b'\'' {
+                if quote == 0 {
+                    quote = c;
+                } else if quote == c {
+                    quote = 0;
+                }
+            }
+            self.input.read_char();
+        }
+        if !has_subset && !closed {
+            // upstream: `if ((RAW != '[') && (RAW != '>')) xmlFatalErr(
+            // ctxt, XML_ERR_DOCTYPE_NOT_FINISHED, NULL);`
+            self.record_error(
+                crate::abi::types::XML_FROM_PARSER,
+                crate::abi::types::XML_ERR_DOCTYPE_NOT_FINISHED,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                "DOCTYPE improperly terminated\n".to_string(),
+                None,
+                None,
+                None,
+                0,
+                None,
+            );
+        }
+        let content = self
+            .input
+            .current_ref()
+            .raw_range(content_start, self.input.current_pos().2)
+            .to_vec();
+        XmlToken::DocTypeDecl {
+            content,
+            has_subset,
+            closed,
+        }
+    }
+
+    /// Scan the internal subset with the cursor AT its `[`, consuming through
+    /// the matching depth-0 `]` and the `>` that must follow. `content` is the
+    /// raw slice `[`..`]` inclusive, which is exactly what
+    /// `parse_internal_subset` re-scans.
+    pub fn scan_doctype_subset(&mut self) -> XmlToken {
+        debug_assert_eq!(self.input.peek_char(), Some('['));
+        let content_start = self.input.current_pos().2;
+        let mut depth: usize = 0;
+        let mut closed = false;
+        loop {
+            if self.input.is_eof() {
+                break;
+            }
+            match self.input.peek_char() {
+                Some('[') => {
+                    depth += 1;
+                    self.input.read_char();
+                }
+                Some(']') => {
+                    depth = depth.saturating_sub(1);
+                    self.input.read_char();
+                    if depth == 0 {
+                        if self.input.peek_char() == Some('>') {
+                            self.input.read_char();
+                            closed = true;
+                        }
+                        break;
+                    }
+                }
+                Some(_) => {
+                    self.input.read_char();
+                }
+                None => break,
+            }
+        }
+        if !closed {
+            self.record_error(
+                crate::abi::types::XML_FROM_PARSER,
+                crate::abi::types::XML_ERR_DOCTYPE_NOT_FINISHED,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                "DOCTYPE improperly terminated\n".to_string(),
+                None,
+                None,
+                None,
+                0,
+                None,
+            );
+        }
+        let content = self
+            .input
+            .current_ref()
+            .raw_range(content_start, self.input.current_pos().2)
+            .to_vec();
+        XmlToken::DocTypeSubset { content, closed }
     }
 
     // ── Reference scanning ──────────────────────────────────────────────────

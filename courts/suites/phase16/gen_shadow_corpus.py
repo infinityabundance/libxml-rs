@@ -109,6 +109,16 @@ doc("shadow-cdata.xml", b"<a><![CDATA[x<y&z]]></a>")
 doc("shadow-decl-bad.xml", b'<?xml version="2.0"?><a/>')
 doc("shadow-pi-reserved.xml", b"<?xml?><a/>")
 
+# ── 13: DOCTYPE, in upstream's TWO phases ────────────────────────────────
+# Upstream parses the declaration HEAD (and fires `internalSubset`) as soon as
+# the head is available, then sets `XML_PARSER_DTD` and waits for the WHOLE
+# internal subset before parsing it. These cells pin that split: the state at
+# a chunk boundary inside the subset must be DTD, not MISC, and the
+# `externalSubset` callback fires in both the no-subset and subset shapes.
+doc("shadow-doctype.xml", b"<!DOCTYPE a><a/>")
+doc("shadow-doctype-subset.xml", b"<!DOCTYPE a [<!ELEMENT a EMPTY>]><a/>")
+doc("shadow-doctype-ext.xml", b'<!DOCTYPE a SYSTEM "a.dtd"><a/>')
+
 
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "."
