@@ -188,10 +188,18 @@ def main():
     # A couple of binary-edge files (invalid UTF-8) written as raw bytes.
     raw = {
         "raw-invalid-utf8.xml": b"<a>\xff\xfe</a>",
-        "raw-trunc-utf8.xml": b"<a>\xc3</a>",
-        "raw-trunc-utf8-2.xml": b"<a>\xe2\x82</a>",
+        "raw-trunc-utf8.xml": b"<a>\xc3</a>",      # 0xC3 then '<': fatal invalid UTF-8
+        "raw-trunc-utf8-2.xml": b"<a>\xe2\x82</a>",  # 0xE2 0x82 then '<': fatal
         "raw-overlong.xml": b"<a>\xc0\xaf</a>",
         "raw-high-name.xml": b"<\xf0\xa0\x80</a>",
+        # Genuinely EOF-truncated UTF-8: the stream ENDS inside a multibyte
+        # sequence (the decoder needs 1/2/3 more continuation bytes and the
+        # non-final feed must SUSPEND, not error):
+        "raw-pending-utf8-2.xml": b"<a>\xc3",
+        "raw-pending-utf8-3.xml": b"<a>\xe2\x82",
+        "raw-pending-utf8-4.xml": b"<a>\xf0\x9f\x8e",
+        # Truncated mid entity-reference name (no ';' yet):
+        "raw-pending-entity.xml": b"<a>&am",
     }
     for name, content in sorted(raw.items()):
         with open(os.path.join(out, name), "wb") as f:

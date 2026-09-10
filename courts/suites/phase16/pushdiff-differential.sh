@@ -125,8 +125,10 @@ for doc in "${DOCS[@]}"; do
   fi
 done
 
-# xmlCtxtResetPush cells: pairs of shape-different documents (DTD ↔ ns,
-# CR line endings ↔ attr-heavy, error doc ↔ cdata, …) in both directions.
+# xmlCtxtResetPush cells over COMPLETED documents A: reset after A is
+# finished (Rz/Ri — stale state must not leak), plus UNFINALIZED A (Rs /
+# Rsi: A is fed fully but never terminated — the context rests suspended
+# at a clean construct boundary, e.g. EPILOG or open-root EOF).
 reset_pairs="doctype-subset-choice:ns-rescope ns-rescope:doctype-subset-choice \
 text-cr-chunkend:attr-many unclosed-root2:content-cdata \
 content-cdata:doctype-entity-nested attr-unicode:text-unicode-emoji-tail"
@@ -137,24 +139,26 @@ for pair in $reset_pairs; do
     total=$((total + 1))
     tag="reset_${a}_${b}__$m"
     if ! run_cell "$tag" "" "$m" "$OUT/corpus/$a.xml" "$OUT/corpus/$b.xml"; then
-      record_fail "reset $a -> $b" "$m" "$tag"
+      record_fail "reset(finished) $a -> $b" "$m" "$tag"
     fi
   done
   for m in Rsb1 Rsib257; do
     total=$((total + 1))
-    tag="sreset_${a}_${b}__$m"
+    tag="unfinalized_${a}_${b}__$m"
     if ! run_cell "$tag" "" "$m" "$OUT/corpus/$a.xml" "$OUT/corpus/$b.xml"; then
-      record_fail "suspended-reset $a -> $b" "$m" "$tag"
+      record_fail "reset(unfinalized) $a -> $b" "$m" "$tag"
     fi
   done
 done
 
-# SUSPENDED xmlCtxtResetPush cells: A ends mid-construct (partial lexical
-# token / pending UTF-8 / pending CR / open element stack / DTD decl) and
-# the reset must clear exactly that machinery before B is parsed.
-suspended_pairs="raw-trunc-utf8:ns-rescope text-cr-end:attr-many \
-starttag-trunc-attr-val-dq:content-cdata doctype-trunc-elem-decl:cr-multi \
-endtag-trunc:doctype-subset-choice doctype-trunc-entity:text-unicode"
+# SUSPENDED-MID-CONSTRUCT xmlCtxtResetPush cells: A is a genuinely
+# truncated document — it ends INSIDE a lexical construct — so the reset
+# must clear a partial lexical token / pending UTF-8 / pending CR / open
+# element stack / partial DTD declaration before B is parsed.
+suspended_pairs="raw-pending-utf8-2:ns-rescope raw-pending-utf8-4:content-cdata \
+text-cr-end:attr-many starttag-trunc-attr-val-dq:cr-multi \
+doctype-trunc-elem-decl:minimal endtag-trunc:doctype-subset-choice \
+doctype-trunc-entity:ctor-dtd raw-pending-entity:text-unicode"
 for pair in $suspended_pairs; do
   a=${pair%%:*}
   b=${pair##*:}
@@ -162,7 +166,7 @@ for pair in $suspended_pairs; do
     total=$((total + 1))
     tag="sreset_${a}_${b}__$m"
     if ! run_cell "$tag" "" "$m" "$OUT/corpus/$a.xml" "$OUT/corpus/$b.xml"; then
-      record_fail "suspended-reset $a -> $b" "$m" "$tag"
+      record_fail "reset(suspended-mid-construct) $a -> $b" "$m" "$tag"
     fi
   done
 done

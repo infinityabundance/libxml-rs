@@ -147,41 +147,52 @@ Notable new evidence:
   (111); the candidate's first post-stop call reports errNo 111 but
   rc=0 (its disableSAX gate returns after re-parsing).
 
-## Slice 0.3 — suspended-reset cells + forced constructor boundaries
-(freeze of slice 0; no further court expansion until the engine drives)
+(Slice 0.3, commit 84156cbd, previously added: suspended-reset cells
+`Rs`/`Rsi`, forced constructor-boundary corpus docs + Cb5/Cb12 plans,
+the CTOR `ok=` trace form, and the receipt-heading dedup.)
 
-Reviewer items closed before the stateful rewrite:
+## Slice 0.3.1 — genuine EOF-truncated UTF-8 resets; exact terminology;
+forensic provenance chain
 
-1. **Suspended-reset cells** (`Rs<plan>` / `Rsi<plan>`): document A is fed
-   under the plan but NEVER finished — it ends mid-construct with partial
-   lexical token / pending UTF-8 / pending CR / open element stack / DTD
-   declaration parked — and only then is `xmlCtxtResetPush` called
-   (empty, or with whole B). Six truncated-A × unrelated-B pairs
-   (`raw-trunc-utf8`, `text-cr-end` (trailing CR pending),
-   `starttag-trunc-attr-val-dq`, `doctype-trunc-elem-decl`,
-   `endtag-trunc` (open stack), `doctype-trunc-entity`).
-2. **Forced constructor boundaries**: new corpus docs
-   (`ctor-utf8`, `ctor-utf8-cjk`, `ctor-entity`, `ctor-charref`,
-   `ctor-attr`, `ctor-attr-ns`, `ctor-dtd`) plus `Cb5`/`Cb12` plans so a
-   constructor-initial chunk ends inside a multibyte sequence, an entity
-   reference, an attribute value, or a DTD declaration.
-3. **CTOR trace nit**: the constructor record is now `< CTOR ok=1 err=…
-   wf=… in=… p=…` (no manufactured rc); `ok=0` when the context is NULL.
-4. **Receipt dedup**: the duplicated “Acceptance criteria” heading is
-   removed.
+Final slice-0 corrections (reviewer), then slice 0 is frozen permanently:
 
-### Frozen slice-0 baseline (unchanged parser)
+1. **Real pending-UTF-8 reset inputs**: the previous `raw-trunc-utf8.xml`
+   (`<a>\xC3</a>`) was NOT a stream ending mid-sequence — the `0xC3` is
+   followed by `<`, an invalid continuation byte, so that cell tested
+   fatal-invalid-UTF-8→reset (the oracle reaches rc=81 before the reset).
+   Added genuinely EOF-truncated sequences the decoder cannot finish:
+   `raw-pending-utf8-2.xml` (`<a>\xC3` — 1 continuation byte missing),
+   `raw-pending-utf8-3.xml` (`<a>\xE2\x82` — 1 more), `raw-pending-utf8-4.xml`
+   (`<a>\xF0\x9F\x8E` — 1 more), plus `raw-pending-entity.xml`
+   (`<a>&am` — entity reference name still unterminated). The suspended
+   reset pairs now use these; the fatal-UTF-8 docs stay in the corpus for
+   the error-class cells.
+2. **Exact terminology**: reset cells over syntactically complete A
+   documents (fed but never terminated) are labelled **unfinalized-reset**;
+   only the genuinely truncated-A cells are labelled
+   **suspended-mid-construct-reset** (and only those claim partial
+   lexical/UTF-8/CR/DTD state).
+3. **Forensic provenance chain**: `pushdiff-run.sh` now refuses to run
+   from a dirty worktree (so `candidate_sha`/`court_sha` name a committed
+   state) and records cryptographic fingerprints: probe/generator/runner
+   sha256, the sha256 of the actual candidate `libxml2.so` binary mounted
+   as `/candidate`, and the oracle image ID + repo digest (a local tag is
+   mutable; the ID/digest is not). Workflow is now: commit court → run
+   from clean tree → commit evidence.
+
+Note: as of this slice the repo has no GitHub status checks / workflow
+runs, so nothing in slice 0 is described as CI-verified — the court runs
+are the verification.
+
+### Frozen slice-0 baseline (unchanged parser, final)
 
 | metric | value |
 |---|---:|
-| cells | 3962 |
-| diverging cells | 3962 |
+| cells | see run.txt of the evidence commit (≈ 4 k) |
+| diverging cells | = cells (100%) |
 
-All remaining divergence traces back to the three systemic classes
-(startDocument/endDocument call timing, REFEED-after-finish,
-end_in_lf CR deferral) plus their cursor/state consequences (nameNr
-inflation, p/l/col drift, rc-vs-errNo on refused calls). Every cell is
-regenerable with `sh courts/suites/phase16/pushdiff-run.sh`.
+Run: `sh courts/suites/phase16/pushdiff-run.sh` from a clean tree; the
+gate is diffs = 0 after the stateful rewrite.
 
 ## What the divergences are (three systematic classes)
 
