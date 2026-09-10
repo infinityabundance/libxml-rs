@@ -759,6 +759,11 @@ int main(int argc, char **argv) {
                     fprintf(TR, " p=%ld l=%d col=%d i=%d n=%d",
                             (long)(in->cur - in->base), in->line, in->col,
                             c->inputNr, c->nameNr);
+                    if (WINDOW_MODE) {
+                        unsigned long cons = in->consumed;
+                        fprintf(TR, " c=%lu abs=%lu", cons,
+                                cons + (unsigned long)(in->cur - in->base));
+                    }
                 } else {
                     fprintf(TR, " p=-1 l=-1 col=-1 i=-1 n=%d", c->nameNr);
                 }
