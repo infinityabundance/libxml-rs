@@ -69,7 +69,7 @@ matrices). Work so far, in phase order:
   ruby-nokogiri, PHP) with the corpus/court machinery in
   `courts/suites/phase16/`.
 
-Latest gates: `cargo test --lib` 1312 passed / 0 failed (2 ignored); PHP six-extension
+Latest gates: `cargo test --lib` 1312 passed / 0 failed (3 ignored); PHP six-extension
 six-gate 1250 passed / 0 failed; CLI xmllint differential 46/48 (2
 pre-existing); per-backend parse fuzz clean.
 
@@ -370,7 +370,7 @@ All six Phase 8 residuals are documented in [`atlas/RESIDUAL_LEDGER.md`](atlas/R
 <!-- GENERATED-TESTCOVERAGE:START -->
 | Subsystem | Tests |
 |-----------|------:|
-| XML parser + SAX | 135 |
+| XML parser + SAX | 136 |
 | XPath 1.0 | 128 |
 | Encoding | 79 |
 | URI | 70 |
@@ -534,7 +534,7 @@ at your option.
 | Subsystem census | 85 subsystems classified; verdicts: IMPLEMENTED_UNVERIFIED 43, PARTIAL 42 (evidence: atlas/SUBSYSTEM_CENSUS.json) |
 | Surface reconciliation | libxml2: doxygen 1374 / AST 1403 / DSO 1395 functions; libxslt: 235 / 231 / 232 (evidence: atlas/SURFACE_RECONCILIATION.json) |
 | Historical surface epochs | libxml2 2785 entities across 11 boundaries (evidence: atlas/HISTORICAL_SURFACE_EPOCHS.json) |
-| Test coverage | 1312 passing, 0 failed, 2 ignored (`cargo test --lib`, evidence: atlas/TEST_COUNTS.json) |
+| Test coverage | 1312 passing, 0 failed, 3 ignored (`cargo test --lib`, evidence: atlas/TEST_COUNTS.json) |
 | C headers | gcc & clang header-compile courts green (596/596, evidence: courts/receipts/header-compile-*) |
 | CLI parity | `xmllint` + `xmlcatalog` + `xsltproc` differential oracle parity (evidence: courts/receipts/CLI-*) |
 | Oracle infrastructure | 12 historical libxml2 + 5 libxslt oracles + system 2.15.3/1.1.45/0.8.25 oracles; evidence: oracle/historical, atlas/DOXYGEN_SURFACE_ATLAS.json |
