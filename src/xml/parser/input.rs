@@ -461,6 +461,17 @@ pub(crate) struct InputBuffer {
     /// holds — which is exactly how `xmlCtxtGetInputPosition` reconstructs the
     /// UTF-8 byte position.
     window_base_abs: usize,
+    /// Bytes the DECODER consumed that are not represented in the materialized
+    /// stream at all — today, the leading BOM of a fixed-width codec.
+    ///
+    /// Upstream counts those in `in->consumed` at the moment the encoding is
+    /// switched, which is why `shadow-utf16invalid.xml` at b2 reports
+    /// `c=0 p=0 abs=0` on the call that delivers only the BOM, and `c=2 p=0
+    /// abs=2` on the next call: the two BOM bytes were consumed but never
+    /// appear in the converted buffer, so they show up as consumed-only.
+    /// `abs` is therefore the CONVERTED position plus this bias, exactly as
+    /// `xmlCtxtGetInputPosition` reconstructs it.
+    consumed_bias: usize,
     /// A definite invalid encoding unit was found (upstream
     /// `XML_ENC_ERR_INPUT`: an unpaired low surrogate, a high surrogate
     /// followed by a non-low unit, an out-of-range UCS-4 code point). Raised
@@ -536,6 +547,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
@@ -571,6 +583,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
@@ -621,6 +634,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
@@ -780,8 +794,13 @@ impl InputBuffer {
         // `input->cur` past it before switching the encoder).
         self.pos = 0;
         self.window_base_abs = 0;
+        self.consumed_bias = 0;
         self.col = 1;
         self.pending_source = src[skip..].to_vec();
+        // The skipped BOM is consumed-but-never-materialized: upstream counts
+        // it in `in->consumed` at the encoding switch (see
+        // `Self::consumed_bias`).
+        self.consumed_bias = skip;
         self.decode_units_tail(terminate);
     }
 
@@ -999,6 +1018,12 @@ impl InputBuffer {
         self.window_base_abs
     }
 
+    /// Bytes consumed by the decoder but absent from the materialized stream
+    /// (see [`Self::consumed_bias`]).
+    pub(crate) const fn consumed_bias(&self) -> usize {
+        self.consumed_bias
+    }
+
     /// The physical window's used length: `cur - base` in ABI terms.
     pub(crate) const fn window_used(&self) -> usize {
         self.pos.saturating_sub(self.window_base_abs)
@@ -1097,6 +1122,7 @@ impl InputBuffer {
             pending_source: self.pending_source.clone(),
             source_received: self.source_received,
             materialized: self.materialized,
+            consumed_bias: self.consumed_bias,
             window_base_abs: self.window_base_abs,
             encoding_error: self.encoding_error,
             truncated_source: self.truncated_source,
@@ -1141,6 +1167,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
@@ -1177,6 +1204,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
@@ -1208,6 +1236,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
@@ -1462,6 +1491,7 @@ impl InputBuffer {
         self.materialized = 0;
         self.pos = 0;
         self.window_base_abs = 0;
+        self.consumed_bias = 0;
         self.col = 1;
         self.bom_consumed = false;
         self.pending_source = raw;
@@ -1499,6 +1529,7 @@ impl InputBuffer {
                 self.materialized = self.data.data_len() as u64;
                 self.pos = 0;
                 self.window_base_abs = 0;
+                self.consumed_bias = 0;
                 self.col = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = true;
@@ -1517,6 +1548,7 @@ impl InputBuffer {
                     self.encoding = Encoding::Utf8;
                     self.pos = 0;
                     self.window_base_abs = 0;
+                    self.consumed_bias = 0;
                     self.col = 1;
                     self.bom_consumed = false;
                     self.converted_to_utf8 = false;
@@ -1533,6 +1565,7 @@ impl InputBuffer {
                     self.materialized = self.data.data_len() as u64;
                     self.pos = 0;
                     self.window_base_abs = 0;
+                    self.consumed_bias = 0;
                     self.col = 1;
                     self.bom_consumed = false;
                     self.converted_to_utf8 = true;
@@ -1563,6 +1596,7 @@ impl InputBuffer {
                 self.data = InputBytes::Owned(conv);
                 self.pos = 0;
                 self.window_base_abs = 0;
+                self.consumed_bias = 0;
                 self.col = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = true;
@@ -1571,6 +1605,7 @@ impl InputBuffer {
                 self.encoding = Encoding::Utf8;
                 self.pos = 0;
                 self.window_base_abs = 0;
+                self.consumed_bias = 0;
                 self.col = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = false;
@@ -1600,6 +1635,7 @@ impl InputBuffer {
                 self.data = InputBytes::Owned(conv);
                 self.pos = 0;
                 self.window_base_abs = 0;
+                self.consumed_bias = 0;
                 self.col = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = true;
@@ -1610,6 +1646,7 @@ impl InputBuffer {
                 self.encoding = Encoding::Utf8;
                 self.pos = 0;
                 self.window_base_abs = 0;
+                self.consumed_bias = 0;
                 self.col = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = false;
@@ -1651,6 +1688,7 @@ impl InputBuffer {
                 self.data = InputBytes::Owned(conv);
                 self.pos = 0;
                 self.window_base_abs = 0;
+                self.consumed_bias = 0;
                 self.col = 1;
                 self.line = 1;
                 self.bom_consumed = false;
@@ -1715,6 +1753,7 @@ impl InputBuffer {
                 self.data = InputBytes::Owned(conv);
                 self.pos = 0;
                 self.window_base_abs = 0;
+                self.consumed_bias = 0;
                 self.col = 1;
                 self.line = 1;
                 self.bom_consumed = false;
@@ -2273,7 +2312,7 @@ impl InputBuffer {
         input.line = self.line as c_int;
         input.col = self.col as c_int;
         input.length = bytes.len() as c_int;
-        input.consumed = wb as c_ulong;
+        input.consumed = (self.consumed_bias + wb) as c_ulong;
     }
 
     /// Create a `_xmlParserInputBuffer` from this buffer's source.
@@ -2312,6 +2351,7 @@ impl InputBuffer {
     pub fn reset(&mut self) {
         self.pos = 0;
         self.window_base_abs = 0;
+        self.consumed_bias = 0;
         self.line = 1;
         self.col = 1;
         self.bom_consumed = false;

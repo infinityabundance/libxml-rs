@@ -50,17 +50,14 @@
 //! - **Diagnostic message windows** (`file`, `str1..3`, `msg`) outside the
 //!   encoder pair. Those are the existing error courts' surface, and
 //!   declarations/DTDs will make them complicated.
-//! - **`p` is the absolute offset into the current materialization**, not a
-//!   pointer difference. That is the same quantity upstream reports as
-//!   `cur - base` only BELOW 4096 bytes: upstream rebases the buffer above
-//!   that (`xmlParserShrink`, and `xmlBufUpdateInput` in
-//!   `xmlParserCheckEOF`'s encoder flush), and the driver's `p` comes from
-//!   `InputBuffer::pos().2` directly. It is measured and REPORTED, not
-//!   asserted, until the driver publishes `ctxt->input` (step 1e).
-//! - **`i` (`inputNr`)** for the same reason: it is synthetic on the driver
-//!   side (there is no published input stack yet).
 //! - The driver's own machine diagnostics (materialized/consumed/scan-work)
 //!   are printed SEPARATELY by the report and never enter the compared trace.
+//!
+//! `p`, `i`, `c` and `abs` ARE asserted: they are read from the published ABI
+//! window (`ctxt->input`), so the court proves the driver exposes the same
+//! moving physical window libxml2 does — including the >4096 rebase that keeps
+//! `LINE_LEN` (80) bytes of context, and the identity
+//! `c + (cur - base) == abs`.
 //!
 //! # Coverage
 //!
@@ -470,13 +467,7 @@ impl Drop for CtxtGuard {
 /// not a driver return value — `xmlParseChunk` returns `errNo` when the
 /// document is not well-formed and 0 otherwise, so the same expression is
 /// evaluated from the state the driver left behind.
-unsafe fn tail_line(
-    lbl: &str,
-    idx: usize,
-    ctxt: *mut _xmlParserCtxt,
-    _parser: &XmlParser,
-    ctor: bool,
-) -> String {
+unsafe fn tail_line(lbl: &str, idx: usize, ctxt: *mut _xmlParserCtxt, ctor: bool) -> String {
     let err = unsafe { (*ctxt).errNo };
     let wf = unsafe { (*ctxt).wellFormed };
     let instate = unsafe { (*ctxt).instate };
@@ -534,7 +525,7 @@ pub(crate) fn run_driver(doc: &[u8], plan: &ShadowPlan, name: &str) -> Vec<Strin
             parser = XmlParser::new_with_flags(InputStack::new(buf), ctxt, false, false);
             let _ = parser.drive_persistent(&mut machine, false);
             out.append(&mut drain_events());
-            out.push(tail_line("CTOR", 0, ctxt, &parser, true));
+            out.push(tail_line("CTOR", 0, ctxt, true));
             off = n;
         } else {
             let buf = InputBuffer::for_push(&[], None);
@@ -548,7 +539,7 @@ pub(crate) fn run_driver(doc: &[u8], plan: &ShadowPlan, name: &str) -> Vec<Strin
             drain_events();
             let _ = parser.push_persistent(&mut machine, &doc[off..off + n], terminate);
             out.append(&mut drain_events());
-            out.push(tail_line("CALL", call, ctxt, &parser, false));
+            out.push(tail_line("CALL", call, ctxt, false));
             off += n;
             // The probe increments the call index BEFORE injecting the
             // zero-length calls, so their label is the NEXT index.
@@ -558,7 +549,7 @@ pub(crate) fn run_driver(doc: &[u8], plan: &ShadowPlan, name: &str) -> Vec<Strin
                 drain_events();
                 let _ = parser.push_persistent(&mut machine, &[], false);
                 out.append(&mut drain_events());
-                out.push(tail_line("CALL", call, ctxt, &parser, false));
+                out.push(tail_line("CALL", call, ctxt, false));
             }
         }
 
@@ -567,14 +558,14 @@ pub(crate) fn run_driver(doc: &[u8], plan: &ShadowPlan, name: &str) -> Vec<Strin
             drain_events();
             let _ = parser.push_persistent(&mut machine, &[], true);
             out.append(&mut drain_events());
-            out.push(tail_line("FINAL", 0, ctxt, &parser, false));
+            out.push(tail_line("FINAL", 0, ctxt, false));
         }
 
         out.push("> REFEED".to_string());
         drain_events();
         let _ = parser.push_persistent(&mut machine, doc, true);
         out.append(&mut drain_events());
-        out.push(tail_line("REFEED", 0, ctxt, &parser, false));
+        out.push(tail_line("REFEED", 0, ctxt, false));
     }
     out
 }
@@ -606,8 +597,6 @@ pub(crate) struct CellReport {
     pub mode: String,
     pub status: CellStatus,
     pub first_diff: Option<(usize, String, String)>,
-    /// First `p` (physical cursor) disagreement, as an observation.
-    pub cursor_diff: Option<(usize, String, String)>,
     /// For the encoder documents: whether the FULL diagnostic records match
     /// (message payload included), not merely their canonical form.
     pub encoder_full_errors_match: Option<bool>,
@@ -676,13 +665,6 @@ fn project(lines: &[String]) -> Vec<String> {
         .collect()
 }
 
-fn p_of(line: &str) -> Option<String> {
-    let i = line.find(" p=")? + 3;
-    let rest = &line[i..];
-    let end = rest.find(' ').unwrap_or(rest.len());
-    Some(rest[..end].to_string())
-}
-
 /// The full diagnostic records, in order. Used for the encoder pair, whose
 /// records are stable and are the contract those documents exist to pin.
 fn error_lines(lines: &[String]) -> Vec<String> {
@@ -691,31 +673,6 @@ fn error_lines(lines: &[String]) -> Vec<String> {
         .filter(|l| l.starts_with("error "))
         .cloned()
         .collect()
-}
-
-/// The first `p` value that differs, as an OBSERVATION (never an assertion).
-fn cursor_divergence(oracle: &[String], driver: &[String]) -> Option<(usize, String, String)> {
-    // Aligned on the same projection the assertion uses (diagnostic records
-    // dropped), so `p` is read from genuinely corresponding lines.
-    let no_errors = |lines: &[String]| -> Vec<String> {
-        lines
-            .iter()
-            .filter(|l| !l.starts_with("error "))
-            .cloned()
-            .collect()
-    };
-    let o = no_errors(oracle);
-    let d = no_errors(driver);
-    for (i, (ol, dl)) in o.iter().zip(d.iter()).enumerate() {
-        if p_of(ol) != p_of(dl) {
-            return Some((
-                i,
-                p_of(ol).unwrap_or_default(),
-                p_of(dl).unwrap_or_default(),
-            ));
-        }
-    }
-    None
 }
 
 pub(crate) fn compare(
@@ -777,7 +734,6 @@ pub(crate) fn run_all() -> Vec<CellReport> {
         let oracle = normalize_oracle(&oracle_text);
         let driver = run_driver(&doc, &plan, doc_name);
         let (status, first_diff) = compare(&oracle, &driver);
-        let cursor_diff = cursor_divergence(&oracle, &driver);
         let encoder_full_errors_match = if ENCODER_DOCS.contains(&doc_name) {
             Some(error_lines(&oracle) == error_lines(&driver))
         } else {
@@ -788,7 +744,6 @@ pub(crate) fn run_all() -> Vec<CellReport> {
             mode: mode.to_string(),
             status,
             first_diff,
-            cursor_diff,
             encoder_full_errors_match,
             inline_final: plan.inline_final,
             random_plan: plan.random,
@@ -874,21 +829,6 @@ mod tests {
                 r.doc,
                 r.mode
             );
-        }
-
-        // `p` (the physical `cur - base`) is still OBSERVED rather than
-        // asserted: upstream rebases that buffer above 4096 bytes and the
-        // court-only driver does not publish `ctxt->input` yet. Printing it
-        // keeps the remaining cursor item visible instead of forgotten.
-        let cursor_cells = reports.iter().filter(|r| r.cursor_diff.is_some()).count();
-        println!("  cursor (p) disagreements observed in {cursor_cells} cells:");
-        for r in reports.iter() {
-            if let Some((i, po, pd)) = &r.cursor_diff {
-                println!(
-                    "    {} mode={} line {} oracle p={} driver p={}",
-                    r.doc, r.mode, i, po, pd
-                );
-            }
         }
 
         assert!(

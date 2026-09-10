@@ -15,11 +15,12 @@ Generates the documents the ORACLE-SHADOW court drives through both providers:
 
 Documents 1-5 are the driver's own court documents: the grammar the driver
 covers today. 6-7 are long single constructs (the cases that are quadratic
-without lookahead continuation). 8 is the ENCODER-FLUSH case the driver
-documents as unimplemented: a UTF-16LE document whose source stream ends with
-an incomplete code unit, so `xmlParserCheckEOF`'s flush must report
-XML_ERR_INVALID_ENCODING on the terminating call. It is expected to be the
-first RED cell of this court.
+without lookahead continuation). 8 is the ENCODER-FLUSH case: a UTF-16LE
+document whose source stream ends with an incomplete code unit, so
+`xmlParserCheckEOF`'s flush reports XML_ERR_INVALID_ENCODING on the terminating
+call. 9 is the physical-window threshold archaeology (the `shadow-win-*`
+documents). 10 is the DEFINITE-invalid counterpart to 8: it fails on the call
+that delivers the bad unit rather than on termination.
 
 Python stdlib only (the court image has no site-packages).
 """
@@ -57,7 +58,7 @@ doc(
     b"\xff\xfe" + "<a>x</a>".encode("utf-16-le") + b"\x3c",
 )
 
-# ── 10: the physical-window threshold archaeology ───────────────────────
+# ── 9: the physical-window threshold archaeology ───────────────────────
 # The shrink gate is `cur - base > 4096` and it keeps LINE_LEN (80) bytes as
 # error context, so the interesting variable is the CONSUMED CURSOR when a pass
 # begins, not the document size as such. Two shapes, because they cross the
@@ -73,7 +74,7 @@ for n in (4095, 4096, 4097, 8192):
     doc(f"shadow-win-text-{n}.xml", b"<r>" + b"x" * (n - 7) + b"</r>")
     doc(f"shadow-win-attr-{n}.xml", b'<r a="' + b"x" * (n - 9) + b'"/>')
 
-# ── 9: the DEFINITE-invalid encoder cell ───────────────────────────────
+# ── 10: the DEFINITE-invalid encoder cell ──────────────────────────────
 # A lone low surrogate is invalid the moment its two bytes are present, so it
 # is not a suspension that a terminating call later flushes: upstream's
 # xmlParserInputBufferPush fails and xmlParseChunk reports
