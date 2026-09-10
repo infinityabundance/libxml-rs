@@ -36,7 +36,7 @@
  * one|two|three; text/cdata/comment/PI bytes are escaped (\n \r \t \\ \xNN).
  *
  * Usage:
- *   pushdiff-probe [-s sax1|sax2] [-S stopN] <chunkmode> <file> [file ...]
+ *   pushdiff-probe [-s sax1|sax2] [-S stopN] [-W] <chunkmode> <file> [file ...]
  *   chunkmode:  [C][R[z|i]] bN | rSEED[-span] [zK] [i]
  *     bN      fixed N-byte chunks (last chunk = remainder)
  *     rS      random splits, seed S (split sizes 1..64 bytes)
@@ -77,6 +77,12 @@ static FILE *TR;
 static xmlParserCtxtPtr CUR; /* the live context (xmlStopParser target) */
 static int STOP_AFTER = 0;   /* 0 = never stop; else stop at the K-th start */
 static int STARTS = 0;       /* start-element counter, reset per document */
+/* Shadow-only: additionally emit the PHYSICAL input window (`consumed` and the
+ * reconstructed absolute position). Off by default so the frozen 4702-cell
+ * trace format is untouched. The oracle-shadow court runs with it on, so the
+ * identity `consumed + (cur - base) == absolute` is measured rather than
+ * inferred (it is exactly what xmlCtxtGetInputPosition reconstructs). */
+static int WINDOW_MODE = 0;
 
 static void esc_bytes(const xmlChar *s, int len) {
     int i;
@@ -536,6 +542,11 @@ static void tail(const char *lbl, int idx, int rc, xmlParserCtxtPtr c) {
         fprintf(TR, " p=%ld l=%d col=%d i=%d n=%d",
                 (long)(in->cur - in->base), in->line, in->col,
                 c->inputNr, c->nameNr);
+        if (WINDOW_MODE) {
+            unsigned long cons = in->consumed;
+            fprintf(TR, " c=%lu abs=%lu", cons,
+                    cons + (unsigned long)(in->cur - in->base));
+        }
     } else {
         fprintf(TR, " p=-1 l=-1 col=-1 i=-1 n=%d", c->nameNr);
     }
@@ -613,6 +624,10 @@ int main(int argc, char **argv) {
         if (argc < iarg + 3) return 1;
         STOP_AFTER = atoi(argv[iarg + 1]);
         iarg += 2;
+    }
+    if (strcmp(argv[iarg], "-W") == 0) {
+        WINDOW_MODE = 1;
+        iarg += 1;
     }
     if (iarg >= argc) return 1;
     if (parse_plan(argv[iarg], &plan) != 0) {

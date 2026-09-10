@@ -5808,13 +5808,66 @@ impl XmlParser {
                     .input()
                     .current_ref()
                     .populate_parser_input_without_filename(&mut *ctxt.input);
-                // The candidate never shrinks the C input's buffer, so the
-                // compat byte-index formula `consumed + (cur - base)` must
-                // stay `cur - base`: consumed is reset to 0 (the populate
-                // helper records the buffer's internal pos there, which would
-                // double-count — bug26614 regressed from 96 to 192).
-                (*ctxt.input).consumed = 0;
+                // `consumed` is NOT forced to 0 here any more. The populate
+                // helper now derives it from the physical window
+                // (`window_base_abs`), and the compat byte-index formula
+                // `consumed + (cur - base)` therefore stays `cur - base` for
+                // every path that never rebases (all non-driver paths, since
+                // window_base_abs is 0 there). Forcing 0 would instead break
+                // that identity once a driver pass has shrunk the window.
             }
+        }
+    }
+
+    /// Ensure the ABI input window exists for a PUSH context whose bytes live
+    /// in the parser's own input stack rather than in the constructor stash.
+    ///
+    /// # Safety
+    ///
+    /// `self.ctxt` must be a valid, initialized `_xmlParserCtxt`.
+    pub(crate) unsafe fn ensure_input_window(&mut self) {
+        if unsafe { (*self.ctxt).input }.is_null() {
+            unsafe {
+                crate::xml::parser::helpers::setup_parser_input(
+                    self.ctxt,
+                    InputBuffer::for_push(&[], None),
+                );
+            }
+        }
+    }
+
+    /// Publish the BASE input's physical window — `base`, `cur`, `end`,
+    /// `consumed`, `line`, `col` — together with `inputTab` and `inputNr`.
+    ///
+    /// This is the driver's refresh point. It must run after any operation
+    /// that can move or replace the backing storage and BEFORE any externally
+    /// observable callback (SAX or error) and before returning control to the
+    /// caller: `base`/`cur`/`end` borrow `InputBuffer`'s storage, so a
+    /// reallocation would otherwise leave a handler observing dangling
+    /// pointers — and, just as importantly, a handler would observe the wrong
+    /// `cur`/line/column for the point at which it was invoked.
+    ///
+    /// # Safety
+    ///
+    /// `self.ctxt` must be a valid, initialized `_xmlParserCtxt`.
+    pub(crate) unsafe fn publish_input_window(&mut self) {
+        unsafe {
+            self.ensure_input_window();
+            let ctxt = &mut *self.ctxt;
+            if ctxt.input.is_null() {
+                return;
+            }
+            // Entity inputs push ABOVE the base; the window published here is
+            // the base document's (the only input this slice has). Multi-input
+            // parity arrives with entity references.
+            self.tokenizer
+                .input()
+                .base_ref()
+                .populate_parser_input_without_filename(&mut *ctxt.input);
+            if !ctxt.inputTab.is_null() {
+                *ctxt.inputTab = ctxt.input;
+            }
+            ctxt.inputNr = 1;
         }
     }
 

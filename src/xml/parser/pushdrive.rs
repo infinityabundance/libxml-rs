@@ -165,6 +165,10 @@ impl XmlParser {
         }
 
         self.base_input_mut().push_bytes_ex(chunk, terminate);
+        // `push_bytes_ex` may have REALLOCATED the materialized Vec, so the
+        // C-visible window must be re-published before anything observable —
+        // including the encoder error raised just below.
+        unsafe { self.publish_input_window() };
 
         // Upstream `xmlParseChunk`: a DEFINITE invalid encoding unit makes
         // `xmlParserInputBufferPush` fail, and `xmlParseChunk` reports
@@ -192,7 +196,10 @@ impl XmlParser {
             return PushProgress::Fatal;
         }
 
-        self.drive_persistent(machine, terminate)
+        let outcome = self.drive_persistent(machine, terminate);
+        // Refresh before returning control to the caller.
+        unsafe { self.publish_input_window() };
+        outcome
     }
 
     /// Run the equivalent of `xmlParseTryOrFinish` to exhaustion, then the
@@ -204,6 +211,15 @@ impl XmlParser {
         terminate: bool,
     ) -> PushProgress {
         // ── xmlParseTryOrFinish ───────────────────────────────────────────
+        // Upstream's first act is the buffer shrink:
+        //   if ((ctxt->input != NULL) && (ctxt->input->cur - ctxt->input->base > 4096))
+        //       xmlParserShrink(ctxt);
+        // It is modelled here so the ABI-visible `cur - base` follows the same
+        // trajectory. It moves WINDOW METADATA only: the absolute cursor, the
+        // decoder state and every absolute offset (`ParkedConstruct::checked`)
+        // are untouched, because the Rust stream is never truncated.
+        self.base_input_mut().shrink_window();
+        unsafe { self.publish_input_window() };
         loop {
             self.sync_accounting(machine);
             if machine.is_fatal() || machine.is_stopped() {
@@ -218,6 +234,9 @@ impl XmlParser {
             if self.push_remaining_len() == 0 {
                 break;
             }
+            // Refresh before the step: any callback it dispatches must observe
+            // the state at the point it was invoked.
+            unsafe { self.publish_input_window() };
             let consumed_before = machine.input_bytes_consumed();
             match self.drive_step(machine, terminate) {
                 StepOutcome::Advanced => {

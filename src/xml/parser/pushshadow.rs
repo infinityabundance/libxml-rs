@@ -97,11 +97,13 @@ const SMALL_MODES: &[&str] = &[
     "b1", "b2", "b3", "b5", "b257", "Cb1", "b1z2", "b1i", "Cb1i", "r9-2",
 ];
 const LONG_MODES: &[&str] = &["b1024", "b4096", "b1024i", "r17-512"];
+/// The physical-window threshold archaeology documents (`shadow-win-*`).
+const WINDOW_MODES: &[&str] = &["b1024", "b4096", "b1024i"];
 /// Documents at or below this many bytes use [`SMALL_MODES`]. Duplicates the
 /// launcher's threshold on purpose (see [`SMALL_MODES`]).
 const SMALL_DOC_MAX: usize = 200;
-/// 5 small x 10 + 2 encoder x 10 + 2 long x 4.
-const SHADOW_CELL_TOTAL: usize = 78;
+/// 5 small x 10 + 2 encoder x 10 + 2 long x 4 + 8 window x 3.
+const SHADOW_CELL_TOTAL: usize = 102;
 
 /// Documents whose FULL diagnostic records (message payload included) are
 /// asserted, not just their canonical form.
@@ -462,28 +464,42 @@ impl Drop for CtxtGuard {
 
 /// The per-call tail line, in the probe's exact shape.
 ///
-/// `rc` is not a driver return value: `xmlParseChunk` returns `errNo` when the
+/// Every field is read from the PUBLISHED ABI window (`ctxt->input`) and the
+/// context, not re-derived from the Rust buffer: the court's job is to prove
+/// the driver exposes the same moving physical window libxml2 does. `rc` is
+/// not a driver return value — `xmlParseChunk` returns `errNo` when the
 /// document is not well-formed and 0 otherwise, so the same expression is
-/// evaluated from the context state the driver left behind.
+/// evaluated from the state the driver left behind.
 unsafe fn tail_line(
     lbl: &str,
     idx: usize,
     ctxt: *mut _xmlParserCtxt,
-    parser: &XmlParser,
+    _parser: &XmlParser,
     ctor: bool,
 ) -> String {
-    let (line, col, pos) = parser.base_input().pos();
     let err = unsafe { (*ctxt).errNo };
     let wf = unsafe { (*ctxt).wellFormed };
     let instate = unsafe { (*ctxt).instate };
     let name_nr = unsafe { (*ctxt).nameNr };
+    let input_nr = unsafe { (*ctxt).inputNr };
+    let input = unsafe { (*ctxt).input };
     let head = if ctor {
         format!("< {lbl} ok=1 err={err} wf={wf} in={instate}")
     } else {
         let rc = if wf == 0 { err } else { 0 };
         format!("< {lbl} {idx} rc={rc} err={err} wf={wf} in={instate}")
     };
-    format!("{head} p={pos} l={line} col={col} i=1 n={name_nr}")
+    if input.is_null() {
+        return format!("{head} p=-1 l=-1 col=-1 i={input_nr} n={name_nr} c=-1 abs=-1");
+    }
+    let p = unsafe { (*input).cur.offset_from((*input).base) };
+    let consumed = unsafe { (*input).consumed };
+    let line = unsafe { (*input).line };
+    let col = unsafe { (*input).col };
+    format!(
+        "{head} p={p} l={line} col={col} i={input_nr} n={name_nr} c={consumed} abs={abs}",
+        abs = consumed as i64 + p as i64
+    )
 }
 
 /// Drive one document through one plan and emit the probe-grammar trace.
@@ -621,19 +637,6 @@ fn field(s: &str, key: &str) -> Option<String> {
     Some(rest[..end].to_string())
 }
 
-/// Remove one ` key=value` field from a line.
-fn strip_field(line: &str, key: &str) -> String {
-    let pat = format!(" {key}=");
-    match line.find(&pat) {
-        Some(i) => {
-            let rest = &line[i + pat.len()..];
-            let after = rest.find(' ').map(|j| &rest[j..]).unwrap_or("");
-            format!("{}{}", &line[..i], after)
-        }
-        None => line.to_string(),
-    }
-}
-
 /// Canonical form of a structured diagnostic: identity and position, without
 /// the message window (`file`/`str1..3`/`msg`), which is the existing error
 /// courts' surface. Occurrence, code and ORDERING are what this court asserts.
@@ -650,19 +653,16 @@ fn canonical_error(line: &str) -> String {
 
 /// The line sequence the court asserts on.
 ///
-/// Two exclusions, both deliberate and documented in the module docs:
+/// One exclusion, deliberate and documented in the module docs: structured
+/// diagnostics are reduced to their CANONICAL form (domain, code, level, line,
+/// int1, int2) rather than dropped, so `endDocument` before `error 81` is
+/// distinguishable from `error 81` before `endDocument` — and once
+/// declarations/DTDs arrive a single parse path can emit several. The two
+/// ENCODER documents additionally assert the full records.
 ///
-/// 1. Structured diagnostics are reduced to their CANONICAL form (domain,
-///    code, level, line, int1, int2) rather than dropped. Dropping them would
-///    let `endDocument` before `error 81` pass as readily as `error 81`
-///    before `endDocument`, since only the final `errNo` would distinguish
-///    them — and once declarations/DTDs arrive a single parse path can emit
-///    several diagnostics.
-/// 2. The `p=` and `i=` fields. `p` (`cur - base`) is REBASED by upstream above
-///    4096 bytes, and `i` (`inputNr`) is currently SYNTHETIC on the driver
-///    side (hardcoded 1). Neither is a published driver surface yet, so both
-///    are measured and reported but not asserted, until the driver publishes
-///    `ctxt->input` / `inputNr`.
+/// `p`, `i`, `c` and `abs` are now ASSERTED: they come from the published ABI
+/// window, so the court proves the driver exposes libxml2's moving physical
+/// window rather than merely a logical position.
 fn project(lines: &[String]) -> Vec<String> {
     lines
         .iter()
@@ -670,7 +670,7 @@ fn project(lines: &[String]) -> Vec<String> {
             if l.starts_with("error ") {
                 canonical_error(l)
             } else {
-                strip_field(&strip_field(l, "p"), "i")
+                l.clone()
             }
         })
         .collect()
@@ -922,7 +922,9 @@ mod tests {
 
         let mut expected_total = 0usize;
         for (doc, size) in &docs {
-            let expected: Vec<String> = if *size <= SMALL_DOC_MAX as u64 {
+            let expected: Vec<String> = if doc.starts_with("shadow-win-") {
+                WINDOW_MODES.iter().map(|s| s.to_string()).collect()
+            } else if *size <= SMALL_DOC_MAX as u64 {
                 SMALL_MODES.iter().map(|s| s.to_string()).collect()
             } else {
                 LONG_MODES.iter().map(|s| s.to_string()).collect()

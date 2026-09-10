@@ -441,6 +441,26 @@ pub(crate) struct InputBuffer {
     /// transcoding may expand (ISO-8859-1 `E9` -> `C3 A9`) or, on
     /// re-materialization of the whole buffer, be recomputed.
     materialized: u64,
+    /// Absolute offset (into `data`) of the PHYSICAL window's base — the
+    /// `_xmlParserInput::base` the ABI exposes. The buffer always keeps the
+    /// whole decoded stream; this is metadata describing how much of it a
+    /// physical window still covers, so the ABI can expose libxml2's
+    /// rebasing behaviour without making that window authoritative for the
+    /// parser.
+    ///
+    /// Mirrors upstream `xmlParserShrink` (parserInternals.c): when
+    /// `cur - base > 4096` it keeps the last `LINE_LEN` (80) bytes as error
+    /// context, physically removes the rest and adds the removed amount to
+    /// `in->consumed`. Upstream then updates the input pointers, so for every
+    /// input the invariant
+    ///
+    /// ```text
+    /// consumed + (cur - base) == absolute_position
+    /// ```
+    ///
+    /// holds — which is exactly how `xmlCtxtGetInputPosition` reconstructs the
+    /// UTF-8 byte position.
+    window_base_abs: usize,
     /// A definite invalid encoding unit was found (upstream
     /// `XML_ENC_ERR_INPUT`: an unpaired low surrogate, a high surrogate
     /// followed by a non-low unit, an out-of-range UCS-4 code point). Raised
@@ -516,6 +536,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
             registry: None,
@@ -550,6 +571,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
             registry: None,
@@ -599,6 +621,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
             registry: None,
@@ -756,6 +779,7 @@ impl InputBuffer {
         // A leading BOM is consumed and not materialized (upstream advances
         // `input->cur` past it before switching the encoder).
         self.pos = 0;
+        self.window_base_abs = 0;
         self.col = 1;
         self.pending_source = src[skip..].to_vec();
         self.decode_units_tail(terminate);
@@ -964,9 +988,40 @@ impl InputBuffer {
     }
 
     /// UTF-8/internal bytes materialized so far — the only unit the scanner
-    /// can consume (transcoding may expand: ISO-8859-1 `E9` -> `C3 A9`).
+    /// could ever consume.
     pub(crate) const fn materialized_bytes(&self) -> u64 {
         self.materialized
+    }
+
+    /// Absolute offset of the physical window's base (see
+    /// [`Self::window_base_abs`]).
+    pub(crate) const fn window_base_abs(&self) -> usize {
+        self.window_base_abs
+    }
+
+    /// The physical window's used length: `cur - base` in ABI terms.
+    pub(crate) const fn window_used(&self) -> usize {
+        self.pos.saturating_sub(self.window_base_abs)
+    }
+
+    /// Perform the upstream-equivalent `xmlParserShrink` step.
+    ///
+    /// Called where upstream calls it — at the top of a progressive pass — so
+    /// the ABI-visible `cur - base` follows the same trajectory as libxml2's.
+    /// The Rust stream is NOT truncated: only the window metadata moves, so
+    /// the absolute cursor, decoder state and every absolute offset
+    /// (`ParkedConstruct::checked`) are untouched. Returns whether it moved.
+    pub(crate) fn shrink_window(&mut self) -> bool {
+        const SHRINK_THRESHOLD: usize = 4096; // upstream's `cur - base > 4096`
+        const LINE_LEN: usize = 80; // upstream LINE_LEN
+        let used = self.window_used();
+        if used <= SHRINK_THRESHOLD {
+            return false;
+        }
+        // The removed amount is `used - LINE_LEN`, and `consumed` advances by
+        // exactly that (the identity is preserved by construction).
+        self.window_base_abs = self.pos - LINE_LEN;
+        true
     }
 
     /// The canonical name of the installed persistent registry decoder, if any
@@ -1042,6 +1097,7 @@ impl InputBuffer {
             pending_source: self.pending_source.clone(),
             source_received: self.source_received,
             materialized: self.materialized,
+            window_base_abs: self.window_base_abs,
             encoding_error: self.encoding_error,
             truncated_source: self.truncated_source,
             // A reparse duplicate is a PARSE-ONLY artifact: it exists so the
@@ -1085,6 +1141,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
             registry: None,
@@ -1120,6 +1177,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
             registry: None,
@@ -1150,6 +1208,7 @@ impl InputBuffer {
             pending_source: Vec::new(),
             source_received: 0,
             materialized: 0,
+            window_base_abs: 0,
             encoding_error: false,
             truncated_source: false,
             registry: None,
@@ -1402,6 +1461,7 @@ impl InputBuffer {
         self.data = InputBytes::Owned(Vec::new());
         self.materialized = 0;
         self.pos = 0;
+        self.window_base_abs = 0;
         self.col = 1;
         self.bom_consumed = false;
         self.pending_source = raw;
@@ -1438,6 +1498,7 @@ impl InputBuffer {
                 self.data = InputBytes::Owned(out);
                 self.materialized = self.data.data_len() as u64;
                 self.pos = 0;
+                self.window_base_abs = 0;
                 self.col = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = true;
@@ -1455,6 +1516,7 @@ impl InputBuffer {
                     self.materialized = self.data.data_len() as u64;
                     self.encoding = Encoding::Utf8;
                     self.pos = 0;
+                    self.window_base_abs = 0;
                     self.col = 1;
                     self.bom_consumed = false;
                     self.converted_to_utf8 = false;
@@ -1470,6 +1532,7 @@ impl InputBuffer {
                     self.data = InputBytes::Owned(out);
                     self.materialized = self.data.data_len() as u64;
                     self.pos = 0;
+                    self.window_base_abs = 0;
                     self.col = 1;
                     self.bom_consumed = false;
                     self.converted_to_utf8 = true;
@@ -1499,6 +1562,7 @@ impl InputBuffer {
                 // The converted stream is always owned (§16.5.2).
                 self.data = InputBytes::Owned(conv);
                 self.pos = 0;
+                self.window_base_abs = 0;
                 self.col = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = true;
@@ -1506,6 +1570,7 @@ impl InputBuffer {
             Err(()) => {
                 self.encoding = Encoding::Utf8;
                 self.pos = 0;
+                self.window_base_abs = 0;
                 self.col = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = false;
@@ -1534,6 +1599,7 @@ impl InputBuffer {
             Ok(conv) => {
                 self.data = InputBytes::Owned(conv);
                 self.pos = 0;
+                self.window_base_abs = 0;
                 self.col = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = true;
@@ -1543,6 +1609,7 @@ impl InputBuffer {
                 // report the invalid-character error like upstream.
                 self.encoding = Encoding::Utf8;
                 self.pos = 0;
+                self.window_base_abs = 0;
                 self.col = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = false;
@@ -1583,6 +1650,7 @@ impl InputBuffer {
             Some(conv) => {
                 self.data = InputBytes::Owned(conv);
                 self.pos = 0;
+                self.window_base_abs = 0;
                 self.col = 1;
                 self.line = 1;
                 self.bom_consumed = false;
@@ -1646,6 +1714,7 @@ impl InputBuffer {
             Some(conv) => {
                 self.data = InputBytes::Owned(conv);
                 self.pos = 0;
+                self.window_base_abs = 0;
                 self.col = 1;
                 self.line = 1;
                 self.bom_consumed = false;
@@ -2186,9 +2255,17 @@ impl InputBuffer {
     pub unsafe fn populate_parser_input_without_filename(&self, input: &mut _xmlParserInput) {
         let bytes: &[u8] = &self.data;
         let data_ptr = bytes.as_ptr();
-        let base = data_ptr as *const crate::abi::types::xmlChar;
-        let cur = unsafe { data_ptr.add(self.pos) as *const crate::abi::types::xmlChar };
-        let end = unsafe { data_ptr.add(bytes.len()) as *const crate::abi::types::xmlChar };
+        // Defensive: a window offset can never point past the cursor or the
+        // buffer (a replacement resets it, and `pos` only moves forward).
+        let wb = self.window_base_abs.min(self.pos).min(bytes.len());
+        // The ABI window is DERIVED from the absolute stream: `base` sits at
+        // the window offset, `cur` at the absolute position, `end` at the
+        // buffer end. `consumed` counts the bytes that left the window, so
+        // `consumed + (cur - base) == pos` always holds (upstream
+        // `xmlParserShrink` / `xmlCtxtGetInputPosition`).
+        let base = unsafe { data_ptr.add(wb) } as *const crate::abi::types::xmlChar;
+        let cur = unsafe { data_ptr.add(self.pos) } as *const crate::abi::types::xmlChar;
+        let end = unsafe { data_ptr.add(bytes.len()) } as *const crate::abi::types::xmlChar;
 
         input.base = base;
         input.cur = cur;
@@ -2196,7 +2273,7 @@ impl InputBuffer {
         input.line = self.line as c_int;
         input.col = self.col as c_int;
         input.length = bytes.len() as c_int;
-        input.consumed = self.pos as c_ulong;
+        input.consumed = wb as c_ulong;
     }
 
     /// Create a `_xmlParserInputBuffer` from this buffer's source.
@@ -2234,6 +2311,7 @@ impl InputBuffer {
     /// read cursor is rewound.
     pub fn reset(&mut self) {
         self.pos = 0;
+        self.window_base_abs = 0;
         self.line = 1;
         self.col = 1;
         self.bom_consumed = false;

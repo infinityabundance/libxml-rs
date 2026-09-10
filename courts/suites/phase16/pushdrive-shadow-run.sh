@@ -62,13 +62,17 @@ cc -O1 -Wall -Wextra -Werror -o /tmp/shadow/probe \
 for f in /court/suites/phase16/shadow-corpus/*.xml; do
   base=$(basename "$f")
   sz=$(stat -c %s "$f")
-  if [ "$sz" -le 200 ]; then
-    modes="b1 b2 b3 b5 b257 Cb1 b1z2 b1i Cb1i r9-2"
-  else
-    modes="b1024 b4096 b1024i r17-512"
-  fi
+  case "$base" in
+    shadow-win-*) modes="b1024 b4096 b1024i" ;;
+    *)
+      if [ "$sz" -le 200 ]; then
+        modes="b1 b2 b3 b5 b257 Cb1 b1z2 b1i Cb1i r9-2"
+      else
+        modes="b1024 b4096 b1024i r17-512"
+      fi ;;
+  esac
   for m in $modes; do
-    /tmp/shadow/probe "$m" "$f" > "/scanout/oracle-${base}__${m}"
+    /tmp/shadow/probe -W "$m" "$f" > "/scanout/oracle-${base}__${m}"
   done
 done
 echo "oracle traces: $(ls -1 /scanout | wc -l)"
@@ -89,6 +93,8 @@ echo "oracle traces: $(ls -1 /scanout | wc -l)"
   echo "runner_sha256=$(sha256sum "$ROOT/courts/suites/phase16/pushdrive-shadow-run.sh" | cut -d" " -f1)"
   echo "plans_small=b1,b2,b3,b5,b257,Cb1,b1z2,b1i,Cb1i,r9-2"
   echo "plans_long=b1024,b4096,b1024i,r17-512"
+  echo "plans_window=b1024,b4096,b1024i (shadow-win-* documents)"
+  echo "probe_flags=-W (physical-window mode: emits consumed/abs)"
   echo "image=$IMAGE"
   echo "image_id=$(docker image inspect --format "{{.Id}}" "$IMAGE" 2>/dev/null || echo unknown)"
   uname -a

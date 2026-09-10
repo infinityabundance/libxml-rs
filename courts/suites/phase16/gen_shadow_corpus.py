@@ -57,7 +57,23 @@ doc(
     b"\xff\xfe" + "<a>x</a>".encode("utf-16-le") + b"\x3c",
 )
 
-# ── 9: the DEFINITE-invalid encoder cell ──────────────────────────────────
+# ── 10: the physical-window threshold archaeology ───────────────────────
+# The shrink gate is `cur - base > 4096` and it keeps LINE_LEN (80) bytes as
+# error context, so the interesting variable is the CONSUMED CURSOR when a pass
+# begins, not the document size as such. Two shapes, because they cross the
+# threshold at different moments:
+#
+#   text  the run is consumable incrementally, so `used` grows steadily and the
+#         first pass whose top exceeds 4096 shrinks mid-document;
+#   attr  the tag stays PARKED until its closing `>` arrives, so `used` stays 0
+#         and jumps by the whole tag in one step — the shrink then happens on
+#         the terminating call.
+for n in (4095, 4096, 4097, 8192):
+    assert n >= 16
+    doc(f"shadow-win-text-{n}.xml", b"<r>" + b"x" * (n - 7) + b"</r>")
+    doc(f"shadow-win-attr-{n}.xml", b'<r a="' + b"x" * (n - 9) + b'"/>')
+
+# ── 9: the DEFINITE-invalid encoder cell ───────────────────────────────
 # A lone low surrogate is invalid the moment its two bytes are present, so it
 # is not a suspension that a terminating call later flushes: upstream's
 # xmlParserInputBufferPush fails and xmlParseChunk reports
