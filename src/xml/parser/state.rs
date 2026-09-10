@@ -1438,7 +1438,21 @@ impl XmlParser {
         // via xmlSAX2EntityDecl).
         let mut dtd = Self::current_int_subset_opt(unsafe { (*self.ctxt).myDoc });
         let subset_abs = abs_base.map(|b| b + open + 1);
-        self.process_dtd_fragment(&mut dtd, subset, 0, false, subset_abs);
+        if let Some(rel) = self.process_dtd_fragment(&mut dtd, subset, 0, false, subset_abs) {
+            // UPSTREAM-PARITY (parser.c xmlParseInternalSubset): the loop's
+            // `else` branch raises the error and RETURNS, so the trailing
+            // declaration and the `RAW != '>'` tail never run. The cursor is
+            // left where that branch fired — the tokenizer's bulk subset scan
+            // went to the end of the available input, so it must be rewound to
+            // the stop point (`doctype-trunc-cond`: p=15, col=16).
+            unsafe {
+                (*self.ctxt).inSubset = 0;
+            }
+            if let Some(base) = subset_abs {
+                self.tokenizer.move_cursor_to(base + rel);
+            }
+            return Err(());
+        }
 
         // UPSTREAM-PARITY (parser.c xmlParseInternalSubset): a subset that ran
         // out of input before its `]` reports the trailing declaration's own
@@ -1620,7 +1634,7 @@ impl XmlParser {
         depth: usize,
         ext: bool,
         abs_base: Option<usize>,
-    ) {
+    ) -> Option<usize> {
         let mut i = 0usize;
         while i < data.len() {
             while i < data.len() && data[i].is_ascii_whitespace() {
@@ -1693,6 +1707,40 @@ impl XmlParser {
                 }
                 continue;
             }
+            if data[i..].starts_with(b"<!") {
+                // UPSTREAM-PARITY (parser.c xmlParseMarkupDecl): the dispatch is
+                // on the byte after `<!`. A `[` is a CONDITIONAL SECTION, which
+                // xmlParseMarkupDecl does not handle (`xmlParseConditionalSections`
+                // is reached only from an EXTERNAL subset) — it falls to the
+                // `default` arm, which reports XML_ERR_INT_SUBSET_NOT_FINISHED
+                // (or XML_ERR_EXT_SUBSET_NOT_FINISHED for `inSubset == 2`) and
+                // then `SKIP(2)`. The subset loop then re-examines the byte just
+                // SKIPped over, hits its own `else` and reports the SAME error
+                // again before returning for good — so a truncated `<![...`
+                // yields exactly TWO code-118 records and stops the subset scan
+                // at that point (court `doctype-trunc-cond`: i2=14 then i2=16).
+                if data.get(i + 2) == Some(&b'[') {
+                    let code = if ext {
+                        crate::abi::types::XML_ERR_EXT_SUBSET_NOT_FINISHED
+                    } else {
+                        crate::abi::types::XML_ERR_INT_SUBSET_NOT_FINISHED
+                    };
+                    let msg = if ext {
+                        "Content error in the external subset\n"
+                    } else {
+                        "Content error in the internal subset\n"
+                    };
+                    let first = abs_base.map(|b| b + i);
+                    self.raise_subset_error(code, msg, first);
+                    i += 2;
+                    self.raise_subset_error(
+                        crate::abi::types::XML_ERR_INT_SUBSET_NOT_FINISHED,
+                        "Content error in the internal subset\n",
+                        abs_base.map(|b| b + i),
+                    );
+                    return Some(i);
+                }
+            }
             if data[i..].starts_with(b"<!DOCTYPE") {
                 // A nested <!DOCTYPE> in an external subset / PE is an error
                 // upstream; skip past the declaration end defensively.
@@ -1718,6 +1766,7 @@ impl XmlParser {
                     }
                     None => break,
                 }
+                continue;
             }
             // A declaration start the scan reaches at the very end of the
             // fragment (e.g. a truncated `...<` or `<!` with nothing after
@@ -1836,11 +1885,41 @@ impl XmlParser {
             }
             i += 2 + gt + 1;
         }
+        None
+    }
+
+    /// Raise one internal/external-subset content error at an absolute byte
+    /// position (`None` = the current cursor).
+    fn raise_subset_error(&mut self, code: c_int, msg: &str, at: Option<usize>) {
+        match at {
+            Some(pos) => self.raise_error_at(
+                XML_FROM_PARSER,
+                code,
+                xmlErrorLevel::XML_ERR_FATAL as c_int,
+                msg.to_string(),
+                None,
+                None,
+                None,
+                0,
+                pos,
+            ),
+            None => self.raise_error_now(
+                XML_FROM_PARSER,
+                code,
+                xmlErrorLevel::XML_ERR_FATAL as c_int,
+                msg.to_string(),
+                None,
+                None,
+                None,
+                0,
+            ),
+        }
     }
 
     /// Expand a decl-level `%name;` reference: fetch the parameter entity
     /// (internal replacement text or external file) and process its content
     /// as a declaration fragment into `dtd`.
+    ///
     /// Upstream `xmlParsePERefInternal`'s SAX lookup
     /// (`sax->getParameterEntity`) restricted to whether the entity RESOLVED:
     /// a NULL result is `xmlHandleUndeclaredEntity`, a non-NULL one is
@@ -1887,7 +1966,7 @@ impl XmlParser {
                     if !c.is_null() {
                         let len = crate::abi::exports_xml2::xmlStrlen(c);
                         let text = core::slice::from_raw_parts(c, len as usize);
-                        self.process_dtd_fragment(dtd, text, depth + 1, false, None);
+                        let _ = self.process_dtd_fragment(dtd, text, depth + 1, false, None);
                     }
                 }
                 t if t == XML_EXTERNAL_PARAMETER_ENTITY as c_int => {
@@ -1896,7 +1975,8 @@ impl XmlParser {
                         let sys_str = crate::xml::string::xmlstr_to_string(sys as *const xmlChar);
                         if let Some(p) = self.resolve_dtd_path(sys_str.as_bytes()) {
                             if let Ok(content) = std::fs::read(&p) {
-                                self.process_dtd_fragment(dtd, &content, depth + 1, true, None);
+                                let _ =
+                                    self.process_dtd_fragment(dtd, &content, depth + 1, true, None);
                             }
                         }
                     }
@@ -3082,7 +3162,7 @@ impl XmlParser {
         // PIs, inline parameter-entity references and decl-level PE refs
         // (nested external PEs included).
         let mut dtd_opt = Some(dtd);
-        self.process_dtd_fragment(&mut dtd_opt, &content, 0, true, None);
+        let _ = self.process_dtd_fragment(&mut dtd_opt, &content, 0, true, None);
     }
 
     /// Resolve a DTD system id to a filesystem path, honoring a relative

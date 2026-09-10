@@ -535,6 +535,18 @@ impl XmlTokenizer {
         });
     }
 
+    /// Move the cursor to an absolute byte offset, recomputing line/column the
+    /// way upstream's line/column tracking would have (used when a bulk construct
+    /// scan must be REWOUND to a point where the parser actually stopped —
+    /// upstream's internal-subset loop returns early on a content error while
+    /// the tokenizer consumed the whole available subset).
+    pub fn move_cursor_to(&mut self, byte_pos: usize) {
+        let (line, col) = self.line_col_at(byte_pos);
+        self.input
+            .current()
+            .set_diagnostic_position(byte_pos, line as usize, col as usize);
+    }
+
     /// Drain the recorded errors (in order).
     pub fn take_errors(&mut self) -> Vec<ErrorInfo> {
         core::mem::take(&mut self.errors)
