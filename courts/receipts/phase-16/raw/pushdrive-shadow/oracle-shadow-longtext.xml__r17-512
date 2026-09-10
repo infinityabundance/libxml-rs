@@ -1,57 +1,71 @@
 == /court/suites/phase16/shadow-corpus/shadow-longtext.xml bytes=4103 mode=r17-512
 > CALL 0 len=321
+! cb=startDocument p=0 c=0 abs=0
 startDocument
+! cb=startElementNs p=2 c=0 abs=2
 startElementNs local=[r] prefix= uri= ns=0 att=0 def=0
+! cb=characters p=321 c=0 abs=321
 characters len=318 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
-< CALL 0 rc=0 err=0 wf=1 in=7 p=321 l=1 col=322 i=1 n=1 c=0 abs=321
+< CALL 0 rc=0 err=0 wf=1 in=7 p=321 l=1 col=322 i=1 n=1 c=0 abs=321 pos0=0 line0=1 col0=322 byte0=321 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 1 len=106
-< CALL 1 rc=0 err=0 wf=1 in=7 p=321 l=1 col=322 i=1 n=1 c=0 abs=321
+< CALL 1 rc=0 err=0 wf=1 in=7 p=321 l=1 col=322 i=1 n=1 c=0 abs=321 pos0=0 line0=1 col0=322 byte0=321 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 2 len=133
-< CALL 2 rc=0 err=0 wf=1 in=7 p=321 l=1 col=322 i=1 n=1 c=0 abs=321
+< CALL 2 rc=0 err=0 wf=1 in=7 p=321 l=1 col=322 i=1 n=1 c=0 abs=321 pos0=0 line0=1 col0=322 byte0=321 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 3 len=4
-< CALL 3 rc=0 err=0 wf=1 in=7 p=321 l=1 col=322 i=1 n=1 c=0 abs=321
+< CALL 3 rc=0 err=0 wf=1 in=7 p=321 l=1 col=322 i=1 n=1 c=0 abs=321 pos0=0 line0=1 col0=322 byte0=321 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 4 len=46
-< CALL 4 rc=0 err=0 wf=1 in=7 p=321 l=1 col=322 i=1 n=1 c=0 abs=321
+< CALL 4 rc=0 err=0 wf=1 in=7 p=321 l=1 col=322 i=1 n=1 c=0 abs=321 pos0=0 line0=1 col0=322 byte0=321 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 5 len=116
+! cb=characters p=726 c=0 abs=726
 characters len=405 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
-< CALL 5 rc=0 err=0 wf=1 in=7 p=726 l=1 col=727 i=1 n=1 c=0 abs=726
+< CALL 5 rc=0 err=0 wf=1 in=7 p=726 l=1 col=727 i=1 n=1 c=0 abs=726 pos0=0 line0=1 col0=727 byte0=726 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 6 len=192
-< CALL 6 rc=0 err=0 wf=1 in=7 p=726 l=1 col=727 i=1 n=1 c=0 abs=726
+< CALL 6 rc=0 err=0 wf=1 in=7 p=726 l=1 col=727 i=1 n=1 c=0 abs=726 pos0=0 line0=1 col0=727 byte0=726 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 7 len=497
+! cb=characters p=1415 c=0 abs=1415
 characters len=689 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
-< CALL 7 rc=0 err=0 wf=1 in=7 p=1415 l=1 col=1416 i=1 n=1 c=0 abs=1415
+< CALL 7 rc=0 err=0 wf=1 in=7 p=1415 l=1 col=1416 i=1 n=1 c=0 abs=1415 pos0=0 line0=1 col0=1416 byte0=1415 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 8 len=431
+! cb=characters p=1846 c=0 abs=1846
 characters len=431 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
-< CALL 8 rc=0 err=0 wf=1 in=7 p=1846 l=1 col=1847 i=1 n=1 c=0 abs=1846
+< CALL 8 rc=0 err=0 wf=1 in=7 p=1846 l=1 col=1847 i=1 n=1 c=0 abs=1846 pos0=0 line0=1 col0=1847 byte0=1846 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 9 len=432
+! cb=characters p=2278 c=0 abs=2278
 characters len=432 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
-< CALL 9 rc=0 err=0 wf=1 in=7 p=2278 l=1 col=2279 i=1 n=1 c=0 abs=2278
+< CALL 9 rc=0 err=0 wf=1 in=7 p=2278 l=1 col=2279 i=1 n=1 c=0 abs=2278 pos0=0 line0=1 col0=2279 byte0=2278 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 10 len=188
-< CALL 10 rc=0 err=0 wf=1 in=7 p=2278 l=1 col=2279 i=1 n=1 c=0 abs=2278
+< CALL 10 rc=0 err=0 wf=1 in=7 p=2278 l=1 col=2279 i=1 n=1 c=0 abs=2278 pos0=0 line0=1 col0=2279 byte0=2278 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 11 len=245
+! cb=characters p=2711 c=0 abs=2711
 characters len=433 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
-< CALL 11 rc=0 err=0 wf=1 in=7 p=2711 l=1 col=2712 i=1 n=1 c=0 abs=2711
+< CALL 11 rc=0 err=0 wf=1 in=7 p=2711 l=1 col=2712 i=1 n=1 c=0 abs=2711 pos0=0 line0=1 col0=2712 byte0=2711 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 12 len=221
-< CALL 12 rc=0 err=0 wf=1 in=7 p=2711 l=1 col=2712 i=1 n=1 c=0 abs=2711
+< CALL 12 rc=0 err=0 wf=1 in=7 p=2711 l=1 col=2712 i=1 n=1 c=0 abs=2711 pos0=0 line0=1 col0=2712 byte0=2711 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 13 len=333
+! cb=characters p=3265 c=0 abs=3265
 characters len=554 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
-< CALL 13 rc=0 err=0 wf=1 in=7 p=3265 l=1 col=3266 i=1 n=1 c=0 abs=3265
+< CALL 13 rc=0 err=0 wf=1 in=7 p=3265 l=1 col=3266 i=1 n=1 c=0 abs=3265 pos0=0 line0=1 col0=3266 byte0=3265 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 14 len=281
-< CALL 14 rc=0 err=0 wf=1 in=7 p=3265 l=1 col=3266 i=1 n=1 c=0 abs=3265
+< CALL 14 rc=0 err=0 wf=1 in=7 p=3265 l=1 col=3266 i=1 n=1 c=0 abs=3265 pos0=0 line0=1 col0=3266 byte0=3265 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 15 len=241
+! cb=characters p=3787 c=0 abs=3787
 characters len=522 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
-< CALL 15 rc=0 err=0 wf=1 in=7 p=3787 l=1 col=3788 i=1 n=1 c=0 abs=3787
+< CALL 15 rc=0 err=0 wf=1 in=7 p=3787 l=1 col=3788 i=1 n=1 c=0 abs=3787 pos0=0 line0=1 col0=3788 byte0=3787 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 16 len=36
-< CALL 16 rc=0 err=0 wf=1 in=7 p=3787 l=1 col=3788 i=1 n=1 c=0 abs=3787
+< CALL 16 rc=0 err=0 wf=1 in=7 p=3787 l=1 col=3788 i=1 n=1 c=0 abs=3787 pos0=0 line0=1 col0=3788 byte0=3787 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 17 len=255
-< CALL 17 rc=0 err=0 wf=1 in=7 p=3787 l=1 col=3788 i=1 n=1 c=0 abs=3787
+< CALL 17 rc=0 err=0 wf=1 in=7 p=3787 l=1 col=3788 i=1 n=1 c=0 abs=3787 pos0=0 line0=1 col0=3788 byte0=3787 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
 > CALL 18 len=25
+! cb=characters p=4099 c=0 abs=4099
 characters len=312 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+! cb=endElementNs p=4103 c=0 abs=4103
 endElementNs local=[r] prefix= uri=
-< CALL 18 rc=0 err=0 wf=1 in=14 p=4103 l=1 col=4104 i=1 n=0 c=0 abs=4103
+< CALL 18 rc=0 err=0 wf=1 in=14 p=4103 l=1 col=4104 i=1 n=0 c=0 abs=4103 pos0=0 line0=1 col0=4104 byte0=4103 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</r>]
 > FINAL
+! cb=endDocument p=80 c=4023 abs=4103
 endDocument
-< FINAL 0 rc=0 err=0 wf=1 in=-1 p=80 l=1 col=4104 i=1 n=0 c=4023 abs=4103
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=80 l=1 col=4104 i=1 n=0 c=4023 abs=4103 pos0=0 line0=1 col0=4104 byte0=4103 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</r>]
 > REFEED
+! cb=error p=80 c=4023 abs=4103
 error dom=1 code=5 level=3 file= line=1 i1=0 i2=4104 str1= str2= str3= msg=Extra content at the end of the document\n
-< REFEED 0 rc=5 err=5 wf=0 in=-1 p=80 l=1 col=4104 i=1 n=0 c=4023 abs=4103
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=80 l=1 col=4104 i=1 n=0 c=4023 abs=4103 pos0=0 line0=1 col0=4104 byte0=4103 win0=0 wsize0=80 woff0=79 wbytes0=[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</r>]

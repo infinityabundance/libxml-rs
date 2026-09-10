@@ -1,13 +1,19 @@
 == /court/suites/phase16/shadow-corpus/shadow-utf16trunc.xml bytes=19 mode=b257
 > CALL 0 len=19
+! cb=startDocument p=0 c=2 abs=2
 startDocument
+! cb=startElementNs p=2 c=2 abs=4
 startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=characters p=4 c=2 abs=6
 characters len=1 [x]
+! cb=endElementNs p=8 c=2 abs=10
 endElementNs local=[a] prefix= uri=
-< CALL 0 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=0 c=2 abs=10
+< CALL 0 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=0 c=2 abs=10 pos0=0 line0=1 col0=9 byte0=10 win0=0 wsize0=8 woff0=8 wbytes0=[<a>x</a>]
 > FINAL
+! cb=error p=8 c=2 abs=10
 error dom=8 code=81 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=Invalid bytes in character encoding\n
+! cb=endDocument p=8 c=2 abs=10
 endDocument
-< FINAL 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0 c=2 abs=10
+< FINAL 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0 c=2 abs=10 pos0=0 line0=1 col0=9 byte0=10 win0=0 wsize0=8 woff0=8 wbytes0=[<a>x</a>]
 > REFEED
-< REFEED 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0 c=2 abs=10
+< REFEED 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0 c=2 abs=10 pos0=0 line0=1 col0=9 byte0=10 win0=0 wsize0=8 woff0=8 wbytes0=[<a>x</a>]

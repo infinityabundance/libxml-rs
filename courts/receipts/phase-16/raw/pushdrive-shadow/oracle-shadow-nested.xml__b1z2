@@ -1,78 +1,85 @@
 == /court/suites/phase16/shadow-corpus/shadow-nested.xml bytes=11 mode=b1z2
 > CALL 0 len=1
-< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=1 woff0=0 wbytes0=[<]
 > CALL 1 ZERO
-< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=1 woff0=0 wbytes0=[<]
 > CALL 1 ZERO
-< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=1 woff0=0 wbytes0=[<]
 > CALL 1 len=1
-< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=2 woff0=0 wbytes0=[<a]
 > CALL 2 ZERO
-< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=2 woff0=0 wbytes0=[<a]
 > CALL 2 ZERO
-< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=2 woff0=0 wbytes0=[<a]
 > CALL 2 len=1
-< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=3 woff0=0 wbytes0=[<a>]
 > CALL 3 ZERO
-< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=3 woff0=0 wbytes0=[<a>]
 > CALL 3 ZERO
-< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=3 woff0=0 wbytes0=[<a>]
 > CALL 3 len=1
+! cb=startDocument p=0 c=0 abs=0
 startDocument
+! cb=startElementNs p=2 c=0 abs=2
 startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
-< CALL 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3
+< CALL 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=4 woff0=3 wbytes0=[<a><]
 > CALL 4 ZERO
-< CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3
+< CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=4 woff0=3 wbytes0=[<a><]
 > CALL 4 ZERO
-< CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3
+< CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=4 woff0=3 wbytes0=[<a><]
 > CALL 4 len=1
-< CALL 4 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3
+< CALL 4 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=5 woff0=3 wbytes0=[<a><b]
 > CALL 5 ZERO
-< CALL 5 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3
+< CALL 5 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=5 woff0=3 wbytes0=[<a><b]
 > CALL 5 ZERO
-< CALL 5 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3
+< CALL 5 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=5 woff0=3 wbytes0=[<a><b]
 > CALL 5 len=1
-< CALL 5 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3
+< CALL 5 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=6 woff0=3 wbytes0=[<a><b/]
 > CALL 6 ZERO
-< CALL 6 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3
+< CALL 6 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=6 woff0=3 wbytes0=[<a><b/]
 > CALL 6 ZERO
-< CALL 6 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3
+< CALL 6 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=6 woff0=3 wbytes0=[<a><b/]
 > CALL 6 len=1
+! cb=startElementNs p=5 c=0 abs=5
 startElementNs local=[b] prefix= uri= ns=0 att=0 def=0
+! cb=endElementNs p=7 c=0 abs=7
 endElementNs local=[b] prefix= uri=
-< CALL 6 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 6 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=7 woff0=7 wbytes0=[<a><b/>]
 > CALL 7 ZERO
-< CALL 7 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 7 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=7 woff0=7 wbytes0=[<a><b/>]
 > CALL 7 ZERO
-< CALL 7 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 7 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=7 woff0=7 wbytes0=[<a><b/>]
 > CALL 7 len=1
-< CALL 7 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 7 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=8 woff0=7 wbytes0=[<a><b/><]
 > CALL 8 ZERO
-< CALL 8 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 8 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=8 woff0=7 wbytes0=[<a><b/><]
 > CALL 8 ZERO
-< CALL 8 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 8 rc=0 err=0 wf=1 in=7 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=8 woff0=7 wbytes0=[<a><b/><]
 > CALL 8 len=1
-< CALL 8 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 8 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=9 woff0=7 wbytes0=[<a><b/></]
 > CALL 9 ZERO
-< CALL 9 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 9 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=9 woff0=7 wbytes0=[<a><b/></]
 > CALL 9 ZERO
-< CALL 9 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 9 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=9 woff0=7 wbytes0=[<a><b/></]
 > CALL 9 len=1
-< CALL 9 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 9 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=10 woff0=7 wbytes0=[<a><b/></a]
 > CALL 10 ZERO
-< CALL 10 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 10 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=10 woff0=7 wbytes0=[<a><b/></a]
 > CALL 10 ZERO
-< CALL 10 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7
+< CALL 10 rc=0 err=0 wf=1 in=9 p=7 l=1 col=8 i=1 n=1 c=0 abs=7 pos0=0 line0=1 col0=8 byte0=7 win0=0 wsize0=10 woff0=7 wbytes0=[<a><b/></a]
 > CALL 10 len=1
+! cb=endElementNs p=11 c=0 abs=11
 endElementNs local=[a] prefix= uri=
-< CALL 10 rc=0 err=0 wf=1 in=14 p=11 l=1 col=12 i=1 n=0 c=0 abs=11
+< CALL 10 rc=0 err=0 wf=1 in=14 p=11 l=1 col=12 i=1 n=0 c=0 abs=11 pos0=0 line0=1 col0=12 byte0=11 win0=0 wsize0=11 woff0=11 wbytes0=[<a><b/></a>]
 > CALL 11 ZERO
-< CALL 11 rc=0 err=0 wf=1 in=14 p=11 l=1 col=12 i=1 n=0 c=0 abs=11
+< CALL 11 rc=0 err=0 wf=1 in=14 p=11 l=1 col=12 i=1 n=0 c=0 abs=11 pos0=0 line0=1 col0=12 byte0=11 win0=0 wsize0=11 woff0=11 wbytes0=[<a><b/></a>]
 > CALL 11 ZERO
-< CALL 11 rc=0 err=0 wf=1 in=14 p=11 l=1 col=12 i=1 n=0 c=0 abs=11
+< CALL 11 rc=0 err=0 wf=1 in=14 p=11 l=1 col=12 i=1 n=0 c=0 abs=11 pos0=0 line0=1 col0=12 byte0=11 win0=0 wsize0=11 woff0=11 wbytes0=[<a><b/></a>]
 > FINAL
+! cb=endDocument p=11 c=0 abs=11
 endDocument
-< FINAL 0 rc=0 err=0 wf=1 in=-1 p=11 l=1 col=12 i=1 n=0 c=0 abs=11
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=11 l=1 col=12 i=1 n=0 c=0 abs=11 pos0=0 line0=1 col0=12 byte0=11 win0=0 wsize0=11 woff0=11 wbytes0=[<a><b/></a>]
 > REFEED
+! cb=error p=11 c=0 abs=11
 error dom=1 code=5 level=3 file= line=1 i1=0 i2=12 str1= str2= str3= msg=Extra content at the end of the document\n
-< REFEED 0 rc=5 err=5 wf=0 in=-1 p=11 l=1 col=12 i=1 n=0 c=0 abs=11
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=11 l=1 col=12 i=1 n=0 c=0 abs=11 pos0=0 line0=1 col0=12 byte0=11 win0=0 wsize0=22 woff0=11 wbytes0=[<a><b/></a><a><b/></a>]

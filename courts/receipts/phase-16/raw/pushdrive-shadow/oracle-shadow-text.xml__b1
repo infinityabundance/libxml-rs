@@ -1,27 +1,33 @@
 == /court/suites/phase16/shadow-corpus/shadow-text.xml bytes=8 mode=b1
 > CALL 0 len=1
-< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=1 woff0=0 wbytes0=[<]
 > CALL 1 len=1
-< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=2 woff0=0 wbytes0=[<a]
 > CALL 2 len=1
-< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=3 woff0=0 wbytes0=[<a>]
 > CALL 3 len=1
+! cb=startDocument p=0 c=0 abs=0
 startDocument
+! cb=startElementNs p=2 c=0 abs=2
 startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
-< CALL 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3
+< CALL 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=4 woff0=3 wbytes0=[<a>x]
 > CALL 4 len=1
+! cb=characters p=4 c=0 abs=4
 characters len=1 [x]
-< CALL 4 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1 c=0 abs=4
+< CALL 4 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1 c=0 abs=4 pos0=0 line0=1 col0=5 byte0=4 win0=0 wsize0=5 woff0=4 wbytes0=[<a>x<]
 > CALL 5 len=1
-< CALL 5 rc=0 err=0 wf=1 in=9 p=4 l=1 col=5 i=1 n=1 c=0 abs=4
+< CALL 5 rc=0 err=0 wf=1 in=9 p=4 l=1 col=5 i=1 n=1 c=0 abs=4 pos0=0 line0=1 col0=5 byte0=4 win0=0 wsize0=6 woff0=4 wbytes0=[<a>x</]
 > CALL 6 len=1
-< CALL 6 rc=0 err=0 wf=1 in=9 p=4 l=1 col=5 i=1 n=1 c=0 abs=4
+< CALL 6 rc=0 err=0 wf=1 in=9 p=4 l=1 col=5 i=1 n=1 c=0 abs=4 pos0=0 line0=1 col0=5 byte0=4 win0=0 wsize0=7 woff0=4 wbytes0=[<a>x</a]
 > CALL 7 len=1
+! cb=endElementNs p=8 c=0 abs=8
 endElementNs local=[a] prefix= uri=
-< CALL 7 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=0 c=0 abs=8
+< CALL 7 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=0 c=0 abs=8 pos0=0 line0=1 col0=9 byte0=8 win0=0 wsize0=8 woff0=8 wbytes0=[<a>x</a>]
 > FINAL
+! cb=endDocument p=8 c=0 abs=8
 endDocument
-< FINAL 0 rc=0 err=0 wf=1 in=-1 p=8 l=1 col=9 i=1 n=0 c=0 abs=8
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=8 l=1 col=9 i=1 n=0 c=0 abs=8 pos0=0 line0=1 col0=9 byte0=8 win0=0 wsize0=8 woff0=8 wbytes0=[<a>x</a>]
 > REFEED
+! cb=error p=8 c=0 abs=8
 error dom=1 code=5 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=Extra content at the end of the document\n
-< REFEED 0 rc=5 err=5 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0 c=0 abs=8
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0 c=0 abs=8 pos0=0 line0=1 col0=9 byte0=8 win0=0 wsize0=16 woff0=8 wbytes0=[<a>x</a><a>x</a>]

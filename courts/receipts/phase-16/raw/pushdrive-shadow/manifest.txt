@@ -1,15 +1,15 @@
 side=oracle-only (system libxml2)
-fixture_generation_sha=7ab9fd7915778a3b425ac8628f1bb1780edfb88a
+fixture_generation_sha=78d725a89c49151be5f14dd6e8c25a1b2a7f00fd
 fixture_tree_clean=yes
 fixture_consumer_note=the Rust gate src/xml/parser/pushshadow.rs consumes these; it pins the expected plan matrix independently
 corpus=courts/suites/phase16/shadow-corpus (verified against gen_shadow_corpus.py in-run)
-probe_sha256=7cda9123cce2f318ff27d8c2ed7f7e0bfe8d4cb555be5488d635f850565d8e8c
+probe_sha256=3c3e456151d553a2748a1836bf8d4052d6eebd2a3d157f6b8fcedc445faed327
 generator_sha256=9bf9703112ec6baa16a096e54eb3f1c7e041d387cee879a44f680cd1f0f3bb13
-runner_sha256=cc573b12b8eff72f3d5adf90339479a1db5baa49839497cb25fab21bc642600c
+runner_sha256=443803ed36aed265ec5884bc052044516195e4419839959c616dedfb34d34efb
 plans_small=b1,b2,b3,b5,b257,Cb1,b1z2,b1i,Cb1i,r9-2
 plans_long=b1024,b4096,b1024i,r17-512
 plans_window=b1024,b4096,b1024i (shadow-win-* documents)
-probe_flags=-W (physical-window mode: emits consumed/abs)
+probe_flags=-W (shadow-only: raw window, xmlCtxtGetInputPosition/Window, callback-entry marks)
 image=libxml-rs/phase14-debian:1
 image_id=sha256:4366b5053d2a4f5829e2b827df2e7d4e0e23a3eac90174d22f265f4b0b9b06cd
 Linux vanir 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 08:05:11 +0000 x86_64 GNU/Linux

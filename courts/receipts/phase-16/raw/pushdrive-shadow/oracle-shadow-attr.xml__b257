@@ -1,12 +1,17 @@
 == /court/suites/phase16/shadow-corpus/shadow-attr.xml bytes=10 mode=b257
 > CALL 0 len=10
+! cb=startDocument p=0 c=0 abs=0
 startDocument
+! cb=startElementNs p=8 c=0 abs=8
 startElementNs local=[a] prefix= uri= ns=0 att=1 def=0 [a local=p prefix= uri= value=v end=1]
+! cb=endElementNs p=10 c=0 abs=10
 endElementNs local=[a] prefix= uri=
-< CALL 0 rc=0 err=0 wf=1 in=14 p=10 l=1 col=11 i=1 n=0 c=0 abs=10
+< CALL 0 rc=0 err=0 wf=1 in=14 p=10 l=1 col=11 i=1 n=0 c=0 abs=10 pos0=0 line0=1 col0=11 byte0=10 win0=0 wsize0=10 woff0=10 wbytes0=[<a p="v"/>]
 > FINAL
+! cb=endDocument p=10 c=0 abs=10
 endDocument
-< FINAL 0 rc=0 err=0 wf=1 in=-1 p=10 l=1 col=11 i=1 n=0 c=0 abs=10
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=10 l=1 col=11 i=1 n=0 c=0 abs=10 pos0=0 line0=1 col0=11 byte0=10 win0=0 wsize0=10 woff0=10 wbytes0=[<a p="v"/>]
 > REFEED
+! cb=error p=10 c=0 abs=10
 error dom=1 code=5 level=3 file= line=1 i1=0 i2=11 str1= str2= str3= msg=Extra content at the end of the document\n
-< REFEED 0 rc=5 err=5 wf=0 in=-1 p=10 l=1 col=11 i=1 n=0 c=0 abs=10
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=10 l=1 col=11 i=1 n=0 c=0 abs=10 pos0=0 line0=1 col0=11 byte0=10 win0=0 wsize0=20 woff0=10 wbytes0=[<a p="v"/><a p="v"/>]

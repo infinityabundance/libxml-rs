@@ -1,8 +1,9 @@
 == /court/suites/phase16/shadow-corpus/shadow-utf16invalid.xml bytes=10 mode=b257
 > CALL 0 len=10
+! cb=error p=0 c=2 abs=2
 error dom=8 code=81 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Invalid bytes in character encoding\n
-< CALL 0 rc=81 err=81 wf=0 in=17 p=0 l=1 col=1 i=1 n=0 c=2 abs=2
+< CALL 0 rc=81 err=81 wf=0 in=17 p=0 l=1 col=1 i=1 n=0 c=2 abs=2 pos0=0 line0=1 col0=1 byte0=2 win0=0 wsize0=3 woff0=0 wbytes0=[<a>]
 > FINAL
-< FINAL 0 rc=81 err=81 wf=0 in=17 p=0 l=1 col=1 i=1 n=0 c=2 abs=2
+< FINAL 0 rc=81 err=81 wf=0 in=17 p=0 l=1 col=1 i=1 n=0 c=2 abs=2 pos0=0 line0=1 col0=1 byte0=2 win0=0 wsize0=3 woff0=0 wbytes0=[<a>]
 > REFEED
-< REFEED 0 rc=81 err=81 wf=0 in=17 p=0 l=1 col=1 i=1 n=0 c=2 abs=2
+< REFEED 0 rc=81 err=81 wf=0 in=17 p=0 l=1 col=1 i=1 n=0 c=2 abs=2 pos0=0 line0=1 col0=1 byte0=2 win0=0 wsize0=3 woff0=0 wbytes0=[<a>]

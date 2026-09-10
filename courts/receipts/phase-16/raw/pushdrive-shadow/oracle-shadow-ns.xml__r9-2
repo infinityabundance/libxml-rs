@@ -1,48 +1,55 @@
 == /court/suites/phase16/shadow-corpus/shadow-ns.xml bytes=29 mode=r9-2
 > CALL 0 len=2
-< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=2 woff0=0 wbytes0=[<a]
 > CALL 1 len=2
+! cb=startDocument p=0 c=0 abs=0
 startDocument
-< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=4 woff0=0 wbytes0=[<a x]
 > CALL 2 len=1
-< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=5 woff0=0 wbytes0=[<a xm]
 > CALL 3 len=1
-< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=6 woff0=0 wbytes0=[<a xml]
 > CALL 4 len=2
-< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=8 woff0=0 wbytes0=[<a xmlns]
 > CALL 5 len=2
-< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=10 woff0=0 wbytes0=[<a xmlns:x]
 > CALL 6 len=1
-< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=11 woff0=0 wbytes0=[<a xmlns:x=]
 > CALL 7 len=2
-< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=13 woff0=0 wbytes0=[<a xmlns:x="u]
 > CALL 8 len=2
-< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=15 woff0=0 wbytes0=[<a xmlns:x="urn]
 > CALL 9 len=2
-< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
+< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=17 woff0=0 wbytes0=[<a xmlns:x="urn:u]
 > CALL 10 len=2
+! cb=startElementNs p=18 c=0 abs=18
 startElementNs local=[a] prefix= uri= ns=1 att=0 def=0 {x=urn:u}
-< CALL 10 rc=0 err=0 wf=1 in=7 p=19 l=1 col=20 i=1 n=1 c=0 abs=19
+< CALL 10 rc=0 err=0 wf=1 in=7 p=19 l=1 col=20 i=1 n=1 c=0 abs=19 pos0=0 line0=1 col0=20 byte0=19 win0=0 wsize0=19 woff0=19 wbytes0=[<a xmlns:x="urn:u">]
 > CALL 11 len=2
-< CALL 11 rc=0 err=0 wf=1 in=6 p=19 l=1 col=20 i=1 n=1 c=0 abs=19
+< CALL 11 rc=0 err=0 wf=1 in=6 p=19 l=1 col=20 i=1 n=1 c=0 abs=19 pos0=0 line0=1 col0=20 byte0=19 win0=0 wsize0=21 woff0=19 wbytes0=[<a xmlns:x="urn:u"><x]
 > CALL 12 len=1
-< CALL 12 rc=0 err=0 wf=1 in=6 p=19 l=1 col=20 i=1 n=1 c=0 abs=19
+< CALL 12 rc=0 err=0 wf=1 in=6 p=19 l=1 col=20 i=1 n=1 c=0 abs=19 pos0=0 line0=1 col0=20 byte0=19 win0=0 wsize0=22 woff0=19 wbytes0=[<a xmlns:x="urn:u"><x:]
 > CALL 13 len=1
-< CALL 13 rc=0 err=0 wf=1 in=6 p=19 l=1 col=20 i=1 n=1 c=0 abs=19
+< CALL 13 rc=0 err=0 wf=1 in=6 p=19 l=1 col=20 i=1 n=1 c=0 abs=19 pos0=0 line0=1 col0=20 byte0=19 win0=0 wsize0=23 woff0=19 wbytes0=[<a xmlns:x="urn:u"><x:b]
 > CALL 14 len=2
+! cb=startElementNs p=23 c=0 abs=23
 startElementNs local=[b] prefix=x uri=urn:u ns=0 att=0 def=0
+! cb=endElementNs p=25 c=0 abs=25
 endElementNs local=[b] prefix=x uri=urn:u
-< CALL 14 rc=0 err=0 wf=1 in=7 p=25 l=1 col=26 i=1 n=1 c=0 abs=25
+< CALL 14 rc=0 err=0 wf=1 in=7 p=25 l=1 col=26 i=1 n=1 c=0 abs=25 pos0=0 line0=1 col0=26 byte0=25 win0=0 wsize0=25 woff0=25 wbytes0=[<a xmlns:x="urn:u"><x:b/>]
 > CALL 15 len=1
-< CALL 15 rc=0 err=0 wf=1 in=7 p=25 l=1 col=26 i=1 n=1 c=0 abs=25
+< CALL 15 rc=0 err=0 wf=1 in=7 p=25 l=1 col=26 i=1 n=1 c=0 abs=25 pos0=0 line0=1 col0=26 byte0=25 win0=0 wsize0=26 woff0=25 wbytes0=[<a xmlns:x="urn:u"><x:b/><]
 > CALL 16 len=1
-< CALL 16 rc=0 err=0 wf=1 in=9 p=25 l=1 col=26 i=1 n=1 c=0 abs=25
+< CALL 16 rc=0 err=0 wf=1 in=9 p=25 l=1 col=26 i=1 n=1 c=0 abs=25 pos0=0 line0=1 col0=26 byte0=25 win0=0 wsize0=27 woff0=25 wbytes0=[<a xmlns:x="urn:u"><x:b/></]
 > CALL 17 len=2
+! cb=endElementNs p=29 c=0 abs=29
 endElementNs local=[a] prefix= uri=
-< CALL 17 rc=0 err=0 wf=1 in=14 p=29 l=1 col=30 i=1 n=0 c=0 abs=29
+< CALL 17 rc=0 err=0 wf=1 in=14 p=29 l=1 col=30 i=1 n=0 c=0 abs=29 pos0=0 line0=1 col0=30 byte0=29 win0=0 wsize0=29 woff0=29 wbytes0=[<a xmlns:x="urn:u"><x:b/></a>]
 > FINAL
+! cb=endDocument p=29 c=0 abs=29
 endDocument
-< FINAL 0 rc=0 err=0 wf=1 in=-1 p=29 l=1 col=30 i=1 n=0 c=0 abs=29
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=29 l=1 col=30 i=1 n=0 c=0 abs=29 pos0=0 line0=1 col0=30 byte0=29 win0=0 wsize0=29 woff0=29 wbytes0=[<a xmlns:x="urn:u"><x:b/></a>]
 > REFEED
+! cb=error p=29 c=0 abs=29
 error dom=1 code=5 level=3 file= line=1 i1=0 i2=30 str1= str2= str3= msg=Extra content at the end of the document\n
-< REFEED 0 rc=5 err=5 wf=0 in=-1 p=29 l=1 col=30 i=1 n=0 c=0 abs=29
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=29 l=1 col=30 i=1 n=0 c=0 abs=29 pos0=0 line0=1 col0=30 byte0=29 win0=0 wsize0=58 woff0=29 wbytes0=[<a xmlns:x="urn:u"><x:b/></a><a xmlns:x="urn:u"><x:b/></a>]
