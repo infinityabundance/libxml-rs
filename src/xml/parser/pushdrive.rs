@@ -140,17 +140,39 @@ impl XmlParser {
         chunk: &[u8],
         terminate: bool,
     ) -> PushProgress {
+        // Upstream `xmlParseChunk` returns the recorded errNo immediately once
+        // `disableSAX` is set — BEFORE pushing, and without dispatching
+        // anything again. Without this guard a latched encoder error would be
+        // re-raised on every later call (the oracle emits it once).
+        if machine.is_fatal()
+            || machine.is_stopped()
+            || unsafe { (*self.ctxt_raw()).disableSAX } != 0
+        {
+            machine.mark_fatal();
+            return PushProgress::Fatal;
+        }
+
         self.base_input_mut().push_bytes_ex(chunk, terminate);
 
         // Upstream `xmlParseChunk`: a DEFINITE invalid encoding unit makes
         // `xmlParserInputBufferPush` fail, and `xmlParseChunk` reports
         // XML_ERR_INVALID_ENCODING (via `xmlCtxtErrIO`) BEFORE
         // `xmlParseTryOrFinish` runs. So this call's newly decoded content
-        // must not be parsed and no grammar event may fire — the error has
-        // already latched `disableSAX`, and every later call must return the
-        // recorded `errNo` without parsing.
+        // must not be parsed and no grammar event may fire.
+        //
+        // The state is NOT left untouched, though: the encoding switch that
+        // precedes the parse loop has already happened, and upstream's
+        // `xmlDetectEncoding` is what moves `START` to `XML_DECL`
+        // (`shadow-utf16invalid.xml` at b257 shows `in=17`, not `in=0`). The
+        // position is the input's at the START of the call — the oracle
+        // reports `col=1` for a one-chunk feed and `col=4` for a feed that had
+        // already consumed `<a>` — which is exactly `InputBuffer::pos()` here,
+        // because nothing has been consumed in this call yet.
         if self.base_input().source_encoding_error() {
-            let (line, col) = self.base_input().end_line_col();
+            if machine.phase() == xmlParserInputState::XML_PARSER_START {
+                self.set_phase(machine, xmlParserInputState::XML_PARSER_XML_DECL);
+            }
+            let (line, col, _) = self.base_input().pos();
             unsafe {
                 helpers::raise_invalid_encoding(self.ctxt_raw(), line as c_int, col as c_int);
             }
@@ -334,7 +356,9 @@ impl XmlParser {
             return;
         }
         if self.base_input().source_truncated() {
-            let (line, col) = self.base_input().end_line_col();
+            // At EOF every materialized byte has been consumed, so the input's
+            // position here IS the stream end the oracle reports.
+            let (line, col, _) = self.base_input().pos();
             unsafe {
                 helpers::raise_invalid_encoding(self.ctxt_raw(), line as c_int, col as c_int);
             }
