@@ -302,20 +302,26 @@ EBCDIC, surrogate pairs, and a document ending with half a code unit.
 
 ### Corpus cases added (binary, split by the b1/b2/b3 plans)
 
-`enc-utf16le-bom`, `enc-utf16be-bom`, `enc-utf16le-nobom`,
-`enc-utf16be-nobom`, `enc-utf32le-bom`, `enc-utf32be-bom`,
-`enc-utf32be-nobom`, `enc-ebcdic` (cp037), `enc-utf16le-surrogate`,
-`enc-utf16be-surrogate`, `enc-utf16le-half-end`, `enc-utf16be-half-end`,
-`enc-bom-le-only`, `enc-bom-be-only`, `enc-bom-le-half`. Together with the
+Fixed-width/byte-wise (19 documents): `enc-utf16le-bom`, `enc-utf16be-bom`,
+`enc-utf16le-nobom`, `enc-utf16be-nobom`, `enc-utf32le-bom`,
+`enc-utf32be-bom`, `enc-utf32be-nobom`, `enc-ebcdic` (cp037),
+`enc-utf16le-surrogate`, `enc-utf16be-surrogate`, `enc-utf16le-half-end`,
+`enc-utf16be-half-end`, `enc-bom-le-only`, `enc-bom-be-only`,
+`enc-bom-le-half` (+ the court-hardening additions). Together with the
 b1/b2/b3 plans these split the BOM, the first-four-byte signatures, single
 code units, and surrogate pairs across calls, and cover the terminating
 call carrying half a code unit.
+
+Registry-served multibyte/stateful (12 documents, added with the persistent
+decoder slice — see below): `enc-shift_jis`/`-long`, `enc-euc-jp`/`-long`,
+`enc-iso2022-jp`/`-long`/`-shifted`, `enc-ucs2`/`-half`/`-half-unit-only`,
+`enc-shift_jis-half`/`-half-unit-only`.
 
 ### Fix plan (next slice, before any XML-grammar wiring)
 
 #### Acceptance: decoder-specific vs full-trace
 
-These 355 cells run the COMPLETE push-parser trace, so the decoder fix
+These cells run the COMPLETE push-parser trace, so the decoder fix
 cannot take them to `diffs = 0` on its own: the replay architecture
 independently differs from upstream on startDocument/endDocument timing,
 `NeedMoreInput` behavior, `ctxt->instate`, `cur-base`/`nameNr` progression,
@@ -336,7 +342,7 @@ Decoder-specific gate (expected GREEN after the decoder work):
                  EBCDIC stays START through avail 199 and progresses at 200
 
 Full pushdiff trace (expected to STAY RED until the persistent push-parser
-lifecycle/state wiring lands): the 355/355 count above.
+lifecycle/state wiring lands): the full-corpus count above.
 ```
 
 That is the causal isolation: the decoder work is judged on decoder
@@ -428,6 +434,105 @@ Representative evidence in `raw/pushdiff/sample/`:
    ("Start tag expected", code 4) and never runs `xmlParseCharData` there; the
    candidate's tokenizer could record `XML_ERR_INVALID_CHAR` ("PCDATA invalid
    Char value 0") for an invalid byte in the run and supersede it.
+
+#### Registry-served codecs are now genuinely progressive (`581a74c5`)
+
+The fixed-width decoder paths carried incomplete units correctly, but the
+registry tail route (`Encoding::Other(_)`) decoded **each chunk
+independently** — `decode_whole_buffer_declared` built a fresh `encoding_rs`
+decoder per call and passed `last = true`. That is wrong for every codec that
+is not a byte-wise mapping:
+
+```text
+Shift_JIS  82 A0 is one character
+  CALL 1: ... 82   -> an independent decode calls 82 malformed
+  CALL 2: A0 ...   -> the raw lead byte was materialized; the character is lost
+
+ISO-2022-JP  ESC $ B (JIS state) ... ESC ( B
+  a boundary can land with NO incomplete byte sequence at all, so no byte
+  carry can help — only the decoder's escape state survives
+```
+
+`Encoding::Other` is no longer one homogeneous category. `RegistryKind`
+classifies the resolved (alias-canonicalized) name:
+
+| kind | encodings | decoding |
+|---|---|---|
+| `Streaming` | Shift_JIS/SJIS/CP932, EUC-JP, ISO-2022-JP | a **persistent** `encoding_rs::Decoder`, installed at decision time and reused for every later chunk |
+| `Ucs2Le` | `UCS-2` | 2-byte unit carry |
+| `Ucs4(le/be)` | `ucs-4`, `ucs-4be` | 4-byte unit carry |
+| `ByteWise` | ISO-8859-x, windows-1252, EBCDIC, unresolved names | tail-wise through the registry handler (unchanged) |
+
+Decoding always feeds `last = false`, so an incomplete unit is buffered inside
+the decoder; `last` is applied as a separate empty-input flush, mirroring
+upstream's `xmlCharEncInput(flush = 0)` plus `xmlParserCheckEOF`'s `flush = 1`.
+A definite invalid unit latches the immediate encoder error; a still-held unit
+on a terminating feed latches the truncation. `convert_declared_native_encoding`
+now takes the call's `terminate` so a declared codec whose first (and only)
+feed is final reports the flush too.
+
+**A trap found on the way**: `encoding_rs`'s two-byte decoders CLEAR their
+buffered lead byte when called with an EMPTY slice and `last = false`
+(`ShiftJisDecoder`'s prolog sets `self.lead = None` before returning
+`InputEmpty`). The decoder here is therefore never called that way: only real
+bytes are fed `last = false`, and the single empty-slice call is the
+`last = true` flush.
+
+**A first version was falsified by the court.** It split the buffer at the
+declaration and decoded only the body, on the theory that upstream switches
+the encoding with `cur` past the declaration. The new `enc-ucs2*` documents
+show the oracle does the opposite for a unit-aligned codec — it REJECTS the
+document (`XML_ERR_SPACE_REQUIRED` 65 "Blank needed here" +
+`XML_ERR_'?>' expected` 57, wellFormed 0, `p=3`, `col=38` = the ASCII
+declaration): the switch converts the input buffer and the parser re-reads it,
+so the already-consumed declaration is decoded as UCS-2 as well and the re-scan
+fails. Declared codecs now decode the WHOLE buffer from byte zero, the
+candidate rejects these documents too (well-formedness parity), and the exact
+diagnostic remains parser-side.
+
+#### Corpus families added for this (12 documents, +210 cells)
+
+```text
+enc-shift_jis / -long           2-byte characters split at every boundary
+enc-euc-jp / -long              same, EUC-JP
+enc-iso2022-jp / -long          ESC $ B ... ESC ( B, split inside the ESC runs
+enc-iso2022-jp-shifted          shifted in with no ASCII text after the shift, so a
+                                boundary can land between the JIS pairs and ESC ( B
+                                with NO incomplete bytes: state only
+enc-ucs2 / -half                declared UCS-2 (the shape the oracle rejects)
+enc-shift_jis-half / -half-unit-only   dangling half unit at EOF (combined /
+                                isolated flush)
+enc-ucs2-half / -half-unit-only same for UCS-2
+```
+
+Corpus totals: 31 encoding documents, 565 cells under `PUSHDIFF_FILTER=enc-`
+(was 19 / 355).
+
+#### Gate execution (candidate `581a74c5`)
+
+```text
+cells=565  diffs=565             full trace: still RED (expected)
+pushdiff decoder gate: 565/565 cells green
+  informational: 555/565 also differ in the REFEED line (class 4)
+  informational:  84/565 agree on well-formedness, different parser diagnostic
+```
+
+Every encoding document is fully green, including all four new families:
+
+```text
+19/19 enc-shift_jis               19/19 enc-iso2022-jp-shifted
+19/19 enc-shift_jis-half          19/19 enc-iso2022-jp-long
+19/19 enc-shift_jis-half-unit-only 19/19 enc-ucs2
+13/13 enc-shift_jis-long          19/19 enc-ucs2-half
+19/19 enc-euc-jp                  19/19 enc-ucs2-half-unit-only
+13/13 enc-euc-jp-long             19/19 enc-utf16le-bom  (+ all other fixed-width)
+19/19 enc-iso2022-jp              13/13 enc-ebcdic-long
+```
+
+The 84 informational cells are the parser-diagnostic class only: 27
+`enc-utf32??-bom` (raw NUL/invalid bytes at the document start, below) and 57
+`enc-ucs2*` (the diagnostic the oracle reports while rejecting a declared
+unit-aligned stream). Neither gates the decoder contract.
 
 #### Open, newly isolated: parser diagnostic on raw NUL/invalid bytes
 
@@ -550,13 +655,14 @@ G10 cargo test --lib green (1291 as of the decoder slice)
 
 Decoder sub-gate (executable, `pushdiff-decoder-gate.py`, expected GREEN now):
 decoded content + encoder error + FINAL well-formedness per `enc-*` cell —
-currently 355/355, with the full trace still red as designed.
+currently 565/565 on the grown decoder corpus, with the full trace still red
+as designed.
 
 ## Next slices
 
 0. ~~Progressive source decoder + executable decoder gate.~~ DONE
-   (`9fac5d17`, `8c6f9c8b`, `a42145fb`; gate 355/355, full trace still 355/355
-   as predicted).
+   (`9fac5d17`, `8c6f9c8b`, `a42145fb`, `2ffa74ea`, `581a74c5`; gate 565/565
+   on the grown decoder corpus, full trace still 565/565 as predicted).
 
 1. Stateful push driver: park the parser (phase, element frames, tokenizer
    input cursor, namespace scope) across non-final calls; scan only new

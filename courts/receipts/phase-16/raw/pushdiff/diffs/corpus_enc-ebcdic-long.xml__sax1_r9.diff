@@ -1,8 +1,0 @@
-==== corpus/enc-ebcdic-long.xml mode=sax1/r9 ====
-18a19
-> endDocument
-24,25c25
-< error dom=1 code=5 level=3 file= line=1 i1=0 i2=239 str1= str2= str3= msg=Extra content at the end of the document\n
-< < REFEED 0 rc=5 err=5 wf=0 in=-1 p=238 l=1 col=239 i=1 n=0
----
-> < REFEED 0 rc=0 err=0 wf=1 in=-1 p=238 l=1 col=239 i=1 n=0

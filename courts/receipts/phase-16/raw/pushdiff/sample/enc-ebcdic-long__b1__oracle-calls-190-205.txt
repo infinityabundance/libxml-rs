@@ -1,0 +1,35 @@
+== /scanout/corpus/enc-ebcdic-long.xml bytes=238 mode=b1
+> CALL 190 len=1
+< CALL 190 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 191 len=1
+< CALL 191 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 192 len=1
+< CALL 192 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 193 len=1
+< CALL 193 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 194 len=1
+< CALL 194 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 195 len=1
+< CALL 195 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 196 len=1
+< CALL 196 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 197 len=1
+< CALL 197 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 198 len=1
+< CALL 198 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 199 len=1
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 199 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+> CALL 200 len=1
+< CALL 200 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+> CALL 201 len=1
+< CALL 201 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+> CALL 202 len=1
+< CALL 202 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+> CALL 203 len=1
+< CALL 203 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+> CALL 204 len=1
+< CALL 204 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+> CALL 205 len=1
+< CALL 205 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1

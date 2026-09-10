@@ -1,0 +1,3 @@
+pushdiff decoder gate: 565/565 cells green (decoded content, encoder error, FINAL well-formedness)
+  (informational: 555/565 cells also differ in the REFEED line — divergence class 4, not gated)
+  (informational: 84/565 cells agree on well-formedness but report a different parser diagnostic code)

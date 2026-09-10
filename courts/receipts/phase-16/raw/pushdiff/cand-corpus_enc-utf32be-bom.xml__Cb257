@@ -1,9 +1,0 @@
-== /scanout/corpus/enc-utf32be-bom.xml bytes=36 mode=Cb257
-> CTOR len=36
-< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
-> FINAL
-startDocument
-error dom=1 code=4 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Start tag expected, '<' not found\n
-< FINAL 0 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-> REFEED
-< REFEED 0 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0

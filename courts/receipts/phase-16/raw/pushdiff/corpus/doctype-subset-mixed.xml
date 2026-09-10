@@ -1,2 +1,0 @@
-<!DOCTYPE a [<!ELEMENT a (#PCDATA|b)*>]>
-<a>x<b/>y</a>
