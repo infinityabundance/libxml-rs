@@ -1,0 +1,41 @@
+== /court/suites/phase16/shadow-corpus/shadow-doctype-ext.xml bytes=31 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=3 woff0=0 wbytes0=[<!D]
+> CALL 1 len=3
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=6 woff0=0 wbytes0=[<!DOCT]
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=9 woff0=0 wbytes0=[<!DOCTYPE]
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=12 woff0=0 wbytes0=[<!DOCTYPE a ]
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=15 woff0=0 wbytes0=[<!DOCTYPE a SYS]
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=18 woff0=0 wbytes0=[<!DOCTYPE a SYSTEM]
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=21 woff0=0 wbytes0=[<!DOCTYPE a SYSTEM "a]
+> CALL 7 len=3
+< CALL 7 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=24 woff0=0 wbytes0=[<!DOCTYPE a SYSTEM "a.dt]
+> CALL 8 len=3
+! cb=internalSubset p=26 c=0 abs=26
+internalSubset name=a ext= sys=a.dtd
+! cb=externalSubset p=27 c=0 abs=27
+externalSubset name=a ext= sys=a.dtd
+< CALL 8 rc=0 err=0 wf=1 in=4 p=27 l=1 col=28 i=1 n=0 c=0 abs=27 pos0=0 line0=1 col0=28 byte0=27 win0=0 wsize0=27 woff0=27 wbytes0=[<!DOCTYPE a SYSTEM "a.dtd">]
+> CALL 9 len=3
+< CALL 9 rc=0 err=0 wf=1 in=6 p=27 l=1 col=28 i=1 n=0 c=0 abs=27 pos0=0 line0=1 col0=28 byte0=27 win0=0 wsize0=30 woff0=27 wbytes0=[<!DOCTYPE a SYSTEM "a.dtd"><a/]
+> CALL 10 len=1
+! cb=startElementNs p=29 c=0 abs=29
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=endElementNs p=31 c=0 abs=31
+endElementNs local=[a] prefix= uri=
+< CALL 10 rc=0 err=0 wf=1 in=14 p=31 l=1 col=32 i=1 n=0 c=0 abs=31 pos0=0 line0=1 col0=32 byte0=31 win0=0 wsize0=31 woff0=31 wbytes0=[<!DOCTYPE a SYSTEM "a.dtd"><a/>]
+> FINAL
+! cb=endDocument p=31 c=0 abs=31
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=31 l=1 col=32 i=1 n=0 c=0 abs=31 pos0=0 line0=1 col0=32 byte0=31 win0=0 wsize0=31 woff0=31 wbytes0=[<!DOCTYPE a SYSTEM "a.dtd"><a/>]
+> REFEED
+! cb=error p=31 c=0 abs=31
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=32 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=31 l=1 col=32 i=1 n=0 c=0 abs=31 pos0=0 line0=1 col0=32 byte0=31 win0=0 wsize0=62 woff0=31 wbytes0=[<!DOCTYPE a SYSTEM "a.dtd"><a/><!DOCTYPE a SYSTEM "a.dtd"><a/>]

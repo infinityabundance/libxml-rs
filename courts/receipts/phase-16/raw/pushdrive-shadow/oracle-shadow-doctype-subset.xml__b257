@@ -1,0 +1,23 @@
+== /court/suites/phase16/shadow-corpus/shadow-doctype-subset.xml bytes=37 mode=b257
+> CALL 0 len=37
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=internalSubset p=12 c=0 abs=12
+internalSubset name=a ext= sys=
+! cb=elementDecl p=31 c=0 abs=31
+elementDecl name=a type=1 content=nil
+! cb=externalSubset p=33 c=0 abs=33
+externalSubset name=a ext= sys=
+! cb=startElementNs p=35 c=0 abs=35
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=endElementNs p=37 c=0 abs=37
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=37 l=1 col=38 i=1 n=0 c=0 abs=37 pos0=0 line0=1 col0=38 byte0=37 win0=0 wsize0=37 woff0=37 wbytes0=[<!DOCTYPE a [<!ELEMENT a EMPTY>]><a/>]
+> FINAL
+! cb=endDocument p=37 c=0 abs=37
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=37 l=1 col=38 i=1 n=0 c=0 abs=37 pos0=0 line0=1 col0=38 byte0=37 win0=0 wsize0=37 woff0=37 wbytes0=[<!DOCTYPE a [<!ELEMENT a EMPTY>]><a/>]
+> REFEED
+! cb=error p=37 c=0 abs=37
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=38 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=37 l=1 col=38 i=1 n=0 c=0 abs=37 pos0=0 line0=1 col0=38 byte0=37 win0=0 wsize0=74 woff0=37 wbytes0=[<!DOCTYPE a [<!ELEMENT a EMPTY>]><a/><!DOCTYPE a [<!ELEMENT a EMPTY>]><a/>]
