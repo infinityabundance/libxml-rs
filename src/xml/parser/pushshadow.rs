@@ -532,6 +532,18 @@ unsafe fn tail_line(lbl: &str, idx: usize, ctxt: *mut _xmlParserCtxt, ctor: bool
     if input.is_null() {
         return format!("{head} p=-1 l=-1 col=-1 i=-1 n={name_nr}");
     }
+    // Candidate-side invariants (never part of the compared trace): the
+    // published window must be ordered and `inputTab[0]` must be the very
+    // input `ctxt->input` names, or a consumer walking the stack sees a
+    // different window than the one the court just asserted against.
+    debug_assert!(
+        unsafe { (*input).base <= (*input).cur && (*input).cur <= (*input).end },
+        "published window is not ordered: base <= cur <= end"
+    );
+    debug_assert!(
+        unsafe { (*ctxt).inputTab.is_null() || *(*ctxt).inputTab == input },
+        "inputTab[0] does not name ctxt->input"
+    );
     let p = unsafe { (*input).cur.offset_from((*input).base) };
     let consumed = unsafe { (*input).consumed };
     let line = unsafe { (*input).line };
