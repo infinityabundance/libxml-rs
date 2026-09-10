@@ -3056,6 +3056,75 @@ impl XmlTokenizer {
         b.is_ascii_alphanumeric() || b == b'.' || b == b'-' || b == b'_' || b == b':'
     }
 
+    /// Whether the multi-byte UTF-8 sequence at the current position is
+    /// MALFORMED (as opposed to merely INCOMPLETE). Mirrors every rejection in
+    /// upstream `xmlCurrentChar`: a missing or wrong continuation byte, an
+    /// overlong form, a surrogate code point, or a code point above U+10FFFF.
+    fn utf8_sequence_is_malformed(&self) -> bool {
+        let rem = self.input.current_ref().remaining();
+        let b0 = match rem.first() {
+            Some(&b) => b,
+            None => return false,
+        };
+        if b0 < 0x80 {
+            return false;
+        }
+        let at = |i: usize| rem.get(i).copied().unwrap_or(0);
+        let cont = |b: u8| (b & 0xC0) == 0x80;
+        if rem.len() < 2 {
+            return false;
+        }
+        if !cont(at(1)) {
+            return true;
+        }
+        if b0 < 0xE0 {
+            return b0 < 0xC2;
+        }
+        if rem.len() < 3 {
+            return false;
+        }
+        if !cont(at(2)) {
+            return true;
+        }
+        if b0 < 0xF0 {
+            let val = (u32::from(b0 & 0x0F) << 12)
+                | (u32::from(at(1) & 0x3F) << 6)
+                | u32::from(at(2) & 0x3F);
+            return val < 0x800 || (0xD800..0xE000).contains(&val);
+        }
+        if rem.len() < 4 {
+            return false;
+        }
+        if !cont(at(3)) {
+            return true;
+        }
+        let val = (u32::from(b0 & 0x07) << 18)
+            | (u32::from(at(1) & 0x3F) << 12)
+            | (u32::from(at(2) & 0x3F) << 6)
+            | u32::from(at(3) & 0x3F);
+        !(0x10000..0x110000).contains(&val)
+    }
+
+    /// Record XML_ERR_INVALID_ENCODING for the current byte, ONCE per input
+    /// (upstream `XML_INPUT_ENCODING_ERROR`).
+    fn record_utf8_encoding_error(&mut self) {
+        if self.input.current_ref().utf8_error_reported() {
+            return;
+        }
+        self.input.current().set_utf8_error_reported();
+        self.record_error(
+            crate::abi::types::XML_FROM_IO,
+            crate::abi::types::XML_ERR_INVALID_ENCODING,
+            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+            "Invalid bytes in character encoding\n".to_string(),
+            None,
+            None,
+            None,
+            0,
+            None,
+        );
+    }
+
     /// Scan an XML Name.
     fn scan_name(&mut self) -> Vec<u8> {
         let mut name = Vec::new();
@@ -3093,7 +3162,21 @@ impl XmlTokenizer {
 
             let c = match self.input.peek_char() {
                 Some(c) => c,
-                None => break,
+                None => {
+                    // A multi-byte UTF-8 sequence the decoder refused. Upstream
+                    // `xmlParseNameComplex` reads through `xmlCurrentChar`, so a
+                    // MALFORMED sequence raises XML_ERR_INVALID_ENCODING (once
+                    // per input) at the offending byte before the name scan
+                    // fails with XML_ERR_NAME_REQUIRED (`raw-high-name`: error
+                    // 81 then the code-68 start-tag error, both at col 2, with
+                    // the cursor left ON the byte). An INCOMPLETE sequence
+                    // (fewer bytes than the length byte promises) is NOT an
+                    // error — it simply ends the name.
+                    if self.input.peek_raw().is_some() && self.utf8_sequence_is_malformed() {
+                        self.record_utf8_encoding_error();
+                    }
+                    break;
+                }
             };
 
             // XML Name characters (upstream xmlParseName / xmlIsNameChar):
