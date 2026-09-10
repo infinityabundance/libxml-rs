@@ -237,15 +237,16 @@ pub(crate) struct ErrorInfo {
     pub enc_bytes: Option<([u8; 4], usize)>,
 }
 
-/// Count the entity-value opening quotes in an internal-subset slice.
+/// Byte offsets (within `content`) of the OPENING quotes of internal-subset
+/// entity VALUES.
 ///
 /// Upstream `xmlParseEntityValue` takes that one quote with a raw `CUR_PTR++`
 /// (no `col` bump). An EXTERNAL identifier's literals go through
 /// `xmlParseSystemLiteral` / `xmlParsePubidLiteral`, which use `NEXT` and DO
 /// bump, so those are excluded.
-fn dtd_entity_value_quotes(content: &[u8]) -> usize {
+fn dtd_entity_value_quote_offsets(content: &[u8]) -> Vec<usize> {
     const KW: &[u8] = b"<!ENTITY";
-    let mut n = 0usize;
+    let mut out = Vec::new();
     let mut i = 0usize;
     while i + KW.len() <= content.len() {
         if !content[i..].starts_with(KW) {
@@ -277,12 +278,34 @@ fn dtd_entity_value_quotes(content: &[u8]) -> usize {
             let external =
                 content[j..].starts_with(b"SYSTEM") || content[j..].starts_with(b"PUBLIC");
             if !external && (content[j] == b'"' || content[j] == b'\'') {
-                n += 1;
+                out.push(j);
             }
         }
         i = (j + 1).max(i + KW.len());
     }
-    n
+    out
+}
+
+/// The `input->col` LAG at `offset` within `content`.
+///
+/// Upstream `xmlParseEntityValue` consumes an entity value's opening quote
+/// with a raw `CUR_PTR++` that does not bump `col`, so the column runs one
+/// short per such quote — but only until the next line break, which resets it
+/// to 1 regardless. Counting only the quotes on `offset`'s own line is
+/// therefore exact. Subtracting every quote in the subset (which this
+/// replaces) wrongly leaks an earlier line's lag across the newline
+/// (`staff.xml`: `]>` on line 13 reported `col=1` instead of 3; `inC14N5`:
+/// `col=2` instead of 3).
+pub(crate) fn dtd_col_lag_at(content: &[u8], offset: usize) -> usize {
+    let offset = offset.min(content.len());
+    let line_start = content[..offset]
+        .iter()
+        .rposition(|&b| b == b'\n' || b == b'\r')
+        .map_or(0, |p| p + 1);
+    dtd_entity_value_quote_offsets(content)
+        .into_iter()
+        .filter(|&q| q >= line_start && q < offset)
+        .count()
 }
 
 /// The XML tokenizer — scans lexical tokens from the input stack.
@@ -412,96 +435,6 @@ impl XmlTokenizer {
         self.old10 = on;
     }
 
-    /// Diagnose the XML-declaration `version` literal exactly as upstream's
-    /// xmlParseVersionInfo + xmlParseVersionNum + xmlParseXMLDecl do
-    /// (parser.c), recording the errors in upstream's raise order. The
-    /// records land BEFORE the scan's own "Blank needed here" (65) and
-    /// "'?>' expected" (57) records, so delivery order and the final errNo
-    /// match the oracle (`<?xml version="dummy">` ends on
-    /// XML_ERR_XMLDECL_NOT_FINISHED = 57 — the KEY-3 xml_error_string rows).
-    ///
-    /// VersionNum is `<digit> '.' <digit>*` with exactly ONE leading digit
-    /// (so "10.5" is not a version number). When the scan stops inside the
-    /// literal the closing quote was never reached:
-    /// XML_ERR_STRING_NOT_CLOSED (34). A NULL version then raises
-    /// XML_ERR_VERSION_MISSING (96, "Malformed declaration expecting
-    /// version"). A parsed prefix other than "1.0" is fatal under
-    /// XML_PARSE_OLD10, a warning (XML_WAR_UNKNOWN_VERSION, 97) for "1.x",
-    /// and fatal otherwise (XML_ERR_UNKNOWN_VERSION, 108) — the message
-    /// shows the PARSED prefix ("1.x" reports '1.', and "3.1" fails the
-    /// load: DOMDocument_loadXML_error4).
-    fn record_xml_decl_version_diagnostic(&mut self, literal: &[u8]) {
-        // Where xmlParseVersionNum would stop in the literal.
-        let stop = if literal.is_empty() || !literal[0].is_ascii_digit() {
-            0
-        } else if literal.len() < 2 || literal[1] != b'.' {
-            1
-        } else {
-            let mut i = 2;
-            while i < literal.len() && literal[i].is_ascii_digit() {
-                i += 1;
-            }
-            i
-        };
-        // Stopping inside the literal: RAW was not the closing quote.
-        if stop < literal.len() {
-            self.record_error(
-                crate::abi::types::XML_FROM_PARSER,
-                crate::abi::types::XML_ERR_STRING_NOT_CLOSED,
-                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                "String not closed expecting \" or '\n".to_string(),
-                None,
-                None,
-                None,
-                0,
-                None,
-            );
-        }
-        if stop < 2 {
-            // version == NULL: xmlParseVersionNum never consumed digit '.'.
-            self.record_error(
-                crate::abi::types::XML_FROM_PARSER,
-                crate::abi::types::XML_ERR_VERSION_MISSING,
-                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                "Malformed declaration expecting version\n".to_string(),
-                None,
-                None,
-                None,
-                0,
-                None,
-            );
-            return;
-        }
-        let prefix = &literal[..stop];
-        if prefix == b"1.0" {
-            return;
-        }
-        let is_1x = prefix[0] == b'1' && prefix[1] == b'.';
-        let fatal = self.old10 || !is_1x;
-        // XML_WAR_UNKNOWN_VERSION = 97 / XML_ERR_UNKNOWN_VERSION = 108
-        // (include/libxml/xmlerror.h 2.15).
-        let code = if fatal { 108 } else { 97 };
-        let level = if fatal {
-            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int
-        } else {
-            crate::abi::types::xmlErrorLevel::XML_ERR_WARNING as c_int
-        };
-        self.record_error(
-            crate::abi::types::XML_FROM_PARSER,
-            code,
-            level,
-            format!(
-                "Unsupported version '{}'\n",
-                String::from_utf8_lossy(prefix)
-            ),
-            Some(prefix.to_vec()),
-            None,
-            None,
-            0,
-            None,
-        );
-    }
-
     /// Get a mutable reference to the input stack.
     #[allow(dead_code)]
     pub const fn input_mut(&mut self) -> &mut InputStack {
@@ -605,6 +538,20 @@ impl XmlTokenizer {
     /// Drain the recorded errors (in order).
     pub fn take_errors(&mut self) -> Vec<ErrorInfo> {
         core::mem::take(&mut self.errors)
+    }
+
+    /// Subtract `lag` from the COLUMN of the most recently recorded error.
+    ///
+    /// `ErrorInfo::col` is normally derived from the byte offset
+    /// ([`Self::line_col_at`]), but upstream raises at the parser's CURRENT
+    /// column, which a construct can leave behind the true byte column (the
+    /// internal-subset entity-value opening quote — see
+    /// [`dtd_col_lag_at`]). Only the column is nudged; the byte position — and
+    /// hence the source window — is untouched.
+    pub fn apply_col_lag_to_last_error(&mut self, lag: usize) {
+        if let Some(e) = self.errors.last_mut() {
+            e.col = e.col.saturating_sub(lag as c_int);
+        }
     }
 
     /// Record a diagnostic at the CURRENT position that upstream raises later
@@ -1716,97 +1663,343 @@ impl XmlTokenizer {
         }
     }
 
-    /// Scan after `<?xml` — read version, encoding, standalone pseudo-attributes.
-    /// Records upstream `xmlParseXMLDecl` errors ("Blank needed here\n" (65)
-    /// and "parsing XML declaration: '?>' expected\n" (57)).
-    fn scan_xml_decl_rest(&mut self) -> XmlToken {
-        let mut version = Vec::new();
-        let mut version_seen = false;
-        let mut encoding: Option<Vec<u8>> = None;
-        let mut standalone: Option<Vec<u8>> = None;
-        let mut terminated = false;
+    /// The raw byte at the cursor (upstream `RAW = *input->cur`); 0 at EOF,
+    /// mirroring the NUL terminator upstream relies on.
+    fn decl_raw(&self) -> u8 {
+        self.input.current_ref().peek_raw().unwrap_or(0)
+    }
 
-        loop {
-            self.skip_whitespace();
+    /// The raw byte `n` ahead of the cursor (upstream `NXT(n)`); 0 past EOF.
+    fn decl_nxt(&self, n: usize) -> u8 {
+        self.peek_bytes(n + 1).get(n).copied().unwrap_or(0)
+    }
 
-            if self.input.is_eof() {
-                break;
-            }
+    /// `IS_BLANK_CH` — the four XML blanks (note: NOT form feed, unlike
+    /// `xmlSkipBlankChars`).
+    fn decl_is_blank(b: u8) -> bool {
+        matches!(b, b' ' | b'\t' | b'\r' | b'\n')
+    }
 
-            // Check for closing ?>
-            if self.input.peek_char() == Some('?') {
-                self.input.read_char();
-                if self.input.peek_char() == Some('>') {
-                    self.input.read_char();
-                    terminated = true;
-                    break;
-                }
-                // Not "?>", push '?' into data? Just continue.
-                continue;
-            }
+    /// `SKIP(n)`: advance `n` bytes, bumping the column once per byte (the
+    /// keywords this is used on are pure ASCII, so this is `NEXT`-equivalent).
+    fn decl_skip(&mut self, n: usize) {
+        self.input.current().skip_raw_bytes(n);
+    }
 
-            // Read pseudo-attribute name
-            let attr_name = self.scan_name();
-            if attr_name.is_empty() {
-                break;
-            }
-            self.skip_whitespace();
+    /// `NEXT` (`xmlNextChar`): consume one whole UTF-8 character.
+    fn decl_advance(&mut self) {
+        self.input.read_char();
+    }
 
-            if self.input.peek_char() == Some('=') {
-                self.input.read_char();
-                self.skip_whitespace();
-                let value = self.scan_attr_value();
+    /// Record `xmlFatalErr(ctxt, code, NULL)` — the default message for the
+    /// code from `xmlErrString`, terminated by `\n`.
+    fn decl_fatal(&mut self, code: c_int, msg: &str) {
+        self.record_error(
+            crate::abi::types::XML_FROM_PARSER,
+            code,
+            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+            format!("{msg}\n"),
+            None,
+            None,
+            None,
+            0,
+            None,
+        );
+    }
 
-                let lower = attr_name.to_ascii_lowercase();
-                if lower == b"version" {
-                    version = value;
-                    if !version_seen {
-                        self.record_xml_decl_version_diagnostic(&version);
-                    }
-                    version_seen = true;
-                } else if lower == b"encoding" {
-                    encoding = Some(value);
-                } else if lower == b"standalone" {
-                    standalone = Some(value);
-                }
-            }
+    /// `xmlFatalErrMsg` — an explicit message, already `\n`-terminated.
+    fn decl_fatal_msg(&mut self, code: c_int, msg: &str) {
+        self.record_error(
+            crate::abi::types::XML_FROM_PARSER,
+            code,
+            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+            msg.to_string(),
+            None,
+            None,
+            None,
+            0,
+            None,
+        );
+    }
 
-            // upstream xmlParseXMLDecl: after each pseudo-attribute a blank
-            // must follow unless the declaration ends here ('?>'). At EOF
-            // RAW is 0 (not blank, not '?') so "Blank needed here" fires.
-            if self.input.peek_char() != Some('?') {
-                let before = self.input.current_pos().2;
-                self.skip_whitespace();
-                if self.input.current_pos().2 == before {
-                    self.record_error(
-                        crate::abi::types::XML_FROM_PARSER,
-                        crate::abi::types::XML_ERR_SPACE_REQUIRED,
-                        crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                        "Blank needed here\n".to_string(),
-                        None,
-                        None,
-                        None,
-                        0,
-                        None,
-                    );
-                }
-            }
+    /// `xmlParseVersionNum`: `<digit> '.' <digit>*`. Returns an empty vector
+    /// where upstream returns NULL.
+    fn decl_parse_version_num(&mut self) -> Vec<u8> {
+        let mut buf = Vec::new();
+        let mut cur = self.decl_raw();
+        if !cur.is_ascii_digit() {
+            return buf;
         }
+        buf.push(cur);
+        self.decl_advance();
+        cur = self.decl_raw();
+        if cur != b'.' {
+            return Vec::new();
+        }
+        buf.push(cur);
+        self.decl_advance();
+        cur = self.decl_raw();
+        while cur.is_ascii_digit() {
+            buf.push(cur);
+            self.decl_advance();
+            cur = self.decl_raw();
+        }
+        buf
+    }
 
-        if !terminated {
-            // upstream xmlParseXMLDecl end: missing '?>' →
-            // "parsing XML declaration: '?>' expected\n" (57).
+    /// `xmlParseVersionInfo`. Returns `(literal, is_null)` — `is_null` where
+    /// upstream returns NULL (the caller then raises VERSION_MISSING).
+    fn decl_parse_version_info(&mut self) -> (Vec<u8>, bool) {
+        if self.peek_bytes(7) != b"version" {
+            return (Vec::new(), true);
+        }
+        self.decl_skip(7);
+        self.skip_whitespace();
+        if self.decl_raw() != b'=' {
+            // XML_ERR_EQUAL_REQUIRED (75) "expected '='".
+            self.decl_fatal(75, "expected '='");
+            return (Vec::new(), true);
+        }
+        self.decl_advance();
+        self.skip_whitespace();
+        let quote = self.decl_raw();
+        if quote == b'"' || quote == b'\'' {
+            self.decl_advance();
+            let version = self.decl_parse_version_num();
+            if self.decl_raw() != quote {
+                // XML_ERR_STRING_NOT_CLOSED (34).
+                self.decl_fatal(34, "String not closed expecting \" or '");
+            } else {
+                self.decl_advance();
+            }
+            let is_null = version.is_empty();
+            (version, is_null)
+        } else {
+            // XML_ERR_STRING_NOT_STARTED (33).
+            self.decl_fatal(33, "String not started expecting ' or \"");
+            (Vec::new(), true)
+        }
+    }
+
+    /// `xmlParseEncName`: `[A-Za-z] ([A-Za-z0-9._] | '-')*`. Returns `None`
+    /// where upstream returns NULL (the caller then raises nothing further and
+    /// does NOT switch the encoding).
+    fn decl_parse_enc_name(&mut self) -> Option<Vec<u8>> {
+        let cur = self.decl_raw();
+        if !(cur.is_ascii_lowercase() || cur.is_ascii_uppercase()) {
+            // XML_ERR_ENCODING_NAME (79).
+            self.decl_fatal(79, "Invalid XML encoding name");
+            return None;
+        }
+        let mut buf = vec![cur];
+        self.decl_advance();
+        let mut c = self.decl_raw();
+        while c.is_ascii_alphanumeric() || c == b'.' || c == b'_' || c == b'-' {
+            buf.push(c);
+            self.decl_advance();
+            c = self.decl_raw();
+        }
+        Some(buf)
+    }
+
+    /// `xmlParseEncodingDecl` — ending with upstream's
+    /// `xmlSetDeclaredEncoding`, i.e. the mid-declaration input ENCODING
+    /// SWITCH. For a declared fixed-width codec the switch replaces the
+    /// remaining input with the converted tail, so the following bytes are no
+    /// longer the declaration's ASCII remainder; the scanner simply continues
+    /// at the (unchanged) cursor over the new bytes, exactly as upstream's
+    /// `xmlBufResetInput` leaves `cur` at the start of the converted buffer.
+    fn decl_parse_encoding_decl(&mut self) -> Option<Vec<u8>> {
+        self.skip_whitespace();
+        if self.peek_bytes(8) != b"encoding" {
+            return None;
+        }
+        self.decl_skip(8);
+        self.skip_whitespace();
+        if self.decl_raw() != b'=' {
+            self.decl_fatal(75, "expected '='");
+            return None;
+        }
+        self.decl_advance();
+        self.skip_whitespace();
+        let quote = self.decl_raw();
+        if quote != b'"' && quote != b'\'' {
+            self.decl_fatal(33, "String not started expecting ' or \"");
+            return None;
+        }
+        self.decl_advance();
+        let name = self.decl_parse_enc_name();
+        if self.decl_raw() != quote {
+            self.decl_fatal(34, "String not closed expecting \" or '");
+            return None;
+        }
+        self.decl_advance();
+        let name = name?;
+        // `xmlSetDeclaredEncoding(ctxt, encoding)`: the input switch. Only a
+        // declared FIXED-WIDTH codec changes the bytes still to be scanned
+        // (the ASCII-compatible ones were already converted up front and left
+        // the declaration unchanged, so this returns false for them).
+        self.input
+            .base_mut()
+            .apply_declared_fixed_width_switch(&name);
+        Some(name)
+    }
+
+    /// `xmlParseSDDecl`. Returns the scanned value literal, if any.
+    fn decl_parse_sd_decl(&mut self) -> Option<Vec<u8>> {
+        self.skip_whitespace();
+        if self.peek_bytes(10) != b"standalone" {
+            return None;
+        }
+        self.decl_skip(10);
+        self.skip_whitespace();
+        if self.decl_raw() != b'=' {
+            self.decl_fatal(75, "expected '='");
+            return None;
+        }
+        self.decl_advance();
+        self.skip_whitespace();
+        let quote = self.decl_raw();
+        if quote != b'\'' && quote != b'"' {
+            self.decl_fatal(33, "String not started expecting ' or \"");
+            return None;
+        }
+        self.decl_advance();
+        let mut value: Vec<u8> = Vec::new();
+        if self.decl_raw() == b'n' && self.decl_nxt(1) == b'o' {
+            value.extend_from_slice(b"no");
+            self.decl_skip(2);
+        } else if self.decl_raw() == b'y' && self.decl_nxt(1) == b'e' && self.decl_nxt(2) == b's' {
+            value.extend_from_slice(b"yes");
+            self.decl_skip(3);
+        } else {
+            // XML_ERR_STANDALONE_VALUE (80). Upstream leaves `standalone` at
+            // -2, which is what an unrecognized literal stores here.
+            self.decl_fatal(80, "standalone accepts only 'yes' or 'no'");
+        }
+        if self.decl_raw() != quote {
+            self.decl_fatal(34, "String not closed expecting \" or '");
+        } else {
+            self.decl_advance();
+        }
+        Some(value)
+    }
+
+    /// `xmlParseXMLDecl`'s VersionInfo step INCLUDING its caller's
+    /// diagnostics: VERSION_MISSING (96) for a NULL parse, then the
+    /// unsupported-version classification.
+    fn decl_finish_version(&mut self) -> Vec<u8> {
+        let (v, version_is_null) = self.decl_parse_version_info();
+        if version_is_null {
+            // XML_ERR_VERSION_MISSING (96).
+            self.decl_fatal(96, "Malformed declaration expecting version");
+            return Vec::new();
+        }
+        if v != b"1.0" {
+            // XML_PARSE_OLD10 makes any non-1.0 version fatal; otherwise
+            // "1.x" is a warning and everything else is fatal.
+            let is_1x = v.len() >= 2 && v[0] == b'1' && v[1] == b'.';
+            let fatal = self.old10 || !is_1x;
+            let code: c_int = if fatal { 108 } else { 97 };
+            let level = if fatal {
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int
+            } else {
+                crate::abi::types::xmlErrorLevel::XML_ERR_WARNING as c_int
+            };
             self.record_error(
                 crate::abi::types::XML_FROM_PARSER,
-                crate::abi::types::XML_ERR_XMLDECL_NOT_FINISHED,
-                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                "parsing XML declaration: '?>' expected\n".to_string(),
-                None,
+                code,
+                level,
+                format!("Unsupported version '{}'\n", String::from_utf8_lossy(&v)),
+                Some(v.clone()),
                 None,
                 None,
                 0,
                 None,
             );
+        }
+        v
+    }
+
+    /// Scan after `<?xml` — a faithful port of upstream `xmlParseXMLDecl`
+    /// (parser.c 2.15), including the mid-declaration ENCODING SWITCH
+    /// performed inside `xmlParseEncodingDecl`.
+    ///
+    /// The switch is the part that cannot be approximated. Upstream's
+    /// `xmlSetDeclaredEncoding` shrinks the raw buffer by the already-consumed
+    /// prefix and converts only what is left, so for a unit-aligned declared
+    /// codec (UCS-2, declared UTF-16/UCS-4) the ASCII `?>` that closes the
+    /// declaration is decoded as a code unit and the declaration itself becomes
+    /// unparsable — exactly the `enc-ucs2*` oracle traces (65 "Blank needed
+    /// here" + 57 "'?>' expected", wellFormed 0, no `startDocument`).
+    fn scan_xml_decl_rest(&mut self) -> XmlToken {
+        // The cursor is just past `<?xml`. `scan_pi_or_xml_decl` only routed
+        // here when the byte after `xml` is a blank (upstream's
+        // `IS_BLANK(NXT(5))`), so "Blank needed after '<?xml'" cannot fire
+        // here; upstream then does `SKIP_BLANKS`.
+        self.skip_whitespace();
+
+        // [25] VersionInfo ::= S 'version' Eq ("'" VersionNum "'" | '"' VersionNum '"')
+        let version = self.decl_finish_version();
+
+        // A blank (or the end of the declaration) must follow the version.
+        if !Self::decl_is_blank(self.decl_raw()) {
+            if self.decl_raw() == b'?' && self.decl_nxt(1) == b'>' {
+                self.decl_advance();
+                self.decl_advance();
+                return XmlToken::XmlDecl {
+                    version,
+                    encoding: None,
+                    standalone: None,
+                };
+            }
+            // XML_ERR_SPACE_REQUIRED (65).
+            self.decl_fatal_msg(65, "Blank needed here\n");
+        }
+
+        // [80] EncodingDecl ::= S 'encoding' Eq ('"' EncName '"' | "'" EncName "'")
+        let encoding = self.decl_parse_encoding_decl();
+
+        // `ctxt->encoding != NULL` gates the second blank check: it is set
+        // only when the encoding pseudo-attribute parsed, and it survives the
+        // switch (upstream assigns it in `xmlSetDeclaredEncoding`).
+        if encoding.is_some() && !Self::decl_is_blank(self.decl_raw()) {
+            if self.decl_raw() == b'?' && self.decl_nxt(1) == b'>' {
+                self.decl_advance();
+                self.decl_advance();
+                return XmlToken::XmlDecl {
+                    version,
+                    encoding,
+                    standalone: None,
+                };
+            }
+            self.decl_fatal_msg(65, "Blank needed here\n");
+        }
+
+        // [32] SDDecl? S? '?>'
+        let standalone = self.decl_parse_sd_decl();
+        self.skip_whitespace();
+
+        if self.decl_raw() == b'?' && self.decl_nxt(1) == b'>' {
+            self.decl_advance();
+            self.decl_advance();
+        } else if self.decl_raw() == b'>' {
+            // Deprecated old working draft: a bare `>`.
+            self.decl_fatal(57, "parsing XML declaration: '?>' expected");
+            self.decl_advance();
+        } else {
+            self.decl_fatal(57, "parsing XML declaration: '?>' expected");
+            // `while ((c = CUR) != 0) { NEXT; if (c == '>') break; }`
+            loop {
+                let c = self.decl_raw();
+                if c == 0 {
+                    break;
+                }
+                self.decl_advance();
+                if c == b'>' {
+                    break;
+                }
+            }
         }
 
         XmlToken::XmlDecl {
@@ -2516,8 +2709,9 @@ impl XmlTokenizer {
         // UPSTREAM-PARITY (entities.c xmlParseEntityValue): an entity value's
         // opening quote is consumed with a raw `CUR_PTR++`, which advances
         // `cur` WITHOUT bumping `col`. The subset scan above is uniform, so
-        // the lag is applied here.
-        let raw_quotes = dtd_entity_value_quotes(&content);
+        // the lag is applied here — for the quotes on the cursor's OWN line
+        // only (a line break resets the column).
+        let raw_quotes = dtd_col_lag_at(&content, content.len());
         if raw_quotes > 0 {
             self.input.current().adjust_col_back(raw_quotes);
         }
@@ -3210,26 +3404,6 @@ impl XmlTokenizer {
     }
 
     // ── Attribute value scanning ────────────────────────────────────────────
-
-    /// Scan an attribute value (between quotes).
-    fn scan_attr_value(&mut self) -> Vec<u8> {
-        let quote = match self.input.peek_char() {
-            Some('"') | Some('\'') => self.input.read_char().unwrap(),
-            _ => return Vec::new(),
-        };
-
-        let mut value = Vec::new();
-
-        loop {
-            match self.input.read_char() {
-                Some(c) if c == quote => break,
-                Some(c) => Self::push_char(&mut value, c),
-                None => break,
-            }
-        }
-
-        value
-    }
 
     // ── Byte-level peeking ──────────────────────────────────────────────────
 

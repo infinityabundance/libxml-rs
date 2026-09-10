@@ -585,7 +585,30 @@ impl InputBuffer {
     /// and the EBCDIC signature before 200 bytes) instead of being sniffed as
     /// UTF-8 because the chunk happened to end early.
     pub fn for_push(initial: &[u8], uri: Option<&str>) -> Self {
-        let mut ib = InputBuffer {
+        let mut ib = Self::push_skeleton(uri);
+        ib.push_bytes_ex(initial, false);
+        ib
+    }
+
+    /// Create a push input whose raw bytes are NOT yet scanned for a BOM or an
+    /// encoding signature.
+    ///
+    /// Upstream `xmlCreatePushParserCtxt` only PUSHES the constructor chunk
+    /// into the raw input buffer (`xmlParserInputBufferPush`) and leaves
+    /// `input->cur == input->base`; `xmlDetectEncoding` runs on the first
+    /// `xmlParseChunk`. A constructor chunk beginning with a UTF-8 BOM
+    /// therefore reports `cur - base == 0`, not 3 (court `bom.xml` `Cb*`), and
+    /// the BOM is skipped by that first call.
+    pub fn for_push_undecided(initial: &[u8], uri: Option<&str>) -> Self {
+        let mut ib = Self::push_skeleton(uri);
+        ib.source_received = initial.len() as u64;
+        ib.pending_source = initial.to_vec();
+        ib
+    }
+
+    /// The shared `SourceDecoding::Parked` skeleton for the push constructors.
+    fn push_skeleton(uri: Option<&str>) -> Self {
+        InputBuffer {
             source: InputSource::Memory(Vec::new()),
             data: InputBytes::Owned(Vec::new()),
             pos: 0,
@@ -608,9 +631,7 @@ impl InputBuffer {
             utf8_error_reported: false,
             truncated_source: false,
             registry: None,
-        };
-        ib.push_bytes_ex(initial, false);
-        ib
+        }
     }
 
     /// Create an `InputBuffer` that BORROWS `buf` for the duration of the
@@ -1527,9 +1548,14 @@ impl InputBuffer {
                     RegistryKind::Streaming(enc, canon) => {
                         self.install_registry_decoder(enc, canon, terminate)
                     }
-                    RegistryKind::FixedWidth(fixed) => {
-                        self.convert_declared_units(fixed, terminate)
-                    }
+                    // DEFERRED to the TOKENIZER: a declared FIXED-WIDTH codec
+                    // (UCS-2/UCS-4/declared UTF-16) is switched at the exact
+                    // point upstream's `xmlParseEncodingDecl` calls
+                    // `xmlSetDeclaredEncoding` — mid-declaration. Converting
+                    // the whole buffer here would decode the ASCII declaration
+                    // through the codec from byte zero, which upstream never
+                    // does; see `apply_declared_fixed_width_switch`.
+                    RegistryKind::FixedWidth(_) => {}
                     // Byte-wise decodes per tail exactly, and an UNCLASSIFIED
                     // codec keeps that same behavior (see RegistryKind) — the
                     // exhaustiveness test is what forbids the latter for the
@@ -1542,11 +1568,10 @@ impl InputBuffer {
             Encoding::Ebcdic => self.convert_via_registry(b"IBM037"),
             Encoding::Ucs4Le => self.convert_via_registry(b"UCS-4LE"),
             Encoding::Ucs4Be => self.convert_via_registry(b"UCS-4BE"),
-            Encoding::Ucs2Le => self.convert_declared_units(Encoding::Ucs2Le, terminate),
-            // A DECLARED UTF-16 (the BOM/pattern paths return early above,
-            // with `converted_to_utf8` already set) has fixed-width units too.
-            Encoding::Utf16Le => self.convert_declared_units(Encoding::Utf16Le, terminate),
-            Encoding::Utf16Be => self.convert_declared_units(Encoding::Utf16Be, terminate),
+            // A DECLARED unit-aligned encoding (the BOM/pattern paths return
+            // early above, with `converted_to_utf8` already set): deferred to
+            // the tokenizer's in-scan switch, like the `FixedWidth` arm above.
+            Encoding::Ucs2Le | Encoding::Utf16Le | Encoding::Utf16Be => {}
             _ => {}
         }
         if had_switch && self.converted_to_utf8 {
@@ -1554,44 +1579,68 @@ impl InputBuffer {
         }
     }
 
-    /// Materialize a declared fixed-width source encoding (UCS-2, UCS-4 or a
-    /// declared UTF-16) through the code-unit decoder, so a trailing incomplete
-    /// unit is held in `pending_source` for the next call instead of being
-    /// rejected by a whole-buffer registry decode (`fixed_width_input` reports
-    /// the complete prefix and leaves the tail, which
-    /// `decode_whole_buffer_declared` turns into a hard `Err`).
+    /// Upstream `xmlSetDeclaredEncoding`'s input switch, applied at the exact
+    /// point `xmlParseEncodingDecl` consumes the encoding value's closing
+    /// quote (the tokenizer calls this from `scan_xml_decl_rest`):
     ///
-    /// The WHOLE held buffer is decoded, starting at byte zero — INCLUDING the
-    /// declaration that named the encoding. That looks wrong (the declaration
-    /// was read as ASCII and is not in the declared encoding), and for a
-    /// unit-aligned codec it genuinely mangles the declaration; but it is what
-    /// upstream does: `xmlSwitchEncoding` converts the input buffer, and the
-    /// oracle's own result for a declared UCS-2/UTF-16 stream in an ASCII
-    /// declaration is a REJECTION (phase-16.7.8 court `enc-ucs2*`:
-    /// `XML_ERR_SPACE_REQUIRED` 65 + `XML_ERR_'?>' expected` 57, wellFormed 0).
-    /// For the ASCII-compatible declared codecs (Shift_JIS, EUC-JP,
-    /// ISO-2022-JP, the ISO-8859 family) this is a no-op, which is why they
-    /// are unaffected.
-    fn convert_declared_units(&mut self, canonical: Encoding, terminate: bool) {
+    /// ```c
+    /// processed = input->cur - input->base;
+    /// xmlBufShrink(in->raw, processed);
+    /// input->consumed += processed;
+    /// ...
+    /// xmlCharEncInput(in, &nbchars, /* flush */ 0);
+    /// xmlBufResetInput(in->buffer, input);
+    /// ```
+    ///
+    /// The already-consumed prefix is DISCARDED from the raw buffer, and only
+    /// the REMAINING raw bytes are converted — which is why the ASCII `?>` that
+    /// closes the declaration is decoded as a code unit for a unit-aligned
+    /// codec. Decoding from byte zero instead (which this replaces) decodes the
+    /// ASCII declaration itself, and that is not what upstream does.
+    ///
+    /// Only the FIXED-WIDTH codecs need an in-scan switch: for the
+    /// ASCII-compatible declared codecs (Shift_JIS, EUC-JP, ISO-2022-JP, the
+    /// ISO-8859 family, EBCDIC) the conversion maps the declaration's ASCII
+    /// bytes to themselves, so converting the whole buffer up front in
+    /// [`Self::convert_declared_native_encoding`] is indistinguishable — and
+    /// that path has already run and set `converted_to_utf8`. For the
+    /// unit-aligned codecs that conversion is deferred to here.
+    ///
+    /// Returns whether a switch was applied.
+    pub(crate) fn apply_declared_fixed_width_switch(&mut self, name: &[u8]) -> bool {
+        let canonical = match registry_kind(name) {
+            RegistryKind::FixedWidth(c) => c,
+            _ => return false,
+        };
         if self.converted_to_utf8 || self.data.is_empty() {
-            return;
+            return false;
+        }
+        // The switch point is the CURSOR (upstream uses `input->cur`), which
+        // the tokenizer has just advanced past the encoding value's closing
+        // quote. It is also the new physical window base.
+        let sw = self.pos;
+        if sw == 0 || sw > self.data.data_len() {
+            return false;
         }
         let raw = self.data.take_owned();
+        let tail = raw[sw..].to_vec();
         self.encoding = canonical;
         self.converted_to_utf8 = true;
-        self.data = InputBytes::Owned(Vec::new());
-        self.materialized = 0;
-        self.pos = 0;
-        self.window_base_abs = 0;
+        self.data = InputBytes::Owned(raw[..sw].to_vec());
+        self.materialized = self.data.data_len() as u64;
+        self.pending_source = tail;
+        // `xmlBufResetInput` puts `cur` at the start of the CONVERTED buffer;
+        // `consumed` grew by the discarded prefix. `pos` is unchanged, so the
+        // absolute stream position is unchanged and the window base is `sw`
+        // (`consumed + (cur - base) == pos` still holds).
+        self.window_base_abs = sw;
         self.consumed_bias = 0;
-        self.col = 1;
         self.bom_consumed = false;
-        self.pending_source = raw;
-        // A trailing partial unit is carried on a non-final feed (a progressive
-        // stream may still complete it) and is the encoder flush error on a
-        // terminating one — exactly as in the BOM/pattern-detected fixed-width
-        // paths.
-        self.decode_units_tail(terminate);
+        // Upstream converts with `flush = 0`: a still-incomplete trailing unit
+        // stays in the raw buffer for the next feed rather than being reported
+        // as a truncated sequence.
+        self.decode_units_tail(false);
+        true
     }
 
     /// Install a persistent `encoding_rs` decoder for a declared multibyte or
@@ -3629,11 +3678,14 @@ mod tests {
     // Shape of every fixture: an ASCII XML declaration that NAMES the
     // encoding, followed by a body in that encoding. For the ASCII-compatible
     // declared codecs (Shift_JIS, EUC-JP, ISO-2022-JP, ISO-8859-x) converting
-    // the buffer leaves the declaration semantically unchanged. The
-    // unit-aligned declared codecs (UCS-2, declared UTF-16) are different — see
-    // `progressive_ucs2_partition_invariance_and_flush` — because upstream
-    // re-reads the converted buffer from byte zero, which mangles an ASCII
-    // declaration and makes those shapes fail (as the oracle does).
+    // the buffer leaves the declaration semantically unchanged, so the input
+    // layer converts it up front. The unit-aligned declared codecs (UCS-2,
+    // declared UTF-16) are different: upstream switches the encoding from
+    // INSIDE the declaration (`xmlParseEncodingDecl` -> `xmlSetDeclaredEncoding`),
+    // which shrinks the raw buffer by the already-consumed prefix and converts
+    // only the tail — so the input layer defers that switch to the tokenizer
+    // (`apply_declared_fixed_width_switch`), and the ASCII `?>` is decoded as a
+    // code unit. See `progressive_ucs2_switch_converts_only_the_tail`.
 
     /// FAIL-CLOSED classification invariant: every codec in the process-wide
     /// registry must have an explicit `RegistryKind`. Adding GBK/Big5/EUC-KR or
@@ -3864,65 +3916,135 @@ mod tests {
         assert!(!ib.source_truncated());
     }
 
-    #[test]
-    fn progressive_ucs2_partition_invariance_and_flush() {
-        let src = ucs2_doc();
-        // NOTE: no concrete expected text. A declared unit-aligned codec is
-        // decoded as code units from the START of the buffer — including the
-        // ASCII declaration that named it — which is what upstream's encoding
-        // switch does, and it is why the oracle REJECTS these documents
-        // (court `enc-ucs2*`: XML_ERR_SPACE_REQUIRED 65 + XML_ERR_'?>' expected
-        // 57, wellFormed 0). The contract under test is partition invariance.
-        let whole = materialized(&[&src]);
-        assert!(!whole.is_empty());
-        for split in 1..src.len() {
-            let ib = push_parts(&[&src[..split], &src[split..]]);
-            assert_eq!(ib.remaining(), whole.as_slice(), "UCS-2: split at {split}");
-            assert_eq!(ib.materialized_bytes() as usize, ib.len());
-            assert_eq!(ib.source_bytes_received() as usize, src.len());
-        }
+    /// Drive the tokenizer over the pending input until the XML declaration is
+    /// consumed — the point at which a declared FIXED-WIDTH encoding's switch
+    /// happens (upstream `xmlSetDeclaredEncoding`, called from
+    /// `xmlParseEncodingDecl`). An incomplete declaration is left untouched,
+    /// mirroring the driver's availability gate (`silent_truncated`).
+    fn scan_declaration(ib: InputBuffer) -> InputBuffer {
+        use crate::xml::parser::tokenizer::{XmlToken, XmlTokenizer};
+        let mut tok = XmlTokenizer::new(InputStack::new(ib));
+        tok.set_silent_truncated(true);
+        let token = tok.next_token();
+        debug_assert!(matches!(token, XmlToken::XmlDecl { .. } | XmlToken::Eof));
+        tok.set_silent_truncated(false);
+        let mut stack = tok.into_input();
+        stack.inputs.remove(0)
+    }
 
-        // Odd trailing byte: carried, then the terminating call's flush.
+    /// The complete materialized representation: consumed prefix + remainder.
+    fn whole_stream(ib: &InputBuffer) -> Vec<u8> {
+        [ib.consumed(), ib.remaining()].concat()
+    }
+
+    /// The absolute stream of a partition once the declaration has been
+    /// scanned and the source closed.
+    fn materialized_via_decl(parts: &[&[u8]]) -> Vec<u8> {
+        let mut ib = scan_declaration(push_parts(parts));
+        ib.push_bytes_ex(&[], true);
+        whole_stream(&ib)
+    }
+
+    #[test]
+    fn progressive_ucs2_switch_converts_only_the_tail() {
+        let src = ucs2_doc();
+        // Upstream `xmlInputSetEncodingHandler` shrinks the raw buffer by the
+        // consumed prefix (`input->cur - input->base`) and converts only what
+        // is left, so the absolute stream is
+        //     raw[..switch) ++ decode_fixed(raw[switch..])
+        // where `switch` is the byte just past the encoding value's closing
+        // quote. Converting from byte zero (the previous model) would instead
+        // decode the ASCII declaration itself, which upstream never does.
+        let switch = UCS2_DECL.len() - 2; // just past the closing quote
+        assert_eq!(&src[..switch], &UCS2_DECL[..switch]);
+        let mut expected = src[..switch].to_vec();
+        let mut out = Vec::new();
+        let mut consumed = 0usize;
+        let _ = decode_fixed_units(&src[switch..], false, 2, &mut out, &mut consumed);
+        assert!(consumed > 0);
+        expected.extend_from_slice(&out);
+
+        assert_eq!(materialized_via_decl(&[&src]), expected);
+
+        // Partition invariance: ANY source split materializes that same
+        // stream, including a split that completes the declaration (where the
+        // switch is applied on the first scan and the rest is decoded
+        // incrementally through the carried unit state).
+        for split in 1..src.len() {
+            assert_eq!(
+                materialized_via_decl(&[&src[..split], &src[split..]]),
+                expected,
+                "UCS-2: split at {split}"
+            );
+        }
+        let mut interleaved = scan_declaration(push_parts(&[&src[..UCS2_DECL.len()]]));
+        assert_eq!(interleaved.encoding(), &Encoding::Ucs2Le);
+        assert!(interleaved.converted_to_utf8);
+        assert_eq!(interleaved.window_base_abs(), switch);
+        interleaved.push_bytes_ex(&src[UCS2_DECL.len()..], false);
+        interleaved.push_bytes_ex(&[], true);
+        assert_eq!(whole_stream(&interleaved), expected);
+
+        // The switch keeps the physical window identity: the cursor starts at
+        // the window base (`cur - base == 0`) with the prefix counted as
+        // already-consumed bytes (`consumed == switch`).
+        assert_eq!(
+            interleaved.consumed_bias() + interleaved.window_base_abs(),
+            switch
+        );
+
+        // A trailing half unit is CARRIED (not reported) until the terminating
+        // call flushes the encoder. Unit alignment starts at the switch, so a
+        // dangling half unit requires (src.len() - switch) to be odd.
         let mut odd = UCS2_DECL.to_vec();
         odd.extend(ucs2_body("<a>"));
-        odd.push(0x78);
-        let mut ib = push_parts(&[&odd]);
+        if (odd.len() - switch) % 2 == 0 {
+            odd.push(0x78);
+        }
+        assert_eq!((odd.len() - switch) % 2, 1);
+        let mut ib = scan_declaration(push_parts(&[&odd]));
         assert!(!ib.source_encoding_error());
         assert!(!ib.source_truncated());
-        assert_eq!(ib.pending_source(), &[0x78]);
+        assert_eq!(ib.pending_source().len(), 1);
         ib.push_bytes_ex(&[], true);
         assert!(ib.source_truncated());
         assert!(!ib.source_encoding_error());
     }
 
-    /// A DECLARED UTF-16 (no BOM, no `<\0?\0` pattern) has fixed-width units
-    /// and is decoded from byte zero like the declared UCS-2 above (upstream
-    /// re-decodes the buffer after the switch, so the oracle also rejects this
-    /// shape); the contract under test is partition invariance plus carry.
+    /// A DECLARED UTF-16 (no BOM, no `<\0?\0` pattern) has fixed-width units and
+    /// takes the same deferred in-scan switch as the declared UCS-2 above, so
+    /// the whole-buffer conversion no longer re-reads the declaration.
     #[test]
     fn progressive_declared_utf16le_is_decoded_as_units() {
-        let mut src = b"<?xml version=\"1.0\" encoding=\"UTF-16LE\"?>".to_vec();
+        let decl = b"<?xml version=\"1.0\" encoding=\"UTF-16LE\"?>";
+        let mut src = decl.to_vec();
         src.extend(utf16le("<a>x</a>"));
-        let whole = materialized(&[&src]);
+        let switch = decl.len() - 2; // just past the closing quote
+        let mut expected = src[..switch].to_vec();
+        let mut out = Vec::new();
+        let mut consumed = 0usize;
+        let _ = decode_fixed_units(&src[switch..], false, 2, &mut out, &mut consumed);
+        expected.extend_from_slice(&out);
+
+        let whole = materialized_via_decl(&[&src]);
+        assert_eq!(whole, expected);
         for split in 1..src.len() {
-            let ib = push_parts(&[&src[..split], &src[split..]]);
             assert_eq!(
-                ib.remaining(),
-                whole.as_slice(),
+                materialized_via_decl(&[&src[..split], &src[split..]]),
+                expected,
                 "declared UTF-16LE: split at {split}"
             );
         }
 
-        // Odd trailing byte: carried, then flushed. Unit alignment starts at
-        // byte zero, so a half unit dangles iff the total source length is odd.
-        let decl = b"<?xml version=\"1.0\" encoding=\"UTF-16LE\"?>";
+        // Odd trailing unit: carried, then flushed. Alignment starts at the
+        // switch, so a half unit dangles iff (src.len() - switch) is odd.
         let mut odd = decl.to_vec();
         odd.extend(utf16le("<a>"));
-        if odd.len() % 2 == 0 {
+        if (odd.len() - switch) % 2 == 0 {
             odd.push(0x3C);
         }
-        assert_eq!(odd.len() % 2, 1);
-        let mut ib = push_parts(&[&odd]);
+        assert_eq!((odd.len() - switch) % 2, 1);
+        let mut ib = scan_declaration(push_parts(&[&odd]));
         assert_eq!(
             ib.pending_source().len(),
             1,

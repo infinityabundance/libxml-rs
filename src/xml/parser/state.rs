@@ -77,7 +77,7 @@ use crate::abi::types::xmlElementTypeVal::*;
 use crate::abi::types::xmlEntityType::*;
 use crate::abi::types::*;
 use crate::xml::parser::input::{InputBuffer, InputStack};
-use crate::xml::parser::tokenizer::{XmlText, XmlToken, XmlTokenizer};
+use crate::xml::parser::tokenizer::{dtd_col_lag_at, XmlText, XmlToken, XmlTokenizer};
 use crate::xml::sax::dispatch::SaxDispatcher;
 use core::ptr;
 use std::os::raw::{c_char, c_int, c_ulong, c_void};
@@ -1650,14 +1650,26 @@ impl XmlParser {
                         unsafe {
                             (*self.ctxt).hasPErefs = 1;
                         }
-                        // UPSTREAM-PARITY (parser.c xmlParsePEReference): the
-                        // reference is expanded in place when the parameter
-                        // entity resolves (an external PE's file is fetched;
-                        // an internal PE's replacement text is re-scanned for
+                        // UPSTREAM-PARITY (parser.c xmlParsePERefInternal):
+                        // the reference is expanded in place when the parameter
+                        // entity resolves (an external PE's file is fetched; an
+                        // internal PE's replacement text is re-scanned for
                         // nested references). DOMDocument_validate_external_dtd
                         // (dom.xml `%incent;` -> dom.ent) needs the external
                         // PE's declarations to land in the internal subset.
-                        if depth < 10 && !dtd.is_none() {
+                        //
+                        // An UNRESOLVED reference is `xmlHandleUndeclaredEntity`:
+                        // the raise point is just past the `;`, at the parser's
+                        // (lagged) column. `hasPErefs` was set first, so the
+                        // severity is the warning/error branch unless the
+                        // document is standalone.
+                        let resolved = self.pe_reference_resolves(pe_name);
+                        if !resolved {
+                            let rel = i + 1 + name_len + 1;
+                            let at = abs_base.map(|b| b + rel);
+                            let lag = abs_base.map_or(0, |_| dtd_col_lag_at(data, rel));
+                            self.raise_undeclared_entity_lagged(pe_name, at, lag);
+                        } else if depth < 10 && !dtd.is_none() {
                             self.expand_pe_reference(dtd, pe_name, depth);
                         }
                         i += 1 + name_len + 1;
@@ -1829,6 +1841,27 @@ impl XmlParser {
     /// Expand a decl-level `%name;` reference: fetch the parameter entity
     /// (internal replacement text or external file) and process its content
     /// as a declaration fragment into `dtd`.
+    /// Upstream `xmlParsePERefInternal`'s SAX lookup
+    /// (`sax->getParameterEntity`) restricted to whether the entity RESOLVED:
+    /// a NULL result is `xmlHandleUndeclaredEntity`, a non-NULL one is
+    /// expanded. `getParameterEntity` looks ONLY at `intSubset->pentities` (and
+    /// the external subset), so a general entity of the same name does not
+    /// resolve here.
+    fn pe_reference_resolves(&self, name: &[u8]) -> bool {
+        let doc = unsafe { (*self.ctxt).myDoc };
+        if doc.is_null() {
+            return false;
+        }
+        let name_cstr = Self::vec_to_cstr_null(name);
+        let ent = unsafe { crate::xml::entities::get_parameter_entity(doc, name_cstr) };
+        if !name_cstr.is_null() {
+            unsafe {
+                crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+            }
+        }
+        !ent.is_null()
+    }
+
     fn expand_pe_reference(&mut self, dtd: &mut Option<*mut _xmlDtd>, name: &[u8], depth: usize) {
         let doc = unsafe { (*self.ctxt).myDoc };
         if doc.is_null() {
@@ -4509,14 +4542,21 @@ impl XmlParser {
     /// ONE severity rule: [WFC: Entity Declared] is fatal only for a standalone
     /// document or one with neither an external subset nor parameter-entity
     /// references (a non-validating processor need not load those).
-    fn raise_undeclared_entity(&mut self, name: &[u8]) -> bool {
-        self.raise_undeclared_entity_at(name, None)
+    fn raise_undeclared_entity_at(&mut self, name: &[u8], at: Option<usize>) -> bool {
+        self.raise_undeclared_entity_lagged(name, at, 0)
     }
 
-    /// `raise_undeclared_entity` with the raise position pinned to `at` — the
-    /// attribute-value scanner raises inline, while the cursor still sits just
-    /// past the reference's `;` (upstream xmlParseAttValueInternal).
-    fn raise_undeclared_entity_at(&mut self, name: &[u8], at: Option<usize>) -> bool {
+    /// `raise_undeclared_entity_at` with an explicit `input->col` LAG, for the
+    /// internal-subset parameter-entity path: upstream raises at `input->col`,
+    /// which runs short by one per entity value whose opening quote was
+    /// consumed with a raw `CUR_PTR++` on the SAME line
+    /// (see [`dtd_col_lag_at`]).
+    fn raise_undeclared_entity_lagged(
+        &mut self,
+        name: &[u8],
+        at: Option<usize>,
+        col_lag: usize,
+    ) -> bool {
         let (fatal, code, level, domain) = unsafe {
             let c = &*self.ctxt;
             if c.standalone == 1 || (c.hasExternalSubset == 0 && c.hasPErefs == 0) {
@@ -4554,7 +4594,8 @@ impl XmlParser {
         let msg = format!("Entity '{}' not defined\n", String::from_utf8_lossy(name));
         let str1 = Some(name.to_vec());
         match at {
-            Some(pos) => self.raise_error_at(domain, code, level, msg, str1, None, None, 0, pos),
+            Some(pos) => self
+                .raise_error_at_lagged(domain, code, level, msg, str1, None, None, 0, pos, col_lag),
             None => self.raise_error_now(domain, code, level, msg, str1, None, None, 0),
         }
         unsafe {
@@ -7457,6 +7498,35 @@ impl XmlParser {
         self.tokenizer.record_error_at(
             domain, code, level, msg, str1, str2, str3, int1, byte_pos, None,
         );
+        self.raise_pending_errors();
+    }
+
+    /// [`Self::raise_error_at`] with an explicit `input->col` LAG: upstream
+    /// raises at the parser's CURRENT column, which can run behind the true
+    /// byte column where a construct's consumers skip a `col` bump (the
+    /// internal-subset entity-value opening quote, used by
+    /// [`dtd_col_lag_at`]). The byte position is unchanged — only the recorded
+    /// column is nudged.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn raise_error_at_lagged(
+        &mut self,
+        domain: c_int,
+        code: c_int,
+        level: c_int,
+        msg: String,
+        str1: Option<Vec<u8>>,
+        str2: Option<Vec<u8>>,
+        str3: Option<Vec<u8>>,
+        int1: c_int,
+        byte_pos: usize,
+        col_lag: usize,
+    ) {
+        self.tokenizer.record_error_at(
+            domain, code, level, msg, str1, str2, str3, int1, byte_pos, None,
+        );
+        if col_lag > 0 {
+            self.tokenizer.apply_col_lag_to_last_error(col_lag);
+        }
         self.raise_pending_errors();
     }
 

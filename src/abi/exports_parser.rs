@@ -1430,7 +1430,7 @@ pub unsafe extern "C" fn xmlCreatePushParserCtxt(
         } else {
             CStr::from_ptr(filename).to_str().ok()
         };
-        let input = InputBuffer::for_push(slice, uri);
+        let input = InputBuffer::for_push_undecided(slice, uri);
         helpers::setup_parser_input(ctxt, input);
         // This is a push context: the persistent driver's eligibility gate
         // (helpers.rs). Recorded after `xmlCtxtReset`, which clears the map.
