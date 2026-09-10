@@ -886,15 +886,26 @@ pub(crate) unsafe fn parse_chunk(
     // byte order seen by each parse then matches upstream exactly. The
     // terminating call never withholds (upstream's condition requires
     // !terminate), so a document ending in `\r` still processes it.
-    let mut deferred: Option<u8> = None;
+    //
+    // A withheld `\r` is consumed only when this call gives the parser more
+    // to do: a nonempty chunk (the `\r` becomes parseable input followed by
+    // the new bytes) or a terminating call (the `\r` is final input). A
+    // ZERO-LENGTH non-final call must leave it parked: upstream's
+    // xmlParseTryOrFinish finds no `<`/`&` for the lone `\r`
+    // (xmlParseLookupCharData returns 0) and consumes nothing — flushing it
+    // here would deliver the EOL one zero-length call too early.
+    let mut deferred_cr = false;
     let mut slice = chunk_slice;
     if terminate == 0 && !slice.is_empty() && slice[slice.len() - 1] == b'\r' {
-        deferred = Some(b'\r');
+        deferred_cr = true;
         slice = &slice[..slice.len() - 1];
     }
     let had_pending_cr = push_state(ctxt).pending_cr;
-    push_state(ctxt).pending_cr = deferred.is_some();
-    if had_pending_cr {
+    let restore_cr = had_pending_cr && (!slice.is_empty() || terminate != 0);
+    // The new trailing `\r` (if any) stays parked; an old one stays parked
+    // when this call could not consume it.
+    push_state(ctxt).pending_cr = deferred_cr || (had_pending_cr && !restore_cr);
+    if restore_cr {
         base.push_bytes(b"\r");
     }
 

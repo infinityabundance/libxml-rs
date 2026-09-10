@@ -194,7 +194,36 @@ are the verification.
 Run: `sh courts/suites/phase16/pushdiff-run.sh` from a clean tree; the
 gate is diffs = 0 after the stateful rewrite.
 
-## What the divergences are (four systematic classes)
+## Slice 1 (in progress) — replay-era class fixes + newly surfaced classes
+
+Step 1/1a: `end_in_lf` trailing-CR deferral (`PushState::pending_cr`,
+`parse_chunk`). The targeted CR behavior is correct: a withheld `\r` is
+consumed only when the call brings bytes or terminates, so a ZERO-LENGTH
+non-final call leaves it parked — verified against the oracle across
+`cr-multi` / `text-crlf` / `text-cr-chunkend` / `text-lone-cr` ×
+`b1z2` / `b64z2` / `r17z1`: **zero character events on zero-length calls
+on both sides**. This is NOT “class 3 closed”: the cells still diverge on
+classes 1/5 below, and `pending_cr` is transitional scaffolding (the
+persistent machine keeps the byte in the input buffer and parks the
+cursor before it instead).
+
+### 5. Character-data event segmentation at EOLs (newly surfaced)
+
+Extracting each trace's (call → `characters` event) sequence shows the
+oracle splits character data at every CR/LF — upstream
+`xmlParseCharDataInternal` flushes the callback at each EOL while
+tracking line/column — while the candidate merges the run:
+
+```text
+oracle   : [one] [\ntwo] [\nthree] [\n]
+candidate: [one\ntwo\nthree\n]
+```
+
+Independent of chunking and of the CR shim (visible with the whole
+document in one `b64` chunk). Full parity therefore requires reproducing
+upstream's per-EOL callback segmentation, not only the push lifecycle.
+
+## What the divergences are (five systematic classes)
 
 All four have the same architectural root cause — the whole-buffer replay
 design, which runs a complete-document parser on every non-final call —
