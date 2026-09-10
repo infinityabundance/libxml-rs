@@ -2602,9 +2602,20 @@ enum RegistryTail {
 /// duplicate is a parse-only artifact that is never pushed to.
 struct RegistrySourceDecoder {
     decoder: encoding_rs::Decoder,
+    /// The encoding, so a finished decoder can be restarted (see `finished`).
+    encoding: &'static encoding_rs::Encoding,
     /// Canonical codec name (diagnostics via
     /// [`InputBuffer::registry_kind_name`]).
     name: &'static str,
+    /// Set by the `last = true` flush.
+    ///
+    /// `encoding_rs` PANICS ("Must not use a decoder that has finished") if a
+    /// flushed decoder is used again, and a REFEED onto a finished push
+    /// context does exactly that: upstream's converter survives its
+    /// `flush = 1` and happily takes the new bytes into the raw buffer (the
+    /// oracle's window shows the second copy decoded), so a fresh decoder is
+    /// started for them instead of feeding the finished one.
+    finished: bool,
 }
 
 impl RegistrySourceDecoder {
@@ -2613,8 +2624,16 @@ impl RegistrySourceDecoder {
         // BOM/signature sniff), not the tail decoder's.
         Self {
             decoder: enc.new_decoder_without_bom_handling(),
+            encoding: enc,
             name,
+            finished: false,
         }
+    }
+
+    /// Whether this decoder has been flushed by a terminating call.
+    #[allow(dead_code)]
+    const fn finished(&self) -> bool {
+        self.finished
     }
 
     /// Feed `bytes`; decode complete characters into `out`.
@@ -2634,6 +2653,15 @@ impl RegistrySourceDecoder {
     /// be misdecoded. Only real bytes are fed `last = false`; the single
     /// empty-slice call in this function is the `last = true` flush.
     fn decode(&mut self, bytes: &[u8], last: bool, out: &mut Vec<u8>) -> Result<(), RegistryTail> {
+        if self.finished {
+            if bytes.is_empty() {
+                // A repeated terminating flush is a no-op: the first one
+                // already surfaced any pending truncation.
+                return Ok(());
+            }
+            self.decoder = self.encoding.new_decoder_without_bom_handling();
+            self.finished = false;
+        }
         let mut buf = [0u8; 4096];
         let mut pos = 0usize;
         while pos < bytes.len() {
@@ -2662,6 +2690,7 @@ impl RegistrySourceDecoder {
                 self.decoder
                     .decode_to_utf8_without_replacement(&[], &mut buf, true);
             out.extend_from_slice(&buf[..written]);
+            self.finished = true;
             if matches!(res, encoding_rs::DecoderResult::Malformed(..)) {
                 return Err(RegistryTail::Truncated);
             }

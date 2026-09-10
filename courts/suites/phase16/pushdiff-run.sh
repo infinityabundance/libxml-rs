@@ -54,8 +54,12 @@ fi
 # The tracked `.gitignore` is PRESERVED: deleting it would un-ignore the raw
 # per-cell traces and the next `git add -A` would commit all of them (which is
 # exactly how a 1250-file evidence commit happened once).
+#
+# The cleanup is an explicit LIST of the run's own ephemeral artifacts rather
+# than a sweep of the whole directory: an earlier whole-directory sweep also
+# deleted `sample/`, which is TRACKED evidence this court does not regenerate.
 if [ -d "$OUT" ] && [ -n "$(ls -A "$OUT" 2>/dev/null)" ]; then
-  docker run --rm -v "$OUT":/scanout "$IMAGE" bash -lc 'cd /scanout; for f in * .[!.]*; do [ "$f" = ".gitignore" ] || rm -rf -- "$f"; done; exit 0' >/dev/null 2>&1 || true
+  docker run --rm -v "$OUT":/scanout "$IMAGE" bash -lc 'cd /scanout; rm -rf -- oracle-* cand-* diffs corpus probe-* docs.list summary.txt console.log; exit 0' >/dev/null 2>&1 || true
 fi
 mkdir -p "$OUT"
 OUT="$(cd "$OUT" && pwd)"
