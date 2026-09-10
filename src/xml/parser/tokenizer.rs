@@ -292,6 +292,14 @@ pub(crate) struct XmlTokenizer {
     push_back: Option<XmlToken>,
     /// Parser errors recorded during scanning (drained by the parser).
     errors: Vec<ErrorInfo>,
+    /// Diagnostics whose upstream raise point is LATER in the same construct
+    /// than the scan that detects them. Upstream `xmlParseStartTag2` parses
+    /// EVERY attribute (raising the per-attribute namespace diagnostics) and
+    /// only then runs its hash-based duplicate scan, so "Attribute %s
+    /// redefined" must not be flushed with the rest of the tag's scan errors —
+    /// `ns-default-undeclare.xml` pins the order (the `xmlns: URI u1 is not
+    /// absolute` warning at `i2=14` precedes the redefinition at `i2=23`).
+    deferred_errors: Vec<ErrorInfo>,
     /// Byte offset at which a character-data run must break so the event
     /// segmentation matches an earlier eager-partial delivery of the same
     /// accumulated input (SP-14.3.1-6). None = no split.
@@ -355,6 +363,7 @@ impl XmlTokenizer {
             input,
             push_back: None,
             errors: Vec::new(),
+            deferred_errors: Vec::new(),
             split_chars_at: None,
             max_name_length: 50_000,
             old10: false,
@@ -596,6 +605,47 @@ impl XmlTokenizer {
     /// Drain the recorded errors (in order).
     pub fn take_errors(&mut self) -> Vec<ErrorInfo> {
         core::mem::take(&mut self.errors)
+    }
+
+    /// Record a diagnostic that upstream raises LATER in the same construct
+    /// than the general scan would. See `deferred_errors`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn record_deferred_error_at(
+        &mut self,
+        domain: c_int,
+        code: c_int,
+        level: c_int,
+        msg: String,
+        str1: Option<Vec<u8>>,
+        str2: Option<Vec<u8>>,
+        str3: Option<Vec<u8>>,
+        int1: c_int,
+        byte_pos: usize,
+        enc_bytes: Option<([u8; 4], usize)>,
+    ) {
+        let (line, col) = self.line_col_at(byte_pos);
+        let window = self.window_at(byte_pos);
+        self.deferred_errors.push(ErrorInfo {
+            domain,
+            code,
+            level,
+            msg,
+            str1,
+            str2,
+            str3,
+            int1,
+            line,
+            col,
+            byte_pos,
+            window,
+            enc_bytes,
+        });
+    }
+
+    /// Drain the diagnostics the tokenizer DEFERRED to a later point in the
+    /// construct it just scanned.
+    pub fn take_deferred_errors(&mut self) -> Vec<ErrorInfo> {
+        core::mem::take(&mut self.deferred_errors)
     }
 
     /// The codes of the diagnostics recorded by the last scan, WITHOUT
@@ -1164,7 +1214,7 @@ impl XmlTokenizer {
         };
         if let Some(dup) = dup_attr {
             let an = &attributes[dup].0;
-            self.record_error_at(
+            self.record_deferred_error_at(
                 crate::abi::types::XML_FROM_PARSER,
                 crate::abi::types::XML_ERR_ATTRIBUTE_REDEFINED,
                 crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,

@@ -120,6 +120,46 @@ const XML_NS_ERR_XML_NAMESPACE: c_int = 200;
 /// scope. R-000166.
 const XML_NS_ERR_UNDEFINED_NAMESPACE: c_int = 201;
 
+/// XML_NS_ERR_QNAME (include/libxml/xmlerror.h:202) — a Name that is not a
+/// well-formed QName (`a:b:c`, `:a`, `a:`, `p:1x`).
+const XML_NS_ERR_QNAME: c_int = 202;
+
+/// Whether `b` may START an NCName (upstream `xmlIsNameStartChar` minus `:`).
+/// Every non-ASCII byte starts a (multi-byte) Name character.
+const fn ncname_start(b: u8) -> bool {
+    b.is_ascii_alphabetic() || b == b'_' || b >= 0x80
+}
+
+/// Upstream `xmlParseQNameHashed`'s split rule applied to the raw Name the
+/// tokenizer scanned.
+///
+/// Returns `(prefix, local, failed)`. `xmlParseQNameHashed` parses an NCName,
+/// then — only when a `:` follows — a second NCName, and treats the result as
+/// a QName only if what remains is NOT another `:`. Anything else (`a:b:c`,
+/// `:a`, `a:`, `p:1x`) consumes the rest as an Nmtoken, keeps the WHOLE span as
+/// the name, drops the prefix and reports XML_NS_ERR_QNAME. `name-colon.xml`
+/// (`<a:b:c/>`) pins this: the oracle's element is `local=[a:b:c] prefix=`
+/// after one code-202 error.
+fn split_qname_bytes(name: &[u8]) -> (Option<Vec<u8>>, Vec<u8>, bool) {
+    match name.iter().position(|&b| b == b':') {
+        None => (None, name.to_vec(), false),
+        Some(c) => {
+            let prefix = &name[..c];
+            let local = &name[c + 1..];
+            let ok = !prefix.is_empty()
+                && ncname_start(prefix[0])
+                && !local.is_empty()
+                && ncname_start(local[0])
+                && !local.contains(&b':');
+            if ok {
+                (Some(prefix.to_vec()), local.to_vec(), false)
+            } else {
+                (None, name.to_vec(), true)
+            }
+        }
+    }
+}
+
 /// Whether a namespace URI carries a scheme (`[a-zA-Z][a-zA-Z0-9+.-]*:`
 /// prefix) — upstream xmlParseURISafe's `scheme == NULL` check.
 const fn has_uri_scheme(uri: &[u8]) -> bool {
@@ -3513,7 +3553,13 @@ impl XmlParser {
                 .attr_type_for(&name, &n)
                 .map(|t| t > crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_CDATA as c_int)
                 .unwrap_or(false);
-            let value = self.substitute_refs(&v, value_start, normalize)?;
+            // UPSTREAM-PARITY (xmlParseStartTag2): `if (attvalue == NULL) goto
+            // next_attr;` — an attribute whose value scan FAILED is dropped and
+            // the rest of the tag is still parsed (its events are then
+            // suppressed because the failure set disableSAX).
+            let Some(value) = self.substitute_refs(&v, value_start, normalize)? else {
+                continue;
+            };
             new_attributes.push((n, value, had_ref));
         }
         let attributes = new_attributes;
@@ -3533,6 +3579,10 @@ impl XmlParser {
         // namespace diagnostics).
         let mut attr_pos: Vec<usize> = Vec::new();
 
+        // The element's QName split, computed ONCE for both the namespace
+        // validation below and the SAX2 dispatch (`split_qname_bytes` is
+        // upstream `xmlParseQNameHashed`'s rule).
+        let (qname_prefix, element_local, qname_failed) = split_qname_bytes(&name);
         if sax2 {
             for (idx, (attr_name, attr_value, _had_ref)) in attributes.iter().enumerate() {
                 // UPSTREAM-PARITY (parser.c xmlParseStartTag2): the default
@@ -3823,10 +3873,28 @@ impl XmlParser {
                 }
                 false
             };
-            let element_local = match name.iter().position(|&b| b == b':') {
-                Some(colons) => &name[colons + 1..],
-                None => name.as_slice(),
-            };
+            if qname_failed {
+                // Upstream xmlParseQNameHashed: a Name that is not a QName keeps
+                // its WHOLE span as the element name, drops the prefix and
+                // reports XML_NS_ERR_QNAME. Only then does the namespace
+                // validation below run — with no prefix to resolve, so it stays
+                // silent (only the code-202 error is observed). SAX1's
+                // `xmlParseStartTag` scans a plain Name and never reports this.
+                self.raise_error_at(
+                    XML_FROM_NAMESPACE,
+                    XML_NS_ERR_QNAME,
+                    xmlErrorLevel::XML_ERR_ERROR as c_int,
+                    format!(
+                        "Failed to parse QName '{}'\n",
+                        String::from_utf8_lossy(&name)
+                    ),
+                    Some(name.clone()),
+                    None,
+                    None,
+                    0,
+                    end_pos,
+                );
+            }
             for (i, (prefix, localname, _, _)) in regular_attrs.iter().enumerate() {
                 if let Some(p) = prefix {
                     if !prefix_declared(p) {
@@ -3839,19 +3907,21 @@ impl XmlParser {
                                 "Namespace prefix {} for {} on {} is not defined\n",
                                 String::from_utf8_lossy(p),
                                 String::from_utf8_lossy(localname),
-                                String::from_utf8_lossy(element_local)
+                                String::from_utf8_lossy(&element_local)
                             ),
                             Some(p.clone()),
-                            None,
-                            None,
+                            // upstream xmlNsErr(..., prefix, name, node_name):
+                            // str2 is the ATTRIBUTE's local name, str3 the
+                            // element's.
+                            Some(localname.clone()),
+                            Some(element_local.clone()),
                             0,
                             pos,
                         );
                     }
                 }
             }
-            if let Some(colons) = name.iter().position(|&b| b == b':') {
-                let prefix = &name[..colons];
+            if let Some(prefix) = qname_prefix.as_deref() {
                 if !prefix_declared(prefix) {
                     self.raise_error_at(
                         XML_FROM_NAMESPACE,
@@ -3860,10 +3930,12 @@ impl XmlParser {
                         format!(
                             "Namespace prefix {} on {} is not defined\n",
                             String::from_utf8_lossy(prefix),
-                            String::from_utf8_lossy(element_local)
+                            String::from_utf8_lossy(&element_local)
                         ),
                         Some(prefix.to_vec()),
-                        None,
+                        // upstream xmlNsErr(..., prefix, name, NULL): str2 is
+                        // the element's LOCAL name.
+                        Some(element_local.clone()),
                         None,
                         0,
                         end_pos,
@@ -3878,6 +3950,12 @@ impl XmlParser {
             }
         } // end of the SAX2-only namespace classification + validation region
 
+        // Upstream xmlParseStartTag2's duplicate-attribute scan runs AFTER the
+        // whole attribute list has been parsed (and after every per-attribute
+        // namespace diagnostic), so "Attribute %s redefined" is raised here,
+        // not with the tag's other scan errors.
+        self.raise_deferred_errors();
+
         // Fire startElement SAX event. The default SAX2 handler manages
         // nodeTab/nodeNr internally. For SAX2 parses the element's own
         // namespace declarations are registered on the parser-scoped
@@ -3886,7 +3964,15 @@ impl XmlParser {
         // expat-compat `xml_parser_create_ns` (bug25666/xml009/xml010).
         let ns_scope_mark = self.ns_scope.len();
         if sax2 {
-            self.sax_start_element(&name, &attributes, &regular_attrs, &ns_decls, end_pos);
+            self.sax_start_element(
+                &name,
+                &attributes,
+                &regular_attrs,
+                &ns_decls,
+                qname_prefix,
+                element_local,
+                end_pos,
+            );
             if unsafe { (*self.ctxt).node }.is_null() {
                 self.ns_scope.extend(ns_decls.iter().cloned());
             }
@@ -3965,12 +4051,53 @@ impl XmlParser {
     ///   entity `content` pointers (from `get_entity` and
     ///   `get_entity_content`) are read as NUL-terminated strings while the
     ///   entity is live.
+    /// Upstream `xmlLookupGeneralEntity`: the predefined entities, then the SAX
+    /// `getEntity` handler, then the document's entity table.
+    ///
+    /// # Safety
+    ///
+    /// `self.ctxt` must be a valid, initialized `_xmlParserCtxt`.
+    fn lookup_general_entity(&self, name: &[u8]) -> *mut crate::abi::structs::_xmlEntity {
+        let name_cstr = Self::vec_to_cstr_null(name);
+        let ent = unsafe {
+            let pre = crate::abi::exports_misc::xmlGetPredefinedEntity(name_cstr);
+            if !pre.is_null() {
+                pre
+            } else {
+                let sax = &*(*self.ctxt).sax;
+                let ctx = (*self.ctxt).userData;
+                // Upstream consults `sax->getEntity` first and falls back to
+                // `xmlSAX2GetEntity` (the DOCUMENT's table) only when the
+                // handler is absent. A consumer that installs NO `getEntity` (a
+                // plain SAX2 recorder, the pushdiff probe) must still resolve
+                // entities declared in the document, while an installed handler
+                // keeps its side effects (PHP's expat-compat contract).
+                if sax.getEntity.is_some() {
+                    SaxDispatcher::get_entity(sax, ctx, name_cstr)
+                } else {
+                    crate::xml::tree::get_doc_entity((*self.ctxt).myDoc, name_cstr)
+                }
+            }
+        };
+        if !name_cstr.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void) };
+        }
+        ent
+    }
+
+    /// Substitute the references of an attribute value.
+    ///
+    /// Returns `Ok(None)` when upstream's `xmlParseAttValueInternal` FAILED and
+    /// the caller must skip the attribute (`if (attvalue == NULL) goto
+    /// next_attr;` in xmlParseStartTag2) — the fatal has already been raised, so
+    /// the remaining attributes are still scanned and the tag still completes,
+    /// but `disableSAX` suppresses its events (`attr-undef`).
     fn substitute_refs(
         &mut self,
         value: &[u8],
         value_start_pos: usize,
         normalize: bool,
-    ) -> Result<Vec<u8>, ()> {
+    ) -> Result<Option<Vec<u8>>, ()> {
         let mut out = Vec::with_capacity(value.len());
         // Whitespace-collapse state for the `normalize` mode: `in_space` is
         // true when the last character emitted to `out` was a (collapsed)
@@ -4010,124 +4137,106 @@ impl XmlParser {
                             b"apos" => replaced = Some(b"'".to_vec()),
                             _ => {
                                 // UPSTREAM-PARITY: xmlParseAttValueInternal
-                                // resolves the entity to check its content for
-                                // `<` regardless of XML_PARSE_NOENT.
-                                let doc = unsafe { (*self.ctxt).myDoc };
-                                if !doc.is_null() {
-                                    let name_cstr = Self::vec_to_cstr_null(inner);
-                                    let ent =
-                                        unsafe { crate::xml::entities::get_entity(doc, name_cstr) };
-                                    // xmlMallocImpl'd buffer: released through
-                                    // xmlFreeImpl so xmlMemSetup hooks stay
-                                    // honoured (was libc::free — wrong under
-                                    // a custom allocator).
-                                    if !name_cstr.is_null() {
+                                // resolves the entity through
+                                // xmlLookupGeneralEntity to check its content
+                                // for `<` regardless of XML_PARSE_NOENT, so the
+                                // lookup does NOT depend on a document being
+                                // attached (the pushdiff probe installs no
+                                // getEntity and keeps myDoc NULL).
+                                let ent = self.lookup_general_entity(inner);
+                                if ent.is_null() {
+                                    // UPSTREAM-PARITY (xmlLookupGeneralEntity ->
+                                    // xmlHandleUndeclaredEntity): an unresolvable
+                                    // reference in an ATTRIBUTE VALUE is
+                                    // diagnosed with the DTD-state severity and
+                                    // the attribute is then DROPPED. A fatal
+                                    // raise leaves disableSAX set, so the tag
+                                    // still completes but dispatches no event.
+                                    self.raise_undeclared_entity_at(
+                                        inner,
+                                        Some(value_start_pos + i + semi + 1),
+                                    );
+                                    return Ok(None);
+                                }
+                                {
+                                    let content = unsafe { (*ent).content };
+                                    // UPSTREAM-PARITY (xmlCheckEntityInAttValue):
+                                    // any '<' anywhere in the entity content
+                                    // is illegal in an attribute value.
+                                    let content_has_lt = if content.is_null() {
+                                        false
+                                    } else {
                                         unsafe {
-                                            crate::abi::allocator::xmlFreeImpl(
-                                                name_cstr as *mut c_void,
-                                            );
+                                            core::slice::from_raw_parts(
+                                                content,
+                                                libc::strlen(content as *const c_char),
+                                            )
+                                            .contains(&b'<')
                                         }
-                                    }
-                                    if ent.is_null() {
-                                        // UPSTREAM-PARITY (xmlLookupGeneralEntity
-                                        // -> xmlHandleUndeclaredEntity): an
-                                        // unresolvable reference in an ATTRIBUTE
-                                        // VALUE is diagnosed with the DTD-state
-                                        // severity, and the reference then
-                                        // contributes NOTHING to the value
-                                        // (upstream's `if (ent == NULL) continue;`).
-                                        // A fatal raise aborts the tag, so no
-                                        // element event fires.
-                                        if self.raise_undeclared_entity(inner) {
-                                            return Err(());
-                                        }
-                                        i += semi + 1;
-                                        continue;
-                                    }
-                                    if !ent.is_null() {
-                                        let content = unsafe { (*ent).content };
-                                        // UPSTREAM-PARITY (xmlCheckEntityInAttValue):
-                                        // any '<' anywhere in the entity content
-                                        // is illegal in an attribute value.
-                                        let content_has_lt = if content.is_null() {
-                                            false
-                                        } else {
-                                            unsafe {
-                                                core::slice::from_raw_parts(
-                                                    content,
-                                                    libc::strlen(content as *const c_char),
-                                                )
-                                                .contains(&b'<')
-                                            }
-                                        };
-                                        if content_has_lt {
-                                            // UPSTREAM-PARITY (R-000121, E-005):
-                                            // the error fires once for
-                                            // xmlParseAttValueInternal's
-                                            // xmlCheckEntityInAttValue scan and
-                                            // again from the entity-expansion
-                                            // re-scan (xmlExpandEntityInAttValue
-                                            // with the reference entity), so the
-                                            // the 2.13.0+ oracle reports it twice
-                                            // with the caret right past the ';'
-                                            // of the offending reference (the
-                                            // input position when the error
-                                            // fires). --noent takes the
-                                            // xmlExpandEntityInAttValue path
-                                            // only, reporting it once.
-                                            let ref_pos = value_start_pos + i + semi + 1;
-                                            let msg = format!(
-                                                "'<' in entity '{}' is not allowed in attributes \
+                                    };
+                                    if content_has_lt {
+                                        // UPSTREAM-PARITY (R-000121, E-005):
+                                        // the error fires once for
+                                        // xmlParseAttValueInternal's
+                                        // xmlCheckEntityInAttValue scan and
+                                        // again from the entity-expansion
+                                        // re-scan (xmlExpandEntityInAttValue
+                                        // with the reference entity), so the
+                                        // the 2.13.0+ oracle reports it twice
+                                        // with the caret right past the ';'
+                                        // of the offending reference (the
+                                        // input position when the error
+                                        // fires). --noent takes the
+                                        // xmlExpandEntityInAttValue path
+                                        // only, reporting it once.
+                                        let ref_pos = value_start_pos + i + semi + 1;
+                                        let msg = format!(
+                                            "'<' in entity '{}' is not allowed in attributes \
                                                  values",
-                                                String::from_utf8_lossy(inner)
-                                            );
+                                            String::from_utf8_lossy(inner)
+                                        );
+                                        self.raise_error_at(
+                                            XML_FROM_PARSER,
+                                            crate::abi::types::XML_ERR_LT_IN_ATTRIBUTE,
+                                            xmlErrorLevel::XML_ERR_FATAL as c_int,
+                                            msg.clone(),
+                                            None,
+                                            None,
+                                            None,
+                                            0,
+                                            ref_pos,
+                                        );
+                                        if (self.options & XML_PARSE_NOENT) == 0 {
                                             self.raise_error_at(
                                                 XML_FROM_PARSER,
                                                 crate::abi::types::XML_ERR_LT_IN_ATTRIBUTE,
                                                 xmlErrorLevel::XML_ERR_FATAL as c_int,
-                                                msg.clone(),
+                                                msg,
                                                 None,
                                                 None,
                                                 None,
                                                 0,
                                                 ref_pos,
                                             );
-                                            if (self.options & XML_PARSE_NOENT) == 0 {
-                                                self.raise_error_at(
-                                                    XML_FROM_PARSER,
-                                                    crate::abi::types::XML_ERR_LT_IN_ATTRIBUTE,
-                                                    xmlErrorLevel::XML_ERR_FATAL as c_int,
-                                                    msg,
-                                                    None,
-                                                    None,
-                                                    None,
-                                                    0,
-                                                    ref_pos,
-                                                );
-                                            }
-                                            return Err(());
                                         }
-                                        if (self.options & XML_PARSE_NOENT) != 0 {
-                                            let content = unsafe {
-                                                crate::xml::entities::get_entity_content(ent)
-                                            };
-                                            if !content.is_null() {
-                                                let len = unsafe {
-                                                    crate::xml::tree::xml_strlen(content)
-                                                };
-                                                replaced = Some(unsafe {
-                                                    core::slice::from_raw_parts(
-                                                        content,
-                                                        len as usize,
-                                                    )
+                                        return Ok(None);
+                                    }
+                                    if (self.options & XML_PARSE_NOENT) != 0 {
+                                        let content = unsafe {
+                                            crate::xml::entities::get_entity_content(ent)
+                                        };
+                                        if !content.is_null() {
+                                            let len =
+                                                unsafe { crate::xml::tree::xml_strlen(content) };
+                                            replaced = Some(unsafe {
+                                                core::slice::from_raw_parts(content, len as usize)
                                                     .to_vec()
-                                                });
-                                                unsafe {
-                                                    crate::abi::allocator::xmlFreeImpl(
-                                                        content as *mut core::ffi::c_void,
-                                                    )
-                                                };
-                                            }
+                                            });
+                                            unsafe {
+                                                crate::abi::allocator::xmlFreeImpl(
+                                                    content as *mut core::ffi::c_void,
+                                                )
+                                            };
                                         }
                                     }
                                 }
@@ -4181,18 +4290,26 @@ impl XmlParser {
         if normalize && in_space {
             out.pop();
         }
-        Ok(out)
+        Ok(Some(out))
     }
 
     /// Upstream `xmlHandleUndeclaredEntity`: raise the undeclared-entity
     /// diagnostic with the severity the document's DTD state dictates, and
-    /// return whether it was FATAL (the caller must then abort).
+    /// return whether it was FATAL (an attribute-value caller then DROPS the
+    /// attribute; `xmlParseReference` aborts the reference).
     ///
     /// Extracted so the attribute-value scanner and `xmlParseReference` share
     /// ONE severity rule: [WFC: Entity Declared] is fatal only for a standalone
     /// document or one with neither an external subset nor parameter-entity
     /// references (a non-validating processor need not load those).
     fn raise_undeclared_entity(&mut self, name: &[u8]) -> bool {
+        self.raise_undeclared_entity_at(name, None)
+    }
+
+    /// `raise_undeclared_entity` with the raise position pinned to `at` — the
+    /// attribute-value scanner raises inline, while the cursor still sits just
+    /// past the reference's `;` (upstream xmlParseAttValueInternal).
+    fn raise_undeclared_entity_at(&mut self, name: &[u8], at: Option<usize>) -> bool {
         let (fatal, code, level, domain) = unsafe {
             let c = &*self.ctxt;
             if c.standalone == 1 || (c.hasExternalSubset == 0 && c.hasPErefs == 0) {
@@ -4227,16 +4344,12 @@ impl XmlParser {
                 )
             }
         };
-        self.raise_error_now(
-            domain,
-            code,
-            level,
-            format!("Entity '{}' not defined\n", String::from_utf8_lossy(name)),
-            Some(name.to_vec()),
-            None,
-            None,
-            0,
-        );
+        let msg = format!("Entity '{}' not defined\n", String::from_utf8_lossy(name));
+        let str1 = Some(name.to_vec());
+        match at {
+            Some(pos) => self.raise_error_at(domain, code, level, msg, str1, None, None, 0, pos),
+            None => self.raise_error_now(domain, code, level, msg, str1, None, None, 0),
+        }
         unsafe {
             (*self.ctxt).valid = 0;
         }
@@ -5495,6 +5608,8 @@ impl XmlParser {
         _raw_attributes: &[(Vec<u8>, Vec<u8>, bool)],
         attrs: &[(Option<Vec<u8>>, Vec<u8>, Vec<u8>, bool)],
         ns_decls: &[(Vec<u8>, Vec<u8>)],
+        prefix_opt: Option<Vec<u8>>,
+        localname: Vec<u8>,
         end_pos: usize,
     ) {
         if self.sax_blocked() || self.below_delivery_boundary() {
@@ -5546,14 +5661,10 @@ impl XmlParser {
             }
         }
 
-        // Split the element QName into prefix and local name. The tokenizer
-        // yields the raw qualified name (e.g. "xsl:stylesheet"); SAX2
-        // requires the local name plus a separate prefix.
-        let (prefix_opt, localname) = if let Some(colons) = _name.iter().position(|&b| b == b':') {
-            (Some(_name[..colons].to_vec()), _name[colons + 1..].to_vec())
-        } else {
-            (None, _name.to_vec())
-        };
+        // The element's (prefix, local) split is computed ONCE by the caller
+        // (`parse_element_start`, via the shared `split_qname_bytes`), because
+        // the namespace validation there needs the same answer — including the
+        // `a:b:c` case where upstream keeps the WHOLE span as the local name.
         // Resolve the prefix against this element's namespace declarations
         // and, when not declared here, the ancestor scope (upstream
         // xmlParserNsLookupUri walks the parser's in-scope namespace stack).
@@ -6919,6 +7030,21 @@ impl XmlParser {
     /// order — upstream raises them at their detection points).
     pub(crate) fn raise_pending_errors(&mut self) {
         let errors = self.tokenizer.take_errors();
+        self.raise_error_infos(errors);
+    }
+
+    /// Raise the diagnostics the tokenizer DEFERRED to a later point in the
+    /// construct (see `XmlTokenizer::deferred_errors`). Upstream raises them
+    /// inline, so the caller must invoke this at the upstream point —
+    /// `xmlParseStartTag2` runs its duplicate-attribute scan after every
+    /// attribute has been parsed.
+    pub(crate) fn raise_deferred_errors(&mut self) {
+        let errors = self.tokenizer.take_deferred_errors();
+        self.raise_error_infos(errors);
+    }
+
+    /// Deliver a batch of tokenizer diagnostics in order.
+    fn raise_error_infos(&mut self, errors: Vec<crate::xml::parser::tokenizer::ErrorInfo>) {
         for e in errors {
             self.raise_parser_error(
                 e.domain,

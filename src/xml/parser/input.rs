@@ -738,6 +738,15 @@ impl InputBuffer {
     /// ```
     ///
     /// `avail` here is the number of undecided source bytes held back.
+    ///
+    /// There is a THIRD, unconditional four-byte rule inside
+    /// `xmlDetectEncoding` itself: `if (ctxt->input->end - in < 4) return;`.
+    /// It fires on a TERMINATING call that never accumulated four raw bytes, so
+    /// no encoding is switched at all and the raw bytes are parsed as the
+    /// default encoding. That is what `enc-bom-le-only` / `enc-bom-be-only`
+    /// observe: a lone UTF-16 BOM is NOT decoded away, the first byte is not
+    /// `<`, and `XML_DECL` fires `startDocument` before the START_TAG arm
+    /// reports "Start tag expected, '<' not found".
     fn try_decide(&mut self, terminate: bool) -> bool {
         let avail = self.pending_source.len();
         if !terminate {
@@ -747,6 +756,13 @@ impl InputBuffer {
             if self.pending_source[..4] == [0x4C, 0x6F, 0xA7, 0x94] && avail < 200 {
                 return false;
             }
+        }
+        if avail < 4 {
+            // `xmlDetectEncoding`'s own guard: no signature is honoured below
+            // four bytes, so the held source is materialized UNCONVERTED.
+            let src = core::mem::take(&mut self.pending_source);
+            self.decide_utf8(src, 0, terminate);
+            return true;
         }
         self.decide(terminate);
         true
