@@ -107,6 +107,10 @@ pub(crate) enum Encoding {
     Ucs4Le,
     /// UCS-4 (UTF-32) big-endian (pattern: 00 00 00 3C).
     Ucs4Be,
+    /// UCS-2 (2-byte code units, registry byte order = host/little-endian —
+    /// the glibc iconv "UCS-2" the oracle serves). Reached from a declaration
+    /// naming `ucs-2`.
+    Ucs2Le,
     /// Other encoding (name stored for reference).
     Other(String),
 }
@@ -124,6 +128,7 @@ impl Encoding {
             Self::Ebcdic => xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
             Self::Ucs4Le => xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
             Self::Ucs4Be => xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE,
+            Self::Ucs2Le => xmlCharEncoding::XML_CHAR_ENCODING_UCS2,
             Self::Other(_) => xmlCharEncoding::XML_CHAR_ENCODING_ERROR,
         }
     }
@@ -448,6 +453,26 @@ pub(crate) struct InputBuffer {
     /// the document itself parsed cleanly — `xmlParserCheckEOF` returns early
     /// once `errNo` is set, so a malformed-document error wins.
     truncated_source: bool,
+    /// Byte offset just past a detected `<?xml ... ?>` declaration whose
+    /// `encoding` pseudo-attribute named an encoding: the boundary between the
+    /// ASCII declaration (which is NEVER re-decoded) and the encoded body.
+    /// 0 = no declaration with an encoding name was seen.
+    ///
+    /// Upstream switches the encoding *inside* `xmlParseXMLDecl`, i.e. with
+    /// `cur` already past the declaration, so only the remaining bytes are
+    /// converted. Re-decoding the declaration is harmless for the
+    /// ASCII-compatible codecs (ASCII maps to itself) but wrong for a
+    /// unit-aligned one: decoding `<?xml ...` as UCS-2 mis-aligns every unit.
+    decl_end: usize,
+    /// Persistent `encoding_rs` decoder for a declared MULTIBYTE or STATEFUL
+    /// source encoding (Shift_JIS, EUC-JP, ISO-2022-JP).
+    ///
+    /// Only those get one: single-byte sets (ISO-8859-x, windows-1252,
+    /// EBCDIC) decode correctly tail-by-tail, and the fixed-width codecs
+    /// (UTF-16, UCS-2, UCS-4) carry incomplete units in
+    /// `pending_source` instead. A reparse duplicate always has `None` (see
+    /// `duplicate_for_reparse`).
+    registry: Option<RegistrySourceDecoder>,
 }
 
 impl std::fmt::Debug for InputBuffer {
@@ -464,6 +489,7 @@ impl std::fmt::Debug for InputBuffer {
             .field("converted_to_utf8", &self.converted_to_utf8)
             .field("decoding", &self.decoding)
             .field("pending_source", &self.pending_source.len())
+            .field("registry", &self.registry.as_ref().map(|r| r.name))
             .finish()
     }
 }
@@ -503,6 +529,8 @@ impl InputBuffer {
             materialized: 0,
             encoding_error: false,
             truncated_source: false,
+            registry: None,
+            decl_end: 0,
         };
         ib.detect_bom_and_encoding();
         ib
@@ -536,6 +564,8 @@ impl InputBuffer {
             materialized: 0,
             encoding_error: false,
             truncated_source: false,
+            registry: None,
+            decl_end: 0,
         };
         ib.push_bytes_ex(initial, false);
         ib
@@ -584,6 +614,8 @@ impl InputBuffer {
             materialized: 0,
             encoding_error: false,
             truncated_source: false,
+            registry: None,
+            decl_end: 0,
         };
         // BOM/declaration detection may transcode (Borrowed → Owned) for
         // non-UTF-8 inputs; the plain UTF-8/ASCII path stays zero-copy.
@@ -712,10 +744,10 @@ impl InputBuffer {
             // needs no carry).
             self.encoding = Encoding::Ebcdic;
             self.data = InputBytes::Owned(src);
-            self.convert_declared_native_encoding();
+            self.convert_declared_native_encoding(terminate);
             self.materialized = self.data.data_len() as u64;
         } else if n >= 3 && at(0) == 0xEF && at(1) == 0xBB && at(2) == 0xBF {
-            self.decide_utf8(src, 3);
+            self.decide_utf8(src, 3, terminate);
         } else if n >= 2 && at(0) == 0xFF && at(1) == 0xFE {
             // `FF FE 00 00` (the UTF-32LE BOM) deliberately lands here:
             // upstream has no UTF-32 BOM case, so it is a UTF-16LE BOM whose
@@ -724,7 +756,7 @@ impl InputBuffer {
         } else if n >= 2 && at(0) == 0xFE && at(1) == 0xFF {
             self.install_unit_decoder(src, Encoding::Utf16Be, 2, terminate);
         } else {
-            self.decide_utf8(src, 0);
+            self.decide_utf8(src, 0, terminate);
         }
     }
 
@@ -745,8 +777,9 @@ impl InputBuffer {
 
     /// Materialize a UTF-8 source (optionally after a `skip`-byte BOM) and run
     /// the declaration sniff so a declared legacy encoding still transcodes
-    /// (KEY-1).
-    fn decide_utf8(&mut self, src: Vec<u8>, bom: usize) {
+    /// (KEY-1). `terminate` is the `xmlParseChunk` final flag: a declared
+    /// multibyte/stateful codec must know whether this is the last feed.
+    fn decide_utf8(&mut self, src: Vec<u8>, bom: usize, terminate: bool) {
         self.encoding = Encoding::Utf8;
         self.materialized = src.len() as u64;
         self.data = InputBytes::Owned(src);
@@ -756,7 +789,7 @@ impl InputBuffer {
             self.bom_consumed = true;
         }
         self.detect_encoding_from_xml_declaration();
-        self.convert_declared_native_encoding();
+        self.convert_declared_native_encoding(terminate);
     }
 
     /// Decode as many complete source units as possible from
@@ -769,8 +802,11 @@ impl InputBuffer {
         let definite_error = match self.encoding {
             Encoding::Utf16Le => decode_utf16_units(&src, false, &mut out, &mut consumed),
             Encoding::Utf16Be => decode_utf16_units(&src, true, &mut out, &mut consumed),
-            Encoding::Ucs4Le => decode_ucs4_units(&src, false, &mut out, &mut consumed),
-            Encoding::Ucs4Be => decode_ucs4_units(&src, true, &mut out, &mut consumed),
+            // UCS-2 is 2-byte host-order (little-endian) in the registry;
+            // UCS-4 is 4-byte. Both keep a partial trailing unit as carry.
+            Encoding::Ucs2Le => decode_fixed_units(&src, false, 2, &mut out, &mut consumed),
+            Encoding::Ucs4Le => decode_fixed_units(&src, false, 4, &mut out, &mut consumed),
+            Encoding::Ucs4Be => decode_fixed_units(&src, true, 4, &mut out, &mut consumed),
             _ => return,
         };
         if !out.is_empty() {
@@ -790,18 +826,70 @@ impl InputBuffer {
     /// Append to an input whose source encoding is already decided.
     fn append_decided(&mut self, bytes: &[u8], terminate: bool) {
         match &self.encoding {
-            Encoding::Utf16Le | Encoding::Utf16Be | Encoding::Ucs4Le | Encoding::Ucs4Be
+            Encoding::Utf16Le
+            | Encoding::Utf16Be
+            | Encoding::Ucs2Le
+            | Encoding::Ucs4Le
+            | Encoding::Ucs4Be
                 if self.converted_to_utf8 =>
             {
                 self.pending_source.extend_from_slice(bytes);
                 self.decode_units_tail(terminate);
             }
-            Encoding::Iso8859_1 | Encoding::Ebcdic | Encoding::Other(_)
-                if self.converted_to_utf8 =>
-            {
+            Encoding::Other(_) if self.converted_to_utf8 => {
+                if let Some(reg) = self.registry.as_mut() {
+                    // Multibyte/stateful codec: the SAME decoder instance
+                    // continues, so an incomplete unit and (ISO-2022-JP) the
+                    // escape state survive the chunk boundary. `terminate` is
+                    // passed through as `encoding_rs`'s `last`: only a
+                    // terminating feed treats a held incomplete unit as the
+                    // encoder flush error.
+                    let mut conv = Vec::new();
+                    let res = reg.decode(bytes, terminate, &mut conv);
+                    if !conv.is_empty() {
+                        self.data.make_owned().extend_from_slice(&conv);
+                        self.materialized = self.materialized.saturating_add(conv.len() as u64);
+                    }
+                    match res {
+                        // A definite invalid unit: raise on this call, like
+                        // `xmlParserInputBufferPush` returning -1.
+                        Err(RegistryTail::Invalid) => self.encoding_error = true,
+                        // Incomplete unit on a terminating call: the encoder
+                        // flush, surfaced only if the document parses cleanly.
+                        Err(RegistryTail::Truncated) => self.truncated_source = true,
+                        Ok(()) => {}
+                    }
+                    return;
+                }
                 if bytes.is_empty() {
                     return;
                 }
+                // No persistent decoder: a reparse duplicate (never pushed to)
+                // or a registry name with no `encoding_rs` codec. Decode the
+                // tail through the registry handler as before.
+                match self.legacy_source_encoding_name() {
+                    Some(src_name) => {
+                        match crate::xml::encoding::decode_whole_buffer_declared(&src_name, bytes) {
+                            Ok(conv) => {
+                                self.data.make_owned().extend_from_slice(&conv);
+                                self.materialized =
+                                    self.materialized.saturating_add(conv.len() as u64);
+                            }
+                            // Undecodable tail: append raw; the tokenizer
+                            // reports the invalid-character error.
+                            Err(()) => self.append_raw(bytes),
+                        }
+                    }
+                    None => self.append_raw(bytes),
+                }
+            }
+            Encoding::Iso8859_1 | Encoding::Ebcdic if self.converted_to_utf8 => {
+                if bytes.is_empty() {
+                    return;
+                }
+                // Single-byte sets: every byte is an independent source unit,
+                // so a tail-wise decode through the registered handler is
+                // exact (no carry, no state).
                 match self.legacy_source_encoding_name() {
                     Some(src_name) => {
                         match crate::xml::encoding::decode_whole_buffer_declared(&src_name, bytes) {
@@ -829,7 +917,7 @@ impl InputBuffer {
                 }
                 if self.decl_pending && !self.converted_to_utf8 {
                     self.detect_encoding_from_xml_declaration();
-                    self.convert_declared_native_encoding();
+                    self.convert_declared_native_encoding(terminate);
                     if self.converted_to_utf8 {
                         self.materialized = self.data.data_len() as u64;
                     }
@@ -893,6 +981,12 @@ impl InputBuffer {
     /// can consume (transcoding may expand: ISO-8859-1 `E9` -> `C3 A9`).
     pub(crate) const fn materialized_bytes(&self) -> u64 {
         self.materialized
+    }
+
+    /// The canonical name of the installed persistent registry decoder, if any
+    /// (diagnostic / test surface).
+    pub(crate) fn registry_kind_name(&self) -> Option<&'static str> {
+        self.registry.as_ref().map(|r| r.name)
     }
 
     /// Source bytes received but not yet materialized (see
@@ -964,6 +1058,15 @@ impl InputBuffer {
             materialized: self.materialized,
             encoding_error: self.encoding_error,
             truncated_source: self.truncated_source,
+            // A reparse duplicate is a PARSE-ONLY artifact: it exists so the
+            // accumulated materialized stream can be parsed again (probe /
+            // delivery / terminating pass) and is never pushed to. Its source
+            // decoder is therefore not carried across (`encoding_rs::Decoder`
+            // is not `Clone`, and its incomplete-unit / shift state is not
+            // reconstructible from `pending_source`); if one ever were pushed
+            // to, `append_decided` degrades to the per-tail registry decode.
+            registry: None,
+            decl_end: self.decl_end,
         }
     }
 
@@ -999,6 +1102,8 @@ impl InputBuffer {
             materialized: 0,
             encoding_error: false,
             truncated_source: false,
+            registry: None,
+            decl_end: 0,
         };
         ib.detect_bom_and_encoding();
         Ok(ib)
@@ -1033,6 +1138,8 @@ impl InputBuffer {
             materialized: 0,
             encoding_error: false,
             truncated_source: false,
+            registry: None,
+            decl_end: 0,
         };
         ib.detect_bom_and_encoding();
         Ok(ib)
@@ -1062,6 +1169,8 @@ impl InputBuffer {
             materialized: 0,
             encoding_error: false,
             truncated_source: false,
+            registry: None,
+            decl_end: 0,
         }
     }
 
@@ -1176,17 +1285,17 @@ impl InputBuffer {
             let d3 = self.data[3];
             if d0 == 0x3C && d1 == 0x00 && d2 == 0x00 && d3 == 0x00 {
                 self.encoding = Encoding::Ucs4Le;
-                self.convert_declared_native_encoding();
+                self.convert_declared_native_encoding(true);
                 return;
             }
             if d0 == 0x00 && d1 == 0x00 && d2 == 0x00 && d3 == 0x3C {
                 self.encoding = Encoding::Ucs4Be;
-                self.convert_declared_native_encoding();
+                self.convert_declared_native_encoding(true);
                 return;
             }
             if d0 == 0x4C && d1 == 0x6F && d2 == 0xA7 && d3 == 0x94 {
                 self.encoding = Encoding::Ebcdic;
-                self.convert_declared_native_encoding();
+                self.convert_declared_native_encoding(true);
                 return;
             }
             if d0 == 0x3C && d1 == 0x00 && d2 == 0x3F && d3 == 0x00 {
@@ -1210,7 +1319,10 @@ impl InputBuffer {
         // bytes (KEY-1: upstream `xmlSwitchEncoding` after xmlParseXMLDecl;
         // without this the tokenizer raises "Invalid bytes in character
         // encoding" on every valid Latin-1 byte >= 0x80).
-        self.convert_declared_native_encoding();
+        //
+        // `terminate = true`: a whole-buffer input IS the complete stream, so a
+        // declared codec's trailing incomplete unit is a truncation.
+        self.convert_declared_native_encoding(true);
     }
 
     /// Transcode `data` to UTF-8 when the XML declaration named an encoding
@@ -1219,13 +1331,21 @@ impl InputBuffer {
     /// byte-wise mapping (every byte 0x80..=0xFF becomes a two-byte UTF-8
     /// sequence, all ASCII stays identical — including the declaration
     /// itself), so the whole buffered stream converts safely regardless of
-    /// how much has arrived. Every other registry-served legacy encoding
-    /// (ISO-8859-2..16, windows-1252, Shift_JIS, EUC-JP, ISO-2022-JP, UCS-2,
-    /// UCS-4LE/BE, EBCDIC …) is decoded whole-buffer through its registered
-    /// input handler the same way (R-000157 input side, Phase 14.29).
+    /// how much has arrived.
+    ///
+    /// The registry-served encodings are NOT one homogeneous category — see
+    /// [`RegistryKind`]: the single-byte sets (ISO-8859-2..16, windows-1252,
+    /// EBCDIC) decode whole-buffer through their registered handler because
+    /// every byte is an independent source unit; UCS-2/UCS-4 materialize
+    /// through the code-unit decoder so a trailing incomplete unit is CARRIED
+    /// rather than rejected; and the multibyte/stateful codecs (Shift_JIS,
+    /// EUC-JP, ISO-2022-JP) install a PERSISTENT `encoding_rs::Decoder` (a
+    /// per-chunk decode would lose an incomplete unit, and for ISO-2022-JP
+    /// the escape state itself, which no byte carry can reconstruct).
+    ///
     /// Unknown encodings are left untouched so the existing
     /// unsupported-encoding handling applies unchanged.
-    fn convert_declared_native_encoding(&mut self) {
+    fn convert_declared_native_encoding(&mut self, terminate: bool) {
         if self.converted_to_utf8 {
             return;
         }
@@ -1242,11 +1362,146 @@ impl InputBuffer {
                 // incremental pushes stop re-detecting.
                 self.converted_to_utf8 = true;
             }
-            Encoding::Other(name) => self.convert_via_registry(&name.clone().into_bytes()),
+            Encoding::Other(name) => {
+                let bytes = name.clone().into_bytes();
+                match registry_kind(&bytes) {
+                    RegistryKind::Streaming(enc, canon) => {
+                        self.install_registry_decoder(enc, canon, terminate)
+                    }
+                    RegistryKind::Ucs2Le => {
+                        self.convert_declared_units(Encoding::Ucs2Le, terminate)
+                    }
+                    RegistryKind::Ucs4(canonical) => {
+                        self.convert_declared_units(canonical, terminate)
+                    }
+                    RegistryKind::ByteWise => self.convert_via_registry(&bytes),
+                }
+            }
             Encoding::Ebcdic => self.convert_via_registry(b"IBM037"),
             Encoding::Ucs4Le => self.convert_via_registry(b"UCS-4LE"),
             Encoding::Ucs4Be => self.convert_via_registry(b"UCS-4BE"),
+            Encoding::Ucs2Le => self.convert_declared_units(Encoding::Ucs2Le, terminate),
+            // A DECLARED UTF-16 (the BOM/pattern paths return early above,
+            // with `converted_to_utf8` already set) has fixed-width units too.
+            Encoding::Utf16Le => self.convert_declared_units(Encoding::Utf16Le, terminate),
+            Encoding::Utf16Be => self.convert_declared_units(Encoding::Utf16Be, terminate),
             _ => {}
+        }
+    }
+
+    /// Materialize a declared fixed-width source encoding (UCS-2/UCS-4)
+    /// through the code-unit decoder, so a trailing incomplete unit is held in
+    /// `pending_source` for the next call instead of being rejected by a
+    /// whole-buffer registry decode (`fixed_width_input` reports the complete
+    /// prefix and leaves the tail, which `decode_whole_buffer_declared` turns
+    /// into a hard `Err`).
+    fn convert_declared_units(&mut self, canonical: Encoding, terminate: bool) {
+        if self.converted_to_utf8 || self.data.is_empty() {
+            return;
+        }
+        let raw = self.data.take_owned();
+        // The XML declaration is NOT re-decoded (see `decl_end`): only the
+        // bytes after `?>` are units. Re-decoding `<?xml ...` as UCS-2 would
+        // mis-align every unit of the body.
+        let split = if self.decl_end > 0 && self.decl_end <= raw.len() {
+            self.decl_end
+        } else {
+            0
+        };
+        let (decl, body) = raw.split_at(split);
+        let prefix = decl.to_vec();
+        self.encoding = canonical;
+        self.converted_to_utf8 = true;
+        self.data = InputBytes::Owned(Vec::new());
+        self.materialized = 0;
+        self.pos = 0;
+        self.col = 1;
+        self.bom_consumed = false;
+        self.pending_source = body.to_vec();
+        // A trailing partial unit is carried on a non-final feed (a progressive
+        // stream may still complete it) and is the encoder flush error on a
+        // terminating one — exactly as in the BOM/pattern-detected fixed-width
+        // paths.
+        self.decode_units_tail(terminate);
+        if !prefix.is_empty() {
+            // Re-attach the (ASCII) declaration in front of the decoded body,
+            // so the parser re-reads it and the body follows in place.
+            let decoded = self.data.take_owned();
+            let mut merged = prefix;
+            merged.extend_from_slice(&decoded);
+            self.data = InputBytes::Owned(merged);
+            self.materialized = self.data.data_len() as u64;
+        }
+    }
+
+    /// Install a persistent `encoding_rs` decoder for a declared multibyte or
+    /// stateful encoding, materializing the source bytes held so far (the
+    /// single O(N) conversion at decision time; every later chunk decodes
+    /// incrementally through the same decoder instance).
+    ///
+    /// `terminate` is the deciding call's `xmlParseChunk` final flag: a
+    /// declared codec that is still holding an incomplete unit when the first
+    /// (and only) feed is final is the encoder flush error, exactly as on the
+    /// BOM/pattern-detected paths.
+    fn install_registry_decoder(
+        &mut self,
+        enc: &'static encoding_rs::Encoding,
+        name: &'static str,
+        terminate: bool,
+    ) {
+        if self.converted_to_utf8 {
+            return;
+        }
+        let raw = self.data.take_owned();
+        let mut decoder = RegistrySourceDecoder::new(enc, name);
+        let mut out = Vec::with_capacity(raw.len() + 8);
+        match decoder.decode(&raw, terminate, &mut out) {
+            Ok(()) => {
+                self.data = InputBytes::Owned(out);
+                self.materialized = self.data.data_len() as u64;
+                self.pos = 0;
+                self.col = 1;
+                self.bom_consumed = false;
+                self.converted_to_utf8 = true;
+                self.registry = Some(decoder);
+            }
+            Err(tail) => {
+                if self.decoding == SourceDecoding::WholeBuffer {
+                    // Whole-buffer front-end (`xmlReadMemory` & friends): keep
+                    // the raw bytes and leave the encoding as UTF-8 so the
+                    // TOKENIZER reports the invalid byte ("Invalid bytes in
+                    // character encoding") — the same shape as
+                    // `convert_via_registry`'s failure path. These callers
+                    // never consult the progressive encoder latches.
+                    self.data = InputBytes::Owned(raw);
+                    self.materialized = self.data.data_len() as u64;
+                    self.encoding = Encoding::Utf8;
+                    self.pos = 0;
+                    self.col = 1;
+                    self.bom_consumed = false;
+                    self.converted_to_utf8 = false;
+                    self.registry = None;
+                } else {
+                    // Progressive feed: the prefix BEFORE the offending unit
+                    // decoded, and upstream's failed `xmlParserInputBufferPush`
+                    // means the parser does not run on this call at all — so
+                    // materialize the decoded prefix and latch the encoder
+                    // error, which `parse_chunk` turns into
+                    // XML_ERR_INVALID_ENCODING (or defers to
+                    // `xmlParserCheckEOF` when the feed was final).
+                    self.data = InputBytes::Owned(out);
+                    self.materialized = self.data.data_len() as u64;
+                    self.pos = 0;
+                    self.col = 1;
+                    self.bom_consumed = false;
+                    self.converted_to_utf8 = true;
+                    self.registry = Some(decoder);
+                    match tail {
+                        RegistryTail::Invalid => self.encoding_error = true,
+                        RegistryTail::Truncated => self.truncated_source = true,
+                    }
+                }
+            }
         }
     }
 
@@ -1489,6 +1744,11 @@ impl InputBuffer {
         // Find encoding="..." or encoding='...'
         if let Some(enc) = Self::extract_encoding_from_pi(pi_str) {
             self.encoding = Encoding::from_name(&enc);
+            // The declaration that NAMES an encoding is the boundary the
+            // encoding switch uses upstream: everything before `?>` was read
+            // as ASCII/UTF-8 and is never re-decoded, everything after it is
+            // in the declared encoding (see the `decl_end` field).
+            self.decl_end = self.pos + pi_end;
         }
     }
 
@@ -2040,16 +2300,31 @@ fn decode_utf16_units(src: &[u8], be: bool, out: &mut Vec<u8>, consumed: &mut us
     false
 }
 
-/// Decode complete UTF-32 (UCS-4) code units from `src` into `out`.
+/// Decode complete fixed-width code units (UCS-2 `width = 2`, UCS-4
+/// `width = 4`) from `src` into `out`.
 ///
 /// Returns `true` on a definite encoding error (a surrogate code point or an
 /// out-of-range value, matching upstream `fixed_width_input`). A trailing
-/// partial unit (0–3 bytes) stays unconsumed as the caller's carry.
-fn decode_ucs4_units(src: &[u8], be: bool, out: &mut Vec<u8>, consumed: &mut usize) -> bool {
+/// partial unit (fewer than `width` bytes) stays unconsumed as the caller's
+/// carry.
+fn decode_fixed_units(
+    src: &[u8],
+    be: bool,
+    width: usize,
+    out: &mut Vec<u8>,
+    consumed: &mut usize,
+) -> bool {
     let mut i = 0usize;
-    while i + 4 <= src.len() {
-        let raw = [src[i], src[i + 1], src[i + 2], src[i + 3]];
-        let cp = if be {
+    while i + width <= src.len() {
+        let mut raw = [0u8; 4];
+        raw[..width].copy_from_slice(&src[i..i + width]);
+        let cp = if width == 2 {
+            if be {
+                u32::from(u16::from_be_bytes([raw[0], raw[1]]))
+            } else {
+                u32::from(u16::from_le_bytes([raw[0], raw[1]]))
+            }
+        } else if be {
             u32::from_be_bytes(raw)
         } else {
             u32::from_le_bytes(raw)
@@ -2059,7 +2334,7 @@ fn decode_ucs4_units(src: &[u8], be: bool, out: &mut Vec<u8>, consumed: &mut usi
             return true;
         }
         push_utf8(out, cp);
-        i += 4;
+        i += width;
     }
     *consumed = i;
     false
@@ -2070,6 +2345,152 @@ fn push_utf8(out: &mut Vec<u8>, cp: u32) {
     if let Some(c) = char::from_u32(cp) {
         let mut buf = [0u8; 4];
         out.extend_from_slice(c.encode_utf8(&mut buf).as_bytes());
+    }
+}
+
+// ── Registry-served source encodings (declaration-named) ─────────────────────
+
+/// How a registry-served source encoding must be decoded incrementally.
+///
+/// The registry is NOT one homogeneous category, and treating it as one is a
+/// correctness bug: only a byte-wise mapping can be decoded chunk-by-chunk
+/// independently. Classic examples:
+///
+/// ```text
+/// Shift_JIS  82 A0  is one character
+///   CALL 1: ... 82      -> an independent per-chunk decode calls 82 malformed
+///   CALL 2: A0 ...      -> and the original character can never be recovered
+///
+/// ISO-2022-JP  ESC $ B (JIS state) ... ESC ( B
+///   a chunk boundary may land where there is NO incomplete byte sequence,
+///   so no byte carry can help: only the decoder's escape state survives
+/// ```
+enum RegistryKind {
+    /// Multibyte or stateful codec: needs a PERSISTENT `encoding_rs::Decoder`.
+    Streaming(&'static encoding_rs::Encoding, &'static str),
+    /// 2-byte fixed-width native codec (the registry's UCS-2 is host-order
+    /// little-endian, matching the glibc iconv the oracle serves).
+    Ucs2Le,
+    /// 4-byte fixed-width native codec: the registry's `UCS-4` is LE,
+    /// `UCS-4BE` is BE.
+    Ucs4(Encoding),
+    /// Byte-wise: single-byte sets (ISO-8859-x, windows-1252, EBCDIC) and
+    /// anything else the registry resolves to a per-tail-safe handler or to
+    /// no handler at all (raw bytes, diagnosed by the tokenizer).
+    ByteWise,
+}
+
+/// Classify a declared registry encoding name (alias spellings accepted, via
+/// the same canonicalization `decode_whole_buffer_declared` performs).
+fn registry_kind(name: &[u8]) -> RegistryKind {
+    let canonical =
+        crate::xml::encoding::encoding_name(crate::xml::encoding::encoding_from_name(name));
+    let lower = match canonical {
+        Some(c) => String::from_utf8_lossy(c).to_ascii_lowercase(),
+        None => String::from_utf8_lossy(name).trim().to_ascii_lowercase(),
+    };
+    match lower.as_str() {
+        "shift_jis" | "sjis" | "cp932" | "ms_kanji" => {
+            RegistryKind::Streaming(encoding_rs::SHIFT_JIS, "SHIFT_JIS")
+        }
+        "euc-jp" | "eucjp" => RegistryKind::Streaming(encoding_rs::EUC_JP, "EUC-JP"),
+        "iso-2022-jp" | "iso2022-jp" => {
+            RegistryKind::Streaming(encoding_rs::ISO_2022_JP, "ISO-2022-JP")
+        }
+        "ucs-2" | "ucs2" => RegistryKind::Ucs2Le,
+        "ucs-4" | "ucs-4le" | "ucs4le" => RegistryKind::Ucs4(Encoding::Ucs4Le),
+        "ucs-4be" | "ucs4be" => RegistryKind::Ucs4(Encoding::Ucs4Be),
+        _ => RegistryKind::ByteWise,
+    }
+}
+
+/// Why a registry decode stopped short.
+enum RegistryTail {
+    /// A definite invalid unit — upstream `XML_ENC_ERR_INPUT` raised by
+    /// `xmlParserInputBufferPush` (reported on the call that finds it).
+    Invalid,
+    /// The feed was final and the decoder still holds an incomplete unit —
+    /// the encoder flush error `xmlParserCheckEOF` reports.
+    Truncated,
+}
+
+/// A persistent `encoding_rs` source decoder.
+///
+/// A fresh decoder per chunk is WRONG: an incomplete multibyte unit would be
+/// reported as malformed (and its raw lead byte materialized), and a stateful
+/// codec would silently restart in ASCII. `encoding_rs::Decoder` holds both
+/// the incomplete unit and the shift state across calls, mirroring upstream's
+/// iconv handle (`handler->inputCtxt`), which also persists across
+/// `xmlCharEncInput` calls.
+///
+/// NOTE: `encoding_rs::Decoder` is not `Clone`, which is why
+/// [`InputBuffer::duplicate_for_reparse`] carries no decoder: a reparse
+/// duplicate is a parse-only artifact that is never pushed to.
+struct RegistrySourceDecoder {
+    decoder: encoding_rs::Decoder,
+    /// Canonical codec name (diagnostics via
+    /// [`InputBuffer::registry_kind_name`]).
+    name: &'static str,
+}
+
+impl RegistrySourceDecoder {
+    fn new(enc: &'static encoding_rs::Encoding, name: &'static str) -> Self {
+        // `without_bom_handling`: a BOM is the input layer's business (the
+        // BOM/signature sniff), not the tail decoder's.
+        Self {
+            decoder: enc.new_decoder_without_bom_handling(),
+            name,
+        }
+    }
+
+    /// Feed `bytes`; decode complete characters into `out`.
+    ///
+    /// Decoding always runs with `last = false`, so an incomplete trailing unit
+    /// is BUFFERED INSIDE the decoder and completed by a later call rather than
+    /// reported as malformed. `last` is then applied as a separate flush
+    /// (empty input, `last = true`), which surfaces exactly the terminating-call
+    /// truncation — the same two-phase shape as upstream's
+    /// `xmlCharEncInput(..., flush = 0)` during the push followed by
+    /// `xmlParserCheckEOF`'s `flush = 1`.
+    ///
+    /// The decoder is never called with an EMPTY slice and `last = false`: on
+    /// that path `encoding_rs`'s two-byte decoders (`ShiftJisDecoder` &
+    /// friends) clear their buffered lead byte and return `InputEmpty`,
+    /// silently losing it — after which the trail byte in the next chunk would
+    /// be misdecoded. Only real bytes are fed `last = false`; the single
+    /// empty-slice call in this function is the `last = true` flush.
+    fn decode(&mut self, bytes: &[u8], last: bool, out: &mut Vec<u8>) -> Result<(), RegistryTail> {
+        let mut buf = [0u8; 4096];
+        let mut pos = 0usize;
+        while pos < bytes.len() {
+            let (res, read, written) =
+                self.decoder
+                    .decode_to_utf8_without_replacement(&bytes[pos..], &mut buf, false);
+            out.extend_from_slice(&buf[..written]);
+            pos += read;
+            match res {
+                encoding_rs::DecoderResult::InputEmpty => break,
+                encoding_rs::DecoderResult::OutputFull => {
+                    // Cannot happen with a 4 KiB scratch buffer (the widest
+                    // expansion is 3 UTF-8 bytes per source byte), but never
+                    // spin if it somehow does.
+                    if read == 0 && written == 0 {
+                        break;
+                    }
+                }
+                encoding_rs::DecoderResult::Malformed(..) => return Err(RegistryTail::Invalid),
+            }
+        }
+        if last {
+            let (res, _, written) =
+                self.decoder
+                    .decode_to_utf8_without_replacement(&[], &mut buf, true);
+            out.extend_from_slice(&buf[..written]);
+            if matches!(res, encoding_rs::DecoderResult::Malformed(..)) {
+                return Err(RegistryTail::Truncated);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -2847,6 +3268,201 @@ mod tests {
 
     fn utf32be(s: &str) -> Vec<u8> {
         s.chars().flat_map(|c| (c as u32).to_be_bytes()).collect()
+    }
+
+    // ── Registry-served (declaration-named) source encodings ─────────────
+    //
+    // Shape of every fixture: an ASCII XML declaration that NAMES the
+    // encoding, followed by a body in that encoding. The declaration is read
+    // as ASCII/UTF-8 (upstream switches the encoding inside xmlParseXMLDecl,
+    // with `cur` past the declaration) and is never re-decoded; the body is.
+
+    const SHIFT_JIS_DECL: &[u8] = b"<?xml version=\"1.0\" encoding=\"Shift_JIS\"?>";
+    const EUC_JP_DECL: &[u8] = b"<?xml version=\"1.0\" encoding=\"EUC-JP\"?>";
+    const ISO2022_JP_DECL: &[u8] = b"<?xml version=\"1.0\" encoding=\"ISO-2022-JP\"?>";
+    const UCS2_DECL: &[u8] = b"<?xml version=\"1.0\" encoding=\"UCS-2\"?>";
+
+    fn shift_jis_doc() -> Vec<u8> {
+        let mut v = SHIFT_JIS_DECL.to_vec();
+        v.extend_from_slice(b"<a>");
+        v.extend_from_slice(&[0x82, 0xA0]); // あ (one 2-byte Shift_JIS char)
+        v.extend_from_slice(b"</a>");
+        v
+    }
+
+    fn euc_jp_doc() -> Vec<u8> {
+        let mut v = EUC_JP_DECL.to_vec();
+        v.extend_from_slice(b"<a>");
+        v.extend_from_slice(&[0xA4, 0xA2]); // あ (one 2-byte EUC-JP char)
+        v.extend_from_slice(b"</a>");
+        v
+    }
+
+    /// ISO-2022-JP: `ESC $ B` switches to JIS X 0208, the pair encodes あ, and
+    /// `ESC ( B` switches back to ASCII.
+    fn iso2022_jp_doc() -> Vec<u8> {
+        let mut v = ISO2022_JP_DECL.to_vec();
+        v.extend_from_slice(b"<a>");
+        v.extend_from_slice(&[0x1B, 0x24, 0x42, 0x24, 0x22, 0x1B, 0x28, 0x42]);
+        v.extend_from_slice(b"</a>");
+        v
+    }
+
+    /// UCS-2 with the registry's host byte order (little-endian).
+    fn ucs2_body(s: &str) -> Vec<u8> {
+        s.chars()
+            .flat_map(|c| (c as u32 as u16).to_le_bytes())
+            .collect()
+    }
+
+    fn ucs2_doc() -> Vec<u8> {
+        let mut v = UCS2_DECL.to_vec();
+        v.extend(ucs2_body("<a>x</a>"));
+        v
+    }
+
+    /// The architectural property for the registry-served codecs: ANY source
+    /// chunk partitioning materializes exactly the whole-source decoded
+    /// stream. A per-chunk decode fails this for every multibyte/stateful
+    /// encoding (Shift_JIS/EUC-JP lose a split character; ISO-2022-JP also
+    /// loses the escape state at a boundary with no incomplete bytes at all).
+    fn assert_partition_equivalence(src: &[u8], expected: &[u8], what: &str) {
+        for split in 1..src.len() {
+            let parts: [&[u8]; 2] = [&src[..split], &src[split..]];
+            let ib = push_parts(&parts);
+            assert_eq!(ib.remaining(), expected, "{what}: split at {split}");
+            assert_eq!(
+                ib.materialized_bytes() as usize,
+                ib.len(),
+                "{what}: split at {split} (materialized accounting)"
+            );
+            assert_eq!(
+                ib.source_bytes_received() as usize,
+                src.len(),
+                "{what}: split at {split} (source accounting)"
+            );
+        }
+    }
+
+    #[test]
+    fn progressive_shift_jis_partition_equivalence() {
+        let src = shift_jis_doc();
+        let mut expected = SHIFT_JIS_DECL.to_vec();
+        expected.extend_from_slice("<a>あ</a>".as_bytes());
+        assert_eq!(materialized(&[&src]), expected);
+        assert_partition_equivalence(&src, &expected, "Shift_JIS");
+    }
+
+    #[test]
+    fn progressive_euc_jp_partition_equivalence() {
+        let src = euc_jp_doc();
+        let mut expected = EUC_JP_DECL.to_vec();
+        expected.extend_from_slice("<a>あ</a>".as_bytes());
+        assert_eq!(materialized(&[&src]), expected);
+        assert_partition_equivalence(&src, &expected, "EUC-JP");
+    }
+
+    #[test]
+    fn progressive_iso2022_jp_partition_equivalence() {
+        let src = iso2022_jp_doc();
+        let mut expected = ISO2022_JP_DECL.to_vec();
+        expected.extend_from_slice("<a>あ</a>".as_bytes());
+        assert_eq!(materialized(&[&src]), expected);
+        assert_partition_equivalence(&src, &expected, "ISO-2022-JP");
+    }
+
+    /// The crucial ISO-2022-JP case: the chunk boundary falls at a point with
+    /// NO incomplete byte sequence at all (between the JIS pair and the
+    /// `ESC ( B` that leaves JIS state). Only the decoder's persistent escape
+    /// state can carry the shifted state across the boundary — no byte carry
+    /// can.
+    #[test]
+    fn progressive_iso2022_jp_shift_state_survives_a_boundary_without_partial_bytes() {
+        let mut lead = ISO2022_JP_DECL.to_vec();
+        lead.extend_from_slice(b"<a>");
+        let shift_in = [0x1B, 0x24, 0x42];
+        let jis_pair = [0x24, 0x22];
+        let shift_out = [0x1B, 0x28, 0x42];
+        let mut tail = shift_out.to_vec();
+        tail.extend_from_slice(b"</a>");
+
+        let ib = push_parts(&[&lead, &shift_in, &jis_pair, &tail]);
+        assert!(!ib.source_encoding_error());
+        assert!(ib.pending_source().is_empty());
+        assert_eq!(
+            ib.remaining(),
+            [ISO2022_JP_DECL, "<a>あ</a>".as_bytes()]
+                .concat()
+                .as_slice()
+        );
+        assert_eq!(ib.registry_kind_name(), Some("ISO-2022-JP"));
+    }
+
+    /// An incomplete trailing unit in a multibyte codec is SUSPENSION (the
+    /// decoder holds it), not a malformed byte — and a terminating call turns
+    /// a still-held unit into the encoder flush error.
+    #[test]
+    fn progressive_shift_jis_incomplete_unit_is_carried_then_flushed() {
+        let mut src = SHIFT_JIS_DECL.to_vec();
+        src.extend_from_slice(b"<a>");
+        src.push(0x82); // lead byte of あ, trail byte not yet sent
+        let mut ib = push_parts(&[&src]);
+        assert!(!ib.source_encoding_error());
+        assert!(!ib.source_truncated());
+        assert_eq!(
+            ib.remaining(),
+            [SHIFT_JIS_DECL, b"<a>"].concat().as_slice(),
+            "the incomplete unit is not materialized"
+        );
+        ib.push_bytes_ex(&[], true);
+        assert!(ib.source_truncated());
+        assert!(!ib.source_encoding_error());
+    }
+
+    /// A DEFINITE invalid sequence (a Shift_JIS lead byte followed by a
+    /// non-trail byte) is reported on the call that finds it, like upstream
+    /// `xmlParserInputBufferPush` returning -1 — distinct from the incomplete
+    /// unit above, which is suspended.
+    #[test]
+    fn progressive_shift_jis_invalid_sequence_is_an_immediate_error() {
+        let mut src = SHIFT_JIS_DECL.to_vec();
+        src.extend_from_slice(b"<a>");
+        src.extend_from_slice(&[0x82, 0x20]); // lead byte, then a space
+        let ib = push_parts(&[&src]);
+        assert!(ib.source_encoding_error());
+        assert!(!ib.source_truncated());
+    }
+
+    #[test]
+    fn progressive_ucs2_partition_equivalence_and_flush() {
+        let src = ucs2_doc();
+        let mut expected = UCS2_DECL.to_vec();
+        expected.extend_from_slice(b"<a>x</a>");
+        assert_eq!(materialized(&[&src]), expected);
+        assert_partition_equivalence(&src, &expected, "UCS-2");
+
+        // Odd trailing byte: carried, then the terminating call's flush.
+        let mut odd = UCS2_DECL.to_vec();
+        odd.extend(ucs2_body("<a>"));
+        odd.push(0x78);
+        let mut ib = push_parts(&[&odd]);
+        assert!(!ib.source_encoding_error());
+        assert!(!ib.source_truncated());
+        assert_eq!(ib.remaining(), [UCS2_DECL, b"<a>"].concat().as_slice());
+        ib.push_bytes_ex(&[], true);
+        assert!(ib.source_truncated());
+    }
+
+    /// A DECLARED UTF-16 (no BOM, no `<\0?\0` pattern) has fixed-width units
+    /// too: it used to be left as raw bytes entirely.
+    #[test]
+    fn progressive_declared_utf16le_is_decoded() {
+        let mut src = b"<?xml version=\"1.0\" encoding=\"UTF-16LE\"?>".to_vec();
+        src.extend(utf16le("<a>x</a>"));
+        let mut expected = b"<?xml version=\"1.0\" encoding=\"UTF-16LE\"?>".to_vec();
+        expected.extend_from_slice(b"<a>x</a>");
+        assert_eq!(materialized(&[&src]), expected);
+        assert_partition_equivalence(&src, &expected, "declared UTF-16LE");
     }
 
     /// Upstream `xmlParseTryOrFinish`'s `XML_PARSER_START` gate: a non-final

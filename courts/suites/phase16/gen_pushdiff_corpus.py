@@ -243,6 +243,74 @@ def main():
     for name, content in sorted(enc_docs.items()):
         with open(os.path.join(out, name), "wb") as f:
             f.write(content)
+
+    # ── Progressive-DECODING corpus: REGISTRY-served encodings ──────────
+    # The families above are all fixed-width or byte-wise, so a byte carry is
+    # enough. These are the multibyte/stateful codecs, where a per-chunk decode
+    # is WRONG: a split 2-byte character would be reported malformed and its
+    # lead byte materialized raw, and ISO-2022-JP's escape state can be lost at
+    # a boundary with NO incomplete bytes at all (shifted in, characters, then
+    # shifted out in the next call). Shape: an ASCII declaration NAMING the
+    # encoding (upstream switches the encoding inside xmlParseXMLDecl, with
+    # `cur` past the declaration, and never re-decodes it), then a body in that
+    # encoding. b1/b2/b3 split every byte and every 2-byte character, and cut
+    # INSIDE the ISO-2022-JP ESC sequences.
+    shift_jis = lambda s: s.encode("shift_jis")
+    euc_jp = lambda s: s.encode("euc_jp")
+    iso2022_jp = lambda s: s.encode("iso2022_jp")
+    ucs2 = lambda s: s.encode("utf-16-le")  # registry UCS-2 is host-order LE
+    jis_aiueo = b"\x24\x22\x24\x24\x24\x26"  # JIS X 0208 pairs for \u3042\u3044\u3046
+    registry_docs = {
+        "enc-shift_jis.xml": b'<?xml version="1.0" encoding="Shift_JIS"?>'
+        + shift_jis("<a>\u3042\u3044\u3046</a>"),
+        "enc-shift_jis-long.xml": b'<?xml version="1.0" encoding="Shift_JIS"?>'
+        + b"<a>"
+        + shift_jis("\u3042" * 90)
+        + b"</a>",
+        "enc-euc-jp.xml": b'<?xml version="1.0" encoding="EUC-JP"?>'
+        + euc_jp("<a>\u3042\u3044\u3046</a>"),
+        "enc-euc-jp-long.xml": b'<?xml version="1.0" encoding="EUC-JP"?>'
+        + b"<a>"
+        + euc_jp("\u3042" * 90)
+        + b"</a>",
+        "enc-iso2022-jp.xml": b'<?xml version="1.0" encoding="ISO-2022-JP"?>'
+        + iso2022_jp("<a>\u3042\u3044\u3046</a>"),
+        # Shifted IN, no ASCII text after the shift, then shifted back out:
+        # a boundary can land between the JIS pairs and the trailing ESC ( B
+        # with no incomplete byte sequence anywhere — only decoder state can
+        # carry the shifted state.
+        "enc-iso2022-jp-shifted.xml": b'<?xml version="1.0" encoding="ISO-2022-JP"?>'
+        + b"<a>"
+        + b"\x1b\x24\x42"
+        + jis_aiueo
+        + b"\x1b\x28\x42"
+        + b"</a>",
+        "enc-iso2022-jp-long.xml": b'<?xml version="1.0" encoding="ISO-2022-JP"?>'
+        + b"<a>"
+        + iso2022_jp("\u3042" * 90)
+        + b"</a>",
+        "enc-ucs2.xml": b'<?xml version="1.0" encoding="UCS-2"?>'
+        + ucs2("<a>\u3042\u3044\u3046</a>"),
+        # Unfinished XML AND a dangling half code unit at EOF: two independent
+        # failure causes (hostile combined case).
+        "enc-shift_jis-half.xml": b'<?xml version="1.0" encoding="Shift_JIS"?>'
+        + b"<a>"
+        + shift_jis("\u3042")[:1],
+        "enc-ucs2-half.xml": b'<?xml version="1.0" encoding="UCS-2"?>'
+        + ucs2("<a>")[:-1],
+        # ISOLATED decoder-flush cases: the document grammar is COMPLETE and the
+        # only malformed condition is a trailing half code unit, so the
+        # terminating call's encoder flush is the only error source.
+        "enc-shift_jis-half-unit-only.xml": b'<?xml version="1.0" encoding="Shift_JIS"?>'
+        + b"<a>x</a>"
+        + shift_jis("\u3042")[:1],
+        "enc-ucs2-half-unit-only.xml": b'<?xml version="1.0" encoding="UCS-2"?>'
+        + ucs2("<a>x</a>")
+        + b"\x3c",
+    }
+    for name, content in sorted(registry_docs.items()):
+        with open(os.path.join(out, name), "wb") as f:
+            f.write(content)
     # A couple of binary-edge files (invalid UTF-8) written as raw bytes.
     raw = {
         "raw-invalid-utf8.xml": b"<a>\xff\xfe</a>",
@@ -262,7 +330,10 @@ def main():
     for name, content in sorted(raw.items()):
         with open(os.path.join(out, name), "wb") as f:
             f.write(content)
-    print("wrote %d generated docs to %s" % (len(docs) + len(raw) + len(enc_docs), out))
+    print(
+        "wrote %d generated docs to %s"
+        % (len(docs) + len(raw) + len(enc_docs) + len(registry_docs), out)
+    )
 
 
 if __name__ == "__main__":
