@@ -2473,6 +2473,7 @@ impl XmlTokenizer {
         let content_start = self.input.current_pos().2;
         let mut depth: usize = 0;
         let mut closed = false;
+        let mut saw_close_bracket = false;
         loop {
             if self.input.is_eof() {
                 break;
@@ -2486,6 +2487,7 @@ impl XmlTokenizer {
                     depth = depth.saturating_sub(1);
                     self.input.read_char();
                     if depth == 0 {
+                        saw_close_bracket = true;
                         if self.input.peek_char() == Some('>') {
                             self.input.read_char();
                             closed = true;
@@ -2499,7 +2501,9 @@ impl XmlTokenizer {
                 None => break,
             }
         }
-        if !closed {
+        if !closed && saw_close_bracket {
+            // `]` reached, `>` missing: upstream's `if (RAW != '>')` check at
+            // the end of xmlParseInternalSubset.
             self.record_error(
                 crate::abi::types::XML_FROM_PARSER,
                 crate::abi::types::XML_ERR_DOCTYPE_NOT_FINISHED,

@@ -1413,14 +1413,16 @@ impl XmlParser {
         let Some(open) = content.iter().position(|&b| b == b'[') else {
             return Ok(());
         };
-        let subset: &[u8] = match content.iter().rposition(|&b| b == b']') {
+        let close = content.iter().rposition(|&b| b == b']');
+        let truncated = !matches!(close, Some(close) if close > open);
+        let subset: &[u8] = match close {
             Some(close) if close > open => &content[open + 1..close],
             // Truncated internal subset: a `[` without its matching `]`. The
             // declarations up to the end of the available input are still
-            // scanned; a trailing unterminated `<!ELEMENT ...` is a real
-            // error on a terminating parse (upstream xmlParseElementDecl
-            // hits EOF and reports it, then xmlParseInternalSubset wraps with
-            // "Content error in the internal subset").
+            // scanned; a trailing unterminated declaration is a real error on a
+            // terminating parse (upstream xmlParseMarkupDecl hits EOF and
+            // reports it), and xmlParseInternalSubset then wraps the lot with
+            // "Content error in the internal subset".
             _ => &content[open + 1..],
         };
 
@@ -1438,15 +1440,12 @@ impl XmlParser {
         let subset_abs = abs_base.map(|b| b + open + 1);
         self.process_dtd_fragment(&mut dtd, subset, 0, false, subset_abs);
 
-        // UPSTREAM-PARITY (parser.c xmlParseElementDecl): a `<!ELEMENT name`
-        // cut off by the end of the available input (no content model, no
-        // `>`) is reported on a terminating parse — first
-        // "Space required after the element name" (65), then
-        // "xmlParseElementDecl: 'EMPTY', 'ANY' or '(' expected" (54), and
-        // finally "Content error in the internal subset" (118) from
-        // xmlParseInternalSubset. The subset scan above is silent (it only
-        // builds declarations), so surface the diagnostics here.
-        self.raise_truncated_element_decl_errors(subset)?;
+        // UPSTREAM-PARITY (parser.c xmlParseInternalSubset): a subset that ran
+        // out of input before its `]` reports the trailing declaration's own
+        // diagnostic (if it was cut off) and then
+        // XML_ERR_INT_SUBSET_NOT_FINISHED. The declaration scan above is silent
+        // (it only builds declarations), so surface them here.
+        self.raise_truncated_subset_errors(subset, truncated)?;
 
         unsafe {
             (*self.ctxt).inSubset = 0;
@@ -1455,65 +1454,115 @@ impl XmlParser {
         Ok(())
     }
 
-    /// Detect a trailing `<!ELEMENT name` declaration truncated by the end of
-    /// the internal subset and, if present, raise the oracle's three fatal
-    /// diagnostics (space-required / content-not-started / internal-subset
-    /// content error). Returns `Err(())` so the caller marks the document not
-    /// well-formed (matching the oracle's errNo = 118).
-    fn raise_truncated_element_decl_errors(&mut self, subset: &[u8]) -> Result<(), ()> {
-        // Find the last `<!ELEMENT` in the subset.
-        let mut last_lt = None;
-        for (pos, w) in subset.windows(9).enumerate() {
-            if w.eq_ignore_ascii_case(b"<!ELEMENT") {
-                last_lt = Some(pos);
+    /// Upstream `xmlParseInternalSubset`'s diagnostics for a subset cut off by
+    /// the end of the input.
+    ///
+    /// The trailing markup declaration, when IT too was cut off, reports its
+    /// own error first (upstream `xmlParseMarkupDecl` runs the declaration's
+    /// parser, which hits EOF); then the subset loop's
+    /// `cur >= end` check raises XML_ERR_INT_SUBSET_NOT_FINISHED. A subset that
+    /// ran out of input with its last declaration COMPLETE reports only the
+    /// wrapper (`doctype-unterminated`). Returns `Err(())` so the caller marks
+    /// the document not well-formed (the oracle's errNo = 118).
+    fn raise_truncated_subset_errors(&mut self, subset: &[u8], truncated: bool) -> Result<(), ()> {
+        if !truncated {
+            return Ok(());
+        }
+        if let Some((kind, body, name)) = last_truncated_declaration(subset) {
+            let fatal = |this: &mut Self, code: c_int, msg: String, str1: Option<Vec<u8>>| {
+                this.raise_error_now(
+                    XML_FROM_PARSER,
+                    code,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    msg,
+                    str1,
+                    None,
+                    None,
+                    0,
+                );
+            };
+            match kind {
+                DeclKind::Comment => {
+                    fatal(
+                        self,
+                        crate::abi::types::XML_ERR_COMMENT_NOT_FINISHED,
+                        "Comment not terminated\n".to_string(),
+                        None,
+                    );
+                }
+                DeclKind::Element => {
+                    // The declaration is `<!ELEMENT name <model...` with the
+                    // `>` missing. Which failure upstream reports depends on how
+                    // far the content model got.
+                    let trimmed = trim_ascii(&body[b"ELEMENT".len()..]);
+                    let name_len = cp_name_len(trimmed);
+                    if name_len == 0 {
+                        // No element name: xmlParseElementDecl reports
+                        // "no name for Element" (NAME_REQUIRED); not modelled.
+                    } else {
+                        let after_name = trim_ascii(&trimmed[name_len..]);
+                        if after_name.is_empty() {
+                            // Name only, then EOF: the mandatory blank and the
+                            // content model are both missing.
+                            fatal(
+                                self,
+                                XML_ERR_SPACE_REQUIRED,
+                                "Space required after the element name\n".to_string(),
+                                None,
+                            );
+                            fatal(
+                                self,
+                                XML_ERR_ELEMCONTENT_NOT_STARTED,
+                                "xmlParseElementDecl: 'EMPTY', 'ANY' or '(' expected\n".to_string(),
+                                None,
+                            );
+                        } else if after_name[0] == b'(' {
+                            let model = &after_name[1..];
+                            let has_close = model.contains(&b')');
+                            if !has_close {
+                                if model.starts_with(b"#PCDATA") {
+                                    fatal(
+                                        self,
+                                        XML_ERR_MIXED_NOT_STARTED,
+                                        "MixedContentDecl : '|' or ')*' expected\n".to_string(),
+                                        None,
+                                    );
+                                } else {
+                                    fatal(
+                                        self,
+                                        XML_ERR_ELEMCONTENT_NOT_FINISHED,
+                                        "ContentDecl : ',' '|' or ')' expected\n".to_string(),
+                                        None,
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+                DeclKind::Entity => {
+                    // upstream xmlParseEntityValue: the value's closing quote is
+                    // missing, so the first error carries NO message at all
+                    // (rendered "(null)"), then xmlParseEntityDecl names the
+                    // entity.
+                    fatal(
+                        self,
+                        XML_ERR_ENTITY_NOT_FINISHED,
+                        "(null)".to_string(),
+                        None,
+                    );
+                    fatal(
+                        self,
+                        XML_ERR_ENTITY_NOT_FINISHED,
+                        format!(
+                            "xmlParseEntityDecl: entity {} not terminated\n",
+                            String::from_utf8_lossy(name.unwrap_or(b""))
+                        ),
+                        Some(name.unwrap_or(b"").to_vec()),
+                    );
+                }
+                DeclKind::Other => {}
             }
         }
-        let Some(pos) = last_lt else {
-            return Ok(());
-        };
-        // The declaration starting at `pos` must be unterminated (no `>`).
-        let rest = &subset[pos + 2..]; // after `<!`
-        if find_decl_end(rest).is_some() {
-            // It terminated properly; not a truncation error.
-            return Ok(());
-        }
-        // `<!ELEMENT` already consumed; expect a name then content model.
-        let after_kw = &rest[b"ELEMENT".len()..];
-        let trimmed = trim_ascii(after_kw);
-        let name_len = trimmed
-            .iter()
-            .take_while(|&&b| {
-                b.is_ascii_alphanumeric() || b == b'_' || b == b':' || b == b'-' || b == b'.'
-            })
-            .count();
-        if name_len == 0 {
-            // No element name — upstream reports "no name for Element"
-            // (NAME_REQUIRED) instead; out of scope for this detection.
-            return Ok(());
-        }
-        // After the name, upstream requires a blank then a content model; at
-        // EOF there is neither, so it reports space-required then
-        // content-not-started before the internal-subset wrapper.
-        self.raise_error_now(
-            XML_FROM_PARSER,
-            XML_ERR_SPACE_REQUIRED,
-            xmlErrorLevel::XML_ERR_FATAL as c_int,
-            "Space required after the element name\n".to_string(),
-            None,
-            None,
-            None,
-            0,
-        );
-        self.raise_error_now(
-            XML_FROM_PARSER,
-            XML_ERR_ELEMCONTENT_NOT_STARTED,
-            xmlErrorLevel::XML_ERR_FATAL as c_int,
-            "xmlParseElementDecl: 'EMPTY', 'ANY' or '(' expected\n".to_string(),
-            None,
-            None,
-            None,
-            0,
-        );
         self.raise_error_now(
             XML_FROM_PARSER,
             XML_ERR_INT_SUBSET_NOT_FINISHED,
@@ -7512,6 +7561,62 @@ const fn dtd_name_start(b: u8) -> bool {
 /// XML NameChar test over raw DTD-subset bytes (upstream `xmlIsNameChar`).
 const fn dtd_name_char(b: u8) -> bool {
     dtd_name_start(b) || b.is_ascii_digit() || b == b'-' || b == b'.'
+}
+
+/// Which markup declaration a truncated subset's LAST declaration is.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DeclKind {
+    Comment,
+    Element,
+    Entity,
+    Other,
+}
+
+/// The trailing markup declaration of a subset when it was cut off by the end
+/// of the input: `(kind, declaration body after `<!`, entity name)`.
+///
+/// `None` when the subset's last top-level `<!`/`<?` declaration is complete
+/// (`find_decl_end` found its `>`), which is the case upstream reports with the
+/// XML_ERR_INT_SUBSET_NOT_FINISHED wrapper alone (`doctype-unterminated`).
+fn last_truncated_declaration(subset: &[u8]) -> Option<(DeclKind, &[u8], Option<&[u8]>)> {
+    let start = subset
+        .windows(2)
+        .enumerate()
+        .filter(|(_, w)| w == b"<!")
+        .map(|(i, _)| i)
+        .next_back()?;
+    let body = &subset[start + 2..];
+    if find_decl_end(body).is_some() {
+        return None;
+    }
+    if body.starts_with(b"--") {
+        return Some((DeclKind::Comment, body, None));
+    }
+    if body.starts_with(b"ELEMENT") {
+        return Some((DeclKind::Element, body, None));
+    }
+    if body.starts_with(b"ENTITY") {
+        // The entity name, for upstream's "entity %s not terminated".
+        let after = trim_ascii(&body[b"ENTITY".len()..]);
+        let after = if after.first() == Some(&b'%') {
+            trim_ascii(&after[1..])
+        } else {
+            after
+        };
+        let len = after.iter().take_while(|&&b| dtd_name_char(b)).count();
+        return Some((DeclKind::Entity, body, Some(&after[..len])));
+    }
+    Some((DeclKind::Other, body, None))
+}
+
+/// Length of a leading XML Name (DTD-subset bytes).
+fn cp_name_len(s: &[u8]) -> usize {
+    let mut it = s.iter();
+    match it.next() {
+        Some(&b) if dtd_name_start(b) => {}
+        _ => return 0,
+    }
+    1 + it.take_while(|&&b| dtd_name_char(b)).count()
 }
 
 /// Find the closing `>` of a markup declaration, honoring quoted strings.

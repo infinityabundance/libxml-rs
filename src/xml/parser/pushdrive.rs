@@ -620,8 +620,15 @@ impl XmlParser {
             .parse_internal_subset(&content, Some(subset_abs))
             .is_err()
         {
-            self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
-            self.finish_document(machine);
+            // UPSTREAM-PARITY (xmlParseTryOrFinish's XML_PARSER_DTD arm): the
+            // arm finishes NORMALLY even when `xmlParseInternalSubset` raised a
+            // fatal — it clears `inSubset` and sets `instate =
+            // XML_PARSER_PROLOG`. The `while (disableSAX == 0)` loop then exits,
+            // and `xmlParseChunk`'s `errNo != OK && disableSAX != 0` guard
+            // returns BEFORE the terminate block, so no `endDocument` fires and
+            // the context rests at PROLOG (the doctype-trunc-* cells).
+            unsafe { (*self.ctxt_raw()).inSubset = 0 };
+            self.set_phase(machine, xmlParserInputState::XML_PARSER_PROLOG);
             return StepOutcome::Fatal;
         }
         // The identifiers recorded at the declaration HEAD (upstream passes
