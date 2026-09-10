@@ -59,7 +59,7 @@ fi
 # than a sweep of the whole directory: an earlier whole-directory sweep also
 # deleted `sample/`, which is TRACKED evidence this court does not regenerate.
 if [ -d "$OUT" ] && [ -n "$(ls -A "$OUT" 2>/dev/null)" ]; then
-  docker run --rm -v "$OUT":/scanout "$IMAGE" bash -lc 'cd /scanout; rm -rf -- oracle-* cand-* diffs corpus probe-* docs.list summary.txt console.log; exit 0' >/dev/null 2>&1 || true
+  docker run --rm -v "$OUT":/scanout "$IMAGE" bash -lc 'cd /scanout; rm -rf -- oracle-* cand-* diffs corpus probe-* docs.list summary.txt behavior.manifest console.log; exit 0' >/dev/null 2>&1 || true
 fi
 mkdir -p "$OUT"
 OUT="$(cd "$OUT" && pwd)"

@@ -87,6 +87,13 @@ pick_modes() { # path -> echoes the sax2 modes to run
 fail=0
 total=0
 : > "$OUT/summary.txt"
+# Deterministic BEHAVIOUR manifest: one line per cell naming the cell and the
+# SHA256 of BOTH providers' complete traces. The manifest's own hash is the
+# run's behaviour digest, so "the traces were byte-identical" (or "these exact
+# cells diverged") becomes a receipt a later reviewer can re-derive instead of
+# prose — the raw per-cell traces are NOT committed (they are thousands of
+# files), but the digest is.
+: > "$OUT/behavior.manifest"
 
 run_cell() { # tag extra-args mode doc... -> 0 identical / 1 diverge-or-crash
   local tag="$1" extra="$2" m="$3"; shift 3
@@ -95,6 +102,10 @@ run_cell() { # tag extra-args mode doc... -> 0 identical / 1 diverge-or-crash
   orc=$?
   timeout "$CELL_TIMEOUT" "$OUT/probe-cand"   $extra "$m" "$@" > "$OUT/cand-$tag"   2>&1
   ccrc=$?
+  printf '%s oracle=%s cand=%s oracle_rc=%d cand_rc=%d\n' "$tag" \
+    "$(sha256sum "$OUT/oracle-$tag" 2>/dev/null | cut -d' ' -f1)" \
+    "$(sha256sum "$OUT/cand-$tag" 2>/dev/null | cut -d' ' -f1)" \
+    "$orc" "$ccrc" >> "$OUT/behavior.manifest"
   if [ $orc -ne 0 ] || [ $ccrc -ne 0 ]; then
     echo "TIMEOUT/CRASH $tag oracle_rc=$orc cand_rc=$ccrc" >> "$OUT/summary.txt"
     return 1
@@ -195,6 +206,12 @@ done
 fi # end of non-filtered extra cells
 
 echo "cells=$total diffs=$fail" >> "$OUT/summary.txt"
+sort "$OUT/behavior.manifest" -o "$OUT/behavior.manifest"
+{
+  echo "docs=${#DOCS[@]}"
+  echo "manifest_cells=$(wc -l < "$OUT/behavior.manifest" | tr -d ' ')"
+  echo "behavior_sha256=$(sha256sum "$OUT/behavior.manifest" | cut -d' ' -f1)"
+} >> "$OUT/summary.txt"
 echo "=== summary ==="
 cat "$OUT/summary.txt"
 if [ "$fail" -ne 0 ]; then
