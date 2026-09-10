@@ -55,6 +55,18 @@ doc(
     b"\xff\xfe" + "<a>x</a>".encode("utf-16-le") + b"\x3c",
 )
 
+# ── 9: the DEFINITE-invalid encoder cell ──────────────────────────────────
+# A lone low surrogate is invalid the moment its two bytes are present, so it
+# is not a suspension that a terminating call later flushes: upstream's
+# xmlParserInputBufferPush fails and xmlParseChunk reports
+# XML_ERR_INVALID_ENCODING on THAT call, before xmlParseTryOrFinish runs — so
+# none of the call's newly decoded content is parsed and no grammar event may
+# fire. Distinct pathway from document 8.
+doc(
+    "shadow-utf16invalid.xml",
+    b"\xff\xfe" + "<a>".encode("utf-16-le") + b"\x00\xdc",
+)
+
 
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "."

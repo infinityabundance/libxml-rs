@@ -37,13 +37,15 @@
  *
  * Usage:
  *   pushdiff-probe [-s sax1|sax2] [-S stopN] <chunkmode> <file> [file ...]
- *   chunkmode:  [C][R[z|i]] bN | rSEED[-span] [zK]
+ *   chunkmode:  [C][R[z|i]] bN | rSEED[-span] [zK] [i]
  *     bN      fixed N-byte chunks (last chunk = remainder)
  *     rS      random splits, seed S (split sizes 1..64 bytes)
  *     rS-span random splits, seed S, split sizes 1..span bytes
  *     C       pass the first split to xmlCreatePushParserCtxt instead of
  *             the first xmlParseChunk
  *     zK      inject K zero-length non-final calls after each real chunk
+ *     i       inline final: the LAST real chunk carries terminate=1, and the
+ *             separate empty terminating call is skipped
  *     Rz      reset mode: two files per cell; after A finishes,
  *             xmlCtxtResetPush(NULL, 0) then parse B under the plan
  *     Ri      reset mode: after A finishes, xmlCtxtResetPush(whole B),
@@ -461,6 +463,7 @@ struct Plan {
     unsigned int span;
     int ctor_init;    /* first split goes to xmlCreatePushParserCtxt */
     int zero_after;   /* K zero-length non-final calls after each chunk */
+    int inline_final; /* the LAST real chunk carries terminate=1 */
     int reset_kind;   /* 0 none, 1 Rz, 2 Ri, 3 Rs, 4 Rsi */
 };
 
@@ -487,7 +490,7 @@ static int parse_plan(const char *mode, struct Plan *p) {
         p->kind = PLAN_FIXED;
         p->fixed_n = (size_t)strtoul(m + 1, NULL, 10);
         if (p->fixed_n == 0) p->fixed_n = 1;
-        while (*m && *m != 'z') m++;
+        while (*m && *m != 'z' && *m != 'i') m++;
     } else if (*m == 'r') {
         char *endp;
         p->kind = PLAN_RANDOM;
@@ -495,13 +498,19 @@ static int parse_plan(const char *mode, struct Plan *p) {
         if (*endp == '-') p->span = (unsigned int)strtoul(endp + 1, NULL, 10);
         if (p->seed == 0) p->seed = 1;
         if (p->span == 0) p->span = 1;
-        while (*m && *m != 'z') m++;
+        while (*m && *m != 'z' && *m != 'i') m++;
     } else {
         return -1;
     }
-    if (*m == 'z') {
-        p->zero_after = (int)strtoul(m + 1, NULL, 10);
-        if (p->zero_after < 0) p->zero_after = 0;
+    while (*m == 'z' || *m == 'i') {
+        if (*m == 'z') {
+            p->zero_after = (int)strtoul(m + 1, NULL, 10);
+            if (p->zero_after < 0) p->zero_after = 0;
+            while (*m && *m != 'i') m++;
+        } else {
+            p->inline_final = 1;
+            m++;
+        }
     }
     return 0;
 }
@@ -565,10 +574,11 @@ static int feed_doc(struct Plan *p, xmlParserCtxtPtr c,
     int z;
     while (off < dlen) {
         size_t n = next_split(p, dlen - off);
+        int term = (p->inline_final && off + n >= dlen) ? 1 : 0;
         fprintf(TR, "> %s %d len=%zu\n", lbl, call, n);
         fflush(TR);
         {
-            int rc = xmlParseChunk(c, (const char *)doc + off, (int)n, 0);
+            int rc = xmlParseChunk(c, (const char *)doc + off, (int)n, term);
             tail(lbl, call, rc, c);
         }
         off += n;
@@ -754,11 +764,17 @@ int main(int argc, char **argv) {
 
         feed_doc(&plan, c, doc, dlen, off, "CALL");
 
-        fprintf(TR, "> FINAL\n");
-        fflush(TR);
-        {
-            int rc = xmlParseChunk(c, NULL, 0, 1);
-            tail("FINAL", 0, rc, c);
+        /* An inline-final plan passes terminate=1 WITH the last real bytes;
+         * the separate empty terminating call is then skipped. Feeding bytes
+         * and terminating in ONE call is a distinct input shape (the decoder
+         * flush sees the bytes and the end-of-stream together). */
+        if (!plan.inline_final) {
+            fprintf(TR, "> FINAL\n");
+            fflush(TR);
+            {
+                int rc = xmlParseChunk(c, NULL, 0, 1);
+                tail("FINAL", 0, rc, c);
+            }
         }
         fprintf(TR, "> REFEED\n");
         fflush(TR);
