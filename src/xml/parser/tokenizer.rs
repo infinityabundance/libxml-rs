@@ -318,6 +318,23 @@ pub(crate) struct XmlTokenizer {
     /// delivered; the truncated construct itself re-scans from scratch on the
     /// next call (SP-14.3.1-6, test_events eager-start semantics).
     last_token_start: usize,
+    /// Whether the consumer is dispatched through the SAX2 handler table.
+    ///
+    /// Upstream words an invalid element name differently for the two scanner
+    /// entries: `xmlParseStartTag2` (SAX2) says "StartTag: invalid element
+    /// name", `xmlParseStartTag` (SAX1) says "xmlParseStartTag: invalid
+    /// element name". Set from the parser's own SAX2 detection.
+    sax2: bool,
+    /// Set while the PUSH driver scans a start tag.
+    ///
+    /// Upstream 2.15 splits the start-tag end check between two callers with
+    /// DIFFERENT diagnostics for the same failure: `xmlParseTryOrFinish`'s
+    /// START_TAG arm (push) raises `XML_ERR_GT_REQUIRED` with
+    /// "Couldn't find end of Start Tag %s\n" and `int1 = 0`, while
+    /// `xmlParseElementStart` (pull) raises the same code with
+    /// "Couldn't find end of Start Tag %s line %d\n" and `int1 = line`. The
+    /// tokenizer models the pull variant by default.
+    push_start_tag: bool,
 }
 
 impl XmlTokenizer {
@@ -343,7 +360,19 @@ impl XmlTokenizer {
             old10: false,
             silent_truncated: false,
             last_token_start: 0,
+            sax2: true,
+            push_start_tag: false,
         }
+    }
+
+    /// Set the PUSH start-tag diagnostic variant (see `push_start_tag`).
+    pub(crate) const fn set_push_start_tag(&mut self, on: bool) {
+        self.push_start_tag = on;
+    }
+
+    /// Set whether the consumer uses SAX2 (see `sax2`).
+    pub(crate) const fn set_sax2(&mut self, on: bool) {
+        self.sax2 = on;
     }
 
     /// Set whether EOF-truncated constructs are scanned silently (see
@@ -865,7 +894,9 @@ impl XmlTokenizer {
 
         if name.is_empty() {
             // upstream xmlParseStartTag2: name == NULL →
-            // "StartTag: invalid element name\n" (XML_ERR_NAME_REQUIRED).
+            // "StartTag: invalid element name\n" (XML_ERR_NAME_REQUIRED);
+            // the SAX1 scanner xmlParseStartTag words it
+            // "xmlParseStartTag: invalid element name\n".
             // (A lone '<' or a '< ' at the end of the available input never
             // reaches this point in incremental probes/partial deliveries —
             // the no-'>' gate above defers the whole tag.)
@@ -873,7 +904,11 @@ impl XmlTokenizer {
                 crate::abi::types::XML_FROM_PARSER,
                 crate::abi::types::XML_ERR_NAME_REQUIRED,
                 crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                "StartTag: invalid element name\n".to_string(),
+                if self.sax2 {
+                    "StartTag: invalid element name\n".to_string()
+                } else {
+                    "xmlParseStartTag: invalid element name\n".to_string()
+                },
                 None,
                 None,
                 None,
@@ -1144,29 +1179,49 @@ impl XmlTokenizer {
         }
 
         if unterminated {
-            // upstream xmlParseElementStart end-of-tag check:
-            // "Couldn't find end of Start Tag %s line %d\n" (73),
-            // str1 = local name (xmlParseStartTag2 returns localname),
-            // int1 = start line.
+            // The start-tag end check failed. Which upstream caller we are
+            // scanning for decides the diagnostic (see `push_start_tag`).
             let local = match name.iter().rposition(|&b| b == b':') {
                 Some(i) => &name[i + 1..],
                 None => name.as_slice(),
             };
-            self.record_error(
-                crate::abi::types::XML_FROM_PARSER,
-                crate::abi::types::XML_ERR_GT_REQUIRED,
-                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                format!(
-                    "Couldn't find end of Start Tag {} line {}\n",
-                    String::from_utf8_lossy(local),
-                    open_line
-                ),
-                Some(name.clone()),
-                None,
-                None,
-                open_line,
-                None,
-            );
+            if self.push_start_tag {
+                // xmlParseTryOrFinish's START_TAG arm: no line, int1 = 0.
+                self.record_error(
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_GT_REQUIRED,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    format!(
+                        "Couldn't find end of Start Tag {}\n",
+                        String::from_utf8_lossy(local)
+                    ),
+                    Some(name.clone()),
+                    None,
+                    None,
+                    0,
+                    None,
+                );
+            } else {
+                // upstream xmlParseElementStart end-of-tag check:
+                // "Couldn't find end of Start Tag %s line %d\n" (73),
+                // str1 = local name (xmlParseStartTag2 returns localname),
+                // int1 = start line.
+                self.record_error(
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_GT_REQUIRED,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    format!(
+                        "Couldn't find end of Start Tag {} line {}\n",
+                        String::from_utf8_lossy(local),
+                        open_line
+                    ),
+                    Some(name.clone()),
+                    None,
+                    None,
+                    open_line,
+                    None,
+                );
+            }
         }
 
         XmlToken::StartTag {
@@ -1471,13 +1526,33 @@ impl XmlTokenizer {
         }
 
         // Skip whitespace before data — upstream xmlParsePI SKIP_BLANKS
-        // consumes ALL blanks between the target and the data.
+        // consumes ALL blanks between the target and the data, and reports
+        // XML_ERR_SPACE_REQUIRED when there was none and the PI is not
+        // immediately terminated.
+        let mut had_blank = false;
         while self
             .input
             .peek_char()
             .is_some_and(|c| c.is_ascii_whitespace())
         {
+            had_blank = true;
             self.input.read_char();
+        }
+        if !had_blank && !matches!(self.peek_bytes(2)[..], [b'?', b'>']) && !self.silent_truncated {
+            self.record_error(
+                crate::abi::types::XML_FROM_PARSER,
+                crate::abi::types::XML_ERR_SPACE_REQUIRED,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                format!(
+                    "ParsePI: PI {} space expected\n",
+                    String::from_utf8_lossy(&target)
+                ),
+                Some(target.clone()),
+                None,
+                None,
+                0,
+                None,
+            );
         }
 
         // Read data until "?>". Upstream copies every character up to the
@@ -1525,7 +1600,7 @@ impl XmlTokenizer {
                         "ParsePI: PI {} never end ...\n",
                         String::from_utf8_lossy(&target)
                     ),
-                    None,
+                    Some(target.clone()),
                     None,
                     None,
                     0,
@@ -2729,12 +2804,13 @@ impl XmlTokenizer {
                         let rest = self.peek_bytes(3);
                         if rest.len() == 3 && rest[1] == b']' && rest[2] == b'>' {
                             // UPSTREAM-PARITY (parser.c 2.15
-                            // xmlParseCharDataInternal slow path): the error
-                            // is raised mid-scan while input->cur still sits
-                            // at the START of the character-data run (it is
-                            // only committed at the run's callback flush), so
-                            // the printed window/caret point at the run start
-                            // — not at the ']]>'. Record at `seg_start`.
+                            // xmlParseCharDataInternal slow path): the error is
+                            // raised with `input->col` at the position just past
+                            // the first ']' (NEXTL bumped the column for every
+                            // character consumed in the run), which the oracle
+                            // reports as the SECOND ']' — not the start of the
+                            // character-data run.
+                            let at = self.input.current_pos().2 + 1;
                             self.record_error_at(
                                 crate::abi::types::XML_FROM_PARSER,
                                 crate::abi::types::XML_ERR_MISPLACED_CDATA_END,
@@ -2744,7 +2820,7 @@ impl XmlTokenizer {
                                 None,
                                 None,
                                 0,
-                                seg_start,
+                                at,
                                 None,
                             );
                         }

@@ -107,10 +107,16 @@
 //! ordinary physical rebase (`shrink_window`) must NOT: the stream is never
 //! truncated, so absolute offsets survive it.
 //!
-//! One remainder is documented rather than silently omitted: exact class-5
-//! character-data SEGMENTATION (the `>= 300`-byte rule is implemented
-//! structurally, but CR patching and the exact callback split positions at
-//! that boundary are not claimed as parity).
+//! One class-5 remainder is now IMPLEMENTED rather than documented: exact
+//! character-data SEGMENTATION. `scan_char_data` reproduces
+//! `xmlParseCharDataInternal` including the accelerated byte-class scan, the
+//! CR/LF treatment (a CRLF pair is dropped and its LF opens the NEXT
+//! callback), the `]`/`]]>` checks, the `BIG_BUFFER_SIZE` rule and the
+//! `xmlParseCharDataComplex` fallback for control and non-ASCII bytes — which
+//! is where invalid UTF-8 becomes U+FFFD (reported once per input) and an
+//! out-of-range scalar becomes `PCDATA invalid Char value`. A single text node
+//! is therefore delivered as exactly the sequence of `characters` events
+//! upstream delivers, not as one merged event.
 //!
 //! # Wiring
 //!
@@ -125,8 +131,8 @@
 
 use crate::abi::types::{
     xmlErrorLevel, xmlParserInputState, XML_ERR_DOCUMENT_EMPTY, XML_ERR_DOCUMENT_END,
-    XML_ERR_GT_REQUIRED, XML_ERR_INTERNAL_ERROR, XML_ERR_OK, XML_ERR_TAG_NAME_MISMATCH,
-    XML_ERR_TAG_NOT_FINISHED, XML_FROM_PARSER,
+    XML_ERR_GT_REQUIRED, XML_ERR_INTERNAL_ERROR, XML_ERR_INVALID_CHAR, XML_ERR_MISPLACED_CDATA_END,
+    XML_ERR_OK, XML_ERR_TAG_NAME_MISMATCH, XML_ERR_TAG_NOT_FINISHED, XML_FROM_PARSER,
 };
 use crate::xml::parser::helpers;
 use crate::xml::parser::push::{ParkedConstruct, PushMachine, PushProgress};
@@ -767,12 +773,14 @@ impl XmlParser {
         }
         if self.push_byte_at(0) != b'<' {
             // Upstream: XML_ERR_DOCUMENT_EMPTY ("Start tag expected, '<' not
-            // found"), instate = EOF, xmlFinishDocument.
+            // found") — the xmlParseTryOrFinish START_TAG arm's message has NO
+            // trailing newline (unlike the EPILOG arm and xmlParseChunk's
+            // terminate block, which do). instate = EOF, xmlFinishDocument.
             self.raise_error_now(
                 XML_FROM_PARSER,
                 XML_ERR_DOCUMENT_EMPTY,
                 xmlErrorLevel::XML_ERR_FATAL as c_int,
-                "Start tag expected, '<' not found\n".to_string(),
+                "Start tag expected, '<' not found".to_string(),
                 None,
                 None,
                 None,
@@ -881,24 +889,475 @@ impl XmlParser {
             }
         }
         machine.reset_construct();
-        // Upstream calls `xmlParseCharDataInternal(ctxt, !terminate)`: in
-        // incremental mode an incomplete UTF-8 sequence at the end of the
-        // available bytes is a SUSPENSION, not "Incomplete UTF-8 sequence" —
-        // it may be completed by the next chunk.
-        self.tokenizer().set_silent_truncated(!terminate);
-        let token = self.tokenizer().next_token_raw();
-        self.tokenizer().set_silent_truncated(false);
-        // Character-data diagnostics ("PCDATA invalid Char value", the I/O
-        // encoding error for invalid UTF-8) are raised as the run is scanned;
-        // flush them before the run is delivered.
-        self.flush_push_errors();
-        match token {
-            XmlToken::Characters(text) => {
-                self.sax_characters_text(&text);
-                machine.note_event();
-                StepOutcome::Advanced
+        // Upstream calls `xmlParseCharDataInternal(ctxt, !terminate)`. The scan
+        // and its SEGMENTATION are reproduced in full (class 5): the callback
+        // boundaries, the CR/LF treatment and the positions are upstream's, not
+        // a merged approximation of one text node.
+        self.scan_char_data(machine, terminate)
+    }
+
+    // ── Character data (npstream `xmlParseCharDataInternal`) ───────────────
+
+    /// Upstream `xmlParseCharDataInternal`: consume one character-data run from
+    /// the base input, delivering EXACTLY the `characters` flushes upstream
+    /// delivers — a single text node is routinely split across several events
+    /// (see the module docs on class-5 segmentation).
+    ///
+    /// The accelerated byte-class scan is reproduced byte-for-byte, including
+    /// the `]`/`]]>` checks, the CR/LF handling and the 300-byte
+    /// `xmlParseCharDataComplex` fallback for control and non-ASCII bytes.
+    fn scan_char_data(&mut self, machine: &mut PushMachine, terminate: bool) -> StepOutcome {
+        let partial = !terminate;
+        let (data_len, start) = self.push_bounds();
+        let (mut line, mut col, _) = self.base_input().pos();
+        let mut i = start;
+        // Upstream `ctxt->input->cur`: the start of the not-yet-flushed range.
+        let mut flush_from = start;
+
+        loop {
+            // ── get_more_space ────────────────────────────────────────────
+            loop {
+                while self.abs_byte(i, data_len) == b' ' {
+                    i += 1;
+                    col += 1;
+                }
+                if self.abs_byte(i, data_len) == b'\n' {
+                    while self.abs_byte(i, data_len) == b'\n' {
+                        i += 1;
+                        line += 1;
+                        col = 1;
+                    }
+                    continue; // goto get_more_space
+                }
+                break;
             }
-            _ => self.unsupported(machine, "character data"),
+            if self.abs_byte(i, data_len) == b'<' {
+                self.flush_char_data(machine, flush_from, i, line, col);
+                return self.char_data_outcome(machine, start);
+            }
+            // ── get_more (the accelerated byte-class scan) ────────────────
+            let mut force_flush = false;
+            loop {
+                while test_char_data(self.abs_byte(i, data_len)) {
+                    i += 1;
+                    col += 1;
+                }
+                let c = self.abs_byte(i, data_len);
+                if c == b'\n' {
+                    while self.abs_byte(i, data_len) == b'\n' {
+                        i += 1;
+                        line += 1;
+                        col = 1;
+                    }
+                    continue; // goto get_more
+                }
+                if c == b']' {
+                    let avail = data_len.saturating_sub(i);
+                    if partial && avail < 2 {
+                        force_flush = true;
+                        break; // goto invoke_callback
+                    }
+                    if self.abs_byte(i + 1, data_len) == b']' {
+                        if partial && avail < 3 {
+                            force_flush = true;
+                            break; // goto invoke_callback
+                        }
+                        if self.abs_byte(i + 2, data_len) == b'>' {
+                            // Raised mid-run while `ctxt->input->cur` still sits
+                            // at the last flush point but `input->col` has
+                            // already been advanced to the ']' — the error is
+                            // reported at the FIRST ']'.
+                            self.commit_input_pos(i, line, col);
+                            self.raise_error_now(
+                                XML_FROM_PARSER,
+                                XML_ERR_MISPLACED_CDATA_END,
+                                xmlErrorLevel::XML_ERR_FATAL as c_int,
+                                "Sequence ']]>' not allowed in content\n".to_string(),
+                                None,
+                                None,
+                                None,
+                                0,
+                            );
+                        }
+                    }
+                    i += 1;
+                    col += 1;
+                    continue; // goto get_more
+                }
+                break; // invoke_callback
+            }
+            // ── invoke_callback ───────────────────────────────────────────
+            self.flush_char_data(machine, flush_from, i, line, col);
+            flush_from = i;
+            if self.abs_byte(i, data_len) == b'\r' && self.abs_byte(i + 1, data_len) == b'\n' {
+                // A CRLF pair is one line break, consumed whole. Upstream sets
+                // `input->cur` to the LF before consuming it, so the LF is the
+                // START of the next flushed range (`\r\ntwo` is delivered as
+                // `\ntwo`) — the CR is dropped, never delivered.
+                flush_from = i + 1;
+                i += 2;
+                line += 1;
+                col = 1;
+                continue; // while (...) — restart at get_more_space
+            }
+            let c = self.abs_byte(i, data_len);
+            if c == b'<' || c == b'&' || force_flush {
+                self.commit_input_pos(i, line, col);
+                return self.char_data_outcome(machine, start);
+            }
+            if (0x20..=0x7F).contains(&c) || c == 0x09 || c == 0x0A {
+                continue; // while (...) — restart at get_more_space
+            }
+            // Upstream restores `input->line/col` from the last callback capture
+            // here. It is a no-op: the captured values are the live ones.
+            return self.scan_char_data_complex(machine, partial, data_len, i, line, col, start);
+        }
+    }
+
+    /// Upstream `xmlParseCharDataComplex`: the fallback for a run that contains
+    /// a byte the accelerated class rejects — a C0 control, a lone CR or a
+    /// non-ASCII character. It decodes character by character, flushes every
+    /// `XML_PARSER_BIG_BUFFER_SIZE` bytes, and is where invalid UTF-8 becomes
+    /// U+FFFD (with `XML_ERR_INVALID_ENCODING` reported once per input) and an
+    /// out-of-range scalar becomes `PCDATA invalid Char value %d`.
+    #[allow(clippy::too_many_arguments)]
+    fn scan_char_data_complex(
+        &mut self,
+        machine: &mut PushMachine,
+        partial: bool,
+        data_len: u64,
+        mut i: u64,
+        mut line: usize,
+        mut col: usize,
+        start: u64,
+    ) -> StepOutcome {
+        let mut buf: Vec<u8> = Vec::with_capacity(BIG_BUFFER_SIZE + 4);
+        let mut val: u32;
+        let mut dec: CharAt;
+        loop {
+            dec = self.current_char_at(i, data_len, line, col);
+            val = dec.val;
+            if !(val != u32::from(b'<') && val != u32::from(b'&') && is_xml_char(val)) {
+                break;
+            }
+            if val == u32::from(b']') {
+                let avail = data_len.saturating_sub(i);
+                if partial && avail < 2 {
+                    break;
+                }
+                if self.abs_byte(i + 1, data_len) == b']' {
+                    if partial && avail < 3 {
+                        break;
+                    }
+                    if self.abs_byte(i + 2, data_len) == b'>' {
+                        self.commit_input_pos(i, line, col);
+                        self.raise_error_now(
+                            XML_FROM_PARSER,
+                            XML_ERR_MISPLACED_CDATA_END,
+                            xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            "Sequence ']]>' not allowed in content\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                        );
+                    }
+                }
+            }
+            // COPY_BUF
+            push_utf8(&mut buf, val);
+            i = dec.next;
+            line = dec.next_line;
+            col = dec.next_col;
+            if buf.len() >= BIG_BUFFER_SIZE {
+                let flushed = std::mem::take(&mut buf);
+                self.flush_char_data_bytes(machine, &flushed, i, line, col);
+            }
+        }
+        if !buf.is_empty() {
+            self.flush_char_data_bytes(machine, &buf, i, line, col);
+        }
+        if i < data_len {
+            if val == 0 && self.abs_byte(i, data_len) != 0 {
+                if !partial {
+                    // A truncated UTF-8 sequence left by a terminating call.
+                    // Upstream `xmlFatalErrMsgInt(..., CUR)` reports the leading
+                    // byte as BOTH `int1` and the message argument, then runs
+                    // `NEXTL(1)` — the offending byte IS consumed.
+                    let lead = self.abs_byte(i, data_len);
+                    self.commit_input_pos(i, line, col);
+                    self.raise_error_now(
+                        XML_FROM_PARSER,
+                        XML_ERR_INVALID_CHAR,
+                        xmlErrorLevel::XML_ERR_FATAL as c_int,
+                        format!("Incomplete UTF-8 sequence starting with {lead:02X}\n"),
+                        None,
+                        None,
+                        None,
+                        c_int::from(lead),
+                    );
+                    let (next, next_line, next_col) = self.nextl(i, 1, line, col);
+                    i = next;
+                    line = next_line;
+                    col = next_col;
+                }
+            } else if val != u32::from(b'<') && val != u32::from(b'&') && val != u32::from(b']') {
+                self.commit_input_pos(i, line, col);
+                self.raise_error_now(
+                    XML_FROM_PARSER,
+                    XML_ERR_INVALID_CHAR,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    format!("PCDATA invalid Char value {val}\n"),
+                    None,
+                    None,
+                    None,
+                    val as c_int,
+                );
+                i = dec.next;
+                line = dec.next_line;
+                col = dec.next_col;
+            }
+        }
+        self.commit_input_pos(i, line, col);
+        self.char_data_outcome(machine, start)
+    }
+
+    /// Decode the character at absolute offset `i` exactly as upstream
+    /// `xmlCurrentChar` does, reporting the diagnostics it reports inline.
+    ///
+    /// `next`/`next_line`/`next_col` already fold upstream's `NEXTL(l)` (with
+    /// the `cur++` `xmlCurrentChar` itself performs for a CRLF pair), so a
+    /// caller only has to assign them. `val == 0` with `next == i` is the
+    /// incomplete-sequence case (`len == 0`), and the NUL-at-end case.
+    fn current_char_at(&mut self, i: u64, data_len: u64, line: usize, col: usize) -> CharAt {
+        let b = self.abs_byte(i, data_len);
+        if b < 0x80 {
+            if b == b'\r' {
+                // `input->cur[1]` is read unconditionally upstream (the buffer
+                // carries a NUL sentinel), so a trailing CR is a lone CR.
+                let crlf = self.abs_byte(i + 1, data_len) == b'\n';
+                let (next, next_line, next_col) =
+                    self.nextl(if crlf { i + 1 } else { i }, 1, line, col);
+                return CharAt {
+                    val: 0x0A,
+                    next,
+                    next_line,
+                    next_col,
+                };
+            }
+            if b == 0 {
+                if i >= data_len {
+                    // End of buffer: `*len = 0`, no diagnostic.
+                    return CharAt {
+                        val: 0,
+                        next: i,
+                        next_line: line,
+                        next_col: col,
+                    };
+                }
+                self.commit_input_pos(i, line, col);
+                self.raise_error_now(
+                    XML_FROM_PARSER,
+                    XML_ERR_INVALID_CHAR,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "Invalid character: Char 0x0 out of allowed range\n\n".to_string(),
+                    Some(b"Char 0x0 out of allowed range\n".to_vec()),
+                    None,
+                    None,
+                    0,
+                );
+                let (next, next_line, next_col) = self.nextl(i, 1, line, col);
+                return CharAt {
+                    val: 0,
+                    next,
+                    next_line,
+                    next_col,
+                };
+            }
+            let (next, next_line, next_col) = self.nextl(i, 1, line, col);
+            return CharAt {
+                val: u32::from(b),
+                next,
+                next_line,
+                next_col,
+            };
+        }
+        // Multi-byte UTF-8 (upstream xmlCurrentChar).
+        let avail = data_len.saturating_sub(i);
+        let b1 = self.abs_byte(i + 1, data_len);
+        if avail < 2 || (b1 & 0xC0) != 0x80 {
+            if avail < 2 {
+                return CharAt {
+                    val: 0,
+                    next: i,
+                    next_line: line,
+                    next_col: col,
+                };
+            }
+            return self.encoding_error_char(i, line, col);
+        }
+        let code: u32;
+        let len: u64;
+        if b < 0xE0 {
+            if b < 0xC2 {
+                return self.encoding_error_char(i, line, col);
+            }
+            code = (u32::from(b & 0x1F) << 6) | u32::from(b1 & 0x3F);
+            len = 2;
+        } else {
+            if avail < 3 {
+                return CharAt {
+                    val: 0,
+                    next: i,
+                    next_line: line,
+                    next_col: col,
+                };
+            }
+            let b2 = self.abs_byte(i + 2, data_len);
+            if (b2 & 0xC0) != 0x80 {
+                return self.encoding_error_char(i, line, col);
+            }
+            if b < 0xF0 {
+                code = (u32::from(b & 0x0F) << 12)
+                    | (u32::from(b1 & 0x3F) << 6)
+                    | u32::from(b2 & 0x3F);
+                if code < 0x800 || (0xD800..0xE000).contains(&code) {
+                    return self.encoding_error_char(i, line, col);
+                }
+                len = 3;
+            } else {
+                if avail < 4 {
+                    return CharAt {
+                        val: 0,
+                        next: i,
+                        next_line: line,
+                        next_col: col,
+                    };
+                }
+                let b3 = self.abs_byte(i + 3, data_len);
+                if (b3 & 0xC0) != 0x80 {
+                    return self.encoding_error_char(i, line, col);
+                }
+                code = (u32::from(b & 0x0F) << 18)
+                    | (u32::from(b1 & 0x3F) << 12)
+                    | (u32::from(b2 & 0x3F) << 6)
+                    | u32::from(b3 & 0x3F);
+                if !(0x10000..0x110000).contains(&code) {
+                    return self.encoding_error_char(i, line, col);
+                }
+                len = 4;
+            }
+        }
+        let (next, next_line, next_col) = self.nextl(i, len, line, col);
+        CharAt {
+            val: code,
+            next,
+            next_line,
+            next_col,
+        }
+    }
+
+    /// Upstream `xmlCurrentChar`'s `encoding_error` arm: report
+    /// `XML_ERR_INVALID_ENCODING` ONCE per input and return the replacement
+    /// character (which `xmlCurrentCharRecover` substitutes for
+    /// `XML_INVALID_CHAR`).
+    fn encoding_error_char(&mut self, i: u64, line: usize, col: usize) -> CharAt {
+        self.commit_input_pos(i, line, col);
+        if !self.base_input().utf8_error_reported() {
+            self.base_input_mut().set_utf8_error_reported();
+            let (l, c, _) = self.base_input().pos();
+            unsafe {
+                helpers::raise_invalid_encoding(self.ctxt_raw(), l as c_int, c as c_int);
+            }
+        }
+        let (next, next_line, next_col) = self.nextl(i, 1, line, col);
+        CharAt {
+            val: 0xFFFD,
+            next,
+            next_line,
+            next_col,
+        }
+    }
+
+    /// Upstream `NEXTL(l)`: a line break at the CURRENT byte advances the line
+    /// and resets the column, anything else advances the column.
+    fn nextl(&self, at: u64, l: u64, line: usize, col: usize) -> (u64, usize, usize) {
+        let (data_len, _) = self.push_bounds();
+        if self.abs_byte(at, data_len) == b'\n' {
+            (at + l, line + 1, 1)
+        } else {
+            (at + l, line, col + 1)
+        }
+    }
+
+    /// The byte at an absolute offset, or NUL past the materialized end —
+    /// libxml2 keeps a NUL sentinel after the buffer and upstream's character
+    /// scanner reads `cur[1]`/`cur[2]` unguarded.
+    fn abs_byte(&self, k: u64, data_len: u64) -> u8 {
+        if k >= data_len {
+            0
+        } else {
+            self.base_input().raw_range(k as usize, k as usize + 1)[0]
+        }
+    }
+
+    /// Move the base input's cursor to an exact position (upstream advance
+    /// `ctxt->input->cur/line/col`).
+    fn commit_input_pos(&mut self, pos: u64, line: usize, col: usize) {
+        self.base_input_mut()
+            .set_diagnostic_position(pos as usize, line, col);
+    }
+
+    /// Flush `[from, to)` of the base input as one `characters` event, moving
+    /// the cursor to `to` exactly as upstream's `while (in > input->cur)` loop
+    /// does (it advances `cur` BEFORE the callback reads it).
+    fn flush_char_data(
+        &mut self,
+        machine: &mut PushMachine,
+        from: u64,
+        to: u64,
+        line: usize,
+        col: usize,
+    ) {
+        if to > from {
+            let bytes = {
+                let buf = self.base_input();
+                buf.raw_range(from as usize, to as usize).to_vec()
+            };
+            self.commit_input_pos(to, line, col);
+            if self.sax_characters_run(&bytes) {
+                machine.note_event();
+            }
+        } else {
+            self.commit_input_pos(to, line, col);
+        }
+    }
+
+    /// Flush the complex path's own buffer (upstream `COPY_BUF`'s stack
+    /// `buf`), with the cursor already at the character after the run.
+    fn flush_char_data_bytes(
+        &mut self,
+        machine: &mut PushMachine,
+        bytes: &[u8],
+        pos: u64,
+        line: usize,
+        col: usize,
+    ) {
+        self.commit_input_pos(pos, line, col);
+        if self.sax_characters_run(bytes) {
+            machine.note_event();
+        }
+    }
+
+    /// Nothing consumed and nothing delivered means the scan could not make
+    /// progress; upstream reaches `goto done` through the availability lookup,
+    /// so the driver parks instead of spinning.
+    fn char_data_outcome(&mut self, machine: &mut PushMachine, start: u64) -> StepOutcome {
+        self.sync_accounting(machine);
+        if machine.input_bytes_consumed() == start {
+            StepOutcome::Parked
+        } else {
+            StepOutcome::Advanced
         }
     }
 
@@ -926,13 +1385,14 @@ impl XmlParser {
             return self.unsupported(machine, "end tag with no open element");
         };
         if unterminated {
-            // Upstream xmlParseEndTag2 reports the missing '>' first and only
-            // then runs the name check.
+            // Upstream xmlParseEndTag2 reports the missing '>' first
+            // (XML_ERR_GT_REQUIRED, message from the error TABLE, newline
+            // included) and only then runs the name check.
             self.raise_error_now(
                 XML_FROM_PARSER,
                 XML_ERR_GT_REQUIRED,
                 xmlErrorLevel::XML_ERR_FATAL as c_int,
-                "expected '>'".to_string(),
+                "expected '>'\n".to_string(),
                 None,
                 None,
                 None,
@@ -940,6 +1400,14 @@ impl XmlParser {
             );
         }
         if name != top_name {
+            // UPSTREAM-PARITY (xmlParseEndTag2): `if (name == NULL) name =
+            // BAD_CAST "unparsable";` — a missing end-tag name is reported as
+            // the literal "unparsable" in both the message and str2.
+            let shown_name: &[u8] = if name.is_empty() {
+                b"unparsable"
+            } else {
+                &name
+            };
             // A stray end tag closes the CURRENT element anyway (upstream keeps
             // scanning after the mismatch).
             self.raise_error_now(
@@ -950,10 +1418,10 @@ impl XmlParser {
                     "Opening and ending tag mismatch: {} line {} and {}\n",
                     String::from_utf8_lossy(&top_name),
                     top_line,
-                    String::from_utf8_lossy(&name)
+                    String::from_utf8_lossy(shown_name)
                 ),
                 Some(top_name.clone()),
-                Some(name.clone()),
+                Some(shown_name.to_vec()),
                 None,
                 top_line as c_int,
             );
@@ -984,6 +1452,10 @@ impl XmlParser {
     /// recursive parser calls: name-stack push, attribute substitution,
     /// namespace classification, the SAX2 start event, tree construction.
     fn open_start_tag(&mut self, machine: &mut PushMachine) -> StepOutcome {
+        // The push caller's start-tag-end diagnostic variant (see the
+        // tokenizer's `push_start_tag`).
+        self.tokenizer().set_push_start_tag(true);
+        let tag_start = self.push_bounds().1 as usize;
         let (name, attributes, attr_end, attr_start, end_pos, empty, unterminated) =
             match self.tokenizer().next_token_raw() {
                 XmlToken::StartTag {
@@ -1003,6 +1475,28 @@ impl XmlParser {
                     empty,
                     unterminated,
                 ),
+                // A `<!DOCTYPE` in CONTENT reaches the start-tag state (the
+                // CONTENT arm only recognises `<!--`, `<![CDATA[`, `<?` and
+                // `</`). Upstream xmlParseStartTag2's name scan fails at the
+                // '!' with XML_ERR_NAME_REQUIRED and returns NULL, so the arm
+                // sets instate = EOF and calls xmlFinishDocument. The raise
+                // sits on the '!', one byte past the tag's '<'.
+                XmlToken::DocType { .. } => {
+                    self.raise_error_at(
+                        XML_FROM_PARSER,
+                        crate::abi::types::XML_ERR_NAME_REQUIRED,
+                        xmlErrorLevel::XML_ERR_FATAL as c_int,
+                        "StartTag: invalid element name\n".to_string(),
+                        None,
+                        None,
+                        None,
+                        0,
+                        tag_start + 1,
+                    );
+                    self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
+                    self.finish_document(machine);
+                    return StepOutcome::Fatal;
+                }
                 _ => return self.unsupported(machine, "start tag"),
             };
         if unterminated {
@@ -1055,7 +1549,16 @@ impl XmlParser {
                     self.close_open_element(&open);
                     machine.note_event();
                 } else {
-                    machine.push_element(open.name.clone(), open.open_line, open.ns_scope_mark);
+                    // UPSTREAM-PARITY (SAX1 push): `xmlParseStartTag` (the SAX1
+                    // scanner) pushes the element name with `namePush`, which
+                    // fills `nameTab` but NOT `pushTab[].line` — so every
+                    // diagnostic that reads the open element's line (the
+                    // end-tag mismatch, "Premature end of data in tag ... line
+                    // %d") reports 0 for a SAX1 consumer. The SAX2 scanner
+                    // calls `nameNsPush(..., line, nbNs)` and reports the real
+                    // line.
+                    let line = if self.sax2_mode() { open.open_line } else { 0 };
+                    machine.push_element(open.name.clone(), line, open.ns_scope_mark);
                 }
                 let phase = if machine.open_elements().is_empty() {
                     xmlParserInputState::XML_PARSER_EPILOG
@@ -1406,6 +1909,41 @@ impl XmlParser {
         self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
         self.finish_document(machine);
         StepOutcome::Unsupported
+    }
+}
+
+/// One decoded character plus the position AFTER consuming it (upstream
+/// `xmlCurrentChar` + `NEXTL(l)` folded together).
+struct CharAt {
+    val: u32,
+    next: u64,
+    next_line: usize,
+    next_col: usize,
+}
+
+/// Upstream `test_char_data` (parser.c): the byte class of the ACCELERATED
+/// character-data scan. Everything else stops it — `<`, `&`, `]`, CR, LF, the
+/// C0 controls and every non-ASCII byte (each of which then takes a dedicated
+/// branch).
+fn test_char_data(b: u8) -> bool {
+    b == b'\t' || (b >= 0x20 && b <= 0x7F && b != b'&' && b != b'<' && b != b']')
+}
+
+/// Upstream `IS_CHAR` — the XML `Char` production.
+fn is_xml_char(c: u32) -> bool {
+    c == 0x9
+        || c == 0xA
+        || c == 0xD
+        || (0x20..=0xD7FF).contains(&c)
+        || (0xE000..=0xFFFD).contains(&c)
+        || (0x10000..=0x10FFFF).contains(&c)
+}
+
+/// Upstream `COPY_BUF`: append the UTF-8 encoding of `c`.
+fn push_utf8(buf: &mut Vec<u8>, c: u32) {
+    let mut tmp = [0u8; 4];
+    if let Some(ch) = char::from_u32(c) {
+        buf.extend_from_slice(ch.encode_utf8(&mut tmp).as_bytes());
     }
 }
 

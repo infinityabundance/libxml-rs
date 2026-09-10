@@ -351,6 +351,9 @@ impl XmlParser {
         // any non-"1.0" declaration version fatal (the tokenizer records the
         // version diagnostic in scan order, so it needs the flag up front).
         tokenizer.set_old10((options & crate::abi::types::XML_PARSE_OLD10) != 0);
+        // The two SAX scanner entries word some diagnostics differently
+        // (xmlParseStartTag2 vs xmlParseStartTag).
+        tokenizer.set_sax2(!sax1);
         // Silent incremental probing (SP-14.3.1-3/-6): a completeness probe
         // must not raise EOF-truncation diagnostics for constructs that may
         // complete on a later push call (upstream xmlParseTryOrFinish only
@@ -452,7 +455,7 @@ impl XmlParser {
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` whose
     ///   `sax` is a valid `_xmlSAXHandler`; only `initialized` and the
     ///   element-handler slots are read.
-    fn sax2_mode(&self) -> bool {
+    pub(crate) fn sax2_mode(&self) -> bool {
         if (self.options & XML_PARSE_SAX1) != 0 {
             return false;
         }
@@ -3722,7 +3725,9 @@ impl XmlParser {
                                 "xmlns:{}: Empty XML namespace is not allowed\n",
                                 String::from_utf8_lossy(&decl_prefix)
                             ),
-                            None,
+                            // upstream xmlNsErr(..., attname, ...) — the
+                            // prefixed attribute's LOCAL name is str1.
+                            Some(decl_prefix.clone()),
                             None,
                             None,
                             0,
@@ -4023,6 +4028,22 @@ impl XmlParser {
                                             );
                                         }
                                     }
+                                    if ent.is_null() {
+                                        // UPSTREAM-PARITY (xmlLookupGeneralEntity
+                                        // -> xmlHandleUndeclaredEntity): an
+                                        // unresolvable reference in an ATTRIBUTE
+                                        // VALUE is diagnosed with the DTD-state
+                                        // severity, and the reference then
+                                        // contributes NOTHING to the value
+                                        // (upstream's `if (ent == NULL) continue;`).
+                                        // A fatal raise aborts the tag, so no
+                                        // element event fires.
+                                        if self.raise_undeclared_entity(inner) {
+                                            return Err(());
+                                        }
+                                        i += semi + 1;
+                                        continue;
+                                    }
                                     if !ent.is_null() {
                                         let content = unsafe { (*ent).content };
                                         // UPSTREAM-PARITY (xmlCheckEntityInAttValue):
@@ -4161,6 +4182,65 @@ impl XmlParser {
             out.pop();
         }
         Ok(out)
+    }
+
+    /// Upstream `xmlHandleUndeclaredEntity`: raise the undeclared-entity
+    /// diagnostic with the severity the document's DTD state dictates, and
+    /// return whether it was FATAL (the caller must then abort).
+    ///
+    /// Extracted so the attribute-value scanner and `xmlParseReference` share
+    /// ONE severity rule: [WFC: Entity Declared] is fatal only for a standalone
+    /// document or one with neither an external subset nor parameter-entity
+    /// references (a non-validating processor need not load those).
+    fn raise_undeclared_entity(&mut self, name: &[u8]) -> bool {
+        let (fatal, code, level, domain) = unsafe {
+            let c = &*self.ctxt;
+            if c.standalone == 1 || (c.hasExternalSubset == 0 && c.hasPErefs == 0) {
+                (
+                    true,
+                    XML_ERR_UNDECLARED_ENTITY,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    XML_FROM_PARSER,
+                )
+            } else if c.validate != 0 {
+                (
+                    false,
+                    XML_ERR_UNDECLARED_ENTITY,
+                    xmlErrorLevel::XML_ERR_ERROR as c_int,
+                    crate::abi::types::XML_FROM_DTD,
+                )
+            } else if (c.loadsubset & !crate::abi::constants::XML_SKIP_IDS) != 0
+                || (c.replaceEntities != 0 && c.options & XML_PARSE_NO_XXE == 0)
+            {
+                (
+                    false,
+                    XML_WAR_UNDECLARED_ENTITY,
+                    xmlErrorLevel::XML_ERR_ERROR as c_int,
+                    XML_FROM_PARSER,
+                )
+            } else {
+                (
+                    false,
+                    XML_WAR_UNDECLARED_ENTITY,
+                    xmlErrorLevel::XML_ERR_WARNING as c_int,
+                    XML_FROM_PARSER,
+                )
+            }
+        };
+        self.raise_error_now(
+            domain,
+            code,
+            level,
+            format!("Entity '{}' not defined\n", String::from_utf8_lossy(name)),
+            Some(name.to_vec()),
+            None,
+            None,
+            0,
+        );
+        unsafe {
+            (*self.ctxt).valid = 0;
+        }
+        fatal
     }
 
     /// Parse a reference (entity or character).
@@ -6262,6 +6342,40 @@ impl XmlParser {
         self.sax_characters_parts(ch, len);
     }
 
+    /// Fire `characters` for one flush of a character-data run — upstream
+    /// `xmlCharacters(ctxt, buf, size, isBlank)` from the accelerated and
+    /// complex paths of `xmlParseCharDataInternal`.
+    ///
+    /// The push driver reproduces upstream's SEGMENTATION, so a single text
+    /// node can be delivered as several `characters` events (a CR/LF, a `]`,
+    /// a non-ASCII byte or the 300-byte complex-path flush each end one). Each
+    /// flush goes through the same NOBLANKS gate as a whole-run delivery.
+    ///
+    /// Returns whether the event was actually delivered (a fatal error may
+    /// have set `disableSAX` mid-run, in which case upstream's `xmlCharacters`
+    /// returns before reaching the handler).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
+    ///   (synchronous) call.
+    pub(crate) fn sax_characters_run(&mut self, data: &[u8]) -> bool {
+        if self.sax_blocked() || data.is_empty() || self.below_delivery_boundary() {
+            return false;
+        }
+        let keep_blanks = unsafe { (*self.ctxt).keepBlanks } != 0;
+        if !keep_blanks
+            && data
+                .iter()
+                .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
+        {
+            return false;
+        }
+        self.sax_characters(data);
+        true
+    }
+
     /// Fire `characters` SAX event for a caller-owned byte slice (entity
     /// replacement content, character references).
     ///
@@ -6989,7 +7103,7 @@ impl XmlParser {
     /// Raise an error attributed to a specific byte position (e.g. the
     /// start of a token).
     #[allow(clippy::too_many_arguments)]
-    fn raise_error_at(
+    pub(crate) fn raise_error_at(
         &mut self,
         domain: c_int,
         code: c_int,

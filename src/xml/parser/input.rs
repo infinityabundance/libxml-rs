@@ -484,6 +484,12 @@ pub(crate) struct InputBuffer {
     /// the document itself parsed cleanly — `xmlParserCheckEOF` returns early
     /// once `errNo` is set, so a malformed-document error wins.
     truncated_source: bool,
+    /// Upstream `XML_INPUT_ENCODING_ERROR` (the `input->flags` bit set by
+    /// `xmlCurrentChar`'s `encoding_error` arm): this input already reported an
+    /// invalid UTF-8 byte sequence once. Only the FIRST malformed sequence in a
+    /// character-data run is diagnosed; later ones are silently replaced by
+    /// U+FFFD (`raw-invalid-utf8` at b1 shows one error for two bad bytes).
+    utf8_error_reported: bool,
     /// Persistent `encoding_rs` decoder for a declared MULTIBYTE or STATEFUL
     /// source encoding (Shift_JIS, EUC-JP, ISO-2022-JP).
     ///
@@ -550,6 +556,7 @@ impl InputBuffer {
             consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
+            utf8_error_reported: false,
             truncated_source: false,
             registry: None,
         };
@@ -586,6 +593,7 @@ impl InputBuffer {
             consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
+            utf8_error_reported: false,
             truncated_source: false,
             registry: None,
         };
@@ -637,6 +645,7 @@ impl InputBuffer {
             consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
+            utf8_error_reported: false,
             truncated_source: false,
             registry: None,
         };
@@ -1001,6 +1010,18 @@ impl InputBuffer {
         self.truncated_source
     }
 
+    /// Whether this input already reported an invalid UTF-8 byte sequence
+    /// (upstream `XML_INPUT_ENCODING_ERROR`).
+    pub(crate) const fn utf8_error_reported(&self) -> bool {
+        self.utf8_error_reported
+    }
+
+    /// Set `XML_INPUT_ENCODING_ERROR`: the FIRST malformed sequence in a
+    /// character-data run has been reported.
+    pub(crate) const fn set_utf8_error_reported(&mut self) {
+        self.utf8_error_reported = true;
+    }
+
     /// RAW source bytes received through `push_bytes`.
     pub(crate) const fn source_bytes_received(&self) -> u64 {
         self.source_received
@@ -1150,6 +1171,7 @@ impl InputBuffer {
             consumed_bias: self.consumed_bias,
             window_base_abs: self.window_base_abs,
             encoding_error: self.encoding_error,
+            utf8_error_reported: self.utf8_error_reported,
             truncated_source: self.truncated_source,
             // A reparse duplicate is a PARSE-ONLY artifact: it exists so the
             // accumulated materialized stream can be parsed again (probe /
@@ -1195,6 +1217,7 @@ impl InputBuffer {
             consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
+            utf8_error_reported: false,
             truncated_source: false,
             registry: None,
         };
@@ -1232,6 +1255,7 @@ impl InputBuffer {
             consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
+            utf8_error_reported: false,
             truncated_source: false,
             registry: None,
         };
@@ -1264,6 +1288,7 @@ impl InputBuffer {
             consumed_bias: 0,
             window_base_abs: 0,
             encoding_error: false,
+            utf8_error_reported: false,
             truncated_source: false,
             registry: None,
         }
@@ -1960,12 +1985,15 @@ impl InputBuffer {
     }
 
     /// §16.6 scalar engine: consume a run of ASCII whitespace (space, tab,
-    /// CR, LF, form feed) with line/column semantics IDENTICAL to per-char
-    /// `read_char` — a CRLF pair counts as ONE line break (the
-    /// `advance_past_char` CR branch consumes the LF), every other byte
-    /// advances the column by one. Returns the bytes consumed (0 when the
-    /// current byte is not whitespace). Stops at the first non-whitespace
-    /// byte or EOF; never decodes.
+    /// CR, LF, form feed) with line/column semantics IDENTICAL to upstream
+    /// `SKIP_BLANKS` / `xmlSkipBlankChars` — only a literal LF starts a new
+    /// line; EVERY other blank (including a lone CR, which upstream never
+    /// converts here) advances the column by one. A CRLF pair therefore still
+    /// ends up as one line break (CR: col++, LF: line++), but a lone CR does
+    /// NOT: `text-cr-chunkend` drains a trailing `\r` in EPILOG with
+    /// `col = 6, line = 3`, not `col = 1, line = 4`. Returns the bytes
+    /// consumed (0 when the current byte is not whitespace). Stops at the
+    /// first non-whitespace byte or EOF; never decodes.
     pub(crate) fn skip_ascii_whitespace(&mut self) -> usize {
         let start = self.pos;
         while self.pos < self.data.len() {
@@ -1975,15 +2003,7 @@ impl InputBuffer {
                     self.line += 1;
                     self.col = 1;
                 }
-                b'\r' => {
-                    self.pos += 1;
-                    if self.pos < self.data.len() && self.data[self.pos] == b'\n' {
-                        self.pos += 1;
-                    }
-                    self.line += 1;
-                    self.col = 1;
-                }
-                b' ' | b'\t' | 0x0C => {
+                b' ' | b'\t' | b'\r' | 0x0C => {
                     self.pos += 1;
                     self.col += 1;
                 }
