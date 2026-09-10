@@ -4,8 +4,9 @@
 "Never manually type the headline counts in the README. Generate them."
 
 This tool rewrites the README's evidence-bearing sections (Project Status
-table, test-coverage-by-subsystem table, and every bare "NNNN passing tests"
-occurrence) from the committed ledgers:
+table, test-coverage-by-subsystem table, every bare "NNNN passing tests"
+occurrence, and the `cargo test --lib` headline in the hand-written
+"Latest gates" line) from the committed ledgers:
 
   atlas/PARITY_MATRIX.json          headline parity totals
   atlas/ABI_PARITY_LEDGER.json      ABI verdict + mismatch count
@@ -19,7 +20,10 @@ The generated blocks live between explicit markers:
   <!-- GENERATED-STATUS:START --> ... <!-- GENERATED-STATUS:END -->
   <!-- GENERATED-TESTCOVERAGE:START --> ... <!-- GENERATED-TESTCOVERAGE:END -->
 
-Everything outside the markers is hand-written narrative and is untouched.
+Everything outside the markers is hand-written narrative and is untouched,
+except for the narrow `cargo test --lib` headline pattern owned by
+`refresh_gates_string` — that line sat in hand-written territory and drifted
+four times because nothing checked it.
 
 Usage:
   readme_counts.py          regenerate the generated sections in README.md
@@ -163,13 +167,32 @@ def refresh_passing_strings(text, passed):
     return re.sub(r"\((\d+) passing\)", f"({passed} passing)", text)
 
 
+# The hand-written "Latest gates" headline. Anchored to the exact
+# `cargo test --lib` fragment so it can never touch the generated tables
+# (which write "N passing,", not "N passed /").
+GATES_RE = re.compile(
+    r"(`cargo test --lib` )\d+ passed / \d+ failed(?: \(\d+ ignored\))?"
+)
+
+
+def refresh_gates_string(text, passed, failed, ignored):
+    """Own the `cargo test --lib` headline so it cannot drift by hand."""
+    return GATES_RE.sub(
+        lambda m: f"{m.group(1)}{passed} passed / {failed} failed ({ignored} ignored)",
+        text,
+    )
+
+
 def regenerate():
     with open(README) as f:
         text = f.read()
     text = replace_block(text, STATUS_START, STATUS_END, status_table())
     text = replace_block(text, COVER_START, COVER_END, coverage_table())
-    passed = load("TEST_COUNTS.json")["cargo_test_lib"]["passed"]
-    text = refresh_passing_strings(text, passed)
+    counts = load("TEST_COUNTS.json")["cargo_test_lib"]
+    text = refresh_passing_strings(text, counts["passed"])
+    text = refresh_gates_string(
+        text, counts["passed"], counts["failed"], counts["ignored"]
+    )
     return text
 
 

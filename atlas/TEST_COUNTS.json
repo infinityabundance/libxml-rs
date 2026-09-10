@@ -1,10 +1,10 @@
 {
  "schema": "test-counts-1",
  "generator": "tools/evidence/test_counts.py",
- "generated": "2026-09-10T04:52:20Z",
+ "generated": "2026-09-10T05:36:01Z",
  "cargo_test_lib": {
   "status": "ok",
-  "passed": 1308,
+  "passed": 1312,
   "failed": 0,
   "ignored": 2
  },
@@ -44,7 +44,7 @@
   "I/O": 45,
   "List": 8,
   "Memory": 2,
-  "XML parser + SAX": 131,
+  "XML parser + SAX": 135,
   "XML Reader": 38,
   "Regex": 44,
   "RELAX NG": 56,

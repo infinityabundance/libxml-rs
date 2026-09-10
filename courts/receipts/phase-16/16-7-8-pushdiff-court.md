@@ -658,7 +658,7 @@ decoded content + encoder error + FINAL well-formedness per `enc-*` cell —
 currently 565/565 on the grown decoder corpus, with the full trace still red
 as designed.
 
-## Slice 1 (step 5) — the persistent driver exists (court-only)
+## Slice 1 (steps 5 + 5b) — the persistent driver exists (court-only)
 
 **What landed.** `src/xml/parser/pushdrive.rs`: the first real persistent push
 DRIVER. It is not a mock and not a wrapper around replay — it owns the control
@@ -667,62 +667,131 @@ loop and reuses the existing grammar primitives verbatim
 tokenizer). `state.rs` does not become the pull parser and `pushdrive.rs` does
 not become a second XML grammar.
 
+It is a structural mirror of upstream's TWO pieces, which matters because the
+split is what produces the lifecycle behaviour:
+
+```text
+xmlParseTryOrFinish(ctxt, terminate)   -> drive_persistent's loop
+  while (disableSAX == 0):
+    avail = end - cur; if (avail < 1) goto done;
+    switch (instate) { START | XML_DECL | MISC/PROLOG/EPILOG |
+                       START_TAG | CONTENT | END_TAG | EOF }
+
+xmlParseChunk's terminate block        -> terminate_document()
+  instate != EOF && != EPILOG -> TAG_NOT_FINISHED / DOCUMENT_EMPTY
+  else                        -> xmlParserCheckEOF(DOCUMENT_END)
+  if (instate != EOF) { instate = EOF; xmlFinishDocument(); }
+```
+
+`endDocument` is fired by the TERMINATE BLOCK (`xmlFinishDocument`), not by
+`xmlParseTryOrFinish`. That is the mechanical reason a complete document in a
+non-final chunk does not finish (class 1), and why a REFEED onto a finished
+context raises `XML_ERR_DOCUMENT_END` on the terminating call with the
+offending bytes still unread (class 4). The earlier version of this driver had
+this wrong (it fired `endDocument` from the epilog state) and was rebuilt
+around the actual structure. Two consequences also fell out: the
+"`Start tag expected`" diagnostic is `XML_ERR_DOCUMENT_EMPTY` (4), not an
+internal error; and `START -> XML_DECL -> MISC` is a real three-state
+progression, not collapsed.
+
 **The invariant it establishes.**
 
-> A byte the driver has consumed is never scanned again.
+> A byte the driver has consumed is never scanned again, and an unconsumed
+> byte is inspected a BOUNDED number of times.
 
-The driver does AVAILABILITY GATING instead of speculative scanning: it looks
-ahead for the construct's terminator (upstream `xmlParseLookupGt` for tags,
-`xmlParseLookupCharData` for text) and only then consumes the construct. A
-construct that is not yet complete parks the driver with the cursor exactly
-where it was — **no rewind, no re-scan of committed bytes, no
-`suppress_until`**. That is the property the replay engine could never have.
+The FIRST half is availability gating: the driver looks ahead for a
+construct's terminator and only then consumes the construct. A construct that
+is not yet complete parks with the cursor exactly where it was — **no rewind,
+no re-scan of committed bytes, no `suppress_until`**.
 
-The lookahead itself is re-run over the pending (unconsumed) construct on each
-call, exactly as upstream does; its cost is bounded by the length of the ONE
-incomplete construct, not by the document.
+The SECOND half is the correction that made this step necessary. The first
+implementation re-ran each availability scan from the top of the pending
+construct on every call. Upstream does NOT do that: it persists
+`ctxt->checkIndex` (and `ctxt->endCheckState`, the open-quote state, for the
+quote-aware `xmlParseLookupGt`), and `xmlParseLookupString` deliberately
+rescans only `strLen - 1` bytes of overlap. Without that state, "consumed at
+most once" does NOT imply global O(N) — it is quadratic in the length of a
+single construct (one huge attribute value, or one huge delimiter-free text
+run). The candidate now carries the equivalent state in `ParkedConstruct`, and
+the receipt below proves the difference numerically.
 
-**Accounting ownership.** The INPUT owns the totals. `InputBuffer` alone knows
-about source decoding, whole-buffer re-materialization (transcoding may REPLACE
-rather than append) and rebasing; the machine adopts its
+A related ownership point: the `avail < 4` gate in `XML_PARSER_START` is tested
+upstream BEFORE `xmlDetectEncoding`, on RAW source bytes. Re-testing it over
+MATERIALIZED bytes is wrong for UTF-16/UCS-4, where four source bytes
+materialize as one or two (`FF FE 3C 00` -> `<`). The input layer already owns
+that gate (`SourceDecoding::Parked`), so the driver defers to it rather than
+keeping a second, materialized-byte copy of the same rule.
+
+**Accounting ownership.** The INPUT owns all three byte domains.
+`InputBuffer` alone sees raw arrivals, knows about source decoding,
+whole-buffer re-materialization (transcoding may REPLACE rather than append)
+and rebasing; the machine ADOPTS its `source_bytes_received()` /
 `materialized_bytes()` / `pos()` through `PushMachine::sync_input_totals`
-instead of accumulating deltas a replacement would corrupt. A backwards mirror
-latches `accounting_violation`. (`InputBuffer::pos()` is
-`(line, col, byte_offset)` — the byte offset is the THIRD element; reading the
-first gives the line number, which is the bug this court caught immediately.)
+instead of accumulating deltas a replacement would corrupt — so the driver no
+longer keeps a second source counter of its own. A backwards mirror latches
+`accounting_violation`. (`InputBuffer::pos()` is `(line, col, byte_offset)` —
+the byte offset is the THIRD element; reading the first gives the line number,
+which is the bug this court caught on its first run.)
 
-**Conceptual seam kept open.** `ParkedConstruct` separates an unfinished
-LEXICAL construct from an open ELEMENT (`ParkedElement`). Availability gating
-means no continuation is pending yet, so the enum has one variant — it exists
-so that half-parsed attributes/QNames/namespace declarations never migrate
-into `ParkedElement` and turn it into an overloaded state bag.
+**One namespace authority.** `PushMachine` no longer carries an `ns_scope`
+vector. The real stack is `XmlParser::ns_scope`, which survives across calls
+because the same `XmlParser` does; `ParkedElement::ns_scope_mark` indexes into
+it. Two candidate namespace stacks would have become a genuine ambiguity as
+soon as attributes/namespaces were exercised.
+
+**Construct continuation state.** `ParkedConstruct` separates an unfinished
+LEXICAL construct from an open ELEMENT (`ParkedElement`):
+`BetweenTokens | Gt { checked, quote } | CharData { checked } |
+String { checked, needle, needle_len } | Char { needle, checked }`. `checked`
+is an absolute offset into the base input, valid only while the cursor has not
+moved past it; `quote` is upstream's `endCheckState`. The continuation is
+cleared whenever the cursor advances (upstream clears `checkIndex` when the
+construct is consumed).
 
 ### Scope of this slice (deliberately bounded)
 
 ```text
-START -> startDocument        (the avail < 4 gate)
-simple start tag
-self-closing root             (<a/>)
-content text                  (<a>x</a>)
-nested start tag              (<a><b/></a>)
-end tag
-root closure -> EPILOG
-zero-byte termination -> EOF
-trailing content / REFEED     (Extra content at the end of the document)
+START      -> the raw-source availability gate (owned by the input layer)
+XML_DECL   -> startDocument (declaration parsing is the next slice)
+MISC       -> whitespace, then the root start tag
+START_TAG  -> simple / self-closing / nested start tags
+CONTENT    -> character data, child start tags, end tags
+END_TAG    -> end tags
+EPILOG     -> whitespace, then the terminating transition to EOF
+EOF        -> REFEED ("Extra content at the end of the document")
 ```
 
-Everything else — XML declarations, comments, PIs, CDATA, DOCTYPE, namespaces,
-entities, the >= 300-byte character-data rule of divergence class 5, the
-`end_in_lf` CR deferral of class 3 — returns `StepOutcome::Unsupported`, which
-is reported as a LOUD internal error, never a silent fallback to replay. There
-is no mid-document persistent -> replay retreat in this design by construction.
+Attributes and namespaces are NOT special-cased and are NOT limited here: they
+come from reusing `parse_element_start` verbatim, so they work — the court
+exercises `<a p="v"/>` and `<a xmlns:x="urn:u"><x:b/></a>` under every
+partition to keep that honest rather than assumed.
+
+XML declarations, comments, PIs, CDATA and DOCTYPE return
+`StepOutcome::Unsupported` — a LOUD internal error, never a silent fallback to
+replay. Their availability scans ARE implemented (`lookup_string`,
+`lookup_char`), so those constructs park correctly instead of mis-scanning,
+and the machinery is ready for them. Same for entity/character references
+(`&`). The `end_in_lf` CR deferral of class 3 is not modeled.
+
+Two remainders are documented rather than silently omitted:
+
+1. `xmlParserCheckEOF`'s encoder-flush half (a truncated multibyte sequence
+   left pending by a terminating call). The decoder already latches it
+   (`InputBuffer::source_truncated`); the driver must raise it before any
+   context flips over.
+2. Exact class-5 character-data SEGMENTATION. The `>= 300`-byte rule IS
+   implemented structurally (`avail < XML_PARSER_BIG_BUFFER_SIZE` gates the
+   lookup; at or above it the run is parsed without waiting for a delimiter,
+   with the continuation cleared either way), which is why long text runs cost
+   one inspection per byte — but CR patching and the exact callback split
+   positions at that boundary are not yet claimed as parity.
 
 `helpers::parse_chunk` is **untouched**: it still replays, and the full push
 trace court below is therefore still red. That is the design, not a regression.
 
 ### The court (`pushdrive::tests`)
 
-Three documents x six plans. Plans: `b1`, `b2`, `b3`, `b5`, deterministic
+Five documents x seven plans. Plans: `b1`, `b2`, `b3`, `b5`, deterministic
 `random`, `whole-nonfinal` (the entire document in one non-final chunk),
 `whole-inline-final`, plus constructor-chunk partitioning and zero-length
 non-final / terminating calls.
@@ -734,30 +803,58 @@ non-final / terminating calls.
 | No duplicate/replayed events | dispatched-event count is exactly `1 + start/end per element + characters + 1`, for every plan |
 | Forward-only | consumption never moves backwards |
 | **Prefix is dead** | the consumed prefix is overwritten with NUL after EVERY call; tree, per-call trace and event count must be byte-identical to the unpoisoned run |
+| **Construct not rescanned** | long-single-construct courts: a 512 KiB attribute tag, a 4096-byte text run, and the 1/2/4/8 MiB curve — bounded `scan_work`, flat ratio |
 | Liveness | every `drive_step` must change (consumed, phase, events, stack depth) or park |
+| Attributes / namespaces | `<a p="v"/>` and `<a xmlns:x="urn:u"><x:b/></a>` under every plan |
 | Class 1 | a complete document in ONE non-final chunk does NOT fire `endDocument` |
 | Class 1b | non-final feeds of `<` / `<a` / `<a/` leave `instate == START` with zero events |
 | Class 4 (REFEED) | refeed onto a finished document raises `XML_ERR_DOCUMENT_END` on the TERMINATING call, and the offending bytes stay UNREAD (`consumed` unchanged) |
+| Diagnosis | a non-`<` document start is `XML_ERR_DOCUMENT_EMPTY` (4); an unfinished element is `XML_ERR_TAG_NOT_FINISHED` (77) |
 
 ### Complexity receipt (the architectural proof)
 
-`<r>` + N x `<abcdefgh/>` + `</r>`, fed in 64 KiB chunks,
-`cargo test --lib -- --ignored --nocapture scan_work_curve_is_linear`:
+`cargo test --lib -- --ignored --nocapture scan_work_curve_is_linear`, three
+workload shapes at 1/2/4/8 MiB, 64 KiB chunks:
 
-| document | materialized | scan_work | scan_work/materialized | events |
-|---:|---:|---:|---:|---:|
-| 1 MiB | 1048582 | 2097240 | 2.0001 | 190654 |
-| 2 MiB | 2097157 | 4194471 | 2.0001 | 381304 |
-| 4 MiB | 4194307 | 8388926 | 2.0001 | 762604 |
-| 8 MiB | 8388607 | 16777847 | 2.0001 | 1525204 |
+| workload | MiB | materialized | scan_work | scan_work/materialized | events |
+|---|---:|---:|---:|---:|---:|
+| many small tags (`<abcdefgh/>` xN) | 1 | 1048582 | 2001837 | 1.9091 | 190654 |
+| many small tags | 2 | 2097157 | 4003662 | 1.9091 | 381304 |
+| many small tags | 4 | 4194307 | 8007312 | 1.9091 | 762604 |
+| many small tags | 8 | 8388607 | 16014612 | 1.9091 | 1525204 |
+| **one huge start tag** (8 MiB quoted attribute) | 1 | 1048585 | 2097169 | 2.0000 | 4 |
+| one huge start tag | 2 | 2097161 | 4194321 | 2.0000 | 4 |
+| one huge start tag | 4 | 4194313 | 8388625 | 2.0000 | 4 |
+| one huge start tag | 8 | 8388617 | 16777233 | 2.0000 | 4 |
+| **one huge text run** | 1 | 1048583 | 1048592 | 1.0000 | 21 |
+| one huge text run | 2 | 2097159 | 2097168 | 1.0000 | 37 |
+| one huge text run | 4 | 4194311 | 4194320 | 1.0000 | 69 |
+| one huge text run | 8 | 8388615 | 8388624 | 1.0000 | 133 |
 
-The ratio is constant to within 1e-4 across an 8x size range and `scan_work`
-exactly doubles as the document doubles. A whole-prefix restart would make the
-ratio grow linearly with size; it does not. A bounded-ratio version over
-128/256/512 KiB runs in the default suite (so the property cannot silently
-rot).
+Every ratio is constant across an 8x size range and `scan_work` exactly doubles
+as the document doubles — including for the single 8 MiB start tag, which is
+the case the missing continuation state would have made quadratic (a
+restart-from-`<` scan averages half the tag length per call, i.e. tens of GiB
+of work for that one document). The huge-text-run events row grows linearly
+(21/37/69/133), which is the `>= 300`-byte batching behaving as upstream
+describes.
 
-**`cargo test --lib`: 1308 passed / 0 failed / 2 ignored.**
+The `many small tags` ratio is 1.9091 here versus 2.0001 before step 5b: the
+continuation-aware `lookup_gt` skips the leading `<` exactly as upstream does
+(`checkIndex == 0 -> cur + 1`), so it no longer re-examines it. A bounded-ratio
+version over 128/512 KiB runs in the default suite for all three shapes, so the
+property cannot silently rot.
+
+**`cargo test --lib`: 1312 passed / 0 failed / 2 ignored.**
+
+### Drift-proof headline counts
+
+`tools/evidence/readme_counts.py` now owns the hand-written "Latest gates"
+`cargo test --lib` headline (`GATES_RE`, anchored to that exact fragment). That
+line had drifted by hand four times (1267 -> 1279 -> 1282 -> 1301 -> 1308)
+because it sat outside the generated markers and nothing checked it; `--check`
+now fails on it, verified by deliberately corrupting the line and observing
+exit 1.
 
 ### No-regression evidence (full court, before vs after)
 
@@ -784,11 +881,13 @@ to 31 `enc-*` documents (565 cells).
 - Oracle parity for the push trace. The driver has not been compared to
   libxml2 per-call output yet; `pushdiff-run.sh` still reports the replay
   baseline because `parse_chunk` is still replay. This is a
-  court-only foundation commit.
+  court-only foundation commit, and the next slice is a shadow court that
+  captures `instate`, cursor, line/col, `nameNr`, well-formed/error state and
+  SAX events from the oracle for these same small documents.
 - Consumer surfaces (PHP six-gate, lxml, nokogiri) are unaffected by
   construction: `parse_chunk` and the decoder were not modified.
-- Class 3 (`end_in_lf`) and class 5 (>= 300-byte character-data
-  segmentation) are out of scope here.
+- Class 3 (`end_in_lf`), exact class-5 segmentation, and the encoder-flush half
+  of `xmlParserCheckEOF` — see the remainders above.
 
 ## Next slices
 
@@ -801,13 +900,29 @@ to 31 `enc-*` documents (565 cells).
    bytes; reproduce the oracle's per-call event/error timing (startDocument
    gating, endDocument-on-terminate, REFEED extra-content, end_in_lf).
 
-   1a. ~~The driver exists and is proven court-only.~~ DONE (this commit:
-       `pushdrive.rs`; forward-only + liveness + prefix-poisoning +
-       partition-equivalence courts; 8x-linear complexity receipt).
-       Remaining in 1: grow the grammar (declarations, comments, PIs, CDATA,
-       DOCTYPE, attributes/namespaces, entities), then flip WHOLE contexts
-       from replay to persistent at a point selected BEFORE the first
-       observable event — never mid-document.
+   1a. ~~The driver exists and is proven court-only.~~ DONE
+       (`pushdrive.rs`; forward-only + liveness + prefix-poisoning +
+       partition-equivalence courts).
+   1b. ~~Availability scanning is genuinely incremental.~~ DONE (step 5b:
+       `ParkedConstruct` carries upstream's `checkIndex`/`endCheckState`, the
+       `START`/`XML_DECL` ownership boundary is fixed, and three workload
+       shapes are proven flat at 1/2/4/8 MiB — including one huge start tag,
+       which is the quadratic case the missing state would have hidden).
+   1c. An oracle-facing SHADOW COURT for the existing small documents: capture
+       `instate`, cursor, line/col, `nameNr`, well-formed/error state and SAX
+       events from libxml2 2.15.3 for the same cases (rather than only
+       comparing the driver to the candidate's own recursive parser). This is
+       what will expose state-machine mistakes long before the production
+       flip.
+   1d. Declarations and PIs, with real `XML_PARSER_XML_DECL` handling; then
+       comments and CDATA reuse the `lookup_string` machinery from 5b.
+   1e. DOCTYPE / internal subset (upstream's internal-subset scanner also
+       persists `checkIndex` plus a richer `endCheckState`), then entity
+       references.
+   1f. Only then flip WHOLE contexts from replay to persistent at a point
+       selected BEFORE the first observable event — never mid-document — and
+       immediately re-run this court + PHP + lxml + Nokogiri + pushscale.
+       Replay state starts being DELETED at that point, not merely bypassed.
 2. Re-run this court (must reach diffs=0) + `cargo test --lib` + PHP
    six-gate + lxml/nokogiri gates.
 3. Re-run pushscale.c: the 20/40/80 MB curve must go linear.

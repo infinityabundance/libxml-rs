@@ -119,20 +119,39 @@ pub(crate) enum PushProgress {
 ///
 /// An open ELEMENT and an unfinished construct are DIFFERENT things:
 /// [`ParkedElement`] is an element frame (whose start tag is fully scanned),
-/// while this is the half-scanned token a driver may have committed to.
+/// while this is the partially-SCANNED lookahead a parked driver committed to.
 ///
-/// The persistent driver's availability gating (it consumes a construct only
-/// once its terminator is already present in the buffer, upstream
-/// `xmlParseTryOrFinish`'s `xmlParseLookupGt`/`xmlParseLookupCharData`
-/// discipline) means no partial construct is ever left pending, so the enum
-/// carries no payload yet. It exists to keep the boundary explicit BEFORE
-/// `ParkedElement` starts absorbing half-parsed attributes/QNames/namespace
-/// declarations — the overloaded-state-bag failure mode this separation
-/// prevents.
+/// This is the candidate's `ctxt->checkIndex` / `ctxt->endCheckState` (upstream
+/// `xmlParseLookupGt` / `xmlParseLookupCharData` / `xmlParseLookupString`). It
+/// is not an optimization: without it, re-running the availability scan from
+/// the start of the pending construct on every call is quadratic in that
+/// construct's length, so "consumed at most once" would not imply "inspected a
+/// bounded number of times" for a single huge tag or a single huge text run.
+///
+/// `checked` is an ABSOLUTE byte offset into the base input's data — the same
+/// unit as `InputBuffer::pos().2` — up to which the input has already been
+/// examined. A continuation is only valid while `pos <= checked <= len`.
+/// `quote` is the open quote character at `checked` (0 = none) for the
+/// quote-aware `Gt` scan, exactly upstream's `endCheckState`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ParkedConstruct {
-    /// Between tokens: nothing is mid-scan, the cursor sits at a token start.
+    /// Between tokens: nothing is mid-scan.
     BetweenTokens,
+    /// Scanning for a start tag's `>` (quote-aware).
+    Gt { checked: u64, quote: u8 },
+    /// Scanning for a `<` or `&` that ends a character-data run.
+    CharData { checked: u64 },
+    /// Scanning for a string terminator (`?>`, `-->`, `]]>`). `needle`
+    /// identifies the terminator so a continuation can never be reused for a
+    /// different one; upstream rescans `needle_len - 1` bytes of overlap.
+    String {
+        checked: u64,
+        needle: [u8; 3],
+        needle_len: u8,
+    },
+    /// Scanning for a single character (`>` in an end tag, `;` in a
+    /// reference).
+    Char { needle: u8, checked: u64 },
 }
 
 /// One open element, parked across calls so the next chunk resumes the
@@ -142,6 +161,10 @@ pub(crate) enum ParkedConstruct {
 pub(crate) struct ParkedElement {
     pub name: Vec<u8>,
     pub line: usize,
+    /// Mark into the engine's OWN namespace stack (`XmlParser::ns_scope`),
+    /// which is the single namespace authority and survives across calls
+    /// because the same `XmlParser` does. The machine deliberately owns no
+    /// second namespace stack.
     pub ns_scope_mark: usize,
 }
 
@@ -177,9 +200,6 @@ pub(crate) struct PushMachine {
     phase: xmlParserInputState,
     /// Open elements, outermost first — the resume point for content.
     open_elements: Vec<ParkedElement>,
-    /// In-scope namespace bindings (prefix, href), outermost first;
-    /// `ParkedElement::ns_scope_mark` indexes into it.
-    ns_scope: Vec<(Vec<u8>, Vec<u8>)>,
     /// `startDocument` fired exactly once, when the phase leaves `START`.
     start_document_fired: bool,
     /// `endDocument` fired exactly once — on the terminating call (or a
@@ -212,7 +232,6 @@ impl Default for PushMachine {
             accounting_violation: false,
             phase: xmlParserInputState::XML_PARSER_START,
             open_elements: Vec::new(),
-            ns_scope: Vec::new(),
             start_document_fired: false,
             end_document_fired: false,
             fatal: false,
@@ -283,22 +302,26 @@ impl PushMachine {
 
     /// Adopt the INPUT's authoritative totals.
     ///
-    /// Materialized/consumed accounting belongs to the input buffer: it alone
-    /// knows about source decoding, whole-buffer re-materialization
-    /// (transcoding may REPLACE rather than append), and the physical cursor.
-    /// The machine only mirrors the totals for the complexity receipt, so it
-    /// adopts them instead of accumulating deltas a replacement would
-    /// corrupt. Mirroring BACKWARDS (or consumption past materialization) is
-    /// an accounting bug and latches [`Self::accounting_violation`]
-    /// regardless of which side is at fault — a partial parse must never
-    /// appear to un-read bytes.
-    pub(crate) fn sync_input_totals(&mut self, materialized: u64, consumed: u64) {
+    /// All three byte domains are owned by the input buffer: it alone sees
+    /// raw arrivals (`source_bytes_received`), knows about source decoding and
+    /// whole-buffer re-materialization (transcoding may REPLACE rather than
+    /// append), and owns the physical cursor. The machine only MIRRORS the
+    /// totals for the complexity receipt, so it adopts them instead of
+    /// accumulating deltas a replacement would corrupt — and the driver never
+    /// keeps a second source counter of its own.
+    ///
+    /// Mirroring BACKWARDS (or consumption past materialization) is an
+    /// accounting bug and latches [`Self::accounting_violation`] regardless of
+    /// which side is at fault — a partial parse must never appear to un-read
+    /// bytes.
+    pub(crate) fn sync_input_totals(&mut self, source: u64, materialized: u64, consumed: u64) {
         if consumed > materialized
             || materialized < self.input_bytes_materialized
             || consumed < self.input_bytes_consumed
         {
             self.accounting_violation = true;
         }
+        self.source_bytes_received = source;
         self.input_bytes_materialized = materialized;
         self.input_bytes_consumed = consumed;
     }
@@ -306,6 +329,19 @@ impl PushMachine {
     /// The half-scanned construct, if any (see [`ParkedConstruct`]).
     pub(crate) const fn parked_construct(&self) -> ParkedConstruct {
         self.parked_construct
+    }
+
+    /// Record the construct the driver parked on (upstream writes
+    /// `ctxt->checkIndex` / `ctxt->endCheckState`).
+    pub(crate) fn park_construct(&mut self, construct: ParkedConstruct) {
+        self.parked_construct = construct;
+    }
+
+    /// The continuation is no longer valid (the cursor moved, or the construct
+    /// was finished): upstream clears `checkIndex`/`endCheckState`. The next
+    /// lookup starts a fresh scan.
+    pub(crate) fn reset_construct(&mut self) {
+        self.parked_construct = ParkedConstruct::BetweenTokens;
     }
 
     /// Materialized internal bytes not yet consumed.
