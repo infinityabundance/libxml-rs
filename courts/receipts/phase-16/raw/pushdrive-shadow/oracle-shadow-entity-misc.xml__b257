@@ -1,0 +1,31 @@
+== /court/suites/phase16/shadow-corpus/shadow-entity-misc.xml bytes=67 mode=b257
+> CALL 0 len=67
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=internalSubset p=12 c=0 abs=12
+internalSubset name=a ext= sys=
+! cb=entityDecl p=54 c=0 abs=54
+entityDecl name=e type=1 pub= sys= content=<!--c--><?p d?><![CDATA[q]]>
+! cb=externalSubset p=57 c=0 abs=57
+externalSubset name=a ext= sys=
+! cb=startElementNs p=59 c=0 abs=59
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=comment p=8 c=0 abs=8
+comment [c]
+! cb=processingInstruction p=15 c=0 abs=15
+pi target=p data=d
+! cb=cdataBlock p=28 c=0 abs=28
+cdata len=1 [q]
+! cb=reference p=63 c=0 abs=63
+reference [e]
+! cb=endElementNs p=67 c=0 abs=67
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=67 l=1 col=67 i=1 n=0 c=0 abs=67 pos0=0 line0=1 col0=67 byte0=67 win0=0 wsize0=67 woff0=67 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>&e;</a>]
+> FINAL
+! cb=endDocument p=67 c=0 abs=67
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=67 l=1 col=67 i=1 n=0 c=0 abs=67 pos0=0 line0=1 col0=67 byte0=67 win0=0 wsize0=67 woff0=67 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>&e;</a>]
+> REFEED
+! cb=error p=67 c=0 abs=67
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=67 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=67 l=1 col=67 i=1 n=0 c=0 abs=67 pos0=0 line0=1 col0=67 byte0=67 win0=0 wsize0=80 woff0=67 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>&e;</a><!DOCTYPE a []

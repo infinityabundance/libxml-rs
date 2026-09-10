@@ -1,0 +1,97 @@
+== /court/suites/phase16/shadow-corpus/shadow-entity-misc.xml bytes=67 mode=b2
+> CALL 0 len=2
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=2 woff0=0 wbytes0=[<!]
+> CALL 1 len=2
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=4 woff0=0 wbytes0=[<!DO]
+> CALL 2 len=2
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=6 woff0=0 wbytes0=[<!DOCT]
+> CALL 3 len=2
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=8 woff0=0 wbytes0=[<!DOCTYP]
+> CALL 4 len=2
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=10 woff0=0 wbytes0=[<!DOCTYPE ]
+> CALL 5 len=2
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=12 woff0=0 wbytes0=[<!DOCTYPE a ]
+> CALL 6 len=2
+< CALL 6 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=14 woff0=0 wbytes0=[<!DOCTYPE a [<]
+> CALL 7 len=2
+< CALL 7 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=16 woff0=0 wbytes0=[<!DOCTYPE a [<!E]
+> CALL 8 len=2
+< CALL 8 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=18 woff0=0 wbytes0=[<!DOCTYPE a [<!ENT]
+> CALL 9 len=2
+< CALL 9 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=20 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTIT]
+> CALL 10 len=2
+< CALL 10 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=22 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY ]
+> CALL 11 len=2
+< CALL 11 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=24 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e ]
+> CALL 12 len=2
+< CALL 12 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=26 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<]
+> CALL 13 len=2
+< CALL 13 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=28 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!-]
+> CALL 14 len=2
+< CALL 14 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=30 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c]
+> CALL 15 len=2
+< CALL 15 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=32 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--]
+> CALL 16 len=2
+< CALL 16 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=34 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><]
+> CALL 17 len=2
+< CALL 17 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=36 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p]
+> CALL 18 len=2
+< CALL 18 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=38 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d]
+> CALL 19 len=2
+< CALL 19 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=40 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?>]
+> CALL 20 len=2
+< CALL 20 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=42 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><!]
+> CALL 21 len=2
+< CALL 21 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=44 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![C]
+> CALL 22 len=2
+< CALL 22 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=46 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDA]
+> CALL 23 len=2
+< CALL 23 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=48 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA]
+> CALL 24 len=2
+< CALL 24 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=50 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]
+> CALL 25 len=2
+< CALL 25 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=52 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]]
+> CALL 26 len=2
+< CALL 26 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=54 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>"]
+> CALL 27 len=2
+! cb=internalSubset p=12 c=0 abs=12
+internalSubset name=a ext= sys=
+< CALL 27 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0 c=0 abs=12 pos0=0 line0=1 col0=13 byte0=12 win0=0 wsize0=56 woff0=12 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]]
+> CALL 28 len=2
+! cb=entityDecl p=54 c=0 abs=54
+entityDecl name=e type=1 pub= sys= content=<!--c--><?p d?><![CDATA[q]]>
+! cb=externalSubset p=57 c=0 abs=57
+externalSubset name=a ext= sys=
+< CALL 28 rc=0 err=0 wf=1 in=4 p=57 l=1 col=57 i=1 n=0 c=0 abs=57 pos0=0 line0=1 col0=57 byte0=57 win0=0 wsize0=58 woff0=57 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><]
+> CALL 29 len=2
+! cb=startElementNs p=59 c=0 abs=59
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 29 rc=0 err=0 wf=1 in=7 p=60 l=1 col=60 i=1 n=1 c=0 abs=60 pos0=0 line0=1 col0=60 byte0=60 win0=0 wsize0=60 woff0=60 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>]
+> CALL 30 len=2
+< CALL 30 rc=0 err=0 wf=1 in=7 p=60 l=1 col=60 i=1 n=1 c=0 abs=60 pos0=0 line0=1 col0=60 byte0=60 win0=0 wsize0=62 woff0=60 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>&e]
+> CALL 31 len=2
+! cb=comment p=8 c=0 abs=8
+comment [c]
+! cb=processingInstruction p=15 c=0 abs=15
+pi target=p data=d
+! cb=cdataBlock p=28 c=0 abs=28
+cdata len=1 [q]
+! cb=reference p=63 c=0 abs=63
+reference [e]
+< CALL 31 rc=0 err=0 wf=1 in=7 p=63 l=1 col=63 i=1 n=1 c=0 abs=63 pos0=0 line0=1 col0=63 byte0=63 win0=0 wsize0=64 woff0=63 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>&e;<]
+> CALL 32 len=2
+< CALL 32 rc=0 err=0 wf=1 in=9 p=63 l=1 col=63 i=1 n=1 c=0 abs=63 pos0=0 line0=1 col0=63 byte0=63 win0=0 wsize0=66 woff0=63 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>&e;</a]
+> CALL 33 len=1
+! cb=endElementNs p=67 c=0 abs=67
+endElementNs local=[a] prefix= uri=
+< CALL 33 rc=0 err=0 wf=1 in=14 p=67 l=1 col=67 i=1 n=0 c=0 abs=67 pos0=0 line0=1 col0=67 byte0=67 win0=0 wsize0=67 woff0=67 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>&e;</a>]
+> FINAL
+! cb=endDocument p=67 c=0 abs=67
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=67 l=1 col=67 i=1 n=0 c=0 abs=67 pos0=0 line0=1 col0=67 byte0=67 win0=0 wsize0=67 woff0=67 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>&e;</a>]
+> REFEED
+! cb=error p=67 c=0 abs=67
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=67 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=67 l=1 col=67 i=1 n=0 c=0 abs=67 pos0=0 line0=1 col0=67 byte0=67 win0=0 wsize0=80 woff0=67 wbytes0=[<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>&e;</a><!DOCTYPE a []

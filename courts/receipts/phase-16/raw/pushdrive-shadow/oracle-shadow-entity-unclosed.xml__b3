@@ -1,0 +1,47 @@
+== /court/suites/phase16/shadow-corpus/shadow-entity-unclosed.xml bytes=42 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=3 woff0=0 wbytes0=[<!D]
+> CALL 1 len=3
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=6 woff0=0 wbytes0=[<!DOCT]
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=9 woff0=0 wbytes0=[<!DOCTYPE]
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=12 woff0=0 wbytes0=[<!DOCTYPE a ]
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=15 woff0=0 wbytes0=[<!DOCTYPE a [<!]
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=18 woff0=0 wbytes0=[<!DOCTYPE a [<!ENT]
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=21 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY]
+> CALL 7 len=3
+< CALL 7 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=24 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e ]
+> CALL 8 len=3
+< CALL 8 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=27 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "<b]
+> CALL 9 len=3
+! cb=internalSubset p=12 c=0 abs=12
+internalSubset name=a ext= sys=
+< CALL 9 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0 c=0 abs=12 pos0=0 line0=1 col0=13 byte0=12 win0=0 wsize0=30 woff0=12 wbytes0=[<!DOCTYPE a [<!ENTITY e "<b>">]
+> CALL 10 len=3
+! cb=entityDecl p=29 c=0 abs=29
+entityDecl name=e type=1 pub= sys= content=<b>
+! cb=externalSubset p=32 c=0 abs=32
+externalSubset name=a ext= sys=
+< CALL 10 rc=0 err=0 wf=1 in=4 p=32 l=1 col=32 i=1 n=0 c=0 abs=32 pos0=0 line0=1 col0=32 byte0=32 win0=0 wsize0=33 woff0=32 wbytes0=[<!DOCTYPE a [<!ENTITY e "<b>">]><]
+> CALL 11 len=3
+! cb=startElementNs p=34 c=0 abs=34
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 11 rc=0 err=0 wf=1 in=7 p=35 l=1 col=35 i=1 n=1 c=0 abs=35 pos0=0 line0=1 col0=35 byte0=35 win0=0 wsize0=36 woff0=35 wbytes0=[<!DOCTYPE a [<!ENTITY e "<b>">]><a>&]
+> CALL 12 len=3
+! cb=startElementNs p=2 c=0 abs=2
+startElementNs local=[b] prefix= uri= ns=0 att=0 def=0
+! cb=error p=3 c=0 abs=3
+error dom=1 code=77 level=3 file= line=1 i1=1 i2=38 str1=b str2= str3= msg=Premature end of data in tag b line 1\n
+< CALL 12 rc=77 err=77 wf=0 in=7 p=38 l=1 col=38 i=1 n=1 c=0 abs=38 pos0=0 line0=1 col0=38 byte0=38 win0=0 wsize0=39 woff0=38 wbytes0=[<!DOCTYPE a [<!ENTITY e "<b>">]><a>&e;<]
+> CALL 13 len=3
+< CALL 13 rc=77 err=77 wf=0 in=7 p=38 l=1 col=38 i=1 n=1 c=0 abs=38 pos0=0 line0=1 col0=38 byte0=38 win0=0 wsize0=39 woff0=38 wbytes0=[<!DOCTYPE a [<!ENTITY e "<b>">]><a>&e;<]
+> FINAL
+< FINAL 0 rc=77 err=77 wf=0 in=7 p=38 l=1 col=38 i=1 n=1 c=0 abs=38 pos0=0 line0=1 col0=38 byte0=38 win0=0 wsize0=39 woff0=38 wbytes0=[<!DOCTYPE a [<!ENTITY e "<b>">]><a>&e;<]
+> REFEED
+< REFEED 0 rc=77 err=77 wf=0 in=7 p=38 l=1 col=38 i=1 n=1 c=0 abs=38 pos0=0 line0=1 col0=38 byte0=38 win0=0 wsize0=39 woff0=38 wbytes0=[<!DOCTYPE a [<!ENTITY e "<b>">]><a>&e;<]

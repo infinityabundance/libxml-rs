@@ -1,0 +1,105 @@
+== /court/suites/phase16/shadow-corpus/shadow-entity-undef.xml bytes=43 mode=b1
+> CALL 0 len=1
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=1 woff0=0 wbytes0=[<]
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=2 woff0=0 wbytes0=[<!]
+> CALL 2 len=1
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=3 woff0=0 wbytes0=[<!D]
+> CALL 3 len=1
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=4 woff0=0 wbytes0=[<!DO]
+> CALL 4 len=1
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=5 woff0=0 wbytes0=[<!DOC]
+> CALL 5 len=1
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=6 woff0=0 wbytes0=[<!DOCT]
+> CALL 6 len=1
+< CALL 6 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=7 woff0=0 wbytes0=[<!DOCTY]
+> CALL 7 len=1
+< CALL 7 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=8 woff0=0 wbytes0=[<!DOCTYP]
+> CALL 8 len=1
+< CALL 8 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=9 woff0=0 wbytes0=[<!DOCTYPE]
+> CALL 9 len=1
+< CALL 9 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=10 woff0=0 wbytes0=[<!DOCTYPE ]
+> CALL 10 len=1
+< CALL 10 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=11 woff0=0 wbytes0=[<!DOCTYPE a]
+> CALL 11 len=1
+< CALL 11 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=12 woff0=0 wbytes0=[<!DOCTYPE a ]
+> CALL 12 len=1
+< CALL 12 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=13 woff0=0 wbytes0=[<!DOCTYPE a []
+> CALL 13 len=1
+< CALL 13 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=14 woff0=0 wbytes0=[<!DOCTYPE a [<]
+> CALL 14 len=1
+< CALL 14 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=15 woff0=0 wbytes0=[<!DOCTYPE a [<!]
+> CALL 15 len=1
+< CALL 15 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=16 woff0=0 wbytes0=[<!DOCTYPE a [<!E]
+> CALL 16 len=1
+< CALL 16 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=17 woff0=0 wbytes0=[<!DOCTYPE a [<!EN]
+> CALL 17 len=1
+< CALL 17 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=18 woff0=0 wbytes0=[<!DOCTYPE a [<!ENT]
+> CALL 18 len=1
+< CALL 18 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=19 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTI]
+> CALL 19 len=1
+< CALL 19 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=20 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTIT]
+> CALL 20 len=1
+< CALL 20 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=21 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY]
+> CALL 21 len=1
+< CALL 21 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=22 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY ]
+> CALL 22 len=1
+< CALL 22 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=23 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e]
+> CALL 23 len=1
+< CALL 23 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=24 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e ]
+> CALL 24 len=1
+< CALL 24 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=25 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "]
+> CALL 25 len=1
+< CALL 25 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=26 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "x]
+> CALL 26 len=1
+< CALL 26 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=27 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&]
+> CALL 27 len=1
+< CALL 27 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=28 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y]
+> CALL 28 len=1
+< CALL 28 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=29 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;]
+> CALL 29 len=1
+< CALL 29 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=30 woff0=0 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;"]
+> CALL 30 len=1
+! cb=internalSubset p=12 c=0 abs=12
+internalSubset name=a ext= sys=
+< CALL 30 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0 c=0 abs=12 pos0=0 line0=1 col0=13 byte0=12 win0=0 wsize0=31 woff0=12 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]
+> CALL 31 len=1
+< CALL 31 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0 c=0 abs=12 pos0=0 line0=1 col0=13 byte0=12 win0=0 wsize0=32 woff0=12 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]]
+> CALL 32 len=1
+! cb=entityDecl p=30 c=0 abs=30
+entityDecl name=e type=1 pub= sys= content=x&y;
+! cb=externalSubset p=33 c=0 abs=33
+externalSubset name=a ext= sys=
+< CALL 32 rc=0 err=0 wf=1 in=4 p=33 l=1 col=33 i=1 n=0 c=0 abs=33 pos0=0 line0=1 col0=33 byte0=33 win0=0 wsize0=33 woff0=33 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]>]
+> CALL 33 len=1
+< CALL 33 rc=0 err=0 wf=1 in=4 p=33 l=1 col=33 i=1 n=0 c=0 abs=33 pos0=0 line0=1 col0=33 byte0=33 win0=0 wsize0=34 woff0=33 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><]
+> CALL 34 len=1
+< CALL 34 rc=0 err=0 wf=1 in=6 p=33 l=1 col=33 i=1 n=0 c=0 abs=33 pos0=0 line0=1 col0=33 byte0=33 win0=0 wsize0=35 woff0=33 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a]
+> CALL 35 len=1
+! cb=startElementNs p=35 c=0 abs=35
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 35 rc=0 err=0 wf=1 in=7 p=36 l=1 col=36 i=1 n=1 c=0 abs=36 pos0=0 line0=1 col0=36 byte0=36 win0=0 wsize0=36 woff0=36 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a>]
+> CALL 36 len=1
+< CALL 36 rc=0 err=0 wf=1 in=7 p=36 l=1 col=36 i=1 n=1 c=0 abs=36 pos0=0 line0=1 col0=36 byte0=36 win0=0 wsize0=37 woff0=36 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a>&]
+> CALL 37 len=1
+< CALL 37 rc=0 err=0 wf=1 in=7 p=36 l=1 col=36 i=1 n=1 c=0 abs=36 pos0=0 line0=1 col0=36 byte0=36 win0=0 wsize0=38 woff0=36 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a>&e]
+> CALL 38 len=1
+! cb=characters p=1 c=0 abs=1
+characters len=1 [x]
+! cb=error p=4 c=0 abs=4
+error dom=1 code=26 level=3 file= line=1 i1=0 i2=39 str1=y str2= str3= msg=Entity 'y' not defined\n
+< CALL 38 rc=26 err=26 wf=0 in=7 p=39 l=1 col=39 i=1 n=1 c=0 abs=39 pos0=0 line0=1 col0=39 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a>&e;]
+> CALL 39 len=1
+< CALL 39 rc=26 err=26 wf=0 in=7 p=39 l=1 col=39 i=1 n=1 c=0 abs=39 pos0=0 line0=1 col0=39 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a>&e;]
+> CALL 40 len=1
+< CALL 40 rc=26 err=26 wf=0 in=7 p=39 l=1 col=39 i=1 n=1 c=0 abs=39 pos0=0 line0=1 col0=39 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a>&e;]
+> CALL 41 len=1
+< CALL 41 rc=26 err=26 wf=0 in=7 p=39 l=1 col=39 i=1 n=1 c=0 abs=39 pos0=0 line0=1 col0=39 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a>&e;]
+> CALL 42 len=1
+< CALL 42 rc=26 err=26 wf=0 in=7 p=39 l=1 col=39 i=1 n=1 c=0 abs=39 pos0=0 line0=1 col0=39 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a>&e;]
+> FINAL
+< FINAL 0 rc=26 err=26 wf=0 in=7 p=39 l=1 col=39 i=1 n=1 c=0 abs=39 pos0=0 line0=1 col0=39 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a>&e;]
+> REFEED
+< REFEED 0 rc=26 err=26 wf=0 in=7 p=39 l=1 col=39 i=1 n=1 c=0 abs=39 pos0=0 line0=1 col0=39 byte0=39 win0=0 wsize0=39 woff0=39 wbytes0=[<!DOCTYPE a [<!ENTITY e "x&y;">]><a>&e;]

@@ -1,0 +1,19 @@
+== /court/suites/phase16/shadow-corpus/shadow-entity-endtag.xml bytes=43 mode=b257
+> CALL 0 len=43
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=internalSubset p=12 c=0 abs=12
+internalSubset name=a ext= sys=
+! cb=entityDecl p=30 c=0 abs=30
+entityDecl name=e type=1 pub= sys= content=</a>
+! cb=externalSubset p=33 c=0 abs=33
+externalSubset name=a ext= sys=
+! cb=startElementNs p=35 c=0 abs=35
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=error p=0 c=0 abs=0
+error dom=1 code=85 level=3 file= line=1 i1=0 i2=39 str1= str2= str3= msg=chunk is not well balanced\n
+< CALL 0 rc=85 err=85 wf=0 in=7 p=39 l=1 col=39 i=1 n=1 c=0 abs=39 pos0=0 line0=1 col0=39 byte0=39 win0=0 wsize0=43 woff0=39 wbytes0=[<!DOCTYPE a [<!ENTITY e "</a>">]><a>&e;</a>]
+> FINAL
+< FINAL 0 rc=85 err=85 wf=0 in=7 p=39 l=1 col=39 i=1 n=1 c=0 abs=39 pos0=0 line0=1 col0=39 byte0=39 win0=0 wsize0=43 woff0=39 wbytes0=[<!DOCTYPE a [<!ENTITY e "</a>">]><a>&e;</a>]
+> REFEED
+< REFEED 0 rc=85 err=85 wf=0 in=7 p=39 l=1 col=39 i=1 n=1 c=0 abs=39 pos0=0 line0=1 col0=39 byte0=39 win0=0 wsize0=43 woff0=39 wbytes0=[<!DOCTYPE a [<!ENTITY e "</a>">]><a>&e;</a>]

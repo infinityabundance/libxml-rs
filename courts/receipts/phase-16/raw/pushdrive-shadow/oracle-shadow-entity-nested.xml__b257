@@ -1,0 +1,35 @@
+== /court/suites/phase16/shadow-corpus/shadow-entity-nested.xml bytes=59 mode=b257
+> CALL 0 len=59
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=internalSubset p=12 c=0 abs=12
+internalSubset name=a ext= sys=
+! cb=entityDecl p=27 c=0 abs=27
+entityDecl name=b type=1 pub= sys= content=B
+! cb=entityDecl p=46 c=0 abs=46
+entityDecl name=e type=1 pub= sys= content=x&b;y
+! cb=externalSubset p=49 c=0 abs=49
+externalSubset name=a ext= sys=
+! cb=startElementNs p=51 c=0 abs=51
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=characters p=1 c=0 abs=1
+characters len=1 [x]
+! cb=characters p=1 c=0 abs=1
+characters len=1 [B]
+! cb=reference p=4 c=0 abs=4
+reference [b]
+! cb=characters p=5 c=0 abs=5
+characters len=1 [y]
+! cb=reference p=55 c=0 abs=55
+reference [e]
+! cb=endElementNs p=59 c=0 abs=59
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=59 l=1 col=58 i=1 n=0 c=0 abs=59 pos0=0 line0=1 col0=58 byte0=59 win0=0 wsize0=59 woff0=59 wbytes0=[<!DOCTYPE a [<!ENTITY b "B"><!ENTITY e "x&b;y">]><a>&e;</a>]
+> FINAL
+! cb=endDocument p=59 c=0 abs=59
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=59 l=1 col=58 i=1 n=0 c=0 abs=59 pos0=0 line0=1 col0=58 byte0=59 win0=0 wsize0=59 woff0=59 wbytes0=[<!DOCTYPE a [<!ENTITY b "B"><!ENTITY e "x&b;y">]><a>&e;</a>]
+> REFEED
+! cb=error p=59 c=0 abs=59
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=58 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=59 l=1 col=58 i=1 n=0 c=0 abs=59 pos0=0 line0=1 col0=58 byte0=59 win0=0 wsize0=80 woff0=59 wbytes0=[<!DOCTYPE a [<!ENTITY b "B"><!ENTITY e "x&b;y">]><a>&e;</a><!DOCTYPE a [<!ENTITY]

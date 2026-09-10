@@ -1,0 +1,27 @@
+== /court/suites/phase16/shadow-corpus/shadow-entity-text.xml bytes=40 mode=b257
+> CALL 0 len=40
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=internalSubset p=12 c=0 abs=12
+internalSubset name=a ext= sys=
+! cb=entityDecl p=27 c=0 abs=27
+entityDecl name=e type=1 pub= sys= content=x
+! cb=externalSubset p=30 c=0 abs=30
+externalSubset name=a ext= sys=
+! cb=startElementNs p=32 c=0 abs=32
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=characters p=1 c=0 abs=1
+characters len=1 [x]
+! cb=reference p=36 c=0 abs=36
+reference [e]
+! cb=endElementNs p=40 c=0 abs=40
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=40 l=1 col=40 i=1 n=0 c=0 abs=40 pos0=0 line0=1 col0=40 byte0=40 win0=0 wsize0=40 woff0=40 wbytes0=[<!DOCTYPE a [<!ENTITY e "x">]><a>&e;</a>]
+> FINAL
+! cb=endDocument p=40 c=0 abs=40
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=40 l=1 col=40 i=1 n=0 c=0 abs=40 pos0=0 line0=1 col0=40 byte0=40 win0=0 wsize0=40 woff0=40 wbytes0=[<!DOCTYPE a [<!ENTITY e "x">]><a>&e;</a>]
+> REFEED
+! cb=error p=40 c=0 abs=40
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=40 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=40 l=1 col=40 i=1 n=0 c=0 abs=40 pos0=0 line0=1 col0=40 byte0=40 win0=0 wsize0=80 woff0=40 wbytes0=[<!DOCTYPE a [<!ENTITY e "x">]><a>&e;</a><!DOCTYPE a [<!ENTITY e "x">]><a>&e;</a>]
