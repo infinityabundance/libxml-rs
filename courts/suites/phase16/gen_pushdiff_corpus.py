@@ -194,6 +194,41 @@ def main():
     }
     for name, content in sorted(docs.items()):
         w(out, name, content)
+    # ── Progressive-DECODING corpus (slice 1 blocker) ───────────────────
+    # BOMs, encoding signatures and multi-byte code units split across
+    # chunk boundaries by the b1/b2/b3 plans. Upstream defers encoding
+    # detection in XML_PARSER_START until enough bytes are available (and
+    # parks on a non-final call with <4 bytes), and keeps the source decoder
+    # installed so later chunks continue decoding.
+    utf16le = lambda s: s.encode("utf-16-le")
+    utf16be = lambda s: s.encode("utf-16-be")
+    utf32le = lambda s: s.encode("utf-32-le")
+    utf32be = lambda s: s.encode("utf-32-be")
+    enc_docs = {
+        "enc-utf16le-bom.xml": b"\xff\xfe" + utf16le("<a>x</a>"),
+        "enc-utf16be-bom.xml": b"\xfe\xff" + utf16be("<a>x</a>"),
+        "enc-utf16le-nobom.xml": utf16le("<?xml version=\"1.0\"?><a>x</a>"),
+        "enc-utf16be-nobom.xml": utf16be("<?xml version=\"1.0\"?><a>x</a>"),
+        "enc-utf32le-bom.xml": b"\xff\xfe\x00\x00" + utf32le("<a>x</a>"),
+        "enc-utf32be-bom.xml": b"\x00\x00\xfe\xff" + utf32be("<a>x</a>"),
+        "enc-utf32be-nobom.xml": utf32be("<?xml version=\"1.0\"?><a>x</a>"),
+        "enc-ebcdic.xml": "<?xml version=\"1.0\"?><a>x</a>".encode("cp037"),
+        # A surrogate pair (U+1F389) split between calls: 3D D8 | 89 DF.
+        "enc-utf16le-surrogate.xml": b"\xff\xfe" + utf16le("<a>\U0001F389</a>"),
+        "enc-utf16be-surrogate.xml": b"\xfe\xff" + utf16be("<a>\U0001F389</a>"),
+        # Document ENDS with half a UTF-16 code unit (terminating call must
+        # report it, not suspend).
+        "enc-utf16le-half-end.xml": b"\xff\xfe" + utf16le("<a>x") + b"\x3c",
+        "enc-utf16be-half-end.xml": b"\xfe\xff" + utf16be("<a>x") + b"\x00",
+        # Streams whose ONLY content is the start of a BOM/signature: the
+        # b1/b2 plans cut inside it.
+        "enc-bom-le-only.xml": b"\xff\xfe",
+        "enc-bom-be-only.xml": b"\xfe\xff",
+        "enc-bom-le-half.xml": b"\xff\xfe<\x00",
+    }
+    for name, content in sorted(enc_docs.items()):
+        with open(os.path.join(out, name), "wb") as f:
+            f.write(content)
     # A couple of binary-edge files (invalid UTF-8) written as raw bytes.
     raw = {
         "raw-invalid-utf8.xml": b"<a>\xff\xfe</a>",
@@ -213,7 +248,7 @@ def main():
     for name, content in sorted(raw.items()):
         with open(os.path.join(out, name), "wb") as f:
             f.write(content)
-    print("wrote %d generated docs to %s" % (len(docs) + len(raw), out))
+    print("wrote %d generated docs to %s" % (len(docs) + len(raw) + len(enc_docs), out))
 
 
 if __name__ == "__main__":

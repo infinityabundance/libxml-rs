@@ -261,6 +261,79 @@ engine, not as a scanner-local tweak. (It is observable with the whole
 document in one chunk, so it is independent of replay but NOT of the
 input-availability model.)
 
+## Slice 1 blocker (next work): progressive input decoding
+
+The persistent driver cannot consume input until `InputBuffer` is genuinely
+progressive in its ENCODING handling. Two pre-existing defects (they only
+stayed hidden because the replay design always re-presented the whole
+accumulated buffer to a whole-buffer decoder):
+
+1. **Multi-byte tails are appended raw after conversion.** Once
+   `convert_detected_utf16()` has replaced `data` with UTF-8 and set
+   `converted_to_utf8`, the next `push_bytes` finds
+   `legacy_source_encoding_name() == None` for `Utf16Le`/`Utf16Be`, so it
+   falls through and appends the RAW UTF-16 tail onto the converted UTF-8
+   buffer.
+2. **Encoding detection is not re-run for short prefixes.**
+   `push_bytes` re-detects only on `first_real_bytes` or `decl_pending`.
+   A 1-byte first chunk (`FF`) makes `detect_bom_and_encoding` default to
+   UTF-8 (it cannot match a 2-byte BOM), and the second chunk (`FE 3C 00…`)
+   does not re-detect — the BOM is lost. Upstream avoids this by parking in
+   `XML_PARSER_START` on a non-final call with too few bytes (`avail < 4`,
+   and `avail < 200` for the EBCDIC probe) BEFORE encoding detection.
+
+### Oracle evidence (frozen court VM, `enc-utf16le-bom.xml`, b2 chunks)
+
+```text
+ORACLE (correct progressive behavior):
+  CALL 0 in=0  (START, parks: encoding unit incomplete)
+  CALL 1 in=17 (XML_DECL: BOM seen, transcoded)
+  CALL 2 in=6  startDocument; startElementNs local=[a]
+  CALL 4 in=7  characters len=1 [x]
+
+CANDIDATE (broken):
+  CALL 0 in=1  startDocument; endDocument     <- raw UTF-16 treated as UTF-8
+  CALL 1 in=7  startDocument; endDocument     <- never decodes; no element
+  ...
+```
+
+The same divergence reproduces for UTF-16BE, BOM-less UTF-16, UTF-32BE,
+EBCDIC, surrogate pairs, and a document ending with half a code unit.
+
+### Corpus cases added (binary, split by the b1/b2/b3 plans)
+
+`enc-utf16le-bom`, `enc-utf16be-bom`, `enc-utf16le-nobom`,
+`enc-utf16be-nobom`, `enc-utf32le-bom`, `enc-utf32be-bom`,
+`enc-utf32be-nobom`, `enc-ebcdic` (cp037), `enc-utf16le-surrogate`,
+`enc-utf16be-surrogate`, `enc-utf16le-half-end`, `enc-utf16be-half-end`,
+`enc-bom-le-only`, `enc-bom-be-only`, `enc-bom-le-half`. Together with the
+b1/b2/b3 plans these split the BOM, the first-four-byte signatures, single
+code units, and surrogate pairs across calls, and cover the terminating
+call carrying half a code unit.
+
+### Fix plan (next slice, before any XML-grammar wiring)
+
+- **Defer detection while undecided.** `detect_bom_and_encoding` must be
+  able to report *undecided* (too few bytes + `!terminate`) instead of
+  defaulting to UTF-8, and `push_bytes` must re-run detection on every
+  subsequent push until a decision is made.
+- **Keep the source decoder installed.** For `Utf16*`/`Ucs4*`/`EBCDIC`/
+  registry encodings, tails are decoded with a decoder that CARRIES the
+  trailing bytes that do not yet form a complete code unit (odd byte,
+  half a surrogate pair); the terminating call flushes the carry so a half
+  unit at EOF reports the same error as the oracle.
+- **Termination must reach the input layer.** `push_bytes` needs the
+  `terminate` flag (or an explicit finalize step): the detection deferral
+  and the carry flush are both terminate-dependent — an incomplete
+  encoding unit with `terminate == 0` is `NeedMoreInput`, not an error.
+- **Accounting authority moves to `InputBuffer`.** Whole-buffer conversion
+  REPLACES bytes rather than appending, so
+  `machine.materialize_input(n)` cannot represent it. `InputBuffer` should
+ow the materialized/consumed totals (it knows raw arrival, decoder state,
+  conversions, rebasing) and `PushMachine` should keep only
+  `source_bytes_received` + `total_scan_work`, querying the input for the
+  rest when producing the complexity receipt.
+
 ## What the divergences are (five systematic classes)
 
 Classes 1–4 share one architectural root cause — the whole-buffer replay
