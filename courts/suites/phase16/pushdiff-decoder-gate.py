@@ -16,14 +16,23 @@ decoder-relevant observables only:
     events (`startDocument`/`endDocument`) removed;
   * whether the encoder error (`dom=8 code=81`) was raised, and with what
     domain/code/level;
-  * the `FINAL` (terminating-call) `rc`/`err`/`wf` triple.
+  * the `FINAL` (terminating-call) outcome: the `wf` flag always, and the
+    full `rc`/`err`/`wf` triple when the failure IS the encoder's (code 81).
 
-Everything else (per-call `in=`, `p=`, `n=`, event timing, and the REFEED
-line) belongs to the lifecycle classes and is deliberately NOT compared here.
-The REFEED line is divergence class 4 (finished-context refeed, "Extra content
-at the end of the document"), which the slice-0 baseline already counts
-separately for every document; the gate reports how many cells differ *only*
-there, but does not gate on it.
+Everything else (per-call `in=`, `p=`, `n=`, event timing, the REFEED line,
+and the parser-class diagnostic code of an otherwise-agreed failure) belongs to
+the lifecycle/parser classes and is deliberately NOT gated here; the gate
+reports how many cells differ only there. Two such counters are printed:
+
+  * REFEED-line differences = divergence class 4 (finished-context refeed,
+    "Extra content at the end of the document"), already counted separately in
+    the slice-0 baseline for every document;
+  * FINAL `rc`/`err` differences where both sides agree on `wf` = a
+    parser-class diagnostic choice, e.g. raw invalid bytes at the document
+    start (the `enc-utf32??-bom` cells: upstream has no UTF-32 BOM, so the
+    document begins with NUL bytes and upstream reports XML_ERR_DOCUMENT_EMPTY
+    "Start tag expected" while the candidate's tokenizer reports
+    XML_ERR_INVALID_CHAR for the same defeated document).
 
 Usage:
   python3 pushdiff-decoder-gate.py <raw-run-dir> [--verbose]
@@ -168,6 +177,7 @@ def main():
 
     failed = []
     class4_only = 0
+    parser_diag_only = 0
     for name, oracle_path, cand_path in cells:
         o = project(oracle_path)
         c = project(cand_path)
@@ -175,8 +185,8 @@ def main():
         if o is None or c is None:
             reasons.append("missing trace")
         else:
-            o_events, o_errs, o_finals, _ = o
-            c_events, c_errs, c_finals, _ = c
+            o_events, o_errs, o_finals, o_refeed = o
+            c_events, c_errs, c_finals, c_refeed = c
             if o_events != c_events:
                 reasons.append(
                     f"decoded content differs "
@@ -184,7 +194,15 @@ def main():
                 )
             if o_errs != c_errs:
                 reasons.append(f"encoder error differs: {o_errs!r} != {c_errs!r}")
-            if o_finals != c_finals:
+            # Well-formedness parity is decoder-attributable: the decoded
+            # stream must not be accepted where upstream rejects it (or vice
+            # versa). The exact diagnostic code is only gated when the failure
+            # is the encoder's.
+            if [f[3] for f in o_finals] != [f[3] for f in c_finals]:
+                reasons.append(
+                    f"FINAL well-formedness differs: {o_finals!r} != {c_finals!r}"
+                )
+            elif (o_errs or c_errs) and o_finals != c_finals:
                 reasons.append(f"FINAL differs: {o_finals!r} != {c_finals!r}")
         if reasons:
             failed.append((name, reasons))
@@ -194,20 +212,29 @@ def main():
                     print(f"       {r}")
         elif verbose:
             print(f"ok   {name}")
-        # Informational: cells whose full trace also diverges in the REFEED
-        # line (class 4) — expected, never gated here.
+        # Informational counters (never gated) — see the module docstring.
         if o is not None and c is not None:
             if o[3] != c[3]:
                 class4_only += 1
+            if (
+                o[2] != c[2]
+                and [f[3] for f in o[2]] == [f[3] for f in c[2]]
+                and not (o[1] or c[1])
+            ):
+                parser_diag_only += 1
 
     total = len(cells)
     print(
         f"pushdiff decoder gate: {total - len(failed)}/{total} cells green "
-        f"(decoded content, encoder error, FINAL rc/err/wf)"
+        f"(decoded content, encoder error, FINAL well-formedness)"
     )
     print(
         f"  (informational: {class4_only}/{total} cells also differ in the "
         f"REFEED line — divergence class 4, not gated)"
+    )
+    print(
+        f"  (informational: {parser_diag_only}/{total} cells agree on "
+        f"well-formedness but report a different parser diagnostic code)"
     )
     if failed:
         print("failing cells:")

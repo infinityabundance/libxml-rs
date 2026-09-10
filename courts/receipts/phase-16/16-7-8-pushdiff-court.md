@@ -343,7 +343,106 @@ That is the causal isolation: the decoder work is judged on decoder
 observables; the full-trace byte identity is the later persistent-engine
 gate.
 
-#### Implementation plan
+#### Decoder slice IMPLEMENTED — and the gate is now executable
+
+Landed in three commits:
+
+```text
+9fac5d17  progressive source decoder in InputBuffer (park/decide/carry)
+8c6f9c8b  decoder-gate court + two detection corrections
+a42145fb  PI availability gate + document-level char-data diagnostics
+```
+
+`InputBuffer` now owns a `SourceDecoding` state (`WholeBuffer` / `Parked` /
+`Decided`) and a carry (`pending_source`). A push session starts `Parked` and
+re-runs detection on every call until it can decide, reproducing
+`xmlParseTryOrFinish`'s `XML_PARSER_START` gates exactly — `(!terminate &&
+avail < 4) goto done` and the EBCDIC signature `4C 6F A7 94` waiting for 200
+bytes. A parked non-final call parses nothing, fires nothing and raises
+nothing; a terminating call always decides. Once decided, complete encoding
+units are decoded incrementally (UTF-16 carries an odd byte or a lone high
+surrogate, UTF-32 carries 0–3 bytes) — never a whole-buffer re-decode, which
+would only move the replay parser's O(N²) down one layer. Termination reaches
+the input layer: an incomplete unit on a non-final call is suspension; the same
+unit on a terminating call is the encoder flush (`xmlParserCheckEOF` →
+`xmlCtxtErrIO`) → `XML_FROM_IO` 81 "Invalid bytes in character encoding".
+`InputBuffer` also owns the source/materialized accounting beside the position
+it already owned; consumption accounting stays machine-side until the
+persistent driver exists, because the transitional replay parses a DUPLICATE of
+the base buffer and so has no meaningful single consumed cursor yet.
+
+Unit tests (9) cover the park gate, split UTF-8/UTF-16 BOMs, the EBCDIC
+200-byte threshold, surrogate-pair and half-unit splits, definite-vs-suspension
+error semantics, and **partition equivalence** — any source chunk partitioning
+materializes exactly the whole-source UTF-8 stream.
+
+#### The gate execution (`PUSHDIFF_FILTER=enc-`, candidate `a42145fb`)
+
+```text
+cells=355  diffs=355          full trace: still RED (expected)
+pushdiff decoder gate: 355/355 cells green
+  (decoded content, encoder error, FINAL well-formedness)
+  (informational: 345/355 cells also differ in the REFEED line — class 4)
+  (informational: 27/355 cells agree on well-formedness but report a
+   different parser diagnostic code)
+```
+
+`courts/suites/phase16/pushdiff-decoder-gate.py` projects each recorded trace
+onto what the source decoder owns: the decoded SAX content (adjacent
+`characters` runs merged — segmentation is class 5), the encoder error
+(`dom=8 code=81`) if any, and the `FINAL` outcome. Its provenance is recorded
+in `run.txt` (`decoder_gate_sha256`, `run_decoder_gate_sha256`) and the raw
+traces it derives from are the run's recorded `oracle-*`/`cand-*` files.
+
+Representative evidence in `raw/pushdiff/sample/`:
+
+| sample | what it shows |
+|---|---|
+| `enc-ebcdic-long__b1__oracle-calls-190-205.txt` | oracle parks (`in=0`, `p=0`) through CALL 198; CALL 199 (avail 200) fires `startDocument`+`startElementNs [a]`, `in=7` — the 200-byte EBCDIC gate |
+| `corpus_enc-ebcdic-long.xml__b1.diff` | the candidate now matches the oracle byte-for-byte through CALL 199 (the diff starts at line 403); the remaining difference is class-5 character-run segmentation |
+| `corpus_enc-utf16le-half-unit-only.xml__b2.diff` | the isolated truncated unit: identical events, identical `error dom=8 code=81 level=3 … i2=9`, identical `FINAL 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9`; only `nameNr` differs |
+| `corpus_enc-utf16le-bom.xml__b1.diff` | a BOM-split UTF-16LE document decodes to the oracle's events; only lifecycle timing/`instate`/`nameNr` remain (classes 1–2) |
+| `corpus_enc-utf16be-nobom.xml__b1.diff` | BOM-less UTF-16: the `<?` prefix now parks until `?>` is available instead of raising PI_NOT_STARTED / RESERVED_XML_NAME |
+| `corpus_enc-utf32be-bom.xml__b1.diff` | `00 00 FE FF` is NOT a UTF-32 BOM upstream: both sides reject the document, with different parser diagnostics (see below) |
+| `decoder-gate.txt` | the gate output above |
+
+#### Three corrections the decoder work produced
+
+1. **No UTF-32/UCS-4 BOM exists.** Neither `xmlDetectEncoding`
+   (parserInternals.c) nor `xmlDetectCharEncoding` (encoding.c, appendix F)
+   has a UTF-32 BOM case; `FF FE 00 00` is a UTF-16LE BOM whose first decoded
+   character is U+0000 and `00 00 FE FF` falls through to default UTF-8. The
+   oracle confirms it (`enc-utf32??-bom`: "Start tag expected, '<' not found",
+   rc 4). BOM-LESS UCS-4 (`3C 00 00 00` / `00 00 00 3C`) is still detected by
+   both. The candidate used to treat both BOMs as UTF-32 and parse the
+   document cleanly.
+2. **A `<?` construct is only scanned once its `?>` is available.** Every
+   PI-bearing state gates `xmlParsePI` behind `(!terminate) &&
+   (!xmlParseLookupString(ctxt, 2, "?>", 2))`, so a non-final call defers the
+   whole construct. The candidate scanned optimistically and raised
+   PI_NOT_STARTED (46) / RESERVED_XML_NAME (64) on truncated prefixes.
+   Correct decoding exposed this: UTF-32 materializes one character per call,
+   so `<?`, `<?x`, `<?xml` are reached immediately.
+3. **Document-level character data does not scan char data.** Upstream's MISC
+   state sends a non-'<' byte straight to `XML_PARSER_START_TAG`
+   ("Start tag expected", code 4) and never runs `xmlParseCharData` there; the
+   candidate's tokenizer could record `XML_ERR_INVALID_CHAR` ("PCDATA invalid
+   Char value 0") for an invalid byte in the run and supersede it.
+
+#### Open, newly isolated: parser diagnostic on raw NUL/invalid bytes
+
+The 27 informational cells are exactly `enc-utf32??-bom`, where the oracle
+rejects the document (`XML_ERR_DOCUMENT_EMPTY` "Start tag expected", rc 4) and
+the candidate also rejects it but with `XML_ERR_INVALID_CHAR` (9) or
+`XML_ERR_NAME_REQUIRED` (68). Both agree the document is malformed; only the
+diagnostic differs. The root cause is that the candidate's tokenizer is
+phase-agnostic and scans character data before the phase-driven parser can
+reach `XML_PARSER_START_TAG` — a replay-architecture property (the persistent
+driver knows its phase and will not scan char data at document level), not a
+decoding one. It is decoder-independent: any input whose first bytes are NUL or
+invalid UTF-8 reproduces it.
+
+#### Implementation plan (retained as the pre-implementation record)
 
 - **Defer detection while undecided.** `detect_bom_and_encoding` must be
   able to report *undecided* (too few bytes + `!terminate`) instead of
@@ -447,9 +546,17 @@ G6  pushscale.c is O(N) (20/40/80 MB curve ~linear)
 G7  lxml suite passes (oracle baseline 2007/0) — large iterparse unblocked
 G8  nokogiri push/SAX passes
 G9  PHP six-gate remains 0 failures (1250/0)
-G10 cargo test --lib green (1267)
+G10 cargo test --lib green (1291 as of the decoder slice)
+
+Decoder sub-gate (executable, `pushdiff-decoder-gate.py`, expected GREEN now):
+decoded content + encoder error + FINAL well-formedness per `enc-*` cell —
+currently 355/355, with the full trace still red as designed.
 
 ## Next slices
+
+0. ~~Progressive source decoder + executable decoder gate.~~ DONE
+   (`9fac5d17`, `8c6f9c8b`, `a42145fb`; gate 355/355, full trace still 355/355
+   as predicted).
 
 1. Stateful push driver: park the parser (phase, element frames, tokenizer
    input cursor, namespace scope) across non-final calls; scan only new

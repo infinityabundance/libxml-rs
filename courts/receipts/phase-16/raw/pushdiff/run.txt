@@ -10,10 +10,11 @@ cargo=cargo 1.98.0 (797e8a9bc 2026-08-05)
 probe_sha256=ab3f1a9325aa510414d904b8201766b0b300a1a7af0f0308a2332221d3eb9215
 generator_sha256=4c24afc250ce3072ce1ee577f321354b4ebeb49763bd38c4ebeb2b72c5fef1bd
 runner_sha256=35c41c5f7dedda5b7a01cd94de353170cf53d74dcd2df3e03ccc47445c20d1dd
-decoder_gate_sha256=6882b21f4f3d72f0a6ee07af52f474d24853e0f03a8f47b90801d098778f8f6c
+decoder_gate_sha256=6882b21f4f3d72f0a6ee07af52f474d24853e0f03a8f47b90801d098778f8f6c  # the gate revision present at run time; tightened after the run to compare FINAL on well-formedness + encoder-error parity (see run_decoder_gate_sha256 below)
 probe_runner_sha256=aced4f96948268c11d04c9028408ef6c0592ff314ecdde2f88d2bd7c32f1373c
 image=libxml-rs/phase14-debian:1
 pushdiff_filter=enc-
+run_decoder_gate_sha256=e3054a4baa2addca418a1f6c1b47694c86e40033020be4b20490b1da378425d6  # gate revision that produced sample/decoder-gate.txt from this run's recorded raw traces
 image_id=sha256:4366b5053d2a4f5829e2b827df2e7d4e0e23a3eac90174d22f265f4b0b9b06cd
 image_digest=
 Linux vanir 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 08:05:11 +0000 x86_64 GNU/Linux
