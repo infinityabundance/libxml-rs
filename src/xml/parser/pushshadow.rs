@@ -41,6 +41,21 @@
 //! `int1`/`int2`) — canonicalised rather than dropped, so `error 81` before
 //! `endDocument` is distinguishable from `endDocument` before `error 81`.
 //!
+//! The PHYSICAL WINDOW is compared too, in the probe's `-W` fields:
+//!
+//! - `p` (`cur - base`), `c` (`input->consumed`), `abs` (`c + p`),
+//!   `i` (`inputNr`) — read from the published ABI window;
+//! - `pos0`/`line0`/`col0`/`byte0` — the exported `xmlCtxtGetInputPosition`;
+//! - `win0`/`wsize0`/`woff0`/`wbytes0` — the exported `xmlCtxtGetInputWindow`,
+//!   INCLUDING the window bytes, which prove the materialized buffer around
+//!   the cursor agrees (the raw pointer fields cannot show that). Calling the
+//!   exports rather than re-reading the struct also proves `inputTab[0]` is
+//!   published, because they index `inputTab`, not `ctxt->input`.
+//!
+//! `! cb=<name> ...` lines record the same window at SAX/error CALLBACK ENTRY,
+//! so the court proves the C-visible pointers are refreshed before observable
+//! dispatch, not merely at the call tail.
+//!
 //! For the two ENCODER documents the full diagnostic record (including the
 //! message payload) is asserted as well, because those records are stable and
 //! are the contract under test.
@@ -52,12 +67,6 @@
 //!   declarations/DTDs will make them complicated.
 //! - The driver's own machine diagnostics (materialized/consumed/scan-work)
 //!   are printed SEPARATELY by the report and never enter the compared trace.
-//!
-//! `p`, `i`, `c` and `abs` ARE asserted: they are read from the published ABI
-//! window (`ctxt->input`), so the court proves the driver exposes the same
-//! moving physical window libxml2 does — including the >4096 rebase that keeps
-//! `LINE_LEN` (80) bytes of context, and the identity
-//! `c + (cur - base) == abs`.
 //!
 //! # Coverage
 //!
@@ -81,7 +90,7 @@ use crate::xml::parser::input::{InputBuffer, InputStack};
 use crate::xml::parser::push::PushMachine;
 use crate::xml::parser::state::XmlParser;
 use std::cell::RefCell;
-use std::os::raw::{c_int, c_void};
+use std::os::raw::{c_int, c_ulong, c_void};
 
 pub(crate) const CORPUS_DIR: &str = "courts/suites/phase16/shadow-corpus";
 pub(crate) const FIXTURE_DIR: &str = "courts/receipts/phase-16/raw/pushdrive-shadow";
@@ -109,6 +118,12 @@ const ENCODER_DOCS: &[&str] = &["shadow-utf16trunc.xml", "shadow-utf16invalid.xm
 thread_local! {
     /// Event lines emitted by the recorder while a driver pass runs.
     static EVENTS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    /// The live context, so the recorder callbacks can read the published ABI
+    /// window at callback ENTRY. The SAX user-data slot is NULL (the probe's
+    /// handler table leaves it unset), so the context pointer is not otherwise
+    /// reachable from inside a callback.
+    static CTXT: std::cell::Cell<*mut _xmlParserCtxt> =
+        const { std::cell::Cell::new(std::ptr::null_mut()) };
 }
 
 fn emit(line: String) {
@@ -117,6 +132,29 @@ fn emit(line: String) {
 
 fn drain_events() -> Vec<String> {
     EVENTS.with(|e| std::mem::take(&mut *e.borrow_mut()))
+}
+
+/// The window as seen from INSIDE a callback, in the probe's `-W` `cbmark`
+/// grammar. Emitted before every event so the court proves the C-visible
+/// pointers are refreshed before observable dispatch, not merely at the call
+/// tail.
+fn cbmark(what: &str) {
+    let ctxt = CTXT.with(|c| c.get());
+    let input = if ctxt.is_null() {
+        std::ptr::null_mut()
+    } else {
+        unsafe { (*ctxt).input }
+    };
+    if input.is_null() {
+        emit(format!("! cb={what} p=-1 c=-1 abs=-1"));
+        return;
+    }
+    let p = unsafe { (*input).cur.offset_from((*input).base) };
+    let cons = unsafe { (*input).consumed };
+    emit(format!(
+        "! cb={what} p={p} c={cons} abs={}",
+        cons as i64 + p as i64
+    ));
 }
 
 // ── probe-compatible escaping ───────────────────────────────────────────────
@@ -161,10 +199,12 @@ unsafe fn esc_str(p: *const xmlChar) -> String {
 // ── the recording SAX handler (the probe's recorder, in Rust) ───────────────
 
 unsafe extern "C" fn on_start_document(_ctx: *mut c_void) {
+    cbmark("startDocument");
     emit("startDocument".to_string());
 }
 
 unsafe extern "C" fn on_end_document(_ctx: *mut c_void) {
+    cbmark("endDocument");
     emit("endDocument".to_string());
 }
 
@@ -179,6 +219,7 @@ unsafe extern "C" fn on_start_ns(
     nb_defaulted: c_int,
     attributes: *mut *const xmlChar,
 ) {
+    cbmark("startElementNs");
     let mut line = String::from("startElementNs local=[");
     line.push_str(&unsafe { esc_str(localname) });
     line.push_str("] prefix=");
@@ -231,6 +272,7 @@ unsafe extern "C" fn on_end_ns(
     prefix: *const xmlChar,
     uri: *const xmlChar,
 ) {
+    cbmark("endElementNs");
     let mut line = String::from("endElementNs local=[");
     line.push_str(&unsafe { esc_str(localname) });
     line.push_str("] prefix=");
@@ -241,6 +283,7 @@ unsafe extern "C" fn on_end_ns(
 }
 
 unsafe extern "C" fn on_characters(_ctx: *mut c_void, ch: *const xmlChar, len: c_int) {
+    cbmark("characters");
     let n = len.max(0) as usize;
     let bytes = if ch.is_null() {
         &[][..]
@@ -251,6 +294,7 @@ unsafe extern "C" fn on_characters(_ctx: *mut c_void, ch: *const xmlChar, len: c
 }
 
 unsafe extern "C" fn on_ignorable(_ctx: *mut c_void, ch: *const xmlChar, len: c_int) {
+    cbmark("ignorableWhitespace");
     let n = len.max(0) as usize;
     let bytes = if ch.is_null() {
         &[][..]
@@ -264,10 +308,12 @@ unsafe extern "C" fn on_ignorable(_ctx: *mut c_void, ch: *const xmlChar, len: c_
 }
 
 unsafe extern "C" fn on_comment(_ctx: *mut c_void, value: *const xmlChar) {
+    cbmark("comment");
     emit(format!("comment [{}]", unsafe { esc_str(value) }));
 }
 
 unsafe extern "C" fn on_cdata(_ctx: *mut c_void, value: *const xmlChar, len: c_int) {
+    cbmark("cdataBlock");
     let n = len.max(0) as usize;
     let bytes = if value.is_null() {
         &[][..]
@@ -278,6 +324,7 @@ unsafe extern "C" fn on_cdata(_ctx: *mut c_void, value: *const xmlChar, len: c_i
 }
 
 unsafe extern "C" fn on_pi(_ctx: *mut c_void, target: *const xmlChar, data: *const xmlChar) {
+    cbmark("processingInstruction");
     emit(format!(
         "pi target={} data={}",
         unsafe { esc_str(target) },
@@ -286,6 +333,7 @@ unsafe extern "C" fn on_pi(_ctx: *mut c_void, target: *const xmlChar, data: *con
 }
 
 unsafe extern "C" fn on_reference(_ctx: *mut c_void, name: *const xmlChar) {
+    cbmark("reference");
     emit(format!("reference [{}]", unsafe { esc_str(name) }));
 }
 
@@ -296,6 +344,7 @@ unsafe extern "C" fn on_reference(_ctx: *mut c_void, name: *const xmlChar) {
 /// evidence ("error 81, then endDocument", not merely "the final errNo was
 /// 81").
 unsafe extern "C" fn on_error(_ctx: *mut c_void, error: *const _xmlError) {
+    cbmark("error");
     if error.is_null() {
         emit("error(NULL)".to_string());
         return;
@@ -481,16 +530,49 @@ unsafe fn tail_line(lbl: &str, idx: usize, ctxt: *mut _xmlParserCtxt, ctor: bool
         format!("< {lbl} {idx} rc={rc} err={err} wf={wf} in={instate}")
     };
     if input.is_null() {
-        return format!("{head} p=-1 l=-1 col=-1 i={input_nr} n={name_nr} c=-1 abs=-1");
+        return format!("{head} p=-1 l=-1 col=-1 i=-1 n={name_nr}");
     }
     let p = unsafe { (*input).cur.offset_from((*input).base) };
     let consumed = unsafe { (*input).consumed };
     let line = unsafe { (*input).line };
     let col = unsafe { (*input).col };
-    format!(
+    let mut out = format!(
         "{head} p={p} l={line} col={col} i={input_nr} n={name_nr} c={consumed} abs={abs}",
         abs = consumed as i64 + p as i64
-    )
+    );
+    // The PUBLIC accessors over the same input, mirroring the probe's `-W`
+    // fields: calling the exports (rather than re-reading the struct) proves
+    // `inputTab[0]` is published — they index `inputTab`, not `ctxt->input` —
+    // and `wbytes0` proves the materialized window BYTES agree, which the raw
+    // pointer fields alone cannot show.
+    unsafe {
+        let mut line0: c_int = -1;
+        let mut col0: c_int = -1;
+        let mut byte0: c_ulong = 0;
+        let prc = crate::abi::exports_parserint::xmlCtxtGetInputPosition(
+            ctxt,
+            0,
+            std::ptr::null_mut(),
+            &mut line0,
+            &mut col0,
+            &mut byte0,
+        );
+        out.push_str(&format!(
+            " pos0={prc} line0={line0} col0={col0} byte0={byte0}"
+        ));
+        let mut start: *const xmlChar = std::ptr::null();
+        let mut size: c_int = 80;
+        let mut off: c_int = -1;
+        let wrc = crate::abi::exports_parserint::xmlCtxtGetInputWindow(
+            ctxt, 0, &mut start, &mut size, &mut off,
+        );
+        out.push_str(&format!(" win0={wrc} wsize0={size} woff0={off} wbytes0=["));
+        if wrc == 0 && !start.is_null() && size > 0 {
+            out.push_str(&esc_bytes(std::slice::from_raw_parts(start, size as usize)));
+        }
+        out.push(']');
+    }
+    out
 }
 
 /// Drive one document through one plan and emit the probe-grammar trace.
@@ -501,6 +583,7 @@ pub(crate) fn run_driver(doc: &[u8], plan: &ShadowPlan, name: &str) -> Vec<Strin
         let guard = CtxtGuard(helpers::create_parser_ctxt());
         let ctxt = guard.0;
         assert!(!ctxt.is_null());
+        CTXT.with(|c| c.set(ctxt));
         install_recorder(ctxt);
         // Diagnostics enter the same ordered stream as the SAX events.
         crate::abi::exports_parser::xmlCtxtSetErrorHandler(

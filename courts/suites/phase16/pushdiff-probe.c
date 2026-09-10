@@ -77,10 +77,12 @@ static FILE *TR;
 static xmlParserCtxtPtr CUR; /* the live context (xmlStopParser target) */
 static int STOP_AFTER = 0;   /* 0 = never stop; else stop at the K-th start */
 static int STARTS = 0;       /* start-element counter, reset per document */
-/* Shadow-only: additionally emit the PHYSICAL input window (`consumed` and the
- * reconstructed absolute position). Off by default so the frozen 4702-cell
- * trace format is untouched. The oracle-shadow court runs with it on, so the
- * identity `consumed + (cur - base) == absolute` is measured rather than
+/* Shadow-only (-W): additionally emit the PHYSICAL input window (`consumed` and
+ * the reconstructed absolute position), the PUBLIC accessors
+ * (xmlCtxtGetInputPosition / xmlCtxtGetInputWindow, window bytes included) and
+ * a window mark at every SAX/error callback entry. Off by default so the frozen
+ * 4702-cell trace format is untouched. The oracle-shadow court runs with it on,
+ * so the identity `consumed + (cur - base) == absolute` is measured rather than
  * inferred (it is exactly what xmlCtxtGetInputPosition reconstructs). */
 static int WINDOW_MODE = 0;
 
@@ -101,10 +103,51 @@ static void esc_str(const xmlChar *s) {
     esc_bytes(s, s ? (int)xmlStrlen(s) : 0);
 }
 
+/* Shadow-only (-W): the PUBLIC position/window accessors over the same input.
+ * Reading `ctxt->input`'s fields proves the raw window; calling the exports
+ * additionally proves `inputTab[0]` is published (they index inputTab, not
+ * ctxt->input) and that the WINDOW BYTES around the cursor agree — the part the
+ * raw fields cannot show. `size` is caller-supplied; 80 is the 2.15 default
+ * window used by error reporting. */
+static void emit_input_probes(xmlParserCtxtPtr c) {
+    const char *fn = NULL;
+    int line = -1, col = -1, wrc;
+    unsigned long bp = 0;
+    const xmlChar *start = NULL;
+    int size = 80, off = -1;
+    int prc = xmlCtxtGetInputPosition(c, 0, &fn, &line, &col, &bp);
+    fprintf(TR, " pos0=%d line0=%d col0=%d byte0=%lu", prc, line, col, bp);
+    wrc = xmlCtxtGetInputWindow(c, 0, &start, &size, &off);
+    fprintf(TR, " win0=%d wsize0=%d woff0=%d wbytes0=[", wrc, size, off);
+    if ((wrc == 0) && (start != NULL) && (size > 0))
+        esc_bytes(start, size);
+    fprintf(TR, "]");
+}
+
+/* Shadow-only (-W): the window as seen from INSIDE a SAX callback. Emitted
+ * before every event so the court proves the C-visible pointers are refreshed
+ * before observable dispatch, not merely at the call tail. */
+static void cbmark(const char *what) {
+    xmlParserInputPtr in;
+    if (!WINDOW_MODE) return;
+    in = CUR ? CUR->input : NULL;
+    if (in == NULL) {
+        fprintf(TR, "! cb=%s p=-1 c=-1 abs=-1\n", what);
+        return;
+    }
+    {
+        unsigned long cons = in->consumed;
+        long p = (long)(in->cur - in->base);
+        fprintf(TR, "! cb=%s p=%ld c=%lu abs=%lu\n", what, p, cons,
+                cons + (unsigned long)p);
+    }
+    fflush(TR);
+}
+
 /* ── SAX lifecycle ─────────────────────────────────────────────────── */
 
-static void rec_sd(void *ctx) { (void)ctx; fprintf(TR, "startDocument\n"); fflush(TR); }
-static void rec_ed(void *ctx) { (void)ctx; fprintf(TR, "endDocument\n"); fflush(TR); }
+static void rec_sd(void *ctx) { (void)ctx; cbmark("startDocument"); fprintf(TR, "startDocument\n"); fflush(TR); }
+static void rec_ed(void *ctx) { (void)ctx; cbmark("endDocument"); fprintf(TR, "endDocument\n"); fflush(TR); }
 
 static void maybe_stop(void) {
     if (STOP_AFTER > 0 && ++STARTS == STOP_AFTER) {
@@ -121,6 +164,7 @@ static void rec_s2(void *ctx, const xmlChar *local, const xmlChar *pref,
                    int nb_att, int nb_def, const xmlChar **atts) {
     int i;
     (void)ctx;
+    cbmark("startElementNs");
     maybe_stop();
     fprintf(TR, "startElementNs local=[");
     esc_bytes(local, local ? (int)xmlStrlen(local) : 0);
@@ -158,6 +202,7 @@ static void rec_s2(void *ctx, const xmlChar *local, const xmlChar *pref,
 static void rec_e2(void *ctx, const xmlChar *local, const xmlChar *pref,
                    const xmlChar *URI) {
     (void)ctx;
+    cbmark("endElementNs");
     fprintf(TR, "endElementNs local=[");
     esc_bytes(local, local ? (int)xmlStrlen(local) : 0);
     fprintf(TR, "] prefix=");
@@ -173,6 +218,7 @@ static void rec_e2(void *ctx, const xmlChar *local, const xmlChar *pref,
 static void rec_s1(void *ctx, const xmlChar *name, const xmlChar **atts) {
     int i;
     (void)ctx;
+    cbmark("startElement");
     maybe_stop();
     fprintf(TR, "startElement [");
     esc_bytes(name, name ? (int)xmlStrlen(name) : 0);
@@ -189,6 +235,7 @@ static void rec_s1(void *ctx, const xmlChar *name, const xmlChar **atts) {
 
 static void rec_e1(void *ctx, const xmlChar *name) {
     (void)ctx;
+    cbmark("endElement");
     fprintf(TR, "endElement [");
     esc_bytes(name, name ? (int)xmlStrlen(name) : 0);
     fprintf(TR, "]\n");
@@ -199,6 +246,7 @@ static void rec_e1(void *ctx, const xmlChar *name) {
 
 static void rec_ch(void *ctx, const xmlChar *ch, int len) {
     (void)ctx;
+    cbmark("characters");
     fprintf(TR, "characters len=%d [", len);
     esc_bytes(ch, len);
     fprintf(TR, "]\n");
@@ -207,6 +255,7 @@ static void rec_ch(void *ctx, const xmlChar *ch, int len) {
 
 static void rec_iw(void *ctx, const xmlChar *ch, int len) {
     (void)ctx;
+    cbmark("ignorableWhitespace");
     fprintf(TR, "ignorableWhitespace len=%d [", len);
     esc_bytes(ch, len);
     fprintf(TR, "]\n");
@@ -215,6 +264,7 @@ static void rec_iw(void *ctx, const xmlChar *ch, int len) {
 
 static void rec_co(void *ctx, const xmlChar *value) {
     (void)ctx;
+    cbmark("comment");
     fprintf(TR, "comment [");
     esc_str(value);
     fprintf(TR, "]\n");
@@ -223,6 +273,7 @@ static void rec_co(void *ctx, const xmlChar *value) {
 
 static void rec_cd(void *ctx, const xmlChar *value, int len) {
     (void)ctx;
+    cbmark("cdataBlock");
     fprintf(TR, "cdata len=%d [", len);
     esc_bytes(value, len);
     fprintf(TR, "]\n");
@@ -231,6 +282,7 @@ static void rec_cd(void *ctx, const xmlChar *value, int len) {
 
 static void rec_pi(void *ctx, const xmlChar *target, const xmlChar *data) {
     (void)ctx;
+    cbmark("processingInstruction");
     fprintf(TR, "pi target=");
     esc_str(target);
     fprintf(TR, " data=");
@@ -241,6 +293,7 @@ static void rec_pi(void *ctx, const xmlChar *target, const xmlChar *data) {
 
 static void rec_ref(void *ctx, const xmlChar *name) {
     (void)ctx;
+    cbmark("reference");
     fprintf(TR, "reference [");
     esc_str(name);
     fprintf(TR, "]\n");
@@ -252,6 +305,7 @@ static void rec_ref(void *ctx, const xmlChar *name) {
 static void rec_intsubset(void *ctx, const xmlChar *name, const xmlChar *ExternalID,
                           const xmlChar *SystemID) {
     (void)ctx;
+    cbmark("internalSubset");
     fprintf(TR, "internalSubset name=");
     esc_str(name);
     fprintf(TR, " ext=");
@@ -265,6 +319,7 @@ static void rec_intsubset(void *ctx, const xmlChar *name, const xmlChar *Externa
 static void rec_extsubset(void *ctx, const xmlChar *name, const xmlChar *ExternalID,
                           const xmlChar *SystemID) {
     (void)ctx;
+    cbmark("externalSubset");
     fprintf(TR, "externalSubset name=");
     esc_str(name);
     fprintf(TR, " ext=");
@@ -310,6 +365,7 @@ static void rec_entdecl(void *ctx, const xmlChar *name, int type,
                         const xmlChar *publicId, const xmlChar *systemId,
                         xmlChar *content) {
     (void)ctx;
+    cbmark("entityDecl");
     fprintf(TR, "entityDecl name=");
     esc_str(name);
     fprintf(TR, " type=%d pub=", type);
@@ -327,6 +383,7 @@ static void rec_attrdecl(void *ctx, const xmlChar *elem, const xmlChar *fullname
                          xmlEnumerationPtr tree) {
     xmlEnumerationPtr e;
     (void)ctx;
+    cbmark("attributeDecl");
     fprintf(TR, "attributeDecl elem=");
     esc_str(elem);
     fprintf(TR, " name=");
@@ -345,6 +402,7 @@ static void rec_attrdecl(void *ctx, const xmlChar *elem, const xmlChar *fullname
 static void rec_elemsdecl(void *ctx, const xmlChar *name, int type,
                           xmlElementContentPtr content) {
     (void)ctx;
+    cbmark("elementDecl");
     fprintf(TR, "elementDecl name=");
     esc_str(name);
     fprintf(TR, " type=%d content=", type);
@@ -356,6 +414,7 @@ static void rec_elemsdecl(void *ctx, const xmlChar *name, int type,
 static void rec_notationdecl(void *ctx, const xmlChar *name,
                              const xmlChar *publicId, const xmlChar *systemId) {
     (void)ctx;
+    cbmark("notationDecl");
     fprintf(TR, "notationDecl name=");
     esc_str(name);
     fprintf(TR, " pub=");
@@ -369,6 +428,7 @@ static void rec_notationdecl(void *ctx, const xmlChar *name,
 static void rec_unparsed(void *ctx, const xmlChar *name, const xmlChar *publicId,
                          const xmlChar *systemId, const xmlChar *notationName) {
     (void)ctx;
+    cbmark("unparsedEntityDecl");
     fprintf(TR, "unparsedEntityDecl name=");
     esc_str(name);
     fprintf(TR, " pub=");
@@ -385,6 +445,7 @@ static void rec_unparsed(void *ctx, const xmlChar *name, const xmlChar *publicId
 
 static void rec_err(void *ctx, const xmlError *err) {
     (void)ctx;
+    cbmark("error");
     if (err == NULL) { fprintf(TR, "error(NULL)\n"); fflush(TR); return; }
     fprintf(TR, "error dom=%d code=%d level=%d file=", err->domain, err->code, err->level);
     esc_bytes((const xmlChar *)(err->file ? err->file : ""),
@@ -546,6 +607,7 @@ static void tail(const char *lbl, int idx, int rc, xmlParserCtxtPtr c) {
             unsigned long cons = in->consumed;
             fprintf(TR, " c=%lu abs=%lu", cons,
                     cons + (unsigned long)(in->cur - in->base));
+            emit_input_probes(c);
         }
     } else {
         fprintf(TR, " p=-1 l=-1 col=-1 i=-1 n=%d", c->nameNr);
@@ -763,6 +825,7 @@ int main(int argc, char **argv) {
                         unsigned long cons = in->consumed;
                         fprintf(TR, " c=%lu abs=%lu", cons,
                                 cons + (unsigned long)(in->cur - in->base));
+                        emit_input_probes(c);
                     }
                 } else {
                     fprintf(TR, " p=-1 l=-1 col=-1 i=-1 n=%d", c->nameNr);

@@ -2370,22 +2370,38 @@ unsafe fn parser_input_get_window(
     unsafe {
         let mut cur = (*input).cur;
         let base = (*input).base;
+        let end = (*input).end;
         let size = *size_in_out;
+        // The materialized buffer has NO NUL sentinel at `end` (upstream's does),
+        // so every read here emulates it: a position at or past `end` reads as 0,
+        // which is exactly what upstream observes there. Without this the
+        // function dereferenced one byte past the allocation whenever the input
+        // was fully consumed (`cur == end`) — the ordinary end-of-chunk/
+        // end-of-callback position — and could fault. The walk-back below still
+        // sees the sentinel, so the window it selects (the last `size` bytes) is
+        // the upstream one.
+        let at = |p: *const xmlChar| -> u8 {
+            if !p.is_null() && !end.is_null() && p < end {
+                unsafe { *p }
+            } else {
+                0
+            }
+        };
         // Skip backwards over any end-of-lines.
-        while cur > base && (*cur == b'\n' || *cur == b'\r') {
+        while cur > base && (at(cur) == b'\n' || at(cur) == b'\r') {
             cur = cur.sub(1);
         }
         let mut n: usize = 0;
         // Search backwards for beginning-of-line (to max buff size).
-        while n < size as usize && cur > base && *cur != b'\n' && *cur != b'\r' {
+        while n < size as usize && cur > base && at(cur) != b'\n' && at(cur) != b'\r' {
             cur = cur.sub(1);
             n += 1;
         }
-        if n > 0 && (*cur == b'\n' || *cur == b'\r') {
+        if n > 0 && (at(cur) == b'\n' || at(cur) == b'\r') {
             cur = cur.add(1);
         } else {
             // Skip over continuation bytes.
-            while cur < (*input).cur && (*cur & 0xC0) == 0x80 {
+            while cur < (*input).cur && (at(cur) & 0xC0) == 0x80 {
                 cur = cur.add(1);
             }
         }
@@ -2394,8 +2410,8 @@ unsafe fn parser_input_get_window(
         // Search forward for end-of-line (to max buff size).
         let mut nfwd: usize = 0;
         let start = cur;
-        while *cur != 0 && *cur != b'\n' && *cur != b'\r' {
-            let avail = (*input).end as usize - cur as usize;
+        while at(cur) != 0 && at(cur) != b'\n' && at(cur) != b'\r' {
+            let avail = end as usize - cur as usize;
             let mut clen: c_int = avail as c_int;
             let c = xmlGetUTF8Char(cur, &mut clen);
             if c < 0 || nfwd + clen as usize > size as usize {

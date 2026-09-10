@@ -1446,6 +1446,62 @@ mod tests {
         }
     }
 
+    /// A [`ParkedConstruct`] stores an ABSOLUTE byte offset, so an ordinary
+    /// physical rebase (`xmlParserShrink`: `used > 4096`) must NOT invalidate
+    /// it — the next call has to resume the parked scan at the same absolute
+    /// byte, not at a window-relative one.
+    ///
+    /// The `shadow-win-*` threshold archaeology cannot prove this on its own:
+    /// its huge quoted attribute stays parked while `used` is still 0, so no
+    /// rebase ever happens WITH a live continuation. This test forces that
+    /// ordering deliberately (consume > 4096 bytes, THEN park mid-tag).
+    #[test]
+    fn parked_construct_survives_a_physical_rebase() {
+        let mut first = Vec::new();
+        first.extend_from_slice(b"<r>");
+        first.extend_from_slice(&[b'x'; 5000]);
+        first.extend_from_slice(b"<a b='v'");
+        let mut doc = first.clone();
+        doc.extend_from_slice(b"/></r>");
+
+        unsafe {
+            let guard = CtxtGuard(helpers::create_parser_ctxt());
+            let buf = InputBuffer::for_push(&[], None);
+            let mut p = XmlParser::new_with_flags(InputStack::new(buf), guard.0, false, false);
+            let mut m = PushMachine::new();
+
+            let _ = p.push_persistent(&mut m, &first, false);
+            let checked = match m.parked_construct() {
+                ParkedConstruct::Gt { checked, .. } => checked,
+                other => panic!("expected a parked Gt continuation, got {other:?}"),
+            };
+            assert_eq!(p.base_input().window_base_abs(), 0, "no rebase yet");
+            assert!(
+                checked > 4096,
+                "the continuation must sit past the threshold"
+            );
+
+            // The next pass opens with the shrink, so the window moves WHILE the
+            // continuation is live.
+            let _ = p.push_persistent(&mut m, b"/></r>", false);
+            let wb = p.base_input().window_base_abs();
+            assert!(wb > 0, "the rebase did not happen");
+            assert!(
+                (wb as u64) < checked,
+                "the continuation no longer lies inside the rebased window"
+            );
+            assert_eq!(
+                m.parked_construct(),
+                ParkedConstruct::BetweenTokens,
+                "the parked tag did not resume from the same absolute offset"
+            );
+
+            let _ = p.push_persistent(&mut m, &[], true);
+            assert_eq!(m.phase(), xmlParserInputState::XML_PARSER_EOF);
+            assert_eq!(dump_doc((*guard.0).myDoc), reference_tree(&doc));
+        }
+    }
+
     /// A non-`<` document start is `XML_ERR_DOCUMENT_EMPTY` (4) with the
     /// start-tag diagnostic — NOT an internal error.
     #[test]

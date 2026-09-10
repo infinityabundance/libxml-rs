@@ -94,7 +94,7 @@ echo "oracle traces: $(ls -1 /scanout | wc -l)"
   echo "plans_small=b1,b2,b3,b5,b257,Cb1,b1z2,b1i,Cb1i,r9-2"
   echo "plans_long=b1024,b4096,b1024i,r17-512"
   echo "plans_window=b1024,b4096,b1024i (shadow-win-* documents)"
-  echo "probe_flags=-W (physical-window mode: emits consumed/abs)"
+  echo "probe_flags=-W (shadow-only: raw window, xmlCtxtGetInputPosition/Window, callback-entry marks)"
   echo "image=$IMAGE"
   echo "image_id=$(docker image inspect --format "{{.Id}}" "$IMAGE" 2>/dev/null || echo unknown)"
   uname -a

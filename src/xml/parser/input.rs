@@ -2292,6 +2292,25 @@ impl InputBuffer {
     ///   `input` borrow `self.data`, so the buffer must stay alive and not
     ///   be mutated or reallocated while the parser input is in use.
     pub unsafe fn populate_parser_input_without_filename(&self, input: &mut _xmlParserInput) {
+        // While the source encoding is still undecided the decoder holds the raw
+        // bytes back (`pending_source`) and the materialized stream is empty.
+        // Upstream has no such split: `xmlParseTryOrFinish`'s `START` gate
+        // returns before `xmlDetectEncoding`, so `input->base`/`cur`/`end` still
+        // point at the RAW bytes it has received. Exposing the held bytes keeps
+        // the public window (`xmlCtxtGetInputWindow`, error handlers) identical
+        // instead of showing an empty buffer.
+        if self.source_parked() {
+            let raw = self.pending_source.as_slice();
+            let p = raw.as_ptr() as *const crate::abi::types::xmlChar;
+            input.base = p;
+            input.cur = p;
+            input.end = unsafe { p.add(raw.len()) };
+            input.line = self.line as c_int;
+            input.col = self.col as c_int;
+            input.length = raw.len() as c_int;
+            input.consumed = 0;
+            return;
+        }
         let bytes: &[u8] = &self.data;
         let data_ptr = bytes.as_ptr();
         // Defensive: a window offset can never point past the cursor or the
@@ -2311,6 +2330,8 @@ impl InputBuffer {
         input.end = end;
         input.line = self.line as c_int;
         input.col = self.col as c_int;
+        // `length` is upstream-deprecated and unused; keep it coherent with the
+        // buffer, but never make it an authority (the cursor plus `end` is).
         input.length = bytes.len() as c_int;
         input.consumed = (self.consumed_bias + wb) as c_ulong;
     }
@@ -3890,6 +3911,33 @@ mod tests {
                 assert_eq!(ib.materialized_bytes() as usize, ib.len());
                 assert_eq!(ib.source_bytes_received() as usize, src.len());
             }
+        }
+    }
+
+    /// Upstream's input buffer carries a NUL sentinel at `end`; the materialized
+    /// buffer here does not. `xmlCtxtGetInputWindow` must therefore never
+    /// dereference at `cur == end` — the ordinary fully-consumed position, where
+    /// every chunk/callback tail sits — or it reads one byte past the
+    /// allocation. It did (the shadow court crashed on its first cell); this
+    /// pins the fix.
+    #[test]
+    fn input_window_never_reads_past_a_fully_consumed_buffer() {
+        let mut ib = InputBuffer::for_push(b"<a/>", None);
+        assert_eq!(ib.len(), 4);
+        ib.skip_linebreak_free(4);
+        assert_eq!(ib.pos().2, 4);
+        unsafe {
+            let mut input: _xmlParserInput = core::mem::zeroed();
+            ib.populate_parser_input_without_filename(&mut input);
+            assert_eq!(input.cur, input.end, "cursor is at the end");
+            let mut start: *const crate::abi::types::xmlChar = std::ptr::null();
+            let mut size: c_int = 80;
+            let mut off: c_int = -1;
+            crate::abi::exports_misc::parser_input_get_window_pub(
+                &mut input, &mut start, &mut size, &mut off,
+            );
+            assert!(size > 0, "the window must still show the line");
+            assert!(start >= input.base && start < input.end);
         }
     }
 }
