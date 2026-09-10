@@ -64,9 +64,12 @@
 //! EOF        -> REFEED ("Extra content at the end of the document")
 //! ```
 //!
-//! Entity and character REFERENCES are reported as
+//! Entity CHARACTER references (`&#65;`, `&amp;`) and parameter/entity
+//! declaration CALLBACKS are handled. A GENERAL entity reference (`&e;`) is the
+//! one remaining construct: it needs the entity-input window and upstream's
+//! `characters` + `reference` dual dispatch, so it is still reported as
 //! [`StepOutcome::Unsupported`] — a LOUD fatal, never a silent fallback to
-//! replay. Their availability scan (`lookup_char`) is implemented so the
+//! replay. Its availability scan (`lookup_char`) is implemented so the
 //! construct parks correctly rather than mis-scanning.
 //!
 //! DOCTYPE is modelled in upstream's TWO phases: the declaration HEAD (which
@@ -828,7 +831,26 @@ impl XmlParser {
             if !terminate && !self.lookup_char(machine, b';') {
                 return StepOutcome::Parked;
             }
-            return self.unsupported(machine, "entity/character reference");
+            // Upstream `xmlParseReference`: the SAME routine the recursive
+            // parser calls. It expands a character reference inline and, for a
+            // general entity, parses the replacement text through the entity
+            // input (which is what makes `input->cur` during its callbacks the
+            // entity's, not the document's).
+            self.tokenizer().set_silent_truncated(!terminate);
+            let token = self.tokenizer().next_token_raw();
+            self.tokenizer().set_silent_truncated(false);
+            self.flush_push_errors();
+            let XmlToken::Reference(data) = token else {
+                return self.unsupported(machine, "entity/character reference");
+            };
+            if self.parse_reference(&data).is_err() {
+                self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
+                self.finish_document(machine);
+                return StepOutcome::Fatal;
+            }
+            machine.note_event();
+            self.set_phase(machine, xmlParserInputState::XML_PARSER_CONTENT);
+            return StepOutcome::Advanced;
         }
         // Character data. Upstream only consults the `<`/`&` lookup while the
         // available run is shorter than XML_PARSER_BIG_BUFFER_SIZE; at or above

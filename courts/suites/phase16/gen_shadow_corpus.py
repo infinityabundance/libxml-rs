@@ -119,6 +119,13 @@ doc("shadow-doctype.xml", b"<!DOCTYPE a><a/>")
 doc("shadow-doctype-subset.xml", b"<!DOCTYPE a [<!ELEMENT a EMPTY>]><a/>")
 doc("shadow-doctype-ext.xml", b'<!DOCTYPE a SYSTEM "a.dtd"><a/>')
 
+# ── 14: references ──────────────────────────────────────────────────────
+# Character references expand inline through the same `xmlParseReference` the
+# recursive parser calls. A GENERAL entity reference is still a remainder: it
+# needs the entity-input window and upstream's `characters` + `reference`
+# dual dispatch, which is the next slice.
+doc("shadow-charref.xml", b"<a>&#65;&amp;&#x42;</a>")
+
 
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "."

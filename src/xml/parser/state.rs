@@ -4104,7 +4104,7 @@ impl XmlParser {
     ///   `ExternalID` and `expandedSize` fields are consistent; a loaded
     ///   external-entity input is a valid `_xmlParserInput` freed via
     ///   `xmlFreeInputStream`.
-    fn parse_reference(&mut self, data: &[u8]) -> Result<(), ()> {
+    pub(crate) fn parse_reference(&mut self, data: &[u8]) -> Result<(), ()> {
         if data.len() < 2 {
             // Bare "&" with no name — the tokenizer raised
             // "xmlParseEntityRef: no name".
