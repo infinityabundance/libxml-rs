@@ -1,0 +1,3 @@
+DIFF  stop mismatch (K=1) mode=b5 -S 1
+cells=4702 diffs=4702
+PUSHDIFF: 4702/4702 cells diverge (see diffs/)

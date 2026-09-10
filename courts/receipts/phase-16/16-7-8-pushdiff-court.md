@@ -860,21 +860,28 @@ exit 1.
 
 The driver is reached only from `pushdrive::tests`; `helpers::parse_chunk` and
 the progressive source decoder are untouched. That claim was MEASURED, not
-asserted: the full unfiltered court was run at both commits either side of the
-change from a pristine tree.
+asserted: the full unfiltered court was run from a pristine tree at every
+commit in the series.
 
-| | pre `93fd8282` | post `bad79052` |
-|---|---:|---:|
-| docs / cells | 257 / 4702 | 257 / 4702 |
-| diverging cells | 4702 | 4702 |
+| | pre `93fd8282` | step 5 `bad79052` | step 5b `57b2f05c` |
+|---|---:|---:|---:|
+| docs / cells | 257 / 4702 | 257 / 4702 | 257 / 4702 |
+| diverging cells | 4702 | 4702 | 4702 |
+| candidate `.so` sha256 | `37d69eb1…` | `3a0b4871…` | `3a0b4871…` |
 
-The court output is byte-identical (all 4702 `DIFF` lines, same order, same
-summary); only `candidate_sha`, `court_sha` and the candidate binary sha256
-differ. Provenance: `courts/receipts/phase-16/raw/pushdrive-step5/`
-(`pre-run.txt`, `post-run.txt`, `README.md`). Note this is also the first
-full-corpus baseline at 257 documents — the frozen slice-0 baseline (4042
-cells) was a smaller corpus, and the decoder slice only ran the court filtered
-to 31 `enc-*` documents (565 cells).
+The court output is byte-identical across all three runs (all 4702 `DIFF`
+lines, same order, same summary). Beyond that, the candidate `.so` is
+BIT-IDENTICAL between `bad79052` and `57b2f05c` — the build genuinely ran on
+both, and the artifact is unchanged because every change lives in code the
+release build eliminates as dead (the driver is court-only and `parse_chunk`
+does not call it). The pre-run's hash differs only because `93fd8282` bumped
+the crate version, and the version string is embedded in the library.
+
+Provenance: `courts/receipts/phase-16/raw/pushdrive-step5/` (pre/post around
+`bad79052`) and `courts/receipts/phase-16/raw/pushdrive-step5b/` (step 5b).
+This is also the first full-corpus baseline at 257 documents — the frozen
+slice-0 baseline (4042 cells) was a smaller corpus, and the decoder slice only
+ran the court filtered to 31 `enc-*` documents (565 cells).
 
 ### Explicitly NOT claimed
 
