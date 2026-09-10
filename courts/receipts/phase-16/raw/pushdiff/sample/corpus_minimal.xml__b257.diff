@@ -1,8 +1,0 @@
-==== corpus/minimal.xml mode=b257 ====
-5a6
-> endDocument
-11,12c12
-< error dom=1 code=5 level=3 file= line=1 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
-< < REFEED 0 rc=5 err=5 wf=0 in=-1 p=4 l=1 col=5 i=1 n=0
----
-> < REFEED 0 rc=0 err=0 wf=1 in=-1 p=4 l=1 col=5 i=1 n=0

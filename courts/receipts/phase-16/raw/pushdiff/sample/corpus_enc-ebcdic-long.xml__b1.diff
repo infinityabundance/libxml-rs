@@ -1,0 +1,61 @@
+==== corpus/enc-ebcdic-long.xml mode=b1 ====
+3c3,5
+< < CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> error dom=1 code=4 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Start tag expected, '<' not found\n
+> < CALL 0 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+5c7
+< < CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 1 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+7c9
+< < CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 2 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+9c11
+< < CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 3 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+11c13
+< < CALL 4 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 4 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+13c15
+< < CALL 5 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 5 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+15c17
+< < CALL 6 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 6 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+17c19
+< < CALL 7 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 7 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+19c21
+< < CALL 8 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 8 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+21c23
+< < CALL 9 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 9 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+23c25
+< < CALL 10 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 10 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+25c27
+< < CALL 11 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 11 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+27c29
+< < CALL 12 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 12 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+29c31
+< < CALL 13 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 13 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+31c33
+< < CALL 14 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0

@@ -1,0 +1,60 @@
+==== corpus/enc-utf16le-half-unit-only.xml mode=b2 ====
+3c3,4
+< < CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> < CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+5c6,8
+< < CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 1 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+8c11,12
+< < CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+---
+> endDocument
+> < CALL 2 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+10,11c14,16
+< startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< < CALL 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> startDocument
+> error dom=1 code=68 level=3 file= line=1 i1=0 i2=2 str1= str2= str3= msg=StartTag: invalid element name\n
+> < CALL 3 rc=0 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+13c18
+< < CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 4 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+15,16c20
+< characters len=1 [x]
+< < CALL 5 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
+---
+> < CALL 5 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+18c22
+< < CALL 6 rc=0 err=0 wf=1 in=9 p=4 l=1 col=5 i=1 n=1
+---
+> < CALL 6 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+20c24
+< < CALL 7 rc=0 err=0 wf=1 in=9 p=4 l=1 col=5 i=1 n=1
+---
+> < CALL 7 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+22,23c26
+< endElementNs local=[a] prefix= uri=
+< < CALL 8 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=0
+---
+> < CALL 8 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+25c28
+< < CALL 9 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=0
+---
+> < CALL 9 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+27,29c30
+< error dom=8 code=81 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=Invalid bytes in character encoding\n
+< endDocument
+< < FINAL 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0
+---
+> < FINAL 0 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+31c32
+< < REFEED 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0
+---
+> < REFEED 0 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0

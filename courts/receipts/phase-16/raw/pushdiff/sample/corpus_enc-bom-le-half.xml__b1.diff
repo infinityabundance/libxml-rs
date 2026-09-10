@@ -1,0 +1,30 @@
+==== corpus/enc-bom-le-half.xml mode=b1 ====
+3c3,5
+< < CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> error dom=1 code=9 level=3 file= line=1 i1=255 i2=1 str1= str2= str3= msg=Incomplete UTF-8 sequence starting with FF\n
+> < CALL 0 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+5c7
+< < CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 1 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+7c9
+< < CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 2 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+9c11
+< < CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 3 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+11,14c13
+< startDocument
+< error dom=1 code=68 level=3 file= line=1 i1=0 i2=2 str1= str2= str3= msg=StartTag: invalid element name\n
+< endDocument
+< < FINAL 0 rc=68 err=68 wf=0 in=-1 p=1 l=1 col=2 i=1 n=0
+---
+> < FINAL 0 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+16c15
+< < REFEED 0 rc=68 err=68 wf=0 in=-1 p=1 l=1 col=2 i=1 n=0
+---
+> < REFEED 0 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0

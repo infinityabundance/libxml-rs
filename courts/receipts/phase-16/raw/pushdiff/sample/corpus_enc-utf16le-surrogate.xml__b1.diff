@@ -1,0 +1,61 @@
+==== corpus/enc-utf16le-surrogate.xml mode=b1 ====
+3c3,5
+< < CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> error dom=1 code=9 level=3 file= line=1 i1=255 i2=1 str1= str2= str3= msg=Incomplete UTF-8 sequence starting with FF\n
+> < CALL 0 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+5c7
+< < CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 1 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+7c9
+< < CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 2 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+9c11
+< < CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 3 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+11c13
+< < CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 4 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+13,14c15
+< startDocument
+< < CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 5 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+16c17
+< < CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 6 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+18,19c19
+< startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< < CALL 7 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 7 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+21c21
+< < CALL 8 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 8 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+23c23
+< < CALL 9 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 9 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+25c25
+< < CALL 10 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 10 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+27c27
+< < CALL 11 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 11 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+29c29
+< < CALL 12 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 12 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+31,32c31
+< characters len=4 [\xf0\x9f\x8e\x89]
+< < CALL 13 rc=0 err=0 wf=1 in=7 p=7 l=1 col=5 i=1 n=1
+---
