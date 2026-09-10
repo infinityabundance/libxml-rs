@@ -2549,7 +2549,15 @@ impl XmlTokenizer {
         if self.input.peek_char() == Some('#') {
             content.push(b'#');
             self.input.read_char();
-            let hex = matches!(self.input.peek_char(), Some('x') | Some('X'));
+            // UPSTREAM-PARITY (parser.c xmlParseCharRef): the HEX form is
+            // recognised only for a lower-case `x` (`RAW == '&' && NXT(1) ==
+            // '#' && NXT(2) == 'x'`). An upper-case `X` is NOT a hex marker, so
+            // `&#X43;` takes the DECIMAL path, fails on the first non-digit with
+            // "CharRef: invalid decimal value" and then reports
+            // "xmlParseCharRef: invalid xmlChar value 0" — with the cursor left
+            // ON the `X` (SKIP(2) consumed only `&#`). `text-amp` pins both
+            // diagnostics and the position.
+            let hex = self.input.peek_char() == Some('x');
             if hex {
                 if let Some(c) = self.input.peek_char() {
                     content.push(c as u8);

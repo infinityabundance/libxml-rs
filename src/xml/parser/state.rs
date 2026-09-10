@@ -4269,14 +4269,38 @@ impl XmlParser {
                             if is_valid_xml_char(cp) {
                                 if let Some(ch) = char::from_u32(cp) {
                                     let mut buf = [0u8; 4];
-                                    replaced = Some(ch.encode_utf8(&mut buf).as_bytes().to_vec());
+                                    let text = ch.encode_utf8(&mut buf).as_bytes().to_vec();
+                                    // UPSTREAM-PARITY (xmlParseAttValueInternal):
+                                    // a literal `&#38;` is re-encoded as `&#38;`
+                                    // unless entity substitution was requested,
+                                    // so the tree builder can tell it from a raw
+                                    // `&` (SAX2.c xmlNodeParseContent re-parses
+                                    // it). `attr-amp` pins `value=&#38;<`.
+                                    replaced = Some(
+                                        if cp == u32::from(b'&')
+                                            && (self.options & XML_PARSE_NOENT) == 0
+                                        {
+                                            b"&#38;".to_vec()
+                                        } else {
+                                            text
+                                        },
+                                    );
                                 }
                             }
                         }
                     } else {
                         // Named entity: predefined ones always, others when NOENT.
                         match inner {
-                            b"amp" => replaced = Some(b"&".to_vec()),
+                            // UPSTREAM-PARITY (xmlParseAttValueInternal):
+                            // the predefined `&` is re-encoded as `&#38;`
+                            // unless entity substitution was requested.
+                            b"amp" => {
+                                replaced = Some(if (self.options & XML_PARSE_NOENT) == 0 {
+                                    b"&#38;".to_vec()
+                                } else {
+                                    b"&".to_vec()
+                                })
+                            }
                             b"lt" => replaced = Some(b"<".to_vec()),
                             b"gt" => replaced = Some(b">".to_vec()),
                             b"quot" => replaced = Some(b"\"".to_vec()),
@@ -6232,12 +6256,11 @@ impl XmlParser {
             // the opening tag's prefix and its URI (tag->prefix / tag->URI)
             // — never the raw QName — so namespaced consumers (lxml's
             // _MultiTagMatcher) match end events like start events.
-            let (prefix_opt, localname) = if let Some(colons) = name.iter().position(|&b| b == b':')
-            {
-                (Some(name[..colons].to_vec()), name[colons + 1..].to_vec())
-            } else {
-                (None, name.to_vec())
-            };
+            //
+            // The split uses the SAME `xmlParseQNameHashed` rule as the start
+            // tag (`split_qname_bytes`): `</a:b:c>` reports
+            // `local=[a:b:c] prefix=` for the end event too (`name-colon`).
+            let (prefix_opt, localname, _) = split_qname_bytes(name);
             let name_cstr = self.sax_name_cstr(&localname);
             let prefix_cstr = prefix_opt
                 .as_ref()
