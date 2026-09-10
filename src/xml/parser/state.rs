@@ -4753,6 +4753,30 @@ impl XmlParser {
         }
     }
 
+    /// Dispatch `endDocument` UNCONDITIONALLY, bypassing the SAX block gate.
+    ///
+    /// Upstream `xmlFinishDocument` calls `sax->endDocument` without ever
+    /// consulting `disableSAX`:
+    ///
+    /// ```c
+    /// if ((ctxt->sax) && (ctxt->sax->endDocument != NULL))
+    ///     ctxt->sax->endDocument(ctxt->userData);
+    /// ```
+    ///
+    /// That difference is observable: a fatal error raised immediately before
+    /// finishing (the encoder flush in `xmlParserCheckEOF`) sets
+    /// `disableSAX = 1`, and the oracle STILL delivers `endDocument`
+    /// afterwards — `error 81`, then `endDocument`. Using the policy-bearing
+    /// [`Self::sax_end_document`] there would silently drop the event while
+    /// still recording it as delivered.
+    pub(crate) fn finalize_end_document(&mut self) {
+        unsafe {
+            let sax = &*(*self.ctxt).sax;
+            let ctx = (*self.ctxt).userData;
+            SaxDispatcher::end_document(sax, ctx);
+        }
+    }
+
     /// Fire `startElement` SAX event with namespace processing.
     ///
     /// `attrs` is a list of `(prefix, localname, value)` tuples.

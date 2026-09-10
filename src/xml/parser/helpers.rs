@@ -1148,7 +1148,7 @@ pub(crate) unsafe fn parse_chunk(
 /// # Safety
 ///
 /// `ctxt` must be a valid, initialized `_xmlParserCtxt`.
-unsafe fn raise_invalid_encoding(ctxt: *mut _xmlParserCtxt, line: c_int, col: c_int) {
+pub(crate) unsafe fn raise_invalid_encoding(ctxt: *mut _xmlParserCtxt, line: c_int, col: c_int) {
     let code = crate::abi::types::XML_ERR_INVALID_ENCODING;
     // SAFETY: caller guarantees ctxt is valid and initialized.
     unsafe {

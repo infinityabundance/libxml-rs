@@ -84,6 +84,7 @@ use crate::abi::types::{
     XML_ERR_GT_REQUIRED, XML_ERR_INTERNAL_ERROR, XML_ERR_OK, XML_ERR_TAG_NAME_MISMATCH,
     XML_ERR_TAG_NOT_FINISHED, XML_FROM_PARSER,
 };
+use crate::xml::parser::helpers;
 use crate::xml::parser::push::{ParkedConstruct, PushMachine, PushProgress};
 use crate::xml::parser::state::{OpenElement, XmlParser};
 use crate::xml::parser::tokenizer::XmlToken;
@@ -140,6 +141,23 @@ impl XmlParser {
         terminate: bool,
     ) -> PushProgress {
         self.base_input_mut().push_bytes_ex(chunk, terminate);
+
+        // Upstream `xmlParseChunk`: a DEFINITE invalid encoding unit makes
+        // `xmlParserInputBufferPush` fail, and `xmlParseChunk` reports
+        // XML_ERR_INVALID_ENCODING (via `xmlCtxtErrIO`) BEFORE
+        // `xmlParseTryOrFinish` runs. So this call's newly decoded content
+        // must not be parsed and no grammar event may fire — the error has
+        // already latched `disableSAX`, and every later call must return the
+        // recorded `errNo` without parsing.
+        if self.base_input().source_encoding_error() {
+            let (line, col) = self.base_input().end_line_col();
+            unsafe {
+                helpers::raise_invalid_encoding(self.ctxt_raw(), line as c_int, col as c_int);
+            }
+            machine.mark_fatal();
+            return PushProgress::Fatal;
+        }
+
         self.drive_persistent(machine, terminate)
     }
 
@@ -292,12 +310,11 @@ impl XmlParser {
     /// completely. The unconsumed bytes are the evidence — they are never
     /// consumed to make the check succeed (divergence class 4's REFEED).
     ///
-    /// REMAINDER (wiring step): the encoder-flush half of `xmlParserCheckEOF`
-    /// (a truncated multibyte sequence left pending by a terminating call) is
-    /// NOT performed here. The decoder already latches it
-    /// (`InputBuffer::source_truncated`), and `helpers::parse_chunk` raises it
-    /// for the replay path; the driver must do the same before any context
-    /// flips over.
+    /// Then the ENCODER FLUSH: when the input was consumed completely but the
+    /// decoder still holds an incomplete unit, the terminating call must
+    /// report XML_ERR_INVALID_ENCODING. This is the half the shadow court's
+    /// `shadow-utf16trunc.xml` cell pins down (`error dom=8 code=81`, then
+    /// `endDocument`, then `rc=81`).
     fn check_eof(&mut self, machine: &mut PushMachine, code: c_int) {
         if unsafe { (*self.ctxt_raw()).errNo } != XML_ERR_OK {
             return;
@@ -313,6 +330,14 @@ impl XmlParser {
                 None,
                 0,
             );
+            machine.mark_fatal();
+            return;
+        }
+        if self.base_input().source_truncated() {
+            let (line, col) = self.base_input().end_line_col();
+            unsafe {
+                helpers::raise_invalid_encoding(self.ctxt_raw(), line as c_int, col as c_int);
+            }
             machine.mark_fatal();
         }
     }
@@ -880,10 +905,11 @@ impl XmlParser {
         }
     }
 
-    /// Fire `endDocument` at most once (upstream `xmlFinishDocument`).
+    /// Fire `endDocument` at most once, exactly as upstream `xmlFinishDocument`
+    /// does — including when a fatal error has already set `disableSAX`.
     fn finish_document(&mut self, machine: &mut PushMachine) {
         if !machine.end_document_fired() {
-            self.sax_end_document();
+            self.finalize_end_document();
             machine.mark_end_document_fired();
             machine.note_event();
         }

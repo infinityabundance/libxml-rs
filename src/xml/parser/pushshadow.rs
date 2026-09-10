@@ -63,7 +63,7 @@
 
 #![allow(dead_code)]
 
-use crate::abi::structs::{_xmlParserCtxt, _xmlSAXHandler};
+use crate::abi::structs::{_xmlError, _xmlParserCtxt, _xmlSAXHandler};
 use crate::abi::types::{xmlChar, XML_SAX2_MAGIC};
 use crate::xml::parser::helpers;
 use crate::xml::parser::input::{InputBuffer, InputStack};
@@ -258,6 +258,37 @@ unsafe extern "C" fn on_reference(_ctx: *mut c_void, name: *const xmlChar) {
     emit(format!("reference [{}]", unsafe { esc_str(name) }));
 }
 
+/// Structured-error recorder, byte-compatible with the probe's `rec_err`.
+///
+/// Installing this puts diagnostics into the SAME ordered stream as the SAX
+/// events, which is what makes error OCCURRENCE AND ORDERING executable
+/// evidence ("error 81, then endDocument", not merely "the final errNo was
+/// 81").
+unsafe extern "C" fn on_error(_ctx: *mut c_void, error: *const _xmlError) {
+    if error.is_null() {
+        emit("error(NULL)".to_string());
+        return;
+    }
+    let e = unsafe { &*error };
+    let mut line = format!(
+        "error dom={} code={} level={} file=",
+        e.domain, e.code, e.level
+    );
+    line.push_str(&unsafe { esc_str(e.file as *const xmlChar) });
+    line.push_str(&format!(
+        " line={} i1={} i2={} str1=",
+        e.line, e.int1, e.int2
+    ));
+    line.push_str(&unsafe { esc_str(e.str1 as *const xmlChar) });
+    line.push_str(" str2=");
+    line.push_str(&unsafe { esc_str(e.str2 as *const xmlChar) });
+    line.push_str(" str3=");
+    line.push_str(&unsafe { esc_str(e.str3 as *const xmlChar) });
+    line.push_str(" msg=");
+    line.push_str(&unsafe { esc_str(e.message as *const xmlChar) });
+    emit(line);
+}
+
 /// Replace the context's SAX handler with the recorder, in place (the handler
 /// allocation is owned by the context and freed by `free_parser_ctxt`).
 unsafe fn install_recorder(ctxt: *mut _xmlParserCtxt) {
@@ -282,11 +313,21 @@ unsafe fn install_recorder(ctxt: *mut _xmlParserCtxt) {
 
 // ── plans (the probe's `[C]bN[zK]` subset, deterministic) ───────────────────
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct ShadowPlan {
+    /// The original mode string (reproduced verbatim in the trace header).
+    pub mode: String,
+    pub random: bool,
     pub fixed: usize,
+    pub seed: u64,
+    pub span: u32,
     pub ctor: bool,
     pub zero_after: usize,
+    /// The LAST real chunk carries `terminate = 1` and no separate empty
+    /// terminating call follows. Feeding the bytes and terminating in ONE
+    /// call is a distinct input shape: the decoder flush sees the bytes and
+    /// the end-of-stream together.
+    pub inline_final: bool,
 }
 
 impl ShadowPlan {
@@ -297,30 +338,84 @@ impl ShadowPlan {
             ctor = true;
             s = rest;
         }
-        let (base, zeros) = match s.find('z') {
-            Some(i) => (&s[..i], s[i + 1..].parse::<usize>().ok()?),
-            None => (s, 0),
+        let (base, mut rest) = match s.find(['z', 'i']) {
+            Some(i) => (&s[..i], &s[i..]),
+            None => (s, ""),
         };
-        let fixed = base.strip_prefix('b')?.parse::<usize>().ok()?;
+        let (random, fixed, seed, span) = if let Some(r) = base.strip_prefix('r') {
+            match r.split_once('-') {
+                Some((sd, sp)) => (true, 1, sd.parse::<u64>().ok()?, sp.parse::<u32>().ok()?),
+                None => (true, 1, r.parse::<u64>().ok()?, 64),
+            }
+        } else {
+            (false, base.strip_prefix('b')?.parse::<usize>().ok()?, 1, 64)
+        };
+        let mut zero_after = 0usize;
+        let mut inline_final = false;
+        while let Some(c) = rest.chars().next() {
+            match c {
+                'z' => {
+                    rest = &rest[1..];
+                    let end = rest.find('i').unwrap_or(rest.len());
+                    zero_after = rest[..end].parse::<usize>().ok()?;
+                    rest = &rest[end..];
+                }
+                'i' => {
+                    inline_final = true;
+                    rest = &rest[1..];
+                }
+                _ => return None,
+            }
+        }
         Some(ShadowPlan {
+            mode: mode.to_string(),
+            random,
             fixed,
+            seed,
+            span,
             ctor,
-            zero_after: zeros,
+            zero_after,
+            inline_final,
         })
     }
 
     /// `bN` with N >= the document length is upstream's "whole document in one
     /// non-final chunk" shape.
     pub fn label(&self) -> String {
-        let mut s = String::new();
-        if self.ctor {
-            s.push('C');
+        self.mode.clone()
+    }
+}
+
+/// The probe's split generator, mirrored exactly: `next_split` over an LCG
+/// seeded from the plan (`rng_state = rng_state * 6364136223846793005 +
+/// 1442695040888963407`, then `(state >> 33) % span`).
+struct Splitter {
+    state: u64,
+    random: bool,
+    fixed: usize,
+    span: u32,
+}
+
+impl Splitter {
+    fn new(plan: &ShadowPlan) -> Self {
+        Splitter {
+            state: plan.seed,
+            random: plan.random,
+            fixed: plan.fixed,
+            span: plan.span,
         }
-        s.push_str(&format!("b{}", self.fixed));
-        if self.zero_after > 0 {
-            s.push_str(&format!("z{}", self.zero_after));
+    }
+
+    fn next(&mut self, remaining: usize) -> usize {
+        if !self.random {
+            return remaining.min(self.fixed);
         }
-        s
+        self.state = self
+            .state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        let n = 1 + ((self.state >> 33) % self.span as u64) as usize;
+        n.min(remaining)
     }
 }
 
@@ -368,6 +463,12 @@ pub(crate) fn run_driver(doc: &[u8], plan: &ShadowPlan, name: &str) -> Vec<Strin
         let ctxt = guard.0;
         assert!(!ctxt.is_null());
         install_recorder(ctxt);
+        // Diagnostics enter the same ordered stream as the SAX events.
+        crate::abi::exports_parser::xmlCtxtSetErrorHandler(
+            ctxt,
+            Some(on_error),
+            std::ptr::null_mut(),
+        );
 
         // `p` borrows the raw context pointer, so it must be dropped before
         // the guard; declaring it here keeps that ordering explicit.
@@ -375,9 +476,10 @@ pub(crate) fn run_driver(doc: &[u8], plan: &ShadowPlan, name: &str) -> Vec<Strin
         let mut machine = PushMachine::new();
         let mut off = 0usize;
         let mut call = 0usize;
+        let mut splitter = Splitter::new(plan);
 
         if plan.ctor && !doc.is_empty() {
-            let n = plan.fixed.min(doc.len());
+            let n = splitter.next(doc.len());
             out.push(format!("> CTOR len={n}"));
             drain_events();
             let buf = InputBuffer::for_push(&doc[..n], None);
@@ -392,10 +494,11 @@ pub(crate) fn run_driver(doc: &[u8], plan: &ShadowPlan, name: &str) -> Vec<Strin
         }
 
         while off < doc.len() {
-            let n = plan.fixed.min(doc.len() - off);
+            let n = splitter.next(doc.len() - off);
+            let terminate = plan.inline_final && off + n >= doc.len();
             out.push(format!("> CALL {call} len={n}"));
             drain_events();
-            let _ = parser.push_persistent(&mut machine, &doc[off..off + n], false);
+            let _ = parser.push_persistent(&mut machine, &doc[off..off + n], terminate);
             out.append(&mut drain_events());
             out.push(tail_line("CALL", call, ctxt, &parser, false));
             off += n;
@@ -411,11 +514,13 @@ pub(crate) fn run_driver(doc: &[u8], plan: &ShadowPlan, name: &str) -> Vec<Strin
             }
         }
 
-        out.push("> FINAL".to_string());
-        drain_events();
-        let _ = parser.push_persistent(&mut machine, &[], true);
-        out.append(&mut drain_events());
-        out.push(tail_line("FINAL", 0, ctxt, &parser, false));
+        if !plan.inline_final {
+            out.push("> FINAL".to_string());
+            drain_events();
+            let _ = parser.push_persistent(&mut machine, &[], true);
+            out.append(&mut drain_events());
+            out.push(tail_line("FINAL", 0, ctxt, &parser, false));
+        }
 
         out.push("> REFEED".to_string());
         drain_events();
@@ -467,31 +572,66 @@ pub(crate) enum CellStatus {
 
 // ── the compared projection ────────────────────────────────────────────
 
+/// One `key=value` field out of a space-separated record tail.
+fn field(s: &str, key: &str) -> Option<String> {
+    let pat = format!("{key}=");
+    let i = s.find(&pat)? + pat.len();
+    let rest = &s[i..];
+    let end = rest.find(' ').unwrap_or(rest.len());
+    Some(rest[..end].to_string())
+}
+
+/// Remove one ` key=value` field from a line.
+fn strip_field(line: &str, key: &str) -> String {
+    let pat = format!(" {key}=");
+    match line.find(&pat) {
+        Some(i) => {
+            let rest = &line[i + pat.len()..];
+            let after = rest.find(' ').map(|j| &rest[j..]).unwrap_or("");
+            format!("{}{}", &line[..i], after)
+        }
+        None => line.to_string(),
+    }
+}
+
+/// Canonical form of a structured diagnostic: identity and position, without
+/// the message window (`file`/`str1..3`/`msg`), which is the existing error
+/// courts' surface. Occurrence, code and ORDERING are what this court asserts.
+fn canonical_error(line: &str) -> String {
+    let rest = line.strip_prefix("error ").unwrap_or(line);
+    let mut out = String::from("error");
+    for key in ["dom", "code", "level", "line", "i1", "i2"] {
+        if let Some(v) = field(rest, key) {
+            out.push_str(&format!(" {key}={v}"));
+        }
+    }
+    out
+}
+
 /// The line sequence the court asserts on.
 ///
 /// Two exclusions, both deliberate and documented in the module docs:
 ///
-/// 1. Structured diagnostic records (the probe's `error dom=.. code=..`) —
-///    error occurrence and code are already compared through the call record's
-///    `rc`/`err`; the message text is the existing courts' surface.
-/// 2. The `p=` field. `p` is `cur - base` in the ORACLE, and upstream REBASES
-///    that buffer above 4096 bytes (`xmlParserShrink`, and again through
-///    `xmlBufUpdateInput` in `xmlParserCheckEOF`'s encoder flush). The
-///    court-only driver does not publish `ctxt->input` at all yet, so `p` is
-///    not a driver surface: it is measured and REPORTED (see
-///    [`cursor_divergence`]) but not asserted until the driver publishes the
-///    input and models the rebasing.
+/// 1. Structured diagnostics are reduced to their CANONICAL form (domain,
+///    code, level, line, int1, int2) rather than dropped. Dropping them would
+///    let `endDocument` before `error 81` pass as readily as `error 81`
+///    before `endDocument`, since only the final `errNo` would distinguish
+///    them — and once declarations/DTDs arrive a single parse path can emit
+///    several diagnostics.
+/// 2. The `p=` and `i=` fields. `p` (`cur - base`) is REBASED by upstream above
+///    4096 bytes, and `i` (`inputNr`) is currently SYNTHETIC on the driver
+///    side (hardcoded 1). Neither is a published driver surface yet, so both
+///    are measured and reported but not asserted, until the driver publishes
+///    `ctxt->input` / `inputNr`.
 fn project(lines: &[String]) -> Vec<String> {
     lines
         .iter()
-        .filter(|l| !l.starts_with("error "))
-        .map(|l| match l.find(" p=") {
-            Some(i) => {
-                let rest = &l[i + 3..];
-                let after = rest.find(' ').map(|j| &rest[j..]).unwrap_or("");
-                format!("{}{}", &l[..i], after)
+        .map(|l| {
+            if l.starts_with("error ") {
+                canonical_error(l)
+            } else {
+                strip_field(&strip_field(l, "p"), "i")
             }
-            None => l.clone(),
         })
         .collect()
 }
