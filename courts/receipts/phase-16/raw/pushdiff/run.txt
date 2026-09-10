@@ -1,4 +1,14 @@
-candidate_sha=a3c0c98d89fcf2bffea20b741805b8a1a342e21e
+candidate_sha=9d249b90852202e1cdf70deed47459a9f0c7b02e
+court_sha=9d249b90852202e1cdf70deed47459a9f0c7b02e
+tree_clean=yes
+candidate_libxml2_binary=/mnt/1tb_kingston/libxml-rs/target/release/liblibxml_rs.so
+candidate_libxml2_sha256=bc51107087379e85304e9d909a911103cf74747e5250ed14effbd4ef189baa88
+probe_sha256=ab3f1a9325aa510414d904b8201766b0b300a1a7af0f0308a2332221d3eb9215
+generator_sha256=bc42658b269ea1a87f412b097bf7995a6bd18d7bf182c2715cd97171a3ae1635
+runner_sha256=004861256571a7de875701d7d338c1e29cc402b4881315fa77739d70e96bfba1
+probe_runner_sha256=d6f945d59e21f355d2678be7010f0edc21298ce8b9278ca077488ec69ea3e125
 image=libxml-rs/phase14-debian:1
+image_id=sha256:4366b5053d2a4f5829e2b827df2e7d4e0e23a3eac90174d22f265f4b0b9b06cd
+image_digest=
 Linux vanir 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 08:05:11 +0000 x86_64 GNU/Linux
 model name	: AMD Ryzen 7 9800X3D 8-Core Processor

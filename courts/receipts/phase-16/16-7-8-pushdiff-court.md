@@ -188,8 +188,8 @@ are the verification.
 
 | metric | value |
 |---|---:|
-| cells | see run.txt of the evidence commit (≈ 4 k) |
-| diverging cells | = cells (100%) |
+| cells | 4042 |
+| diverging cells | 4042 (100%) |
 
 Run: `sh courts/suites/phase16/pushdiff-run.sh` from a clean tree; the
 gate is diffs = 0 after the stateful rewrite.
