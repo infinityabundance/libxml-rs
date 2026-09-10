@@ -261,18 +261,18 @@ pub(crate) struct XmlParser {
 /// sequence. Keeping these few values in a small struct — instead of the
 /// start-tag locals staying live across the subtree parse — bounds the
 /// per-nesting-level recursion stack (SP-14.3.1-7, bug65236 deep documents).
-struct OpenElement {
+pub(crate) struct OpenElement {
     /// The element's (qualified) name, for end-tag matching, diagnostics,
     /// and the end-element SAX event.
-    name: Vec<u8>,
+    pub(crate) name: Vec<u8>,
     /// Line of the start tag, for mismatch / premature-end diagnostics.
-    open_line: usize,
+    pub(crate) open_line: usize,
     /// Parser-scoped namespace-stack length before this element's own
     /// declarations were registered (restored at the close).
-    ns_scope_mark: usize,
+    pub(crate) ns_scope_mark: usize,
     /// Whether the start tag was self-closed / empty (`<a/>`): empty
     /// elements skip the content loop.
-    empty: bool,
+    pub(crate) empty: bool,
 }
 
 // ─── Construction and accessors ─────────────────────────────────────────────
@@ -516,6 +516,32 @@ impl XmlParser {
     #[allow(dead_code)]
     pub const fn ctxt_raw(&self) -> *mut _xmlParserCtxt {
         self.ctxt
+    }
+
+    /// The input stack the tokenizer is reading through.
+    ///
+    /// Exposed so the persistent push driver ([`super::pushdrive`]) can drive
+    /// the SAME lexical machinery the recursive parser uses, instead of
+    /// growing a second XML grammar beside it.
+    pub(crate) fn input_stack(&self) -> &InputStack {
+        self.tokenizer.input()
+    }
+
+    /// Mutable access to the input stack (see [`Self::input_stack`]).
+    pub(crate) fn input_stack_mut(&mut self) -> &mut InputStack {
+        self.tokenizer.input_mut()
+    }
+
+    /// The BASE input buffer the tokenizer is reading (entity expansions push
+    /// additional inputs above it). Used by the persistent driver to read the
+    /// input's own authoritative accounting (`materialized_bytes` / `pos`).
+    pub(crate) fn base_input(&self) -> &InputBuffer {
+        self.input_stack().base_ref()
+    }
+
+    /// Mutable BASE input buffer (see [`Self::base_input`]).
+    pub(crate) fn base_input_mut(&mut self) -> &mut InputBuffer {
+        self.input_stack_mut().base_mut()
     }
 
     /// Return whether the parser is in recovery mode.
@@ -2798,7 +2824,7 @@ impl XmlParser {
     /// (the default SAX handler pops nodeTab/nodeNr internally), the pop of
     /// the element's own namespace declarations from the parser-scoped stack,
     /// and the pop of the element name (upstream xmlParseElementEnd).
-    fn close_open_element(&mut self, open: &OpenElement) {
+    pub(crate) fn close_open_element(&mut self, open: &OpenElement) {
         self.sax_end_element(&open.name);
         self.ns_scope.truncate(open.ns_scope_mark);
         self.pop_name();
@@ -3182,7 +3208,7 @@ impl XmlParser {
     ///   the byte-slice inputs are owned by the caller and live for the
     ///   call.
     #[allow(clippy::too_many_arguments)]
-    fn parse_element_start(
+    pub(crate) fn parse_element_start(
         &mut self,
         name: Vec<u8>,
         attributes: Vec<(Vec<u8>, Vec<u8>)>,
@@ -4695,7 +4721,7 @@ impl XmlParser {
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` whose
     ///   `sax` is a valid `_xmlSAXHandler` and whose `userData` matches the
     ///   handler.
-    fn sax_start_document(&mut self) {
+    pub(crate) fn sax_start_document(&mut self) {
         // startDocument fires once per parse session: any parse with a
         // delivery boundary is a continuation of an earlier eager-partial
         // parse that already fired it (SP-14.3.1-6).
@@ -4716,7 +4742,7 @@ impl XmlParser {
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` whose
     ///   `sax` is a valid `_xmlSAXHandler` and whose `userData` matches the
     ///   handler.
-    fn sax_end_document(&mut self) {
+    pub(crate) fn sax_end_document(&mut self) {
         if self.sax_blocked() {
             return;
         }
@@ -5178,7 +5204,7 @@ impl XmlParser {
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
     ///   valid `sax`/`userData`; `name` is a caller-owned slice live for the
     ///   call.
-    fn sax_end_element(&mut self, name: &[u8]) {
+    pub(crate) fn sax_end_element(&mut self, name: &[u8]) {
         if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
@@ -5563,7 +5589,7 @@ impl XmlParser {
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
     ///   valid `sax`/`userData`; the resolved bytes of `text` are live for
     ///   the (synchronous) dispatch.
-    fn sax_characters_text(&mut self, text: &XmlText) {
+    pub(crate) fn sax_characters_text(&mut self, text: &XmlText) {
         if self.sax_blocked() || text.is_empty() || self.below_delivery_boundary() {
             return;
         }
@@ -5643,7 +5669,7 @@ impl XmlParser {
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
     ///   valid `sax`/`userData`; the resolved bytes of `text` are live while
     ///   the (synchronous) dispatch runs.
-    fn sax_comment(&mut self, data: &XmlText) {
+    pub(crate) fn sax_comment(&mut self, data: &XmlText) {
         if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
@@ -5673,7 +5699,7 @@ impl XmlParser {
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
     ///   valid `sax`/`userData`; `target` and `data` are caller-owned slices
     ///   live for the call.
-    fn sax_pi(&mut self, target: &[u8], data: &[u8]) {
+    pub(crate) fn sax_pi(&mut self, target: &[u8], data: &[u8]) {
         if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
@@ -5702,7 +5728,7 @@ impl XmlParser {
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
     ///   valid `sax`/`userData`; the resolved bytes of `data` are live while
     ///   the (synchronous) dispatch runs.
-    fn sax_cdata(&mut self, data: &XmlText) {
+    pub(crate) fn sax_cdata(&mut self, data: &XmlText) {
         if self.sax_blocked() || data.is_empty() || self.below_delivery_boundary() {
             return;
         }
@@ -6169,7 +6195,7 @@ impl XmlParser {
 
     /// Raise an error at the tokenizer's current position.
     #[allow(clippy::too_many_arguments)]
-    fn raise_error_now(
+    pub(crate) fn raise_error_now(
         &mut self,
         domain: c_int,
         code: c_int,

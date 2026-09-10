@@ -2089,6 +2089,23 @@ impl InputBuffer {
         &self.data[..self.pos]
     }
 
+    /// TEST-ONLY "the prefix is dead" oracle.
+    ///
+    /// Overwrite the already-consumed prefix `[0, pos)` with NUL, a byte that
+    /// cannot appear in a well-formed XML document. A driver that is genuinely
+    /// forward-only never reads those bytes again, so its observable output is
+    /// unchanged; a driver that restarts from byte zero (the O(N²) replay
+    /// failure mode) immediately parses garbage instead. Used by the
+    /// persistent-driver court, which poisons the prefix after every call.
+    #[cfg(test)]
+    pub(crate) fn poison_consumed(&mut self) {
+        let pos = self.pos;
+        let data = self.data.make_owned();
+        for b in data[..pos].iter_mut() {
+            *b = 0;
+        }
+    }
+
     /// Return the raw source bytes in `[start, end)` (§16.5.3 byte model:
     /// DOCTYPE-body capture transports unnormalized source bytes to
     /// `parse_dtd`). `start`/`end` are absolute byte offsets into the
@@ -2560,6 +2577,19 @@ impl InputStack {
     /// Get a shared reference to the current (top) input buffer.
     pub fn current_ref(&self) -> &InputBuffer {
         &self.inputs[self.current]
+    }
+
+    /// Get the BASE (bottom) input buffer — the document's own input, below
+    /// any entity-expansion inputs pushed above it. `inputs[0]` always
+    /// exists (`new` creates it and `pop` refuses to remove it).
+    pub(crate) fn base_ref(&self) -> &InputBuffer {
+        &self.inputs[0]
+    }
+
+    /// Get a mutable reference to the BASE input buffer (see
+    /// [`Self::base_ref`]).
+    pub(crate) fn base_mut(&mut self) -> &mut InputBuffer {
+        &mut self.inputs[0]
     }
 
     /// Get the current position across the entire stack.

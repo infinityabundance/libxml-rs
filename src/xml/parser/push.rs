@@ -115,11 +115,30 @@ pub(crate) enum PushProgress {
     Fatal,
 }
 
+/// One UNFINISHED LEXICAL CONSTRUCT parked across calls.
+///
+/// An open ELEMENT and an unfinished construct are DIFFERENT things:
+/// [`ParkedElement`] is an element frame (whose start tag is fully scanned),
+/// while this is the half-scanned token a driver may have committed to.
+///
+/// The persistent driver's availability gating (it consumes a construct only
+/// once its terminator is already present in the buffer, upstream
+/// `xmlParseTryOrFinish`'s `xmlParseLookupGt`/`xmlParseLookupCharData`
+/// discipline) means no partial construct is ever left pending, so the enum
+/// carries no payload yet. It exists to keep the boundary explicit BEFORE
+/// `ParkedElement` starts absorbing half-parsed attributes/QNames/namespace
+/// declarations — the overloaded-state-bag failure mode this separation
+/// prevents.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ParkedConstruct {
+    /// Between tokens: nothing is mid-scan, the cursor sits at a token start.
+    BetweenTokens,
+}
+
 /// One open element, parked across calls so the next chunk resumes the
 /// content loop without replaying the prefix. Mirrors the engine's
 /// `OpenElement` (name, start line, namespace-scope mark).
 #[derive(Clone, Debug)]
-#[allow(dead_code)] // populated when the driver takes over element frames
 pub(crate) struct ParkedElement {
     pub name: Vec<u8>,
     pub line: usize,
@@ -171,6 +190,13 @@ pub(crate) struct PushMachine {
     fatal: bool,
     /// `xmlStopParser` was called from a callback: refuse further input.
     stopped: bool,
+    /// SAX/loader events dispatched by the driver. Completeness signal AND
+    /// the progress metric: a driver step that consumes no byte must still
+    /// move the phase, this counter, or the element stack — otherwise it is
+    /// spinning and the court fails it.
+    events_dispatched: u64,
+    /// The half-scanned construct, if any (see [`ParkedConstruct`]).
+    parked_construct: ParkedConstruct,
 }
 
 impl Default for PushMachine {
@@ -191,6 +217,8 @@ impl Default for PushMachine {
             end_document_fired: false,
             fatal: false,
             stopped: false,
+            events_dispatched: 0,
+            parked_construct: ParkedConstruct::BetweenTokens,
         }
     }
 }
@@ -240,6 +268,44 @@ impl PushMachine {
     /// are work but not consumption.
     pub(crate) fn note_scan_work(&mut self, n: usize) {
         self.total_scan_work = self.total_scan_work.saturating_add(n as u64);
+    }
+
+    /// Record that the driver dispatched one observable event (SAX callback /
+    /// loader notification error).
+    pub(crate) fn note_event(&mut self) {
+        self.events_dispatched = self.events_dispatched.saturating_add(1);
+    }
+
+    /// Events dispatched so far (see [`Self::note_event`]).
+    pub(crate) const fn events_dispatched(&self) -> u64 {
+        self.events_dispatched
+    }
+
+    /// Adopt the INPUT's authoritative totals.
+    ///
+    /// Materialized/consumed accounting belongs to the input buffer: it alone
+    /// knows about source decoding, whole-buffer re-materialization
+    /// (transcoding may REPLACE rather than append), and the physical cursor.
+    /// The machine only mirrors the totals for the complexity receipt, so it
+    /// adopts them instead of accumulating deltas a replacement would
+    /// corrupt. Mirroring BACKWARDS (or consumption past materialization) is
+    /// an accounting bug and latches [`Self::accounting_violation`]
+    /// regardless of which side is at fault — a partial parse must never
+    /// appear to un-read bytes.
+    pub(crate) fn sync_input_totals(&mut self, materialized: u64, consumed: u64) {
+        if consumed > materialized
+            || materialized < self.input_bytes_materialized
+            || consumed < self.input_bytes_consumed
+        {
+            self.accounting_violation = true;
+        }
+        self.input_bytes_materialized = materialized;
+        self.input_bytes_consumed = consumed;
+    }
+
+    /// The half-scanned construct, if any (see [`ParkedConstruct`]).
+    pub(crate) const fn parked_construct(&self) -> ParkedConstruct {
+        self.parked_construct
     }
 
     /// Materialized internal bytes not yet consumed.

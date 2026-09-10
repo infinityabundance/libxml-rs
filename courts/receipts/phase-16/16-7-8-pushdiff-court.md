@@ -658,6 +658,118 @@ decoded content + encoder error + FINAL well-formedness per `enc-*` cell —
 currently 565/565 on the grown decoder corpus, with the full trace still red
 as designed.
 
+## Slice 1 (step 5) — the persistent driver exists (court-only)
+
+**What landed.** `src/xml/parser/pushdrive.rs`: the first real persistent push
+DRIVER. It is not a mock and not a wrapper around replay — it owns the control
+loop and reuses the existing grammar primitives verbatim
+(`XmlParser::parse_element_start`, `close_open_element`, `sax_*`, the
+tokenizer). `state.rs` does not become the pull parser and `pushdrive.rs` does
+not become a second XML grammar.
+
+**The invariant it establishes.**
+
+> A byte the driver has consumed is never scanned again.
+
+The driver does AVAILABILITY GATING instead of speculative scanning: it looks
+ahead for the construct's terminator (upstream `xmlParseLookupGt` for tags,
+`xmlParseLookupCharData` for text) and only then consumes the construct. A
+construct that is not yet complete parks the driver with the cursor exactly
+where it was — **no rewind, no re-scan of committed bytes, no
+`suppress_until`**. That is the property the replay engine could never have.
+
+The lookahead itself is re-run over the pending (unconsumed) construct on each
+call, exactly as upstream does; its cost is bounded by the length of the ONE
+incomplete construct, not by the document.
+
+**Accounting ownership.** The INPUT owns the totals. `InputBuffer` alone knows
+about source decoding, whole-buffer re-materialization (transcoding may REPLACE
+rather than append) and rebasing; the machine adopts its
+`materialized_bytes()` / `pos()` through `PushMachine::sync_input_totals`
+instead of accumulating deltas a replacement would corrupt. A backwards mirror
+latches `accounting_violation`. (`InputBuffer::pos()` is
+`(line, col, byte_offset)` — the byte offset is the THIRD element; reading the
+first gives the line number, which is the bug this court caught immediately.)
+
+**Conceptual seam kept open.** `ParkedConstruct` separates an unfinished
+LEXICAL construct from an open ELEMENT (`ParkedElement`). Availability gating
+means no continuation is pending yet, so the enum has one variant — it exists
+so that half-parsed attributes/QNames/namespace declarations never migrate
+into `ParkedElement` and turn it into an overloaded state bag.
+
+### Scope of this slice (deliberately bounded)
+
+```text
+START -> startDocument        (the avail < 4 gate)
+simple start tag
+self-closing root             (<a/>)
+content text                  (<a>x</a>)
+nested start tag              (<a><b/></a>)
+end tag
+root closure -> EPILOG
+zero-byte termination -> EOF
+trailing content / REFEED     (Extra content at the end of the document)
+```
+
+Everything else — XML declarations, comments, PIs, CDATA, DOCTYPE, namespaces,
+entities, the >= 300-byte character-data rule of divergence class 5, the
+`end_in_lf` CR deferral of class 3 — returns `StepOutcome::Unsupported`, which
+is reported as a LOUD internal error, never a silent fallback to replay. There
+is no mid-document persistent -> replay retreat in this design by construction.
+
+`helpers::parse_chunk` is **untouched**: it still replays, and the full push
+trace court below is therefore still red. That is the design, not a regression.
+
+### The court (`pushdrive::tests`)
+
+Three documents x six plans. Plans: `b1`, `b2`, `b3`, `b5`, deterministic
+`random`, `whole-nonfinal` (the entire document in one non-final chunk),
+`whole-inline-final`, plus constructor-chunk partitioning and zero-length
+non-final / terminating calls.
+
+| Property | How it is checked |
+|---|---|
+| Partition equivalence | tree == the recursive whole-document parse, for every plan |
+| Lifecycle | final phase `XML_PARSER_EOF`; `startDocument`/`endDocument` fired |
+| No duplicate/replayed events | dispatched-event count is exactly `1 + start/end per element + characters + 1`, for every plan |
+| Forward-only | consumption never moves backwards |
+| **Prefix is dead** | the consumed prefix is overwritten with NUL after EVERY call; tree, per-call trace and event count must be byte-identical to the unpoisoned run |
+| Liveness | every `drive_step` must change (consumed, phase, events, stack depth) or park |
+| Class 1 | a complete document in ONE non-final chunk does NOT fire `endDocument` |
+| Class 1b | non-final feeds of `<` / `<a` / `<a/` leave `instate == START` with zero events |
+| Class 4 (REFEED) | refeed onto a finished document raises `XML_ERR_DOCUMENT_END` on the TERMINATING call, and the offending bytes stay UNREAD (`consumed` unchanged) |
+
+### Complexity receipt (the architectural proof)
+
+`<r>` + N x `<abcdefgh/>` + `</r>`, fed in 64 KiB chunks,
+`cargo test --lib -- --ignored --nocapture scan_work_curve_is_linear`:
+
+| document | materialized | scan_work | scan_work/materialized | events |
+|---:|---:|---:|---:|---:|
+| 1 MiB | 1048582 | 2097240 | 2.0001 | 190654 |
+| 2 MiB | 2097157 | 4194471 | 2.0001 | 381304 |
+| 4 MiB | 4194307 | 8388926 | 2.0001 | 762604 |
+| 8 MiB | 8388607 | 16777847 | 2.0001 | 1525204 |
+
+The ratio is constant to within 1e-4 across an 8x size range and `scan_work`
+exactly doubles as the document doubles. A whole-prefix restart would make the
+ratio grow linearly with size; it does not. A bounded-ratio version over
+128/256/512 KiB runs in the default suite (so the property cannot silently
+rot).
+
+**`cargo test --lib`: 1308 passed / 0 failed / 2 ignored.**
+
+### Explicitly NOT claimed
+
+- Oracle parity for the push trace. The driver has not been compared to
+  libxml2 per-call output yet; `pushdiff-run.sh` still reports the replay
+  baseline because `parse_chunk` is still replay. This is a
+  court-only foundation commit.
+- Consumer surfaces (PHP six-gate, lxml, nokogiri) are unaffected by
+  construction: `parse_chunk` and the decoder were not modified.
+- Class 3 (`end_in_lf`) and class 5 (>= 300-byte character-data
+  segmentation) are out of scope here.
+
 ## Next slices
 
 0. ~~Progressive source decoder + executable decoder gate.~~ DONE
@@ -668,6 +780,14 @@ as designed.
    input cursor, namespace scope) across non-final calls; scan only new
    bytes; reproduce the oracle's per-call event/error timing (startDocument
    gating, endDocument-on-terminate, REFEED extra-content, end_in_lf).
+
+   1a. ~~The driver exists and is proven court-only.~~ DONE (this commit:
+       `pushdrive.rs`; forward-only + liveness + prefix-poisoning +
+       partition-equivalence courts; 8x-linear complexity receipt).
+       Remaining in 1: grow the grammar (declarations, comments, PIs, CDATA,
+       DOCTYPE, attributes/namespaces, entities), then flip WHOLE contexts
+       from replay to persistent at a point selected BEFORE the first
+       observable event — never mid-document.
 2. Re-run this court (must reach diffs=0) + `cargo test --lib` + PHP
    six-gate + lxml/nokogiri gates.
 3. Re-run pushscale.c: the 20/40/80 MB curve must go linear.
