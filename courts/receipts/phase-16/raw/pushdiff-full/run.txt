@@ -1,9 +1,9 @@
-candidate_sha=9a09a5d0501dd5282204084316a6ac7852f806a8
-court_sha=9a09a5d0501dd5282204084316a6ac7852f806a8
+candidate_sha=a220ca37112dd943e2062e8f882eecb42d2d970c
+court_sha=a220ca37112dd943e2062e8f882eecb42d2d970c
 tree_clean=yes
 candidate_target_dir=/mnt/1tb_kingston/libxml-rs/target/release
 candidate_libxml2_binary=/mnt/1tb_kingston/libxml-rs/target/release/liblibxml_rs.so
-candidate_libxml2_sha256=3eaef9ac34c74f2b2433353ad4e3ca10b05de3594c9d6a3403d0fc623c23b79b
+candidate_libxml2_sha256=2b2e4eca081ba887466e717d8721666e89d387b7b549ba1270e010ecfbe81743
 cargo_lock_sha256=c25c80fa510c020b2950504eebb25a054a76bf5d59fec12b32740e0b7cc5f6a3
 rustc=rustc 1.98.0 (88d9e12ae 2026-08-18) (rustc --version at build time)
 cargo=cargo 1.98.0 (797e8a9bc 2026-08-05)
