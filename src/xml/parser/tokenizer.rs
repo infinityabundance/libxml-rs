@@ -2502,19 +2502,11 @@ impl XmlTokenizer {
             }
         }
         if !closed && saw_close_bracket {
-            // `]` reached, `>` missing: upstream's `if (RAW != '>')` check at
-            // the end of xmlParseInternalSubset.
-            self.record_error(
-                crate::abi::types::XML_FROM_PARSER,
-                crate::abi::types::XML_ERR_DOCTYPE_NOT_FINISHED,
-                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                "DOCTYPE improperly terminated\n".to_string(),
-                None,
-                None,
-                None,
-                0,
-                None,
-            );
+            // `]` reached, `>` missing. Upstream reports this from the TAIL of
+            // `xmlParseInternalSubset` — i.e. AFTER the declaration it just
+            // parsed (which therefore still dispatches its `elementDecl`), as
+            // `doctype-trunc-seq` shows. The driver leaves the diagnostic to
+            // `parse_internal_subset` so the ordering survives.
         }
         let content = self
             .input

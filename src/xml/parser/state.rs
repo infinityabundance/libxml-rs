@@ -1447,6 +1447,31 @@ impl XmlParser {
         // (it only builds declarations), so surface them here.
         self.raise_truncated_subset_errors(subset, truncated)?;
 
+        // UPSTREAM-PARITY (parser.c xmlParseInternalSubset's tail): with the
+        // `]` present the loop breaks and `if (RAW != '>')` reports
+        // XML_ERR_DOCTYPE_NOT_FINISHED — AFTER the declarations just parsed
+        // (`doctype-trunc-seq` fires `elementDecl` and only then the code-61
+        // error).
+        if !truncated {
+            let after = close.map_or(&[][..], |c| trim_ascii(&content[c + 1..]));
+            if !after.starts_with(b">") {
+                self.raise_error_now(
+                    XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_DOCTYPE_NOT_FINISHED,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "DOCTYPE improperly terminated\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                );
+                unsafe {
+                    (*self.ctxt).inSubset = 0;
+                }
+                return Err(());
+            }
+        }
+
         unsafe {
             (*self.ctxt).inSubset = 0;
         }

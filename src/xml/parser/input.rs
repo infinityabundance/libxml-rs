@@ -851,8 +851,10 @@ impl InputBuffer {
         self.materialized = src.len() as u64;
         self.data = InputBytes::Owned(src);
         if bom > 0 {
+            // Upstream `xmlDetectEncoding` skips a UTF-8 BOM with a raw
+            // `ctxt->input->cur += 3`, which does NOT bump the column — so the
+            // parser is 3 bytes in with `col = 1` (`bom.xml`).
             self.pos = bom;
-            self.col = bom + 1;
             self.bom_consumed = true;
         }
         self.detect_encoding_from_xml_declaration();
