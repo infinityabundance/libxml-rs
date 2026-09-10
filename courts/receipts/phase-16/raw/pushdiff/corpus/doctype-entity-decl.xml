@@ -1,0 +1,2 @@
+<!DOCTYPE a [<!ENTITY e "hello">]>
+<a>&e;</a>

@@ -1,0 +1,12 @@
+== /scanout/corpus/enc-utf32le-bom.xml bytes=36 mode=r9
+> CALL 0 len=12
+startDocument
+error dom=1 code=9 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Invalid character: Char 0x0 out of allowed range\n\n
+error dom=1 code=9 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=PCDATA invalid Char value 0\n
+< CALL 0 rc=0 err=9 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=24
+< CALL 1 rc=9 err=9 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+> FINAL
+< FINAL 0 rc=9 err=9 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+> REFEED
+< REFEED 0 rc=9 err=9 wf=0 in=7 p=0 l=1 col=1 i=1 n=0

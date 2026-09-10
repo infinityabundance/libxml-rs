@@ -1,0 +1,61 @@
+==== corpus/enc-utf32le-bom.xml mode=b1z2 ====
+21c21,24
+< < CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> error dom=1 code=9 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Invalid character: Char 0x0 out of allowed range\n\n
+> error dom=1 code=9 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=PCDATA invalid Char value 0\n
+> < CALL 3 rc=0 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+23c26
+< < CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 4 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+25c28
+< < CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 4 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+27c30
+< < CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 4 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+29c32
+< < CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 5 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+31c34
+< < CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 5 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+33,36c36
+< startDocument
+< error dom=1 code=4 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Start tag expected, '<' not found
+< endDocument
+< < CALL 5 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 5 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+38c38
+< < CALL 6 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 6 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+40c40
+< < CALL 6 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 6 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+42c42
+< < CALL 6 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 6 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+44c44
+< < CALL 7 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 7 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+46c46
+< < CALL 7 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 7 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+48c48
+< < CALL 7 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 7 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+50c50
+< < CALL 8 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0

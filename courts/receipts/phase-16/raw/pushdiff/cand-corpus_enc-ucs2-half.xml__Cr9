@@ -1,0 +1,12 @@
+== /scanout/corpus/enc-ucs2-half.xml bytes=43 mode=Cr9
+> CTOR len=12
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=31
+startDocument
+endDocument
+< CALL 0 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> FINAL
+error dom=1 code=73 level=3 file= line=1 i1=1 i2=41 str1=a str2= str3= msg=Couldn't find end of Start Tag a line 1\n
+< FINAL 0 rc=73 err=73 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+> REFEED
+< REFEED 0 rc=73 err=73 wf=0 in=7 p=0 l=1 col=1 i=1 n=0

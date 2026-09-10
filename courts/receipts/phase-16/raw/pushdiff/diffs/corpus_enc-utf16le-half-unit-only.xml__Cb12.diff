@@ -1,0 +1,7 @@
+==== corpus/enc-utf16le-half-unit-only.xml mode=Cb12 ====
+8a9
+> endDocument
+11d11
+< error dom=8 code=81 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=Invalid bytes in character encoding\n
+12a13
+> error dom=8 code=81 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=Invalid bytes in character encoding\n

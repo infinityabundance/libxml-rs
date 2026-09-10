@@ -1,0 +1,19 @@
+==== corpus/enc-shift_jis.xml mode=Cr9 ====
+7c7
+< < CALL 0 rc=0 err=0 wf=1 in=7 p=5 l=1 col=46 i=1 n=1
+---
+> < CALL 0 rc=0 err=0 wf=1 in=7 p=44 l=1 col=46 i=1 n=2
+11c11,12
+< < CALL 1 rc=0 err=0 wf=1 in=14 p=18 l=1 col=53 i=1 n=0
+---
+> endDocument
+> < CALL 1 rc=0 err=0 wf=1 in=14 p=58 l=1 col=53 i=1 n=2
+14c15
+< < FINAL 0 rc=0 err=0 wf=1 in=-1 p=18 l=1 col=53 i=1 n=0
+---
+> < FINAL 0 rc=0 err=0 wf=1 in=-1 p=58 l=1 col=53 i=1 n=2
+16,17c17
+< error dom=1 code=5 level=3 file= line=1 i1=0 i2=53 str1= str2= str3= msg=Extra content at the end of the document\n
+< < REFEED 0 rc=5 err=5 wf=0 in=-1 p=18 l=1 col=53 i=1 n=0
+---
+> < REFEED 0 rc=0 err=0 wf=1 in=-1 p=58 l=1 col=53 i=1 n=2

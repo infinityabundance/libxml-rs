@@ -1,0 +1,115 @@
+== /scanout/corpus/enc-ebcdic-long.xml bytes=238 mode=b5
+> CALL 0 len=5
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=5
+< CALL 7 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=5
+< CALL 8 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=5
+< CALL 9 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=5
+< CALL 10 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=5
+< CALL 11 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=5
+< CALL 12 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=5
+< CALL 13 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 14 len=5
+< CALL 14 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 15 len=5
+< CALL 15 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 16 len=5
+< CALL 16 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 17 len=5
+< CALL 17 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 18 len=5
+< CALL 18 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 19 len=5
+< CALL 19 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 20 len=5
+< CALL 20 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 21 len=5
+< CALL 21 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 22 len=5
+< CALL 22 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 23 len=5
+< CALL 23 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 24 len=5
+< CALL 24 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 25 len=5
+< CALL 25 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 26 len=5
+< CALL 26 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 27 len=5
+< CALL 27 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 28 len=5
+< CALL 28 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 29 len=5
+< CALL 29 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 30 len=5
+< CALL 30 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 31 len=5
+< CALL 31 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 32 len=5
+< CALL 32 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 33 len=5
+< CALL 33 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 34 len=5
+< CALL 34 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 35 len=5
+< CALL 35 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 36 len=5
+< CALL 36 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 37 len=5
+< CALL 37 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 38 len=5
+< CALL 38 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 39 len=5
+startDocument
+startElement [a]
+characters len=176 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+< CALL 39 rc=0 err=0 wf=1 in=7 p=200 l=1 col=201 i=1 n=2
+> CALL 40 len=5
+characters len=5 [xxxxx]
+< CALL 40 rc=0 err=0 wf=1 in=7 p=205 l=1 col=206 i=1 n=4
+> CALL 41 len=5
+characters len=5 [xxxxx]
+< CALL 41 rc=0 err=0 wf=1 in=7 p=210 l=1 col=211 i=1 n=6
+> CALL 42 len=5
+characters len=5 [xxxxx]
+< CALL 42 rc=0 err=0 wf=1 in=7 p=215 l=1 col=216 i=1 n=8
+> CALL 43 len=5
+characters len=5 [xxxxx]
+< CALL 43 rc=0 err=0 wf=1 in=7 p=220 l=1 col=221 i=1 n=10
+> CALL 44 len=5
+characters len=5 [xxxxx]
+< CALL 44 rc=0 err=0 wf=1 in=7 p=225 l=1 col=226 i=1 n=12
+> CALL 45 len=5
+characters len=5 [xxxxx]
+< CALL 45 rc=0 err=0 wf=1 in=7 p=230 l=1 col=231 i=1 n=14
+> CALL 46 len=5
+characters len=4 [xxxx]
+endDocument
+< CALL 46 rc=0 err=0 wf=1 in=7 p=234 l=1 col=235 i=1 n=16
+> CALL 47 len=3
+endElement [a]
+endDocument
+< CALL 47 rc=0 err=0 wf=1 in=14 p=238 l=1 col=239 i=1 n=16
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=238 l=1 col=239 i=1 n=16
+> REFEED
+< REFEED 0 rc=0 err=0 wf=1 in=-1 p=238 l=1 col=239 i=1 n=16

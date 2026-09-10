@@ -1,20 +1,19 @@
-candidate_sha=00ae1afebdf4a3d96314c519688d5181611dff7e
-court_sha=00ae1afebdf4a3d96314c519688d5181611dff7e
+candidate_sha=2ffa74ea11b9191caabd35a4d8c8423af06a3571
+court_sha=2ffa74ea11b9191caabd35a4d8c8423af06a3571
 tree_clean=yes
 candidate_target_dir=/mnt/1tb_kingston/libxml-rs/target/release
 candidate_libxml2_binary=/mnt/1tb_kingston/libxml-rs/target/release/liblibxml_rs.so
-candidate_libxml2_sha256=eb45803dd192309ccfb24185ca706446c4319e409cf26d154296035cc3af1e71
-cargo_lock_sha256=49ca0c73897b9818b0d0d51af82c72e63a043a70d5fa051416b648175814bed3
+candidate_libxml2_sha256=b030f3799f03dd06514cf8e57e5856aace95b94197cddffdbd4f5ac74e12aa9b
+cargo_lock_sha256=1fc93d52e9c992006c5e16bdac4761367558dfd2e153bcee65ef43dd37be5d24
 rustc=rustc 1.98.0 (88d9e12ae 2026-08-18) (rustc --version at build time)
 cargo=cargo 1.98.0 (797e8a9bc 2026-08-05)
 probe_sha256=ab3f1a9325aa510414d904b8201766b0b300a1a7af0f0308a2332221d3eb9215
-generator_sha256=4c24afc250ce3072ce1ee577f321354b4ebeb49763bd38c4ebeb2b72c5fef1bd
+generator_sha256=4f19fa64e8c54ba4f62aefcd827e5ce21f201d3a78ceab8749c86509ae938504
 runner_sha256=35c41c5f7dedda5b7a01cd94de353170cf53d74dcd2df3e03ccc47445c20d1dd
-decoder_gate_sha256=6882b21f4f3d72f0a6ee07af52f474d24853e0f03a8f47b90801d098778f8f6c  # the gate revision present at run time; tightened after the run to compare FINAL on well-formedness + encoder-error parity (see run_decoder_gate_sha256 below)
+decoder_gate_sha256=e3054a4baa2addca418a1f6c1b47694c86e40033020be4b20490b1da378425d6
 probe_runner_sha256=aced4f96948268c11d04c9028408ef6c0592ff314ecdde2f88d2bd7c32f1373c
 image=libxml-rs/phase14-debian:1
 pushdiff_filter=enc-
-run_decoder_gate_sha256=e3054a4baa2addca418a1f6c1b47694c86e40033020be4b20490b1da378425d6  # gate revision that produced sample/decoder-gate.txt from this run's recorded raw traces
 image_id=sha256:4366b5053d2a4f5829e2b827df2e7d4e0e23a3eac90174d22f265f4b0b9b06cd
 image_digest=
 Linux vanir 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 08:05:11 +0000 x86_64 GNU/Linux

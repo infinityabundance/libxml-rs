@@ -1,0 +1,27 @@
+==== corpus/enc-utf16le-half-end.xml mode=b5 ====
+3c3,5
+< < CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 0 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+7c9,10
+< < CALL 1 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> characters len=1 [x]
+> < CALL 1 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=2
+9c12
+< < CALL 2 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 2 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=4
+11d13
+< characters len=1 [x]
+13,14c15
+< endDocument
+< < FINAL 0 rc=77 err=77 wf=0 in=-1 p=4 l=1 col=5 i=1 n=1
+---
+> < FINAL 0 rc=77 err=77 wf=0 in=7 p=4 l=1 col=5 i=1 n=4
+16c17
+< < REFEED 0 rc=77 err=77 wf=0 in=-1 p=4 l=1 col=5 i=1 n=1
+---
+> < REFEED 0 rc=77 err=77 wf=0 in=7 p=4 l=1 col=5 i=1 n=4

@@ -1,0 +1,61 @@
+==== corpus/enc-utf16be-surrogate.xml mode=b1 ====
+9c9,11
+< < CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 3 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+11c13,15
+< < CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 4 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+14c18,19
+< < CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+---
+> endDocument
+> < CALL 5 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+16c21,23
+< < CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 6 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+17a25
+> startDocument
+19c27
+< < CALL 7 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 7 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=2
+21c29
+< < CALL 8 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 8 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=4
+23c31
+< < CALL 9 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 9 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=6
+25c33
+< < CALL 10 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 10 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=8
+27c35,36
+< < CALL 11 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> characters len=4 [\xf0\x9f\x8e\x89]
+> < CALL 11 rc=0 err=0 wf=1 in=7 p=7 l=1 col=5 i=1 n=10
+29c38
+< < CALL 12 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 12 rc=0 err=0 wf=1 in=7 p=7 l=1 col=5 i=1 n=12
+31,32c40,41
+< characters len=4 [\xf0\x9f\x8e\x89]
+< < CALL 13 rc=0 err=0 wf=1 in=7 p=7 l=1 col=5 i=1 n=1
+---
+> endDocument
+> < CALL 13 rc=0 err=0 wf=1 in=7 p=7 l=1 col=5 i=1 n=14
+34c43,44
+< < CALL 14 rc=0 err=0 wf=1 in=7 p=7 l=1 col=5 i=1 n=1
+---
+> endDocument

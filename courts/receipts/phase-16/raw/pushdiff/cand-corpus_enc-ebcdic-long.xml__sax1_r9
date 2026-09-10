@@ -1,0 +1,25 @@
+== /scanout/corpus/enc-ebcdic-long.xml bytes=238 mode=r9
+> CALL 0 len=12
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=41
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=53
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=52
+< CALL 5 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=42
+startDocument
+startElement [a]
+characters len=210 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+endElement [a]
+endDocument
+< CALL 6 rc=0 err=0 wf=1 in=14 p=238 l=1 col=239 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=238 l=1 col=239 i=1 n=0
+> REFEED
+< REFEED 0 rc=0 err=0 wf=1 in=-1 p=238 l=1 col=239 i=1 n=0

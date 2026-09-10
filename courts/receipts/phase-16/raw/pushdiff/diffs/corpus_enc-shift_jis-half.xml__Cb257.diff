@@ -1,0 +1,10 @@
+==== corpus/enc-shift_jis-half.xml mode=Cb257 ====
+8,9c8
+< endDocument
+< < FINAL 0 rc=77 err=77 wf=0 in=-1 p=5 l=1 col=46 i=1 n=1
+---
+> < FINAL 0 rc=77 err=77 wf=0 in=7 p=44 l=1 col=46 i=1 n=0
+11c10
+< < REFEED 0 rc=77 err=77 wf=0 in=-1 p=5 l=1 col=46 i=1 n=1
+---
+> < REFEED 0 rc=77 err=77 wf=0 in=7 p=44 l=1 col=46 i=1 n=0

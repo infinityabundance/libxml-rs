@@ -1,0 +1,14 @@
+==== corpus/enc-utf16le-bom.xml mode=r3 ====
+3c3,5
+< < CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 0 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+8a11
+> endDocument
+14,15c17
+< error dom=1 code=5 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=Extra content at the end of the document\n
+< < REFEED 0 rc=5 err=5 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0
+---
+> < REFEED 0 rc=0 err=0 wf=1 in=-1 p=8 l=1 col=9 i=1 n=0

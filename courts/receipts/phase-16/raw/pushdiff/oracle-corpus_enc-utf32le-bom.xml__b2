@@ -1,0 +1,44 @@
+== /scanout/corpus/enc-utf32le-bom.xml bytes=36 mode=b2
+> CALL 0 len=2
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=2
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=2
+startDocument
+error dom=1 code=4 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Start tag expected, '<' not found
+endDocument
+< CALL 2 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=2
+< CALL 3 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=2
+< CALL 4 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=2
+< CALL 5 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=2
+< CALL 6 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=2
+< CALL 7 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=2
+< CALL 8 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=2
+< CALL 9 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=2
+< CALL 10 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=2
+< CALL 11 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=2
+< CALL 12 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=2
+< CALL 13 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 14 len=2
+< CALL 14 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 15 len=2
+< CALL 15 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 16 len=2
+< CALL 16 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 17 len=2
+< CALL 17 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> FINAL
+< FINAL 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> REFEED
+< REFEED 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0

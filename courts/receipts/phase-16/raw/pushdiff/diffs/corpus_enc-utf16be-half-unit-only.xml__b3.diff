@@ -1,0 +1,43 @@
+==== corpus/enc-utf16be-half-unit-only.xml mode=b3 ====
+6c6,7
+< < CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+---
+> endDocument
+> < CALL 1 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+7a9
+> startDocument
+9c11
+< < CALL 2 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+---
+> < CALL 2 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=2
+12c14,15
+< < CALL 3 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
+---
+> endDocument
+> < CALL 3 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=4
+14c17,18
+< < CALL 4 rc=0 err=0 wf=1 in=9 p=4 l=1 col=5 i=1 n=1
+---
+> endDocument
+> < CALL 4 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=6
+17c21,22
+< < CALL 5 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=0
+---
+> endDocument
+> < CALL 5 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=6
+19c24,25
+< < CALL 6 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=0
+---
+> endDocument
+> < CALL 6 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=6
+21d26
+< error dom=8 code=81 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=Invalid bytes in character encoding\n
+23c28,29
+< < FINAL 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0
+---
+> error dom=8 code=81 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=Invalid bytes in character encoding\n
+> < FINAL 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=6
+25c31
+< < REFEED 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=0
+---
+> < REFEED 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=6

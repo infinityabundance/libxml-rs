@@ -453,17 +453,6 @@ pub(crate) struct InputBuffer {
     /// the document itself parsed cleanly — `xmlParserCheckEOF` returns early
     /// once `errNo` is set, so a malformed-document error wins.
     truncated_source: bool,
-    /// Byte offset just past a detected `<?xml ... ?>` declaration whose
-    /// `encoding` pseudo-attribute named an encoding: the boundary between the
-    /// ASCII declaration (which is NEVER re-decoded) and the encoded body.
-    /// 0 = no declaration with an encoding name was seen.
-    ///
-    /// Upstream switches the encoding *inside* `xmlParseXMLDecl`, i.e. with
-    /// `cur` already past the declaration, so only the remaining bytes are
-    /// converted. Re-decoding the declaration is harmless for the
-    /// ASCII-compatible codecs (ASCII maps to itself) but wrong for a
-    /// unit-aligned one: decoding `<?xml ...` as UCS-2 mis-aligns every unit.
-    decl_end: usize,
     /// Persistent `encoding_rs` decoder for a declared MULTIBYTE or STATEFUL
     /// source encoding (Shift_JIS, EUC-JP, ISO-2022-JP).
     ///
@@ -530,7 +519,6 @@ impl InputBuffer {
             encoding_error: false,
             truncated_source: false,
             registry: None,
-            decl_end: 0,
         };
         ib.detect_bom_and_encoding();
         ib
@@ -565,7 +553,6 @@ impl InputBuffer {
             encoding_error: false,
             truncated_source: false,
             registry: None,
-            decl_end: 0,
         };
         ib.push_bytes_ex(initial, false);
         ib
@@ -615,7 +602,6 @@ impl InputBuffer {
             encoding_error: false,
             truncated_source: false,
             registry: None,
-            decl_end: 0,
         };
         // BOM/declaration detection may transcode (Borrowed → Owned) for
         // non-UTF-8 inputs; the plain UTF-8/ASCII path stays zero-copy.
@@ -1066,7 +1052,6 @@ impl InputBuffer {
             // reconstructible from `pending_source`); if one ever were pushed
             // to, `append_decided` degrades to the per-tail registry decode.
             registry: None,
-            decl_end: self.decl_end,
         }
     }
 
@@ -1103,7 +1088,6 @@ impl InputBuffer {
             encoding_error: false,
             truncated_source: false,
             registry: None,
-            decl_end: 0,
         };
         ib.detect_bom_and_encoding();
         Ok(ib)
@@ -1139,7 +1123,6 @@ impl InputBuffer {
             encoding_error: false,
             truncated_source: false,
             registry: None,
-            decl_end: 0,
         };
         ib.detect_bom_and_encoding();
         Ok(ib)
@@ -1170,7 +1153,6 @@ impl InputBuffer {
             encoding_error: false,
             truncated_source: false,
             registry: None,
-            decl_end: 0,
         }
     }
 
@@ -1389,27 +1371,29 @@ impl InputBuffer {
         }
     }
 
-    /// Materialize a declared fixed-width source encoding (UCS-2/UCS-4)
-    /// through the code-unit decoder, so a trailing incomplete unit is held in
-    /// `pending_source` for the next call instead of being rejected by a
-    /// whole-buffer registry decode (`fixed_width_input` reports the complete
-    /// prefix and leaves the tail, which `decode_whole_buffer_declared` turns
-    /// into a hard `Err`).
+    /// Materialize a declared fixed-width source encoding (UCS-2, UCS-4 or a
+    /// declared UTF-16) through the code-unit decoder, so a trailing incomplete
+    /// unit is held in `pending_source` for the next call instead of being
+    /// rejected by a whole-buffer registry decode (`fixed_width_input` reports
+    /// the complete prefix and leaves the tail, which
+    /// `decode_whole_buffer_declared` turns into a hard `Err`).
+    ///
+    /// The WHOLE held buffer is decoded, starting at byte zero — INCLUDING the
+    /// declaration that named the encoding. That looks wrong (the declaration
+    /// was read as ASCII and is not in the declared encoding), and for a
+    /// unit-aligned codec it genuinely mangles the declaration; but it is what
+    /// upstream does: `xmlSwitchEncoding` converts the input buffer, and the
+    /// oracle's own result for a declared UCS-2/UTF-16 stream in an ASCII
+    /// declaration is a REJECTION (phase-16.7.8 court `enc-ucs2*`:
+    /// `XML_ERR_SPACE_REQUIRED` 65 + `XML_ERR_'?>' expected` 57, wellFormed 0).
+    /// For the ASCII-compatible declared codecs (Shift_JIS, EUC-JP,
+    /// ISO-2022-JP, the ISO-8859 family) this is a no-op, which is why they
+    /// are unaffected.
     fn convert_declared_units(&mut self, canonical: Encoding, terminate: bool) {
         if self.converted_to_utf8 || self.data.is_empty() {
             return;
         }
         let raw = self.data.take_owned();
-        // The XML declaration is NOT re-decoded (see `decl_end`): only the
-        // bytes after `?>` are units. Re-decoding `<?xml ...` as UCS-2 would
-        // mis-align every unit of the body.
-        let split = if self.decl_end > 0 && self.decl_end <= raw.len() {
-            self.decl_end
-        } else {
-            0
-        };
-        let (decl, body) = raw.split_at(split);
-        let prefix = decl.to_vec();
         self.encoding = canonical;
         self.converted_to_utf8 = true;
         self.data = InputBytes::Owned(Vec::new());
@@ -1417,21 +1401,12 @@ impl InputBuffer {
         self.pos = 0;
         self.col = 1;
         self.bom_consumed = false;
-        self.pending_source = body.to_vec();
+        self.pending_source = raw;
         // A trailing partial unit is carried on a non-final feed (a progressive
         // stream may still complete it) and is the encoder flush error on a
         // terminating one — exactly as in the BOM/pattern-detected fixed-width
         // paths.
         self.decode_units_tail(terminate);
-        if !prefix.is_empty() {
-            // Re-attach the (ASCII) declaration in front of the decoded body,
-            // so the parser re-reads it and the body follows in place.
-            let decoded = self.data.take_owned();
-            let mut merged = prefix;
-            merged.extend_from_slice(&decoded);
-            self.data = InputBytes::Owned(merged);
-            self.materialized = self.data.data_len() as u64;
-        }
     }
 
     /// Install a persistent `encoding_rs` decoder for a declared multibyte or
@@ -1744,11 +1719,6 @@ impl InputBuffer {
         // Find encoding="..." or encoding='...'
         if let Some(enc) = Self::extract_encoding_from_pi(pi_str) {
             self.encoding = Encoding::from_name(&enc);
-            // The declaration that NAMES an encoding is the boundary the
-            // encoding switch uses upstream: everything before `?>` was read
-            // as ASCII/UTF-8 and is never re-decoded, everything after it is
-            // in the declared encoding (see the `decl_end` field).
-            self.decl_end = self.pos + pi_end;
         }
     }
 
@@ -3434,12 +3404,22 @@ mod tests {
     }
 
     #[test]
-    fn progressive_ucs2_partition_equivalence_and_flush() {
+    fn progressive_ucs2_partition_invariance_and_flush() {
         let src = ucs2_doc();
-        let mut expected = UCS2_DECL.to_vec();
-        expected.extend_from_slice(b"<a>x</a>");
-        assert_eq!(materialized(&[&src]), expected);
-        assert_partition_equivalence(&src, &expected, "UCS-2");
+        // NOTE: no concrete expected text. A declared unit-aligned codec is
+        // decoded as code units from the START of the buffer — including the
+        // ASCII declaration that named it — which is what upstream's encoding
+        // switch does, and it is why the oracle REJECTS these documents
+        // (court `enc-ucs2*`: XML_ERR_SPACE_REQUIRED 65 + XML_ERR_'?>' expected
+        // 57, wellFormed 0). The contract under test is partition invariance.
+        let whole = materialized(&[&src]);
+        assert!(!whole.is_empty());
+        for split in 1..src.len() {
+            let ib = push_parts(&[&src[..split], &src[split..]]);
+            assert_eq!(ib.remaining(), whole.as_slice(), "UCS-2: split at {split}");
+            assert_eq!(ib.materialized_bytes() as usize, ib.len());
+            assert_eq!(ib.source_bytes_received() as usize, src.len());
+        }
 
         // Odd trailing byte: carried, then the terminating call's flush.
         let mut odd = UCS2_DECL.to_vec();
@@ -3448,21 +3428,48 @@ mod tests {
         let mut ib = push_parts(&[&odd]);
         assert!(!ib.source_encoding_error());
         assert!(!ib.source_truncated());
-        assert_eq!(ib.remaining(), [UCS2_DECL, b"<a>"].concat().as_slice());
+        assert_eq!(ib.pending_source(), &[0x78]);
         ib.push_bytes_ex(&[], true);
         assert!(ib.source_truncated());
+        assert!(!ib.source_encoding_error());
     }
 
     /// A DECLARED UTF-16 (no BOM, no `<\0?\0` pattern) has fixed-width units
-    /// too: it used to be left as raw bytes entirely.
+    /// and is decoded from byte zero like the declared UCS-2 above (upstream
+    /// re-decodes the buffer after the switch, so the oracle also rejects this
+    /// shape); the contract under test is partition invariance plus carry.
     #[test]
-    fn progressive_declared_utf16le_is_decoded() {
+    fn progressive_declared_utf16le_is_decoded_as_units() {
         let mut src = b"<?xml version=\"1.0\" encoding=\"UTF-16LE\"?>".to_vec();
         src.extend(utf16le("<a>x</a>"));
-        let mut expected = b"<?xml version=\"1.0\" encoding=\"UTF-16LE\"?>".to_vec();
-        expected.extend_from_slice(b"<a>x</a>");
-        assert_eq!(materialized(&[&src]), expected);
-        assert_partition_equivalence(&src, &expected, "declared UTF-16LE");
+        let whole = materialized(&[&src]);
+        for split in 1..src.len() {
+            let ib = push_parts(&[&src[..split], &src[split..]]);
+            assert_eq!(
+                ib.remaining(),
+                whole.as_slice(),
+                "declared UTF-16LE: split at {split}"
+            );
+        }
+
+        // Odd trailing byte: carried, then flushed. Unit alignment starts at
+        // byte zero, so a half unit dangles iff the total source length is odd.
+        let decl = b"<?xml version=\"1.0\" encoding=\"UTF-16LE\"?>";
+        let mut odd = decl.to_vec();
+        odd.extend(utf16le("<a>"));
+        if odd.len() % 2 == 0 {
+            odd.push(0x3C);
+        }
+        assert_eq!(odd.len() % 2, 1);
+        let mut ib = push_parts(&[&odd]);
+        assert_eq!(
+            ib.pending_source().len(),
+            1,
+            "the dangling half unit is held"
+        );
+        assert!(!ib.source_truncated());
+        ib.push_bytes_ex(&[], true);
+        assert!(ib.source_truncated());
     }
 
     /// Upstream `xmlParseTryOrFinish`'s `XML_PARSER_START` gate: a non-final

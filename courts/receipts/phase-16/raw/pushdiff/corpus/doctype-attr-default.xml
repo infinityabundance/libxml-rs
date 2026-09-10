@@ -1,0 +1,2 @@
+<!DOCTYPE a [<!ATTLIST a t (l|m) "l" u CDATA #IMPLIED v ID #REQUIRED>]>
+<a t="m" v="i1"/>

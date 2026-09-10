@@ -1,0 +1,39 @@
+== /scanout/corpus/enc-utf16be-half-end.xml bytes=11 mode=b1
+> CALL 0 len=1
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=1
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=1
+startDocument
+endDocument
+< CALL 3 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=1
+startDocument
+endDocument
+< CALL 4 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=1
+startDocument
+endDocument
+< CALL 5 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=1
+startDocument
+endDocument
+< CALL 6 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=1
+startDocument
+startElement [a]
+< CALL 7 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=2
+> CALL 8 len=1
+< CALL 8 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=4
+> CALL 9 len=1
+characters len=1 [x]
+< CALL 9 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=6
+> CALL 10 len=1
+< CALL 10 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=8
+> FINAL
+error dom=1 code=77 level=3 file= line=1 i1=1 i2=5 str1=a str2= str3= msg=Premature end of data in tag a line 1\n
+< FINAL 0 rc=77 err=77 wf=0 in=7 p=4 l=1 col=5 i=1 n=8
+> REFEED
+< REFEED 0 rc=77 err=77 wf=0 in=7 p=4 l=1 col=5 i=1 n=8

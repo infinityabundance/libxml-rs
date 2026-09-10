@@ -1,0 +1,16 @@
+==== corpus/enc-bom-le-half.xml mode=b3 ====
+5c5,7
+< < CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 1 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+9,10c11
+< endDocument
+< < FINAL 0 rc=68 err=68 wf=0 in=-1 p=1 l=1 col=2 i=1 n=0
+---
+> < FINAL 0 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+12c13
+< < REFEED 0 rc=68 err=68 wf=0 in=-1 p=1 l=1 col=2 i=1 n=0
+---
+> < REFEED 0 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0

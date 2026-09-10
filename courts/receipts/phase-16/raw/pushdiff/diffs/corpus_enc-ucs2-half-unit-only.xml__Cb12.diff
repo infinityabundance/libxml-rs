@@ -1,0 +1,35 @@
+==== corpus/enc-ucs2-half-unit-only.xml mode=Cb12 ====
+5c5,6
+< < CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> < CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+7c8
+< < CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+9,11c10,13
+< error dom=1 code=65 level=3 file= line=1 i1=0 i2=37 str1= str2= str3= msg=Blank needed here\n
+< error dom=1 code=57 level=3 file= line=1 i1=0 i2=37 str1= str2= str3= msg=parsing XML declaration: '?>' expected\n
+< < CALL 2 rc=57 err=57 wf=0 in=1 p=6 l=1 col=41 i=1 n=0
+---
+> startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+> characters len=1 [x]
+> endDocument
+> < CALL 2 rc=0 err=0 wf=1 in=7 p=42 l=1 col=43 i=1 n=2
+13c15,17
+< < CALL 3 rc=57 err=57 wf=0 in=1 p=6 l=1 col=41 i=1 n=0
+---
+> endElementNs local=[a] prefix= uri=
+> endDocument
+> < CALL 3 rc=0 err=0 wf=1 in=14 p=46 l=1 col=47 i=1 n=2
+15c19,21
+< < FINAL 0 rc=57 err=57 wf=0 in=1 p=6 l=1 col=41 i=1 n=0
+---
+> endDocument
+> error dom=8 code=81 level=3 file= line=1 i1=0 i2=47 str1= str2= str3= msg=Invalid bytes in character encoding\n
+> < FINAL 0 rc=81 err=81 wf=0 in=-1 p=46 l=1 col=47 i=1 n=2
+17c23
+< < REFEED 0 rc=57 err=57 wf=0 in=1 p=6 l=1 col=41 i=1 n=0
+---
+> < REFEED 0 rc=81 err=81 wf=0 in=-1 p=46 l=1 col=47 i=1 n=2

@@ -1,0 +1,19 @@
+== /scanout/corpus/enc-utf16le-nobom.xml bytes=58 mode=b16
+> CALL 0 len=16
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=16
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=16
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 2 rc=0 err=0 wf=1 in=7 p=23 l=1 col=25 i=1 n=2
+> CALL 3 len=10
+characters len=1 [x]
+endElementNs local=[a] prefix= uri=
+endDocument
+< CALL 3 rc=0 err=0 wf=1 in=14 p=29 l=1 col=30 i=1 n=2
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=29 l=1 col=30 i=1 n=2
+> REFEED
+< REFEED 0 rc=0 err=0 wf=1 in=-1 p=29 l=1 col=30 i=1 n=2

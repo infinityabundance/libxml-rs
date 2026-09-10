@@ -1,0 +1,13 @@
+== /scanout/corpus/enc-utf16le-bom.xml bytes=18 mode=b257
+> CALL 0 len=18
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+characters len=1 [x]
+endElementNs local=[a] prefix= uri=
+endDocument
+< CALL 0 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=8 l=1 col=9 i=1 n=0
+> REFEED
+< REFEED 0 rc=0 err=0 wf=1 in=-1 p=8 l=1 col=9 i=1 n=0

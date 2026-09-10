@@ -1,0 +1,61 @@
+==== corpus/enc-ebcdic-long.xml mode=b2 ====
+203c203,204
+< < CALL 99 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=176 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+> < CALL 99 rc=0 err=0 wf=1 in=7 p=200 l=1 col=201 i=1 n=2
+205c206,207
+< < CALL 100 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 100 rc=0 err=0 wf=1 in=7 p=202 l=1 col=203 i=1 n=4
+207c209,210
+< < CALL 101 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 101 rc=0 err=0 wf=1 in=7 p=204 l=1 col=205 i=1 n=6
+209c212,213
+< < CALL 102 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 102 rc=0 err=0 wf=1 in=7 p=206 l=1 col=207 i=1 n=8
+211c215,216
+< < CALL 103 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 103 rc=0 err=0 wf=1 in=7 p=208 l=1 col=209 i=1 n=10
+213c218,219
+< < CALL 104 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 104 rc=0 err=0 wf=1 in=7 p=210 l=1 col=211 i=1 n=12
+215c221,222
+< < CALL 105 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 105 rc=0 err=0 wf=1 in=7 p=212 l=1 col=213 i=1 n=14
+217c224,225
+< < CALL 106 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 106 rc=0 err=0 wf=1 in=7 p=214 l=1 col=215 i=1 n=16
+219c227,228
+< < CALL 107 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 107 rc=0 err=0 wf=1 in=7 p=216 l=1 col=217 i=1 n=18
+221c230,231
+< < CALL 108 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 108 rc=0 err=0 wf=1 in=7 p=218 l=1 col=219 i=1 n=20
+223c233,234
+< < CALL 109 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 109 rc=0 err=0 wf=1 in=7 p=220 l=1 col=221 i=1 n=22
+225c236,237
+< < CALL 110 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> characters len=2 [xx]
+> < CALL 110 rc=0 err=0 wf=1 in=7 p=222 l=1 col=223 i=1 n=24

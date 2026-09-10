@@ -1,0 +1,61 @@
+==== corpus/enc-utf32le-nobom.xml mode=b1z2 ====
+21c21,23
+< < CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 3 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+23c25,27
+< < CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 4 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+25c29,31
+< < CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 4 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+27c33,35
+< < CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 4 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+29c37,39
+< < CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 5 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+31c41,43
+< < CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 5 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+33c45,47
+< < CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 5 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+35c49,51
+< < CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 6 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+37c53,55
+< < CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 6 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+39c57,59
+< < CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < CALL 6 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0

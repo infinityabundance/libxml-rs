@@ -1,0 +1,17 @@
+== /scanout/corpus/enc-utf16le-half-unit-only.xml bytes=19 mode=r9
+> CALL 0 len=12
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+characters len=1 [x]
+endDocument
+< CALL 0 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=2
+> CALL 1 len=7
+endElementNs local=[a] prefix= uri=
+endDocument
+< CALL 1 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=2
+> FINAL
+endDocument
+error dom=8 code=81 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=Invalid bytes in character encoding\n
+< FINAL 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=2
+> REFEED
+< REFEED 0 rc=81 err=81 wf=0 in=-1 p=8 l=1 col=9 i=1 n=2

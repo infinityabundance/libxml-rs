@@ -1,0 +1,16 @@
+== /scanout/corpus/enc-utf16le-surrogate.xml bytes=20 mode=b16
+> CALL 0 len=16
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+characters len=4 [\xf0\x9f\x8e\x89]
+endDocument
+< CALL 0 rc=0 err=0 wf=1 in=7 p=7 l=1 col=5 i=1 n=2
+> CALL 1 len=4
+endElementNs local=[a] prefix= uri=
+endDocument
+< CALL 1 rc=0 err=0 wf=1 in=14 p=11 l=1 col=9 i=1 n=2
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=11 l=1 col=9 i=1 n=2
+> REFEED
+< REFEED 0 rc=0 err=0 wf=1 in=-1 p=11 l=1 col=9 i=1 n=2

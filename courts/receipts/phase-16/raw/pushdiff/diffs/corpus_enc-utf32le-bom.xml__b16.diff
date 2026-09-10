@@ -1,0 +1,26 @@
+==== corpus/enc-utf32le-bom.xml mode=b16 ====
+4,6c4,7
+< error dom=1 code=4 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Start tag expected, '<' not found
+< endDocument
+< < CALL 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> error dom=1 code=9 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Invalid character: Char 0x0 out of allowed range\n\n
+> error dom=1 code=9 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=PCDATA invalid Char value 0\n
+> error dom=1 code=68 level=3 file= line=1 i1=0 i2=3 str1= str2= str3= msg=StartTag: invalid element name\n
+> < CALL 0 rc=0 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+8c9
+< < CALL 1 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 1 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+10c11
+< < CALL 2 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 2 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+12c13
+< < FINAL 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < FINAL 0 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0
+14c15
+< < REFEED 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < REFEED 0 rc=68 err=68 wf=0 in=7 p=0 l=1 col=1 i=1 n=0

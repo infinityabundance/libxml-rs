@@ -1,0 +1,17 @@
+==== corpus/enc-ucs2-half-unit-only.xml mode=Cb257 ====
+5,7c5,11
+< error dom=1 code=65 level=3 file= line=1 i1=0 i2=37 str1= str2= str3= msg=Blank needed here\n
+< error dom=1 code=57 level=3 file= line=1 i1=0 i2=37 str1= str2= str3= msg=parsing XML declaration: '?>' expected\n
+< < FINAL 0 rc=57 err=57 wf=0 in=1 p=6 l=1 col=41 i=1 n=0
+---
+> startDocument
+> startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+> characters len=1 [x]
+> endElementNs local=[a] prefix= uri=
+> endDocument
+> error dom=8 code=81 level=3 file= line=1 i1=0 i2=47 str1= str2= str3= msg=Invalid bytes in character encoding\n
+> < FINAL 0 rc=81 err=81 wf=0 in=-1 p=46 l=1 col=47 i=1 n=0
+9c13
+< < REFEED 0 rc=57 err=57 wf=0 in=1 p=6 l=1 col=41 i=1 n=0
+---
+> < REFEED 0 rc=81 err=81 wf=0 in=-1 p=46 l=1 col=47 i=1 n=0

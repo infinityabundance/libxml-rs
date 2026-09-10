@@ -1,0 +1,163 @@
+== /scanout/corpus/enc-utf16be-bom.xml bytes=18 mode=b1z2
+> CALL 0 len=1
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=1
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=1
+startDocument
+endDocument
+< CALL 3 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 4 ZERO
+startDocument
+endDocument
+< CALL 4 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 4 ZERO
+startDocument
+endDocument
+< CALL 4 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=1
+startDocument
+endDocument
+< CALL 4 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 5 ZERO
+startDocument
+endDocument
+< CALL 5 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 5 ZERO
+startDocument
+endDocument
+< CALL 5 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=1
+startDocument
+endDocument
+< CALL 5 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 6 ZERO
+startDocument
+endDocument
+< CALL 6 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 6 ZERO
+startDocument
+endDocument
+< CALL 6 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=1
+startDocument
+endDocument
+< CALL 6 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 7 ZERO
+startDocument
+endDocument
+< CALL 7 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 7 ZERO
+startDocument
+endDocument
+< CALL 7 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=1
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 7 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=2
+> CALL 8 ZERO
+< CALL 8 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=4
+> CALL 8 ZERO
+< CALL 8 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=6
+> CALL 8 len=1
+< CALL 8 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=8
+> CALL 9 ZERO
+< CALL 9 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=10
+> CALL 9 ZERO
+< CALL 9 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=12
+> CALL 9 len=1
+characters len=1 [x]
+< CALL 9 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=14
+> CALL 10 ZERO
+< CALL 10 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=16
+> CALL 10 ZERO
+< CALL 10 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=18
+> CALL 10 len=1
+< CALL 10 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=20
+> CALL 11 ZERO
+< CALL 11 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=22
+> CALL 11 ZERO
+< CALL 11 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=24
+> CALL 11 len=1
+endDocument
+< CALL 11 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=26
+> CALL 12 ZERO
+endDocument
+< CALL 12 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=28
+> CALL 12 ZERO
+endDocument
+< CALL 12 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=30
+> CALL 12 len=1
+endDocument
+< CALL 12 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=32
+> CALL 13 ZERO
+endDocument
+< CALL 13 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=34
+> CALL 13 ZERO
+endDocument
+< CALL 13 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=36
+> CALL 13 len=1
+endDocument
+< CALL 13 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=38
+> CALL 14 ZERO
+endDocument
+< CALL 14 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=40
+> CALL 14 ZERO
+endDocument
+< CALL 14 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=42
+> CALL 14 len=1
+endDocument
+< CALL 14 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=44
+> CALL 15 ZERO
+endDocument
+< CALL 15 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=46
+> CALL 15 ZERO
+endDocument
+< CALL 15 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=48
+> CALL 15 len=1
+endDocument
+< CALL 15 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=50
+> CALL 16 ZERO
+endDocument
+< CALL 16 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=52
+> CALL 16 ZERO
+endDocument
+< CALL 16 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=54
+> CALL 16 len=1
+endDocument
+< CALL 16 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=56
+> CALL 17 ZERO
+endDocument
+< CALL 17 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=58
+> CALL 17 ZERO
+endDocument
+< CALL 17 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=60
+> CALL 17 len=1
+endElementNs local=[a] prefix= uri=
+endDocument
+< CALL 17 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=60
+> CALL 18 ZERO
+endDocument
+< CALL 18 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=60
+> CALL 18 ZERO
+endDocument
+< CALL 18 rc=0 err=0 wf=1 in=14 p=8 l=1 col=9 i=1 n=60
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=8 l=1 col=9 i=1 n=60
+> REFEED
+< REFEED 0 rc=0 err=0 wf=1 in=-1 p=8 l=1 col=9 i=1 n=60

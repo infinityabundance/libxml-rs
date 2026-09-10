@@ -1,0 +1,36 @@
+==== corpus/enc-utf32be-bom.xml mode=b7 ====
+4,6c4,5
+< error dom=1 code=4 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Start tag expected, '<' not found
+< endDocument
+< < CALL 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> error dom=1 code=4 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Start tag expected, '<' not found\n
+> < CALL 0 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+8c7
+< < CALL 1 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 1 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+10c9
+< < CALL 2 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 2 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+12c11
+< < CALL 3 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 3 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+14c13
+< < CALL 4 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 4 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+16c15
+< < CALL 5 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 5 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+18c17
+< < FINAL 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < FINAL 0 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
+20c19
+< < REFEED 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+---
+> < REFEED 0 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0

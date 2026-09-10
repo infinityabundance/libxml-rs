@@ -1,0 +1,61 @@
+==== corpus/enc-ucs2.xml mode=sax1/b1 ====
+9c9,10
+< < CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> < CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+11c12
+< < CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+13c14
+< < CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+15c16
+< < CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 6 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+17c18
+< < CALL 7 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 7 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+19c20
+< < CALL 8 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 8 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+21c22
+< < CALL 9 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 9 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+23c24
+< < CALL 10 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 10 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+25c26
+< < CALL 11 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 11 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+27c28
+< < CALL 12 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 12 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+29c30
+< < CALL 13 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 13 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+31c32
+< < CALL 14 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 14 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+33c34
+< < CALL 15 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 15 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+35c36
+< < CALL 16 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 16 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+37c38
+< < CALL 17 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---

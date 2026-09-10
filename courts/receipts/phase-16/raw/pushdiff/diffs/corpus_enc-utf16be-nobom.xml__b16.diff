@@ -1,0 +1,30 @@
+==== corpus/enc-utf16be-nobom.xml mode=b16 ====
+3c3,4
+< < CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> < CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+5c6
+< < CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+7d7
+< startDocument
+9c9
+< < CALL 2 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
+---
+> < CALL 2 rc=0 err=0 wf=1 in=7 p=23 l=1 col=25 i=1 n=2
+13c13,14
+< < CALL 3 rc=0 err=0 wf=1 in=14 p=29 l=1 col=30 i=1 n=0
+---
+> endDocument
+> < CALL 3 rc=0 err=0 wf=1 in=14 p=29 l=1 col=30 i=1 n=2
+16c17
+< < FINAL 0 rc=0 err=0 wf=1 in=-1 p=29 l=1 col=30 i=1 n=0
+---
+> < FINAL 0 rc=0 err=0 wf=1 in=-1 p=29 l=1 col=30 i=1 n=2
+18,19c19
+< error dom=1 code=5 level=3 file= line=1 i1=0 i2=30 str1= str2= str3= msg=Extra content at the end of the document\n
+< < REFEED 0 rc=5 err=5 wf=0 in=-1 p=29 l=1 col=30 i=1 n=0
+---
+> < REFEED 0 rc=0 err=0 wf=1 in=-1 p=29 l=1 col=30 i=1 n=2

@@ -1,0 +1,35 @@
+==== corpus/enc-shift_jis.xml mode=Cb12 ====
+5c5,6
+< < CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> < CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+7c8
+< < CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+---
+> < CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+9d9
+< startDocument
+11c11,12
+< < CALL 2 rc=0 err=0 wf=1 in=7 p=5 l=1 col=46 i=1 n=1
+---
+> characters len=3 [\xe3\x81\x82]
+> < CALL 2 rc=0 err=0 wf=1 in=7 p=48 l=1 col=47 i=1 n=2
+13c14
+< characters len=9 [\xe3\x81\x82\xe3\x81\x84\xe3\x81\x86]
+---
+> characters len=6 [\xe3\x81\x84\xe3\x81\x86]
+15c16,17
+< < CALL 3 rc=0 err=0 wf=1 in=14 p=18 l=1 col=53 i=1 n=0
+---
+> endDocument
+> < CALL 3 rc=0 err=0 wf=1 in=14 p=58 l=1 col=53 i=1 n=2
+18c20
+< < FINAL 0 rc=0 err=0 wf=1 in=-1 p=18 l=1 col=53 i=1 n=0
+---
+> < FINAL 0 rc=0 err=0 wf=1 in=-1 p=58 l=1 col=53 i=1 n=2
+20,21c22
+< error dom=1 code=5 level=3 file= line=1 i1=0 i2=53 str1= str2= str3= msg=Extra content at the end of the document\n
+< < REFEED 0 rc=5 err=5 wf=0 in=-1 p=18 l=1 col=53 i=1 n=0
+---
+> < REFEED 0 rc=0 err=0 wf=1 in=-1 p=58 l=1 col=53 i=1 n=2
