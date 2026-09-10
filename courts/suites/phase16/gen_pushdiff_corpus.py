@@ -212,14 +212,28 @@ def main():
         "enc-utf32le-bom.xml": b"\xff\xfe\x00\x00" + utf32le("<a>x</a>"),
         "enc-utf32be-bom.xml": b"\x00\x00\xfe\xff" + utf32be("<a>x</a>"),
         "enc-utf32be-nobom.xml": utf32be("<?xml version=\"1.0\"?><a>x</a>"),
+        "enc-utf32le-nobom.xml": utf32le("<?xml version=\"1.0\"?><a>x</a>"),
         "enc-ebcdic.xml": "<?xml version=\"1.0\"?><a>x</a>".encode("cp037"),
-        # A surrogate pair (U+1F389) split between calls: 3D D8 | 89 DF.
+        # EBCDIC longer than the 200-byte probe threshold (upstream parks in
+        # XML_PARSER_START while a non-final call has < 200 bytes AND the
+        # first four bytes look like EBCDIC): at b1 this crosses 199 -> 200
+        # mid-stream, which is the transition under test.
+        "enc-ebcdic-long.xml": ("<?xml version=\"1.0\"?><a>" + "x" * 210 + "</a>").encode("cp037"),
+        # A surrogate pair (U+1F389) split between calls: UTF-16LE bytes are
+        # 3C D8 | 89 DF (LE of D83C DF89).
         "enc-utf16le-surrogate.xml": b"\xff\xfe" + utf16le("<a>\U0001F389</a>"),
         "enc-utf16be-surrogate.xml": b"\xfe\xff" + utf16be("<a>\U0001F389</a>"),
         # Document ENDS with half a UTF-16 code unit (terminating call must
-        # report it, not suspend).
+        # report it, not suspend) WITH the XML itself also unfinished: two
+        # independent failure causes (hostile combined case).
         "enc-utf16le-half-end.xml": b"\xff\xfe" + utf16le("<a>x") + b"\x3c",
         "enc-utf16be-half-end.xml": b"\xfe\xff" + utf16be("<a>x") + b"\x00",
+        # ISOLATED decoder-flush case: the document grammar is COMPLETE and
+        # the only malformed condition is a trailing half code unit (half of
+        # a space: LE ' ' is 20 00, BE is 00 20). Oracle decides which error
+        # wins; the court records it rather than assuming.
+        "enc-utf16le-half-unit-only.xml": b"\xff\xfe" + utf16le("<a>x</a>") + b"\x20",
+        "enc-utf16be-half-unit-only.xml": b"\xfe\xff" + utf16be("<a>x</a>") + b"\x00",
         # Streams whose ONLY content is the start of a BOM/signature: the
         # b1/b2 plans cut inside it.
         "enc-bom-le-only.xml": b"\xff\xfe",

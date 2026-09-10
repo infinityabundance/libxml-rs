@@ -329,7 +329,7 @@ call carrying half a code unit.
 - **Accounting authority moves to `InputBuffer`.** Whole-buffer conversion
   REPLACES bytes rather than appending, so
   `machine.materialize_input(n)` cannot represent it. `InputBuffer` should
-ow the materialized/consumed totals (it knows raw arrival, decoder state,
+own the materialized/consumed totals (it knows raw arrival, decoder state,
   conversions, rebasing) and `PushMachine` should keep only
   `source_bytes_received` + `total_scan_work`, querying the input for the
   rest when producing the complexity receipt.

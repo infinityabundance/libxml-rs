@@ -52,7 +52,17 @@ python3 "$GEN" "$OUT/corpus" || exit 1
 find "$OUT/corpus" -name '*.xml' -print | sort >> "$OUT/docs.list"
 find "$FIXTURES" -name '*.xml' -size -32k -print 2>/dev/null | sort >> "$OUT/docs.list"
 mapfile -t DOCS < "$OUT/docs.list"
-echo "pushdiff docs: ${#DOCS[@]}"
+# Optional targeted run (e.g. PUSHDIFF_FILTER="enc-" for the progressive-
+# decoding corpus): restricts the per-document loop and skips the extra
+# reset/stop cell blocks, which reference specific corpus files. The
+# provenance recorded by the launcher is unaffected.
+FILTER="${PUSHDIFF_FILTER:-}"
+if [ -n "$FILTER" ]; then
+  KEPT=()
+  for d in "${DOCS[@]}"; do case "$d" in *"$FILTER"*) KEPT+=("$d");; esac; done
+  DOCS=("${KEPT[@]}")
+fi
+echo "pushdiff docs: ${#DOCS[@]}${FILTER:+ (filter=$FILTER)}"
 
 # Compile the probe against both providers — strict: a single warning in
 # the recorder ABI is a build failure, not a suppressed risk.
@@ -125,6 +135,8 @@ for doc in "${DOCS[@]}"; do
   fi
 done
 
+# xmlCtxtResetPush / xmlStopParser cells (skipped in targeted runs).
+if [ -z "$FILTER" ]; then
 # xmlCtxtResetPush cells over COMPLETED documents A: reset after A is
 # finished (Rz/Ri — stale state must not leak), plus UNFINALIZED A (Rs /
 # Rsi: A is fed fully but never terminated — the context rests suspended
@@ -180,6 +192,7 @@ for cell in "deep:b16:1" "ns-rescope:b7:2" "empty-elements:b3:3" "mismatch:b5:1"
     record_fail "stop $docn (K=$k)" "$m -S $k" "$tag"
   fi
 done
+fi # end of non-filtered extra cells
 
 echo "cells=$total diffs=$fail" >> "$OUT/summary.txt"
 echo "=== summary ==="

@@ -97,6 +97,7 @@ uname -a >> "$OUT/run.txt" 2>/dev/null || true
 grep -m1 'model name' /proc/cpuinfo >> "$OUT/run.txt" || true
 
 docker run --rm \
+  -e PUSHDIFF_FILTER="${PUSHDIFF_FILTER:-}" \
   -v "$ROOT/courts":/court:ro \
   -v "$CAND_DIR":/candidate:ro \
   -v "$OUT":/scanout \
