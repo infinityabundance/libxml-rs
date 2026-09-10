@@ -1302,6 +1302,18 @@ impl XmlTokenizer {
         // a target that starts with "xml" (case-insensitive) is reserved.
         let target = self.scan_name();
         if target.is_empty() {
+            // UPSTREAM-PARITY (parser.c xmlParseTryOrFinish XML_PARSER_XML_DECL
+            // -> xmlParsePI): upstream only enters xmlParsePI once a "?>" is
+            // available (or the call terminates). A NON-final push call whose
+            // available input ends immediately after "<?" therefore parks and
+            // the target name may complete on a later call — it never reaches
+            // xmlParsePITarget, so no PI_NOT_STARTED is raised. Same deferral
+            // idiom as the XML-declaration scan above and `scan_start_tag`.
+            // (`<?>` DOES report the missing target name: the construct is
+            // complete, so the remainder is not empty.)
+            if self.silent_truncated && self.input.current_ref().remaining().is_empty() {
+                return XmlToken::Eof;
+            }
             // upstream xmlParsePI: target == NULL → "xmlParsePI : no target
             // name\n" (XML_ERR_PI_NOT_STARTED), at the current position.
             self.record_error(

@@ -716,11 +716,10 @@ impl InputBuffer {
             self.materialized = self.data.data_len() as u64;
         } else if n >= 3 && at(0) == 0xEF && at(1) == 0xBB && at(2) == 0xBF {
             self.decide_utf8(src, 3);
-        } else if n >= 4 && at(0) == 0xFF && at(1) == 0xFE && at(2) == 0x00 && at(3) == 0x00 {
-            self.install_unit_decoder(src, Encoding::Ucs4Le, 4, terminate);
-        } else if n >= 4 && at(0) == 0x00 && at(1) == 0x00 && at(2) == 0xFE && at(3) == 0xFF {
-            self.install_unit_decoder(src, Encoding::Ucs4Be, 4, terminate);
         } else if n >= 2 && at(0) == 0xFF && at(1) == 0xFE {
+            // `FF FE 00 00` (the UTF-32LE BOM) deliberately lands here:
+            // upstream has no UTF-32 BOM case, so it is a UTF-16LE BOM whose
+            // first decoded character is U+0000 (see detect_bom_and_encoding).
             self.install_unit_decoder(src, Encoding::Utf16Le, 2, terminate);
         } else if n >= 2 && at(0) == 0xFE && at(1) == 0xFF {
             self.install_unit_decoder(src, Encoding::Utf16Be, 2, terminate);
@@ -1130,36 +1129,16 @@ impl InputBuffer {
             return;
         }
 
-        // Check for UTF-32 LE BOM: FF FE 00 00 (must precede the UTF-16LE
-        // check — its first two bytes are the UTF-16LE BOM).
-        if self.data.len() >= 4
-            && self.data[0] == 0xFF
-            && self.data[1] == 0xFE
-            && self.data[2] == 0x00
-            && self.data[3] == 0x00
-        {
-            self.encoding = Encoding::Ucs4Le;
-            self.pos = 4;
-            self.col = 5;
-            self.bom_consumed = true;
-            self.convert_declared_native_encoding();
-            return;
-        }
-
-        // Check for UTF-32 BE BOM: 00 00 FE FF
-        if self.data.len() >= 4
-            && self.data[0] == 0x00
-            && self.data[1] == 0x00
-            && self.data[2] == 0xFE
-            && self.data[3] == 0xFF
-        {
-            self.encoding = Encoding::Ucs4Be;
-            self.pos = 4;
-            self.col = 5;
-            self.bom_consumed = true;
-            self.convert_declared_native_encoding();
-            return;
-        }
+        // NO UTF-32/UCS-4 BOM TEST: neither upstream `xmlDetectEncoding`
+        // (parserInternals.c, the parser's own detection) nor
+        // `xmlDetectCharEncoding` (encoding.c, appendix F) recognizes
+        // `FF FE 00 00` or `00 00 FE FF`. `FF FE 00 00` therefore falls
+        // through to the UTF-16LE BOM below (first decoded char U+0000) and
+        // `00 00 FE FF` falls through to the default UTF-8 path — both
+        // observed in the phase-16.7.8 push court (`enc-utf32le-bom` /
+        // `enc-utf32be-bom`: the oracle reports "Start tag expected, '<' not
+        // found", rc 4). BOM-LESS UCS-4 is still detected by the `3C 00 00 00`
+        // / `00 00 00 3C` patterns below.
 
         // Check for UTF-16 LE BOM: FF FE
         if self.data.len() >= 2 && self.data[0] == 0xFF && self.data[1] == 0xFE {
@@ -2866,6 +2845,10 @@ mod tests {
         s.chars().flat_map(|c| (c as u32).to_le_bytes()).collect()
     }
 
+    fn utf32be(s: &str) -> Vec<u8> {
+        s.chars().flat_map(|c| (c as u32).to_be_bytes()).collect()
+    }
+
     /// Upstream `xmlParseTryOrFinish`'s `XML_PARSER_START` gate: a non-final
     /// call with fewer than four source bytes parks — the encoding is not
     /// decided, nothing is materialized, and the bytes are held.
@@ -3011,8 +2994,17 @@ mod tests {
         cases.push(utf16be("<?xml version=\"1.0\"?><a>x</a>"));
         cases.push(utf32le("<?xml version=\"1.0\"?><a>x</a>"));
         cases.push({
+            // The UTF-32LE BOM is NOT a BOM upstream: it is a UTF-16LE BOM
+            // followed by U+0000 (see detect_bom_and_encoding).
             let mut v = vec![0xFF, 0xFE, 0x00, 0x00];
             v.extend(utf32le("<a>x</a>"));
+            v
+        });
+        cases.push({
+            // Likewise the UTF-32BE BOM is undetected: the stream is read as
+            // UTF-8 (NUL bytes included) and fails in the parser, not here.
+            let mut v = vec![0x00, 0x00, 0xFE, 0xFF];
+            v.extend(utf32be("<a>x</a>"));
             v
         });
 

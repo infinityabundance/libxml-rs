@@ -89,6 +89,7 @@ cargo --version 2>/dev/null | sed 's/^/cargo=/' >> "$OUT/run.txt" || true
 echo "probe_sha256=$(sha "$ROOT/courts/suites/phase16/pushdiff-probe.c")" >> "$OUT/run.txt"
 echo "generator_sha256=$(sha "$ROOT/courts/suites/phase16/gen_pushdiff_corpus.py")" >> "$OUT/run.txt"
 echo "runner_sha256=$(sha "$ROOT/courts/suites/phase16/pushdiff-differential.sh")" >> "$OUT/run.txt"
+echo "decoder_gate_sha256=$(sha "$ROOT/courts/suites/phase16/pushdiff-decoder-gate.py")" >> "$OUT/run.txt"
 echo "probe_runner_sha256=$(sha "$ROOT/courts/suites/phase16/pushdiff-run.sh")" >> "$OUT/run.txt"
 echo "image=$IMAGE" >> "$OUT/run.txt"
 echo "pushdiff_filter=${PUSHDIFF_FILTER:-}" >> "$OUT/run.txt"
