@@ -264,6 +264,16 @@ fn push_persistent_eligible(ctxt: *mut _xmlParserCtxt) -> bool {
         if c.validate != 0 || c.html != 0 || c.parseMode != 0 {
             return false;
         }
+        // A context whose consumer zeroed `wellFormed` before the first chunk
+        // is the expat-compat shape (PHP ext/xml's xml_parser_create does
+        // exactly that, and the replay engine models its consequences — entity
+        // substitution is driven purely by the compat getEntity side effects).
+        // Zeroing a context's well-formedness is not something a normal push
+        // consumer does, so excluding it keeps that contract on the engine that
+        // implements it while the driver serves the ordinary push shape.
+        if c.wellFormed == 0 {
+            return false;
+        }
         // The base document only: a context that already has inputs pushed
         // below it (external DTD/entity) is not one the driver adopted.
         if c.inputNr > 1 || c.input.is_null() {
