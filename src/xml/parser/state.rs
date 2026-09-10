@@ -1774,7 +1774,7 @@ impl XmlParser {
                 self.fire_sax_unparsed_entity_decl(args);
             } else if kw.eq_ignore_ascii_case(b"ATTLIST") {
                 if let Some(d) = *dtd {
-                    Self::parse_attlist_decl(d, args);
+                    self.parse_attlist_decl(d, args);
                 }
                 // UPSTREAM-PARITY (parser.c xmlParseAttributeListDecl):
                 // defaults land in ctxt->attsDefault regardless of a
@@ -2226,10 +2226,14 @@ impl XmlParser {
         if tree.is_null() {
             return (ptr::null_mut(), false);
         }
-        let mixed = unsafe {
-            let t = &*tree;
-            t.type_ == XML_ELEMENT_CONTENT_PCDATA as c_int
-        };
+        // UPSTREAM-PARITY (parser.c xmlParseElementDecl): the declaration is
+        // MIXED when the content model starts with `(#PCDATA`, not merely when
+        // its tree happens to have a PCDATA root — `(#PCDATA|b)*` is an OR
+        // group that is still XML_ELEMENT_TYPE_MIXED (`doctype-subset-mixed`
+        // pins type=3 with that exact tree).
+        let mixed = s
+            .get(1..8)
+            .is_some_and(|w| w.eq_ignore_ascii_case(b"#PCDATA"));
         (tree, mixed)
     }
 
@@ -2733,7 +2737,7 @@ impl XmlParser {
     ///   `dtd::get_element_decl_created`) must be NULL or a valid `_xmlElement`
     ///   declaration; the enumeration tree from `parse_attr_type` (if any) is
     ///   handed to `dtd::add_attribute_decl`.
-    fn parse_attlist_decl(dtd: *mut _xmlDtd, args: &[u8]) {
+    fn parse_attlist_decl(&mut self, dtd: *mut _xmlDtd, args: &[u8]) {
         let args = trim_ascii(args);
         if args.is_empty() {
             return;
@@ -2787,6 +2791,20 @@ impl XmlParser {
                     .as_ref()
                     .map(|s| Self::vec_to_cstr_null(s))
                     .unwrap_or(ptr::null());
+                // UPSTREAM-PARITY (parser.c xmlParseAttributeListDecl): the
+                // `attributeDecl` callback fires for EVERY attribute of the
+                // declaration, before the declaration is stored, and carries
+                // the raw QName plus the enumeration tree. The probe compares
+                // it line-for-line (`doctype-attr-default` declares three
+                // attributes in one ATTLIST).
+                self.fire_sax_attribute_decl(
+                    elem_name,
+                    attr_name,
+                    atype,
+                    def,
+                    default_val.as_deref(),
+                    tree,
+                );
                 crate::xml::dtd::add_attribute_decl(
                     dtd,
                     elem_decl,
@@ -2806,6 +2824,47 @@ impl XmlParser {
                 crate::abi::allocator::xmlFreeImpl(local_cstr as *mut c_void);
             }
             crate::abi::allocator::xmlFreeImpl(elem_cstr as *mut c_void);
+        }
+    }
+
+    /// Fire the SAX `attributeDecl` callback for one attribute of an
+    /// `<!ATTLIST ...>` declaration (upstream `xmlParseAttributeListDecl`).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with a valid
+    ///   `sax`/`userData`; `tree` may be NULL or an enumeration tree owned by
+    ///   the DTD caller (the callback only reads it).
+    #[allow(clippy::too_many_arguments)]
+    fn fire_sax_attribute_decl(
+        &self,
+        elem: &[u8],
+        fullname: &[u8],
+        atype: c_int,
+        def: c_int,
+        default_val: Option<&[u8]>,
+        tree: *mut crate::abi::structs::_xmlEnumeration,
+    ) {
+        if self.sax_blocked() || self.below_delivery_boundary() {
+            return;
+        }
+        unsafe {
+            let sax = &*(*self.ctxt).sax;
+            if sax.attributeDecl.is_none() {
+                return;
+            }
+            let ctx = (*self.ctxt).userData;
+            let elem_c = Self::vec_to_cstr_null(elem);
+            let full_c = Self::vec_to_cstr_null(fullname);
+            let dv_c = default_val
+                .map(Self::vec_to_cstr_null)
+                .unwrap_or(ptr::null());
+            SaxDispatcher::attribute_decl(sax, ctx, elem_c, full_c, atype, def, dv_c, tree);
+            crate::abi::allocator::xmlFreeImpl(elem_c as *mut c_void);
+            crate::abi::allocator::xmlFreeImpl(full_c as *mut c_void);
+            if !dv_c.is_null() {
+                crate::abi::allocator::xmlFreeImpl(dv_c as *mut c_void);
+            }
         }
     }
 

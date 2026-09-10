@@ -1297,6 +1297,33 @@ impl XmlParser {
         }
     }
 
+    /// Move the cursor back to an absolute offset, recomputing the 1-based
+    /// line/column the way upstream's `NEXT` bookkeeping leaves them (a literal
+    /// LF starts a new line; everything else advances the column).
+    ///
+    /// Used where the driver's tokenizer scanned a whole construct but upstream
+    /// stopped early — the failing name scan of a `<!` in the start-tag state
+    /// leaves `cur` one byte past the `<`.
+    fn rewind_to_abs(&mut self, abs: u64) {
+        let (data_len, _) = self.push_bounds();
+        let end = (abs as usize).min(data_len as usize);
+        let mut line = 1usize;
+        let mut col = 1usize;
+        let bytes = {
+            let buf = self.base_input();
+            buf.raw_range(0, end).to_vec()
+        };
+        for &b in &bytes {
+            if b == b'\n' {
+                line += 1;
+                col = 1;
+            } else {
+                col += 1;
+            }
+        }
+        self.commit_input_pos(abs, line, col);
+    }
+
     /// The byte at an absolute offset, or NUL past the materialized end —
     /// libxml2 keeps a NUL sentinel after the buffer and upstream's character
     /// scanner reads `cur[1]`/`cur[2]` unguarded.
@@ -1500,6 +1527,13 @@ impl XmlParser {
                         0,
                         tag_start + 1,
                     );
+                    // Upstream xmlParseStartTag2's `NEXT1` consumed exactly the
+                    // tag's `<` before the name scan failed, so the cursor MUST
+                    // rest one byte into the tag (`doctype-two`, `doctype-in-
+                    // content`, `doctypedecl-trunc` all report that position).
+                    // The tokenizer scanned the whole construct to classify it,
+                    // so rewind the cursor here.
+                    self.rewind_to_abs(tag_start as u64 + 1);
                     self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
                     self.finish_document(machine);
                     return StepOutcome::Fatal;
