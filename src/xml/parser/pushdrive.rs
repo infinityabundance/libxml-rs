@@ -1591,6 +1591,14 @@ impl XmlParser {
                 return StepOutcome::Fatal;
             }
             self.flush_push_errors();
+            if name.is_empty() {
+                // Upstream xmlParseStartTag2's `NEXT1` consumed exactly the
+                // tag's `<` before the EMPTY name scan failed, so the cursor
+                // must rest one byte into the tag. The tokenizer scanned the
+                // rest of the construct to classify it (`<![C`, an invalid
+                // UTF-8 name byte, ...), so rewind here.
+                self.rewind_to_abs(tag_start as u64 + 1);
+            }
             self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
             self.finish_document(machine);
             return StepOutcome::Fatal;

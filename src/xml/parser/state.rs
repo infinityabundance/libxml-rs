@@ -1773,9 +1773,11 @@ impl XmlParser {
                 // expat/notation handler).
                 self.fire_sax_unparsed_entity_decl(args);
             } else if kw.eq_ignore_ascii_case(b"ATTLIST") {
-                if let Some(d) = *dtd {
-                    self.parse_attlist_decl(d, args);
-                }
+                // The declaration is STORED only when a DTD registry exists, but
+                // the `attributeDecl` callback fires regardless: upstream's
+                // xmlParseAttributeListDecl needs nothing beyond the SAX handler
+                // (a pure-SAX push parse has no document to register into).
+                self.parse_attlist_decl(dtd.unwrap_or(ptr::null_mut()), args);
                 // UPSTREAM-PARITY (parser.c xmlParseAttributeListDecl):
                 // defaults land in ctxt->attsDefault regardless of a
                 // document tree (SP-14.3.1-4, bug35447).
@@ -2752,9 +2754,15 @@ impl XmlParser {
         unsafe {
             // UPSTREAM-PARITY (parser.c xmlParseAttlistDecl): an ATTLIST for
             // an undeclared element creates an UNDEFINED element declaration
-            // (valid.c xmlGetDtdElementDesc).
-            let elem_decl = crate::xml::dtd::get_element_decl_created(dtd, elem_cstr);
-            if elem_decl.is_null() {
+            // (valid.c xmlGetDtdElementDesc). A NULL `dtd` (no registry: a
+            // pure-SAX push parse) only means there is nowhere to STORE the
+            // declaration — the `attributeDecl` callback still fires.
+            let elem_decl = if dtd.is_null() {
+                ptr::null_mut()
+            } else {
+                crate::xml::dtd::get_element_decl_created(dtd, elem_cstr)
+            };
+            if !dtd.is_null() && elem_decl.is_null() {
                 crate::abi::allocator::xmlFreeImpl(elem_cstr as *mut c_void);
                 return;
             }
@@ -2797,7 +2805,7 @@ impl XmlParser {
                 // the raw QName plus the enumeration tree. The probe compares
                 // it line-for-line (`doctype-attr-default` declares three
                 // attributes in one ATTLIST).
-                self.fire_sax_attribute_decl(
+                let delivered = self.fire_sax_attribute_decl(
                     elem_name,
                     attr_name,
                     atype,
@@ -2805,6 +2813,10 @@ impl XmlParser {
                     default_val.as_deref(),
                     tree,
                 );
+                if dtd.is_null() && !delivered && !tree.is_null() {
+                    // Nowhere to store it and nobody to hand it to.
+                    crate::xml::dtd::free_enumeration(tree);
+                }
                 crate::xml::dtd::add_attribute_decl(
                     dtd,
                     elem_decl,
@@ -2844,14 +2856,14 @@ impl XmlParser {
         def: c_int,
         default_val: Option<&[u8]>,
         tree: *mut crate::abi::structs::_xmlEnumeration,
-    ) {
+    ) -> bool {
         if self.sax_blocked() || self.below_delivery_boundary() {
-            return;
+            return false;
         }
         unsafe {
             let sax = &*(*self.ctxt).sax;
             if sax.attributeDecl.is_none() {
-                return;
+                return false;
             }
             let ctx = (*self.ctxt).userData;
             let elem_c = Self::vec_to_cstr_null(elem);
@@ -2865,6 +2877,7 @@ impl XmlParser {
             if !dv_c.is_null() {
                 crate::abi::allocator::xmlFreeImpl(dv_c as *mut c_void);
             }
+            true
         }
     }
 
