@@ -1266,6 +1266,43 @@ impl XmlParser {
         Ok(())
     }
 
+    /// Fire `entityDecl` with the cursor positioned at the declaration's END
+    /// (upstream fires it inline from `xmlParseEntityDecl`).
+    #[allow(clippy::too_many_arguments)]
+    fn fire_entity_decl(
+        &mut self,
+        name_cstr: *const xmlChar,
+        etype: c_int,
+        pub_c: *const xmlChar,
+        sys_c: *const xmlChar,
+        content: *mut xmlChar,
+        decl_end_abs: Option<usize>,
+    ) {
+        if self.is_sax_disabled() {
+            return;
+        }
+        unsafe {
+            let (line, col, saved) = self.tokenizer.input_mut().current_ref().pos();
+            if let Some(abs) = decl_end_abs {
+                self.tokenizer
+                    .input_mut()
+                    .current()
+                    .set_diagnostic_position(abs, line, col);
+            }
+            self.publish_input_window();
+            let sax = &*(*self.ctxt).sax;
+            let ctx = (*self.ctxt).userData;
+            SaxDispatcher::entity_decl(sax, ctx, name_cstr, etype, pub_c, sys_c, content);
+            if decl_end_abs.is_some() {
+                self.tokenizer
+                    .input_mut()
+                    .current()
+                    .set_diagnostic_position(saved, line, col);
+                self.publish_input_window();
+            }
+        }
+    }
+
     /// Fire `externalSubset` with the given identifiers (upstream passes
     /// `ctxt->intSubName, ctxt->extSubSystem, ctxt->extSubURI`).
     pub(crate) fn fire_external_subset(
@@ -1623,7 +1660,12 @@ impl XmlParser {
                         *dtd = self.ensure_entity_registry_dtd();
                     }
                     if let Some(d) = *dtd {
-                        self.parse_entity_decl(d, args);
+                        // `xmlParseEntityDecl` fires `entityDecl` BEFORE
+                        // consuming the declaration's `>` (unlike
+                        // `xmlParseElementDecl`, which NEXTs it first), so the
+                        // cursor sits ON the `>`.
+                        let decl_end_abs = abs_base.map(|b| b + i + 2 + gt);
+                        self.parse_entity_decl(d, args, decl_end_abs);
                     }
                 }
                 // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): when a
@@ -2306,7 +2348,7 @@ impl XmlParser {
     /// - `dtd` must be a valid, non-NULL `_xmlDtd` (passed to
     ///   `entities::add_entity`); `args` is a caller-owned byte slice, live
     ///   for the call; temporary C strings are freed before returning.
-    fn parse_entity_decl(&mut self, dtd: *mut _xmlDtd, args: &[u8]) {
+    fn parse_entity_decl(&mut self, dtd: *mut _xmlDtd, args: &[u8], decl_end_abs: Option<usize>) {
         let args = trim_ascii(args);
         if args.is_empty() {
             return;
@@ -2443,6 +2485,14 @@ impl XmlParser {
                         }
                     }
                 }
+                self.fire_entity_decl(
+                    name_cstr,
+                    external_type,
+                    pub_c,
+                    sys_c,
+                    ptr::null_mut(),
+                    decl_end_abs,
+                );
                 if !pub_c.is_null() {
                     crate::abi::allocator::xmlFreeImpl(pub_c as *mut c_void);
                 }
@@ -2471,6 +2521,14 @@ impl XmlParser {
                     ptr::null(),
                     v,
                     v,
+                );
+                self.fire_entity_decl(
+                    name_cstr,
+                    etype,
+                    ptr::null(),
+                    ptr::null(),
+                    v as *mut xmlChar,
+                    decl_end_abs,
                 );
                 if !v.is_null() {
                     crate::abi::allocator::xmlFreeImpl(v as *mut c_void);
@@ -4198,7 +4256,20 @@ impl XmlParser {
                 unsafe {
                     let sax = &*(*self.ctxt).sax;
                     let ctx = (*self.ctxt).userData;
-                    let ent = SaxDispatcher::get_entity(sax, ctx, name_cstr);
+                    // Upstream `xmlLookupGeneralEntity` consults the DOCUMENT's
+                    // entity table as well as `sax->getEntity`. A consumer that
+                    // installs NO `getEntity` (a plain SAX2 recorder) must still
+                    // see entities declared in the document / SAX-compat
+                    // registry — otherwise every such reference resolves as
+                    // UNDECLARED. When a handler IS installed it stays first:
+                    // its side effects (PHP expat-compat stops the parser for an
+                    // external entity) are part of the established contract, so
+                    // the document lookup is a fallback here, not a reordering.
+                    let ent = if sax.getEntity.is_none() {
+                        crate::xml::tree::get_doc_entity((*self.ctxt).myDoc, name_cstr)
+                    } else {
+                        SaxDispatcher::get_entity(sax, ctx, name_cstr)
+                    };
                     // getEntity dispatch is synchronous; the name is only
                     // needed for the call (Phase 16 ASan fuzz fix).
                     if !name_cstr.is_null() {

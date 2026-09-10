@@ -1037,6 +1037,18 @@ impl InputBuffer {
         self.col = col.max(1);
     }
 
+    /// Move the cursor backward in COLUMN bookkeeping only.
+    ///
+    /// Upstream's `xmlParseEntityValue` consumes an entity value's OPENING
+    /// QUOTE with a raw `CUR_PTR++`, which advances `cur` WITHOUT bumping
+    /// `col` (every other consumer goes through NEXT / NEXTL / SKIP, which do).
+    /// The push driver's DTD scan is slice-based, so it consumes the subset
+    /// uniformly and then subtracts the quotes here to keep `input->col`
+    /// byte-identical to the oracle's through a DTD entity value.
+    pub(crate) fn adjust_col_back(&mut self, n: usize) {
+        self.col = self.col.saturating_sub(n);
+    }
+
     /// The physical window's used length: `cur - base` in ABI terms.
     pub(crate) const fn window_used(&self) -> usize {
         self.pos.saturating_sub(self.window_base_abs)

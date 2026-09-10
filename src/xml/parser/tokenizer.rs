@@ -237,6 +237,54 @@ pub(crate) struct ErrorInfo {
     pub enc_bytes: Option<([u8; 4], usize)>,
 }
 
+/// Count the entity-value opening quotes in an internal-subset slice.
+///
+/// Upstream `xmlParseEntityValue` takes that one quote with a raw `CUR_PTR++`
+/// (no `col` bump). An EXTERNAL identifier's literals go through
+/// `xmlParseSystemLiteral` / `xmlParsePubidLiteral`, which use `NEXT` and DO
+/// bump, so those are excluded.
+fn dtd_entity_value_quotes(content: &[u8]) -> usize {
+    const KW: &[u8] = b"<!ENTITY";
+    let mut n = 0usize;
+    let mut i = 0usize;
+    while i + KW.len() <= content.len() {
+        if !content[i..].starts_with(KW) {
+            i += 1;
+            continue;
+        }
+        let mut j = i + KW.len();
+        let skip_ws = |j: &mut usize| {
+            while *j < content.len() && content[*j].is_ascii_whitespace() {
+                *j += 1;
+            }
+        };
+        skip_ws(&mut j);
+        if j < content.len() && content[j] == b'%' {
+            j += 1;
+            skip_ws(&mut j);
+        }
+        // Name.
+        while j < content.len()
+            && !content[j].is_ascii_whitespace()
+            && content[j] != b'>'
+            && content[j] != b'"'
+            && content[j] != b'\''
+        {
+            j += 1;
+        }
+        skip_ws(&mut j);
+        if j < content.len() && content[j] != b'>' {
+            let external =
+                content[j..].starts_with(b"SYSTEM") || content[j..].starts_with(b"PUBLIC");
+            if !external && (content[j] == b'"' || content[j] == b'\'') {
+                n += 1;
+            }
+        }
+        i = (j + 1).max(i + KW.len());
+    }
+    n
+}
+
 /// The XML tokenizer — scans lexical tokens from the input stack.
 pub(crate) struct XmlTokenizer {
     input: InputStack,
@@ -2234,6 +2282,14 @@ impl XmlTokenizer {
             .current_ref()
             .raw_range(content_start, self.input.current_pos().2)
             .to_vec();
+        // UPSTREAM-PARITY (entities.c xmlParseEntityValue): an entity value's
+        // opening quote is consumed with a raw `CUR_PTR++`, which advances
+        // `cur` WITHOUT bumping `col`. The subset scan above is uniform, so
+        // the lag is applied here.
+        let raw_quotes = dtd_entity_value_quotes(&content);
+        if raw_quotes > 0 {
+            self.input.current().adjust_col_back(raw_quotes);
+        }
         XmlToken::DocTypeSubset { content, closed }
     }
 
