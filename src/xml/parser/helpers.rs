@@ -125,6 +125,19 @@ struct PushState {
     /// `free_parser_ctxt` — caller-owned documents are never dereferenced or
     /// freed there (upstream xmlFreeParserCtxt ignores myDoc entirely).
     internal_doc_created: bool,
+    /// A trailing `\r` withheld from the accumulated input (upstream
+    /// `xmlParseChunk`'s `end_in_lf`, parser.c): a NON-final chunk ending in
+    /// `\r` has that byte held back — upstream decrements the pushed size,
+    /// runs `xmlParseTryOrFinish`, and only THEN re-pushes the `\r`. The byte
+    /// is therefore present in the buffer but unparsed at the end of the
+    /// call, so a CRLF pair split across two chunks still normalizes to one
+    /// `\n` and a lone trailing `\r` is not turned into an EOL by the call
+    /// that received it. The candidate parses the whole accumulated buffer
+    /// on every call, so the equivalent behavior is to withhold the byte and
+    /// prepend it to the next call's chunk (byte order then matches
+    /// upstream's buffer exactly). Cleared by `free_push_state`
+    /// (xmlCtxtReset/free), never leaked across a context reset.
+    pending_cr: bool,
 }
 
 static PUSH_STATE: once_cell::sync::Lazy<parking_lot::Mutex<HashMap<usize, PushState>>> =
@@ -864,10 +877,31 @@ pub(crate) unsafe fn parse_chunk(
         }
     };
 
+    // UPSTREAM-PARITY (parser.c xmlParseChunk, `end_in_lf`): a NON-final
+    // chunk whose last byte is `\r` has that byte withheld from this call's
+    // parse — upstream pushes size-1 bytes, runs xmlParseTryOrFinish, and
+    // re-pushes the `\r` afterwards (so the byte sits unparsed at the buffer
+    // end). The replay model parses the whole accumulated buffer, so it
+    // withholds the byte here and prepends the previously withheld one; the
+    // byte order seen by each parse then matches upstream exactly. The
+    // terminating call never withholds (upstream's condition requires
+    // !terminate), so a document ending in `\r` still processes it.
+    let mut deferred: Option<u8> = None;
+    let mut slice = chunk_slice;
+    if terminate == 0 && !slice.is_empty() && slice[slice.len() - 1] == b'\r' {
+        deferred = Some(b'\r');
+        slice = &slice[..slice.len() - 1];
+    }
+    let had_pending_cr = push_state(ctxt).pending_cr;
+    push_state(ctxt).pending_cr = deferred.is_some();
+    if had_pending_cr {
+        base.push_bytes(b"\r");
+    }
+
     // Append the chunk to the accumulated input (upstream xmlParseChunk
     // grows ctxt->input's base with each chunk; the candidate parses the
     // whole accumulated stream).
-    base.push_bytes(chunk_slice);
+    base.push_bytes(slice);
 
     // Capture the consumer-set wellFormed BEFORE the first parse mutates it
     // (PHP expat-compat zeroes it at create; see PushState docs). Restored

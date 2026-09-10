@@ -9,12 +9,16 @@
 # pristine worktree (including untracked files — the courts tree is mounted
 # into the container, so an untracked replacement court file must not be
 # able to influence a run recorded as clean), and it BUILDS the candidate
-# itself after establishing that clean source state, into a dedicated
-# target directory, so the recorded candidate binary sha256 chains to the
-# recorded candidate_sha through a deterministic build invocation:
+# itself after establishing that clean source state, so the recorded
+# candidate binary sha256 chains to the recorded candidate_sha through a
+# deterministic build invocation:
 #
 #   clean committed tree
-#     -> cargo build --locked --release (fresh target dir)
+#     -> cargo clean -p libxml-rs --release
+#     -> cargo build --locked --release --lib   (canonical target/release;
+#        build.rs generates the lib//include/ layout into the first path
+#        component named "target", so the build must NOT use a custom
+#        --target-dir)
 #     -> facade generation
 #     -> candidate binary sha256
 #     -> court run
