@@ -54,19 +54,25 @@
 //!
 //! ```text
 //! START      -> the raw-source availability gate, then XML_DECL
-//! XML_DECL   -> startDocument (no declaration parsing yet)
-//! MISC       -> whitespace, then the root start tag
+//! XML_DECL   -> XML declaration (or the default version), startDocument, MISC
+//! MISC       -> whitespace, comments, PIs, then the root start tag
 //! START_TAG  -> simple / self-closing / nested start tags
-//! CONTENT    -> character data, child start tags, end tags
+//! CONTENT    -> character data, comments, PIs, CDATA, child start tags, end tags
 //! END_TAG    -> end tags
-//! EPILOG     -> whitespace, then the terminating transition to EOF
+//! EPILOG     -> whitespace, comments, PIs, then the terminating transition to EOF
 //! EOF        -> REFEED ("Extra content at the end of the document")
 //! ```
 //!
-//! XML declarations, comments, PIs, CDATA, DOCTYPE and entity references are
-//! reported as [`StepOutcome::Unsupported`] — a LOUD fatal, never a silent
-//! fallback to replay. Their availability scans (`lookup_string`, `lookup_char`)
-//! are implemented so the constructs park correctly rather than mis-scanning.
+//! DOCTYPE, the internal subset and entity references are reported as
+//! [`StepOutcome::Unsupported`] — a LOUD fatal, never a silent fallback to
+//! replay. Their availability scans (`lookup_gt`, `lookup_char`) are
+//! implemented so the constructs park correctly rather than mis-scanning.
+//!
+//! The XML declaration, comments, PIs and CDATA are NOT re-implemented: the
+//! driver only performs upstream's availability gate and then runs the SAME
+//! tokenizer scan and recorder (`parse_xml_decl`, `sax_comment`, `sax_pi`,
+//! `sax_cdata`) that the recursive parser uses, so diagnostics and payloads
+//! come from one path.
 //!
 //! Attributes and NAMESPACES are NOT in that list: they come from reusing
 //! `parse_element_start` verbatim, so xmlns declarations, prefixed QNames and
@@ -78,6 +84,13 @@
 //! incomplete unit left by a terminating call is flushed by [`check_eof`],
 //! matching `xmlParserCheckEOF` (both pinned by the oracle-shadow court's
 //! `shadow-utf16invalid.xml` / `shadow-utf16trunc.xml` pairs).
+//!
+//! A declaration can REPLACE the materialized representation
+//! (`convert_declared_units` rebuilds it from byte zero), so any
+//! [`ParkedConstruct`] continuation — whose offsets are into that
+//! representation — must be invalidated when the representation changes. An
+//! ordinary physical rebase (`shrink_window`) must NOT: the stream is never
+//! truncated, so absolute offsets survive it.
 //!
 //! One remainder is documented rather than silently omitted: exact class-5
 //! character-data SEGMENTATION (the `>= 300`-byte rule is implemented
@@ -164,7 +177,18 @@ impl XmlParser {
             return PushProgress::Fatal;
         }
 
+        let pos_before = self.base_input().pos().2 as u64;
         self.base_input_mut().push_bytes_ex(chunk, terminate);
+        // A REPLACEMENT of the materialized representation (a declaration-driven
+        // transcode or an encoding switch rebuilds it from byte zero) moves the
+        // absolute cursor BACKWARDS, and every `ParkedConstruct` offset indexes
+        // that representation, so the continuation is meaningless afterwards. An
+        // ordinary physical rebase (`shrink_window`) never moves the cursor, and
+        // appends only move it forward — both leave the continuation valid, which
+        // `parked_construct_survives_a_physical_rebase` pins.
+        if (self.base_input().pos().2 as u64) < pos_before {
+            machine.reset_construct();
+        }
         // `push_bytes_ex` may have REALLOCATED the materialized Vec, so the
         // C-visible window must be re-published before anything observable —
         // including the encoder error raised just below.
@@ -222,7 +246,7 @@ impl XmlParser {
         unsafe { self.publish_input_window() };
         loop {
             self.sync_accounting(machine);
-            if machine.is_fatal() || machine.is_stopped() {
+            if machine.is_fatal() || machine.is_stopped() || self.sax_disabled() {
                 machine.mark_fatal();
                 return PushProgress::Fatal;
             }
@@ -415,29 +439,143 @@ impl XmlParser {
         StepOutcome::Advanced
     }
 
-    /// `case XML_PARSER_XML_DECL` — the declaration (or its absence), then
-    /// `startDocument`.
+    /// `case XML_PARSER_XML_DECL` — the declaration (or its absence), the
+    /// default version, then `startDocument`.
+    ///
+    /// The upstream shape matters: the case LOOKS AHEAD for `<?xml` but only
+    /// CONSUMES a real declaration; a `<?...?>` that is not a declaration is
+    /// left in place and parsed later, in MISC. Both the declaration scan and
+    /// the recorder reuse the recursive parser's code (`scan_pi_or_xml_decl`
+    /// and `parse_xml_decl`), so version/encoding/standalone and every
+    /// declaration diagnostic come from the same path.
     fn step_xml_decl(&mut self, machine: &mut PushMachine, terminate: bool) -> StepOutcome {
         if !terminate && self.push_remaining_len() < 2 {
             return StepOutcome::Parked;
         }
         if self.push_byte_at(0) == b'<' && self.push_byte_at(1) == b'?' {
+            // `if ((!terminate) && (!xmlParseLookupString(ctxt, 2, "?>", 2)))
+            //     goto done;`
             if !terminate && !self.lookup_string(machine, 2, b"?>") {
                 return StepOutcome::Parked;
             }
             if self.push_slice_at(2, 3) == b"xml" && is_xml_blank(self.push_byte_at(5)) {
-                return self.unsupported(machine, "XML declaration");
+                // `ret += 5; xmlParseXMLDecl(ctxt);` — the tokenizer records
+                // the declaration and any diagnostic; `parse_xml_decl` only
+                // stores version/encoding/standalone on the context.
+                self.tokenizer().set_silent_truncated(!terminate);
+                let token = self.tokenizer().next_token_raw();
+                self.tokenizer().set_silent_truncated(false);
+                // The tokenizer QUEUES its diagnostics; the recursive parser
+                // flushes them right after each scan, and so must the driver —
+                // a queued fatal sets `disableSAX`, which is what suppresses
+                // the `startDocument` below (upstream's XML_DECL arm). The
+                // flush also leaves `input->cur` at the end of the declaration,
+                // which is where the oracle's `startDocument` callback sits.
+                self.flush_push_errors();
+                let XmlToken::XmlDecl {
+                    version,
+                    encoding,
+                    standalone,
+                } = token
+                else {
+                    return self.unsupported(machine, "XML declaration");
+                };
+                if self.parse_xml_decl(version, encoding, standalone).is_err() {
+                    machine.mark_fatal();
+                }
+            } else {
+                // Not a declaration: upstream sets the default version WITHOUT
+                // consuming anything, so the `<?...?>` is parsed as an
+                // ordinary PI in MISC.
+                self.set_default_version();
             }
-            return self.unsupported(machine, "processing instruction before the root");
+        } else {
+            self.set_default_version();
         }
-        // No declaration: the default version applies.
+        // `if (sax->startDocument && !disableSAX) startDocument()`; the gate
+        // lives in `sax_start_document`. The window is re-published first: the
+        // declaration scan advanced the cursor, and upstream's callback sees
+        // `input->cur` at that point.
+        unsafe { self.publish_input_window() };
         if !machine.start_document_fired() {
-            self.sax_start_document();
-            machine.note_event();
+            if !self.sax_blocked() {
+                self.sax_start_document();
+                machine.note_event();
+            }
             machine.mark_start_document_fired();
         }
+        // Upstream assigns MISC unconditionally — even after a fatal
+        // declaration error — and the `while (disableSAX == 0)` loop
+        // condition then exits the pass.
         self.set_phase(machine, xmlParserInputState::XML_PARSER_MISC);
+        if machine.is_fatal() || self.sax_disabled() {
+            machine.mark_fatal();
+            return StepOutcome::Fatal;
+        }
         StepOutcome::Advanced
+    }
+
+    /// `while (ctxt->disableSAX == 0)`: any latched fatal (or `xmlStopParser`)
+    /// ends the pass. Tokenizer-recorded fatals do not go through the driver's
+    /// own error helper, so the loop must consult the context directly.
+    fn sax_disabled(&self) -> bool {
+        unsafe { (*self.ctxt_raw()).disableSAX != 0 }
+    }
+
+    /// Scan and dispatch one processing instruction. The availability gate is
+    /// the CALLER's (`xmlParseLookupString(ctxt, 2, "?>", 2)`); this runs the
+    /// tokenizer's PI scan and the recorder `sax_pi`.
+    fn scan_pi(&mut self, machine: &mut PushMachine, terminate: bool) -> StepOutcome {
+        self.tokenizer().set_silent_truncated(!terminate);
+        let token = self.tokenizer().next_token_raw();
+        self.tokenizer().set_silent_truncated(false);
+        self.flush_push_errors();
+        match token {
+            XmlToken::ProcessingInstruction { target, data, .. } => {
+                self.sax_pi(&target, &data);
+                machine.note_event();
+                StepOutcome::Advanced
+            }
+            _ => self.unsupported(machine, "processing instruction"),
+        }
+    }
+
+    /// Scan and dispatch one comment (the gate is the caller's
+    /// `xmlParseLookupString(ctxt, 4, "-->", 3)`).
+    fn scan_comment(&mut self, machine: &mut PushMachine, terminate: bool) -> StepOutcome {
+        self.tokenizer().set_silent_truncated(!terminate);
+        let token = self.tokenizer().next_token_raw();
+        self.tokenizer().set_silent_truncated(false);
+        self.flush_push_errors();
+        match token {
+            XmlToken::Comment { data, .. } => {
+                self.sax_comment(&data);
+                machine.note_event();
+                StepOutcome::Advanced
+            }
+            _ => self.unsupported(machine, "comment"),
+        }
+    }
+
+    /// Scan and dispatch one CDATA section (the gate is the caller's
+    /// `xmlParseLookupString(ctxt, 9, "]]>", 3)`). Upstream sets
+    /// `XML_PARSER_CDATA_SECTION` only for the duration of `xmlParseCDSect`
+    /// and restores `XML_PARSER_CONTENT` before the next loop iteration, and
+    /// nothing observable reads `instate` from inside the section, so the
+    /// driver keeps CONTENT throughout.
+    fn scan_cdata(&mut self, machine: &mut PushMachine, terminate: bool) -> StepOutcome {
+        self.tokenizer().set_silent_truncated(!terminate);
+        let token = self.tokenizer().next_token_raw();
+        self.tokenizer().set_silent_truncated(false);
+        self.flush_push_errors();
+        match token {
+            XmlToken::Cdata { data, .. } => {
+                self.sax_cdata(&data);
+                machine.note_event();
+                StepOutcome::Advanced
+            }
+            _ => self.unsupported(machine, "CDATA section"),
+        }
     }
 
     /// `case XML_PARSER_MISC` / `XML_PARSER_PROLOG` / `XML_PARSER_EPILOG`.
@@ -460,7 +598,7 @@ impl XmlParser {
                 if !terminate && !self.lookup_string(machine, 2, b"?>") {
                     return StepOutcome::Parked;
                 }
-                return self.unsupported(machine, "processing instruction");
+                return self.scan_pi(machine, terminate);
             }
             if next == b'!' {
                 if !terminate && avail < 3 {
@@ -474,7 +612,7 @@ impl XmlParser {
                         if !terminate && !self.lookup_string(machine, 4, b"-->") {
                             return StepOutcome::Parked;
                         }
-                        return self.unsupported(machine, "comment");
+                        return self.scan_comment(machine, terminate);
                     }
                 } else if machine.phase() == xmlParserInputState::XML_PARSER_MISC {
                     if !terminate && avail < 9 {
@@ -551,7 +689,7 @@ impl XmlParser {
                 if !terminate && !self.lookup_string(machine, 2, b"?>") {
                     return StepOutcome::Parked;
                 }
-                return self.unsupported(machine, "processing instruction");
+                return self.scan_pi(machine, terminate);
             }
             if next == b'!' {
                 if !terminate && avail < 3 {
@@ -566,7 +704,7 @@ impl XmlParser {
                         if !terminate && !self.lookup_string(machine, 4, b"-->") {
                             return StepOutcome::Parked;
                         }
-                        return self.unsupported(machine, "comment");
+                        return self.scan_comment(machine, terminate);
                     }
                 } else if third == b'[' {
                     if !terminate && avail < 9 {
@@ -576,10 +714,12 @@ impl XmlParser {
                         if !terminate && !self.lookup_string(machine, 9, b"]]>") {
                             return StepOutcome::Parked;
                         }
-                        return self.unsupported(machine, "CDATA section");
+                        return self.scan_cdata(machine, terminate);
                     }
                 }
             }
+            // `<` followed by a name character: upstream falls out of the `<`
+            // checks and reaches `ctxt->instate = XML_PARSER_START_TAG`.
             self.set_phase(machine, xmlParserInputState::XML_PARSER_START_TAG);
             return StepOutcome::Advanced;
         }
@@ -1048,6 +1188,22 @@ mod tests {
         // reusing `parse_element_start`, so the court proves they survive
         // arbitrary chunking rather than asserting them by fiat.
         ("namespaced", b"<a xmlns:x=\"urn:u\"><x:b/></a>", 6),
+        // The lexical constructs of MISC/PROLOG/EPILOG/CONTENT. Each is the
+        // recursive parser's own scan + recorder, driven only through the
+        // availability gate, so the count proves the construct fires exactly
+        // one event and survives every partition.
+        ("xml-decl", b"<?xml version=\"1.0\"?><a>x</a>", 5),
+        (
+            "pi-misc-and-content",
+            b"<?pi before?><a><?pi inside?>x</a>",
+            7,
+        ),
+        (
+            "comment-misc-content-epilog",
+            b"<!--top--><a><!--mid-->x</a><!--tail-->",
+            8,
+        ),
+        ("cdata", b"<a><![CDATA[x<y&z]]></a>", 5),
     ];
 
     struct CtxtGuard(*mut _xmlParserCtxt);

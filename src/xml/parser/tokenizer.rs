@@ -203,6 +203,12 @@ pub(crate) struct ErrorInfo {
     pub line: c_int,
     /// 1-based byte column at the error position (upstream `input->col`).
     pub col: c_int,
+    /// Absolute byte offset of the error in the base input. The recursive
+    /// parser raises inline (so `input->cur` is already there); the push driver
+    /// scans a whole construct and then flushes, so it repositions the published
+    /// window per diagnostic to keep a structured-error handler's view of
+    /// `input->cur` identical.
+    pub byte_pos: usize,
     /// Source window (line bytes) + 0-based caret column, computed with
     /// upstream's `xmlParserInputGetWindow` algorithm (80-char cap).
     pub window: Option<(Vec<u8>, usize)>,
@@ -484,6 +490,7 @@ impl XmlTokenizer {
             int1,
             line,
             col,
+            byte_pos,
             window,
             enc_bytes,
         });

@@ -86,6 +86,29 @@ doc(
     b"\xff\xfe" + "<a>".encode("utf-16-le") + b"\x00\xdc",
 )
 
+# ── 11: the lexical constructs of MISC / PROLOG / EPILOG / CONTENT ──────
+# XML declaration, PIs, comments and CDATA. The driver only performs
+# upstream's availability gate and then runs the recursive parser's own
+# tokenizer scan + recorder, so these cells pin the per-call STATE (instate,
+# position, errors) and payload segmentation, not merely that the bytes parse.
+#
+doc("shadow-decl.xml", b'<?xml version="1.0"?><a>x</a>')
+doc(
+    "shadow-decl-full.xml",
+    b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><a/>',
+)
+doc("shadow-pi.xml", b"<?pi before?><a><?pi inside?>x</a>")
+doc("shadow-comment.xml", b"<!--top--><a><!--mid-->x</a><!--tail-->")
+doc("shadow-cdata.xml", b"<a><![CDATA[x<y&z]]></a>")
+
+# ── 12: adversarial declaration / PI cells ──────────────────────────────
+# The declaration is the one construct whose failure must NOT fire
+# startDocument (upstream's XML_DECL arm sets `instate = XML_PARSER_MISC`
+# unconditionally, but the `while (disableSAX == 0)` loop then exits), and
+# `<?xml?>` is a reserved-name PI at document start.
+doc("shadow-decl-bad.xml", b'<?xml version="2.0"?><a/>')
+doc("shadow-pi-reserved.xml", b"<?xml?><a/>")
+
 
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "."

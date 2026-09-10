@@ -1024,6 +1024,19 @@ impl InputBuffer {
         self.consumed_bias
     }
 
+    /// Move the cursor to an absolute byte offset with an explicit 1-based
+    /// line/column, for raising a diagnostic at its own position.
+    ///
+    /// The push driver scans a whole construct and then flushes the tokenizer's
+    /// queued diagnostics; upstream raises each one inline, so `input->cur` at a
+    /// structured-error callback sits at the raise point rather than at the end
+    /// of the construct. The caller restores the position afterwards.
+    pub(crate) fn set_diagnostic_position(&mut self, byte_pos: usize, line: usize, col: usize) {
+        self.pos = byte_pos.min(self.data.data_len());
+        self.line = line.max(1);
+        self.col = col.max(1);
+    }
+
     /// The physical window's used length: `cur - base` in ABI terms.
     pub(crate) const fn window_used(&self) -> usize {
         self.pos.saturating_sub(self.window_base_abs)

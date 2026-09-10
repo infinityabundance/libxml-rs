@@ -977,7 +977,7 @@ impl XmlParser {
     ///   The `version`/`encoding` pointers are heap buffers owned by the
     ///   context and released by `free_parser_ctxt` (upstream xmlFreeParserCtxt
     ///   frees ctxt->version/encoding/directory).
-    fn parse_xml_decl(
+    pub(crate) fn parse_xml_decl(
         &mut self,
         version: Vec<u8>,
         encoding: Option<Vec<u8>>,
@@ -1044,6 +1044,24 @@ impl XmlParser {
         }
 
         Ok(())
+    }
+
+    /// Upstream `xmlParseTryOrFinish`'s `XML_PARSER_XML_DECL` non-declaration
+    /// arm:
+    ///
+    /// ```c
+    /// ctxt->version = xmlCharStrdup(XML_DEFAULT_VERSION);
+    /// ```
+    ///
+    /// ONLY the version is set — no declaration parse and no `standalone`
+    /// change (a document without a declaration keeps `-1`, not the `-2` a
+    /// parsed declaration without a `standalone` pseudo-attribute leaves).
+    pub(crate) fn set_default_version(&mut self) {
+        unsafe {
+            if (*self.ctxt).version.is_null() {
+                (*self.ctxt).version = Self::vec_to_cstr(b"1.0");
+            }
+        }
     }
 
     /// Parse the DTD from a `<!DOCTYPE ...>` declaration.
@@ -4699,7 +4717,7 @@ impl XmlParser {
 
     /// Return whether SAX delivery is disabled entirely (stopped / silent
     /// probe / sax-suppressed diagnostics pass).
-    fn sax_blocked(&self) -> bool {
+    pub(crate) fn sax_blocked(&self) -> bool {
         self.is_sax_disabled() || self.probe || self.sax_suppressed
     }
 
@@ -6176,7 +6194,7 @@ impl XmlParser {
 
     /// Raise all errors recorded by the tokenizer during the last scan (in
     /// order — upstream raises them at their detection points).
-    fn raise_pending_errors(&mut self) {
+    pub(crate) fn raise_pending_errors(&mut self) {
         let errors = self.tokenizer.take_errors();
         for e in errors {
             self.raise_parser_error(
@@ -6194,6 +6212,50 @@ impl XmlParser {
                 e.enc_bytes,
             );
         }
+    }
+
+    /// Flush the tokenizer's queued diagnostics with the C-visible cursor moved
+    /// to each diagnostic's OWN byte position.
+    ///
+    /// Upstream raises inline, so a structured-error handler observes
+    /// `input->cur` at the raise point. The push driver scans a whole construct
+    /// and then flushes, so it has to reposition the published window per
+    /// diagnostic (the oracle-shadow court's `! cb=error p=` markers pin this).
+    /// The recursive parser keeps using [`Self::raise_pending_errors`]: it
+    /// publishes no error-time window, so repositioning would be invisible work
+    /// with a real risk of disturbing a later `sync_input_position`.
+    pub(crate) fn flush_push_errors(&mut self) {
+        let errors = self.tokenizer.take_errors();
+        if errors.is_empty() {
+            return;
+        }
+        let (sline, scol, spos) = self.tokenizer.input_mut().current_ref().pos();
+        for e in &errors {
+            self.tokenizer
+                .input_mut()
+                .current()
+                .set_diagnostic_position(e.byte_pos, e.line.max(1) as usize, e.col.max(1) as usize);
+            unsafe { self.publish_input_window() };
+            self.raise_parser_error(
+                e.domain,
+                e.code,
+                e.level,
+                e.msg.clone(),
+                e.str1.clone(),
+                e.str2.clone(),
+                e.str3.clone(),
+                e.int1,
+                e.line,
+                e.col,
+                e.window.clone(),
+                e.enc_bytes,
+            );
+        }
+        self.tokenizer
+            .input_mut()
+            .current()
+            .set_diagnostic_position(spos, sline, scol);
+        unsafe { self.publish_input_window() };
     }
 
     /// UPSTREAM-PARITY (parser.c xmlParserEntityCheck): the entity-expansion
