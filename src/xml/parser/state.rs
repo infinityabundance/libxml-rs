@@ -1779,19 +1779,26 @@ impl XmlParser {
                         register = self.compat_entity_must_register(args);
                     }
                 }
-                if register {
-                    if dtd.is_none() {
-                        *dtd = self.ensure_entity_registry_dtd();
-                    }
-                    if let Some(d) = *dtd {
-                        // `xmlParseEntityDecl` fires `entityDecl` BEFORE
-                        // consuming the declaration's `>` (unlike
-                        // `xmlParseElementDecl`, which NEXTs it first), so the
-                        // cursor sits ON the `>`.
-                        let decl_end_abs = abs_base.map(|b| b + i + 2 + gt);
-                        self.parse_entity_decl(d, args, decl_end_abs);
-                    }
+                if register && dtd.is_none() {
+                    *dtd = self.ensure_entity_registry_dtd();
                 }
+                // Upstream `xmlParseEntityDecl` fires `entityDecl` for EVERY
+                // declaration — internal, external, parameter and
+                // NDATA-unparsed alike; only the REGISTRATION is conditional.
+                // A NULL DTD therefore still delivers the event
+                // (`inC14N5`'s external `ent2`, `doctype-entity-param`'s
+                // parameter `p`). `xmlParseEntityDecl` fires BEFORE consuming
+                // the declaration's `>`, so the cursor sits ON it.
+                let decl_end_abs = abs_base.map(|b| b + i + 2 + gt);
+                self.parse_entity_decl(
+                    if register {
+                        dtd.unwrap_or(ptr::null_mut())
+                    } else {
+                        ptr::null_mut()
+                    },
+                    args,
+                    decl_end_abs,
+                );
                 // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): when a
                 // non-parameter NDATA (unparsed) external entity is
                 // declared the SAX unparsedEntityDecl event fires (php
@@ -2615,14 +2622,19 @@ impl XmlParser {
                         }
                     }
                 }
-                self.fire_entity_decl(
-                    name_cstr,
-                    external_type,
-                    pub_c,
-                    sys_c,
-                    ptr::null_mut(),
-                    decl_end_abs,
-                );
+                // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): an NDATA
+                // (unparsed) entity fires ONLY `unparsedEntityDecl` — there is
+                // no `entityDecl` callback for it (`doctype-notations`).
+                if !has_ndata {
+                    self.fire_entity_decl(
+                        name_cstr,
+                        external_type,
+                        pub_c,
+                        sys_c,
+                        ptr::null_mut(),
+                        decl_end_abs,
+                    );
+                }
                 if !pub_c.is_null() {
                     crate::abi::allocator::xmlFreeImpl(pub_c as *mut c_void);
                 }
