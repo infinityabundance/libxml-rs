@@ -8,8 +8,10 @@ Generates the documents the ORACLE-SHADOW court drives through both providers:
   driver : the court-only persistent driver
            (src/xml/parser/pushdrive.rs, driven from pushshadow.rs)
 
-The two sides must be fed byte-identical documents, so the corpus is generated
-here rather than written twice by hand.
+# The two sides must be fed byte-identical documents, so the corpus is generated
+# here rather than written twice by hand. Both encoder cells below are GREEN in
+# the shadow court as of step 6b; they are kept because they pin two distinct
+# contracts (EOF flush vs definite-invalid ingress).
 
 Documents 1-5 are the driver's own court documents: the grammar the driver
 covers today. 6-7 are long single constructs (the cases that are quadratic
@@ -43,13 +45,13 @@ LONG = 4096
 doc("shadow-longtext.xml", b"<r>" + b"x" * LONG + b"</r>")
 doc("shadow-longattr.xml", b'<r a="' + b"x" * LONG + b'"/>')
 
-# ── 8: the encoder-flush red cell ───────────────────────────────────────
+# ── 8: the encoder-flush cell ─────────────────────────────────────
 # A well-formed UTF-16LE document (BOM + 8 code units) followed by ONE stray
 # source byte. The document itself parses cleanly to EOF with every
 # materialized byte consumed, so nothing is left as "extra content": the only
 # remaining defect is the decoder's pending half unit, which upstream's
 # xmlParserCheckEOF flush turns into XML_ERR_INVALID_ENCODING on the
-# terminating call.
+# terminating call (green since step 6b).
 doc(
     "shadow-utf16trunc.xml",
     b"\xff\xfe" + "<a>x</a>".encode("utf-16-le") + b"\x3c",

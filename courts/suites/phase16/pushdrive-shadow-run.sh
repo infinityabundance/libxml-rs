@@ -75,10 +75,14 @@ echo "oracle traces: $(ls -1 /scanout | wc -l)"
 '
 
 {
-  echo "candidate_sha=$(git -C "$ROOT" rev-parse HEAD)"
-  echo "court_sha=$(git -C "$ROOT" rev-parse HEAD)"
-  echo "tree_clean=yes"
+  # This manifest describes ORACLE-ONLY fixture generation. It deliberately does
+  # not use a `candidate_sha` field: there is no candidate in this run. The
+  # driver-side gate that CONSUMES these fixtures names its own commit
+  # separately (see the receipt that references this directory).
   echo "side=oracle-only (system libxml2)"
+  echo "fixture_generation_sha=$(git -C "$ROOT" rev-parse HEAD)"
+  echo "fixture_tree_clean=yes"
+  echo "fixture_consumer_note=the Rust gate src/xml/parser/pushshadow.rs consumes these; it pins the expected plan matrix independently"
   echo "corpus=courts/suites/phase16/shadow-corpus (verified against gen_shadow_corpus.py in-run)"
   echo "probe_sha256=$(sha256sum "$ROOT/courts/suites/phase16/pushdiff-probe.c" | cut -d" " -f1)"
   echo "generator_sha256=$(sha256sum "$ROOT/courts/suites/phase16/gen_shadow_corpus.py" | cut -d" " -f1)"

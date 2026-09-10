@@ -63,14 +63,26 @@
 //! EOF        -> REFEED ("Extra content at the end of the document")
 //! ```
 //!
-//! XML declarations, comments, PIs, CDATA, DOCTYPE, namespaces and entities are
+//! XML declarations, comments, PIs, CDATA, DOCTYPE and entity references are
 //! reported as [`StepOutcome::Unsupported`] — a LOUD fatal, never a silent
 //! fallback to replay. Their availability scans (`lookup_string`, `lookup_char`)
 //! are implemented so the constructs park correctly rather than mis-scanning.
 //!
-//! Two further remainders are documented rather than silently omitted:
-//! `xmlParserCheckEOF`'s encoder flush (a truncated multibyte sequence left by
-//! a terminating call), and exact class-5 character-data SEGMENTATION.
+//! Attributes and NAMESPACES are NOT in that list: they come from reusing
+//! `parse_element_start` verbatim, so xmlns declarations, prefixed QNames and
+//! ancestor binding resolution all work (the oracle-shadow court exercises
+//! `<a p="v"/>` and `<a xmlns:x="urn:u"><x:b/></a>` under every plan).
+//!
+//! The encoder pathways are implemented, not remainders: a DEFINITE invalid
+//! unit raises XML_ERR_INVALID_ENCODING before the grammar runs, and an
+//! incomplete unit left by a terminating call is flushed by [`check_eof`],
+//! matching `xmlParserCheckEOF` (both pinned by the oracle-shadow court's
+//! `shadow-utf16invalid.xml` / `shadow-utf16trunc.xml` pairs).
+//!
+//! One remainder is documented rather than silently omitted: exact class-5
+//! character-data SEGMENTATION (the `>= 300`-byte rule is implemented
+//! structurally, but CR patching and the exact callback split positions at
+//! that boundary are not claimed as parity).
 //!
 //! # Not yet wired into `xmlParseChunk`
 //!

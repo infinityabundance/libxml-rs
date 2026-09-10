@@ -33,32 +33,47 @@
 //! # What is compared, and what is deliberately not
 //!
 //! Compared per call: the return code, `errNo`, `wellFormed`, `instate`,
-//! `cur - base`, line, column, `inputNr`, `nameNr`, and the ordered SAX events
-//! **with payload and segmentation** (`startDocument`/`endDocument`,
-//! start/end element with namespace + attribute detail, `characters` (length
-//! AND bytes), `comment`, `cdata`, `pi`, `reference`, `ignorableWhitespace`).
+//! line, column, `nameNr`, the ordered SAX events **with payload and
+//! segmentation** (`startDocument`/`endDocument`, start/end element with
+//! namespace + attribute detail, `characters` (length AND bytes), `comment`,
+//! `cdata`, `pi`, `reference`, `ignorableWhitespace`), and the ordered
+//! structured DIAGNOSTICS in canonical form (`dom`/`code`/`level`/`line`/
+//! `int1`/`int2`) — canonicalised rather than dropped, so `error 81` before
+//! `endDocument` is distinguishable from `endDocument` before `error 81`.
+//!
+//! For the two ENCODER documents the full diagnostic record (including the
+//! message payload) is asserted as well, because those records are stable and
+//! are the contract under test.
 //!
 //! NOT compared:
 //!
-//! - **Structured diagnostic records** (the probe's `error dom=.. code=..`
-//!   lines). Error *occurrence and code* are already compared through `rc` and
-//!   `errNo`; the message text/positions are the existing courts' surface
-//!   (`pushdiff-*`, ERROR-001).
+//! - **Diagnostic message windows** (`file`, `str1..3`, `msg`) outside the
+//!   encoder pair. Those are the existing error courts' surface, and
+//!   declarations/DTDs will make them complicated.
 //! - **`p` is the absolute offset into the current materialization**, not a
 //!   pointer difference. That is the same quantity upstream reports as
-//!   `cur - base` because the candidate never rebases its buffer
-//!   (`xmlParserShrink` is a no-op here); the driver-side `p` comes from
-//!   `InputBuffer::pos().2` directly rather than from `ctxt->input`, which the
-//!   court-only driver does not publish.
+//!   `cur - base` only BELOW 4096 bytes: upstream rebases the buffer above
+//!   that (`xmlParserShrink`, and `xmlBufUpdateInput` in
+//!   `xmlParserCheckEOF`'s encoder flush), and the driver's `p` comes from
+//!   `InputBuffer::pos().2` directly. It is measured and REPORTED, not
+//!   asserted, until the driver publishes `ctxt->input` (step 1e).
+//! - **`i` (`inputNr`)** for the same reason: it is synthetic on the driver
+//!   side (there is no published input stack yet).
 //! - The driver's own machine diagnostics (materialized/consumed/scan-work)
 //!   are printed SEPARATELY by the report and never enter the compared trace.
+//!
+//! # Coverage
+//!
+//! Every corpus document x its expected plan set must be present, and the
+//! total must be the exact expected cell count: the matrix is asserted in
+//! Rust with constants that are deliberately INDEPENDENT of the shell
+//! runner's mode strings, so deleting a mode from the runner and regenerating
+//! the fixtures cannot quietly redefine "complete".
 //!
 //! # Known-red cells
 //!
 //! NONE. The encoder-flush cell (`shadow-utf16trunc.xml`) and the
-//! definite-invalid cell (`shadow-utf16invalid.xml`) both pass; the court
-//! asserts every cell, with coverage guards so a missing fixture cannot
-//! masquerade as a pass.
+//! definite-invalid cell (`shadow-utf16invalid.xml`) both pass.
 
 #![allow(dead_code)]
 
@@ -73,6 +88,24 @@ use std::os::raw::{c_int, c_void};
 
 pub(crate) const CORPUS_DIR: &str = "courts/suites/phase16/shadow-corpus";
 pub(crate) const FIXTURE_DIR: &str = "courts/receipts/phase-16/raw/pushdrive-shadow";
+
+/// The exact fixture matrix, hard-coded HERE and deliberately independent of
+/// the shell runner's mode strings: if a mode is deleted from the launcher and
+/// the fixtures are regenerated, the court must refuse to quietly redefine
+/// "complete" rather than silently narrowing its own evidence.
+const SMALL_MODES: &[&str] = &[
+    "b1", "b2", "b3", "b5", "b257", "Cb1", "b1z2", "b1i", "Cb1i", "r9-2",
+];
+const LONG_MODES: &[&str] = &["b1024", "b4096", "b1024i", "r17-512"];
+/// Documents at or below this many bytes use [`SMALL_MODES`]. Duplicates the
+/// launcher's threshold on purpose (see [`SMALL_MODES`]).
+const SMALL_DOC_MAX: usize = 200;
+/// 5 small x 10 + 2 encoder x 10 + 2 long x 4.
+const SHADOW_CELL_TOTAL: usize = 78;
+
+/// Documents whose FULL diagnostic records (message payload included) are
+/// asserted, not just their canonical form.
+const ENCODER_DOCS: &[&str] = &["shadow-utf16trunc.xml", "shadow-utf16invalid.xml"];
 
 thread_local! {
     /// Event lines emitted by the recorder while a driver pass runs.
@@ -559,6 +592,9 @@ pub(crate) struct CellReport {
     pub first_diff: Option<(usize, String, String)>,
     /// First `p` (physical cursor) disagreement, as an observation.
     pub cursor_diff: Option<(usize, String, String)>,
+    /// For the encoder documents: whether the FULL diagnostic records match
+    /// (message payload included), not merely their canonical form.
+    pub encoder_full_errors_match: Option<bool>,
     /// Whether this cell uses the inline-final plan shape (the terminating flag
     /// arrives WITH the last real bytes).
     pub inline_final: bool,
@@ -647,6 +683,16 @@ fn p_of(line: &str) -> Option<String> {
     Some(rest[..end].to_string())
 }
 
+/// The full diagnostic records, in order. Used for the encoder pair, whose
+/// records are stable and are the contract those documents exist to pin.
+fn error_lines(lines: &[String]) -> Vec<String> {
+    lines
+        .iter()
+        .filter(|l| l.starts_with("error "))
+        .cloned()
+        .collect()
+}
+
 /// The first `p` value that differs, as an OBSERVATION (never an assertion).
 fn cursor_divergence(oracle: &[String], driver: &[String]) -> Option<(usize, String, String)> {
     // Aligned on the same projection the assertion uses (diagnostic records
@@ -732,12 +778,18 @@ pub(crate) fn run_all() -> Vec<CellReport> {
         let driver = run_driver(&doc, &plan, doc_name);
         let (status, first_diff) = compare(&oracle, &driver);
         let cursor_diff = cursor_divergence(&oracle, &driver);
+        let encoder_full_errors_match = if ENCODER_DOCS.contains(&doc_name) {
+            Some(error_lines(&oracle) == error_lines(&driver))
+        } else {
+            None
+        };
         reports.push(CellReport {
             doc: doc_name.to_string(),
             mode: mode.to_string(),
             status,
             first_diff,
             cursor_diff,
+            encoder_full_errors_match,
             inline_final: plan.inline_final,
             random_plan: plan.random,
             oracle_lines: oracle.len(),
@@ -763,6 +815,7 @@ mod tests {
     fn shadow_court_report() {
         let reports = run_all();
         assert!(!reports.is_empty(), "no shadow cells found");
+        assert_shadow_matrix(&reports);
 
         let diverged: Vec<_> = reports
             .iter()
@@ -786,8 +839,9 @@ mod tests {
             }
         }
 
-        // Coverage guards: the cells that matter most must actually be in the
-        // court, so a missing fixture cannot masquerade as a pass.
+        // Shape guards: the cells that matter most must be in the court, so a
+        // missing fixture cannot masquerade as a pass. (`assert_shadow_matrix`
+        // pins the exact matrix; these pin the shape properties.)
         for doc in [
             "shadow-utf16trunc.xml",
             "shadow-utf16invalid.xml",
@@ -807,6 +861,20 @@ mod tests {
             reports.iter().any(|r| r.random_plan),
             "shadow court has no random-plan cell"
         );
+        // The encoder pair's FULL diagnostic records, message payload
+        // included — the contract those two documents exist to pin.
+        for r in reports
+            .iter()
+            .filter(|r| ENCODER_DOCS.contains(&r.doc.as_str()))
+        {
+            assert_eq!(
+                r.encoder_full_errors_match,
+                Some(true),
+                "full encoder diagnostic record diverged for {} [{}]",
+                r.doc,
+                r.mode
+            );
+        }
 
         // `p` (the physical `cur - base`) is still OBSERVED rather than
         // asserted: upstream rebases that buffer above 4096 bytes and the
@@ -830,6 +898,59 @@ mod tests {
                 .iter()
                 .map(|r| format!("{} [{}]", r.doc, r.mode))
                 .collect::<Vec<_>>()
+        );
+    }
+
+    /// The fixture matrix must be EXACTLY the expected one.
+    ///
+    /// The plan sets are declared here rather than read from the shell
+    /// launcher on purpose: if a mode is dropped from `pushdrive-shadow-run.sh`
+    /// and the fixtures are regenerated, this must FAIL rather than quietly
+    /// accept a narrower court. The threshold that selects the small plan set
+    /// duplicates the launcher's for the same reason.
+    fn assert_shadow_matrix(reports: &[CellReport]) {
+        let mut docs: Vec<(String, u64)> = std::fs::read_dir(CORPUS_DIR)
+            .expect("shadow corpus missing")
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().extension().is_some_and(|x| x == "xml"))
+            .map(|e| {
+                let size = e.metadata().map(|m| m.len()).unwrap_or(0);
+                (e.file_name().to_string_lossy().into_owned(), size)
+            })
+            .collect();
+        docs.sort();
+
+        let mut expected_total = 0usize;
+        for (doc, size) in &docs {
+            let expected: Vec<String> = if *size <= SMALL_DOC_MAX as u64 {
+                SMALL_MODES.iter().map(|s| s.to_string()).collect()
+            } else {
+                LONG_MODES.iter().map(|s| s.to_string()).collect()
+            };
+            let mut actual: Vec<String> = reports
+                .iter()
+                .filter(|r| &r.doc == doc)
+                .map(|r| r.mode.clone())
+                .collect();
+            actual.sort();
+            let mut want = expected.clone();
+            want.sort();
+            assert_eq!(
+                actual, want,
+                "shadow fixture matrix mismatch for {doc} ({size} bytes)"
+            );
+            expected_total += expected.len();
+        }
+
+        assert_eq!(
+            reports.len(),
+            expected_total,
+            "shadow cell total does not match the expected matrix"
+        );
+        assert_eq!(
+            reports.len(),
+            SHADOW_CELL_TOTAL,
+            "the shadow cell total changed — update the matrix deliberately, not silently"
         );
     }
 }
