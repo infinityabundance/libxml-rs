@@ -118,25 +118,6 @@ DIFF  corpus/enc-utf16be-half-end.xml mode=sax1/r9
 DIFF  corpus/enc-utf16le-half-end.xml mode=sax1/b1
 DIFF  corpus/enc-utf16le-half-end.xml mode=sax1/b5
 DIFF  corpus/enc-utf16le-half-end.xml mode=sax1/r9
-DIFF  corpus/raw-high-name.xml mode=b1
-DIFF  corpus/raw-high-name.xml mode=b2
-DIFF  corpus/raw-high-name.xml mode=b3
-DIFF  corpus/raw-high-name.xml mode=b5
-DIFF  corpus/raw-high-name.xml mode=b7
-DIFF  corpus/raw-high-name.xml mode=b16
-DIFF  corpus/raw-high-name.xml mode=b257
-DIFF  corpus/raw-high-name.xml mode=r3
-DIFF  corpus/raw-high-name.xml mode=r9
-DIFF  corpus/raw-high-name.xml mode=r77
-DIFF  corpus/raw-high-name.xml mode=Cb1
-DIFF  corpus/raw-high-name.xml mode=Cb5
-DIFF  corpus/raw-high-name.xml mode=Cb12
-DIFF  corpus/raw-high-name.xml mode=Cb257
-DIFF  corpus/raw-high-name.xml mode=Cr9
-DIFF  corpus/raw-high-name.xml mode=b1z2
-DIFF  corpus/raw-high-name.xml mode=sax1/b1
-DIFF  corpus/raw-high-name.xml mode=sax1/b5
-DIFF  corpus/raw-high-name.xml mode=sax1/r9
 DIFF  corpus/text-cr-end.xml mode=sax1/b1
 DIFF  corpus/text-cr-end.xml mode=sax1/b5
 DIFF  corpus/text-cr-end.xml mode=sax1/r9
@@ -154,4 +135,4 @@ DIFF  /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inC14N5.xml mode
 DIFF  /court/suites/phase14/sources/nokogiri/test/files/staff.xml mode=b1
 DIFF  /court/suites/phase14/sources/nokogiri/test/files/staff.xml mode=sax1/b1
 DIFF  /court/suites/phase14/sources/nokogiri/test/files/staff.xml mode=sax1/b5
-cells=4702 diffs=156
+cells=4702 diffs=137
