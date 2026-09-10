@@ -1,0 +1,86 @@
+#!/bin/sh
+# pushdrive-shadow-run.sh — §16.7.8 pushdrive ORACLE-SHADOW court (host
+# launcher).
+#
+# Runs the pushdiff probe against the SYSTEM libxml2 (the oracle) only, over
+# the persistent driver's shadow corpus and a fixed plan list, and commits the
+# resulting per-call traces as fixtures. The companion Rust court
+# (src/xml/parser/pushshadow.rs) drives the persistent DRIVER over the same
+# documents/plans and compares its trace against these fixtures.
+#
+# Why the oracle side is generated here rather than in Rust: the oracle is a C
+# library reachable only through the probe binary, while the driver is
+# court-only Rust that `xmlParseChunk` does not (yet) call. The two sides are
+# therefore produced by different programs, which is exactly why the corpus is
+# GENERATED (gen_shadow_corpus.py) and the plan list is fixed and recorded.
+#
+# Evidentiary chain: the launcher refuses to run from anything but a pristine
+# worktree, and records the source sha, the probe/generator fingerprints, the
+# oracle image ID and the host description in manifest.txt next to the traces.
+#
+# Usage: sh courts/suites/phase16/pushdrive-shadow-run.sh [out-dir] [image]
+# Env: SHADOW_IMAGE default libxml-rs/phase14-debian:1.
+set -eu
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+OUT="${1:-$ROOT/courts/receipts/phase-16/raw/pushdrive-shadow}"
+IMAGE="${SHADOW_IMAGE:-libxml-rs/phase14-debian:1}"
+
+if [ -n "$(git -C "$ROOT" status --porcelain --untracked-files=all 2>/dev/null)" ]; then
+  echo "pushdrive-shadow-run.sh: worktree is not pristine (modified, staged or" >&2
+  echo "untracked files present) — commit everything first so the recorded" >&2
+  echo "source shas and the clean-tree seal are unambiguous." >&2
+  exit 1
+fi
+
+# Files created by earlier docker runs are root-owned; clean through docker.
+if [ -d "$OUT" ] && [ -n "$(ls -A "$OUT" 2>/dev/null)" ]; then
+  docker run --rm -v "$OUT":/scanout "$IMAGE" bash -lc 'cd /scanout; for f in * .[!.]*; do [ "$f" = ".gitignore" ] || rm -rf -- "$f"; done; exit 0' >/dev/null 2>&1 || true
+fi
+mkdir -p "$OUT"
+
+docker run --rm \
+  -v "$ROOT/courts":/court:ro \
+  -v "$OUT":/scanout \
+  "$IMAGE" bash -lc '
+set -euo pipefail
+export LC_ALL=C
+mkdir -p /tmp/shadow
+python3 /court/suites/phase16/gen_shadow_corpus.py /tmp/shadow/corpus \
+  > /tmp/shadow/corpus.list
+cc -O1 -Wall -Wextra -Werror -o /tmp/shadow/probe \
+  /court/suites/phase16/pushdiff-probe.c \
+  -I/usr/local/include/libxml2 -L/usr/local/lib -lxml2 -Wl,-rpath,/usr/local/lib
+for f in /tmp/shadow/corpus/*.xml; do
+  base=$(basename "$f")
+  sz=$(stat -c %s "$f")
+  if [ "$sz" -le 200 ]; then
+    modes="b1 b2 b3 b5 b257 Cb1 b1z2"
+  else
+    modes="b1024 b4096"
+  fi
+  for m in $modes; do
+    /tmp/shadow/probe "$m" "$f" > "/scanout/oracle-${base}__${m}"
+  done
+done
+echo "oracle traces: $(ls -1 /scanout | wc -l)"
+'
+
+{
+  echo "candidate_sha=$(git -C "$ROOT" rev-parse HEAD)"
+  echo "court_sha=$(git -C "$ROOT" rev-parse HEAD)"
+  echo "tree_clean=yes"
+  echo "side=oracle-only (system libxml2)"
+  echo "probe_sha256=$(sha256sum "$ROOT/courts/suites/phase16/pushdiff-probe.c" | cut -d" " -f1)"
+  echo "generator_sha256=$(sha256sum "$ROOT/courts/suites/phase16/gen_shadow_corpus.py" | cut -d" " -f1)"
+  echo "runner_sha256=$(sha256sum "$ROOT/courts/suites/phase16/pushdrive-shadow-run.sh" | cut -d" " -f1)"
+  echo "plans_small=b1,b2,b3,b5,b257,Cb1,b1z2"
+  echo "plans_long=b1024,b4096"
+  echo "image=$IMAGE"
+  echo "image_id=$(docker image inspect --format "{{.Id}}" "$IMAGE" 2>/dev/null || echo unknown)"
+  uname -a
+} > "$OUT/manifest.txt"
+
+echo "wrote $OUT"
+ls -1 "$OUT" | head -8
+echo "..."
+echo "total files: $(ls -1 "$OUT" | wc -l)"
