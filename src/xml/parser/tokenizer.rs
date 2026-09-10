@@ -1175,10 +1175,23 @@ impl XmlTokenizer {
                                     0,
                                     None,
                                 );
-                                unterminated = true;
-                                break;
+                                // UPSTREAM-PARITY (parser.c xmlParseStartTag2
+                                // vs xmlParseStartTag): the SAX2 scanner's
+                                // `next_attr` arm BREAKS out of the attribute
+                                // loop here, leaving the tag unterminated so
+                                // the START_TAG arm reports GT_REQUIRED
+                                // ("Couldn't find end of Start Tag %s"). The
+                                // SAX1 scanner has no `break` — it reports the
+                                // SAME error and keeps reading attributes, so
+                                // `<a b='1'c='2'/>` still completes and only
+                                // the 65 is observable (court attr-nospaces
+                                // `-s sax1`: one error, p=15, EPILOG).
+                                if self.sax2 {
+                                    unterminated = true;
+                                    break;
+                                }
                             }
-                            // Blanks consumed: continue the attribute loop.
+                            // Blanks consumed (or SAX1): continue the loop.
                         }
                     }
                 }
