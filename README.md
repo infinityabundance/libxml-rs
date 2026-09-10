@@ -69,13 +69,13 @@ matrices). Work so far, in phase order:
   ruby-nokogiri, PHP) with the corpus/court machinery in
   `courts/suites/phase16/`.
 
-Latest gates: `cargo test --lib` 1282 passed / 0 failed; PHP six-extension
+Latest gates: `cargo test --lib` 1301 passed / 0 failed; PHP six-extension
 six-gate 1250 passed / 0 failed; CLI xmllint differential 46/48 (2
 pre-existing); per-backend parse fuzz clean.
 
 ### Published artifacts
 
-- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.49`
+- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.50`
 - GitHub: <https://github.com/infinityabundance/libxml-rs>
 
 ### Oracle verification
