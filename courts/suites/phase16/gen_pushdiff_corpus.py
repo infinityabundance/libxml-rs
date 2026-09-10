@@ -244,17 +244,23 @@ def main():
         with open(os.path.join(out, name), "wb") as f:
             f.write(content)
 
-    # ── Progressive-DECODING corpus: REGISTRY-served encodings ──────────
+        # ── Progressive-DECODING corpus: REGISTRY-served encodings ──────────
     # The families above are all fixed-width or byte-wise, so a byte carry is
     # enough. These are the multibyte/stateful codecs, where a per-chunk decode
     # is WRONG: a split 2-byte character would be reported malformed and its
     # lead byte materialized raw, and ISO-2022-JP's escape state can be lost at
     # a boundary with NO incomplete bytes at all (shifted in, characters, then
     # shifted out in the next call). Shape: an ASCII declaration NAMING the
-    # encoding (upstream switches the encoding inside xmlParseXMLDecl, with
-    # `cur` past the declaration, and never re-decodes it), then a body in that
-    # encoding. b1/b2/b3 split every byte and every 2-byte character, and cut
-    # INSIDE the ISO-2022-JP ESC sequences.
+    # encoding, then a body in that encoding. b1/b2/b3 split every byte and
+    # every 2-byte character, and cut INSIDE the ISO-2022-JP ESC sequences.
+    #
+    # ASCII-compatible declared codecs leave the declaration semantically
+    # unchanged when the buffer is converted. Unit-aligned declared codecs
+    # (UCS-2, UTF-16) are different: the oracle shows the converted buffer is
+    # re-read from byte zero, so these synthetic ASCII-declaration UCS-2/
+    # UTF-16 shapes FAIL (`enc-ucs2*`: XML_ERR_SPACE_REQUIRED 65 +
+    # XML_ERR_'?>' expected 57) — the court records that rather than assuming
+    # a clean decode.
     shift_jis = lambda s: s.encode("shift_jis")
     euc_jp = lambda s: s.encode("euc_jp")
     iso2022_jp = lambda s: s.encode("iso2022_jp")

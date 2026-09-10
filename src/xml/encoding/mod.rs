@@ -1124,6 +1124,37 @@ pub(crate) fn cleanup_encodings() {
 /// - `name` must be NULL or a valid pointer to a NUL-terminated string.
 /// - Each registry entry must be NULL or a valid `_xmlCharEncodingHandler`
 ///   whose `name` is NULL or a valid NUL-terminated string.
+/// The canonical names of every handler in the process-wide encoding registry
+/// (sorted, deduplicated).
+///
+/// Exists so the parser's [`RegistryKind`](crate::xml::parser::input) fail-closed
+/// invariant can be a TEST rather than a comment: a newly registered codec that
+/// nobody classified shows up as unclassified there instead of silently
+/// acquiring the chunk-independent tail path.
+pub(crate) fn registered_handler_names() -> Vec<String> {
+    init_encodings();
+    let handlers = ENCODING_HANDLERS.read();
+    let mut out = Vec::new();
+    for &handler in handlers.iter() {
+        let ptr = handler.0;
+        if ptr.is_null() {
+            continue;
+        }
+        // SAFETY: registry entries are created by register_handler with a
+        // valid NUL-terminated name and live for the process lifetime.
+        let name = unsafe {
+            if (*ptr).name.is_null() {
+                continue;
+            }
+            CStr::from_ptr((*ptr).name).to_string_lossy().into_owned()
+        };
+        out.push(name);
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
 pub(crate) fn find_encoding_handler(name: *const xmlChar) -> *mut _xmlCharEncodingHandler {
     if name.is_null() {
         return ptr::null_mut();

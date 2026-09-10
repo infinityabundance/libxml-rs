@@ -1350,13 +1350,16 @@ impl InputBuffer {
                     RegistryKind::Streaming(enc, canon) => {
                         self.install_registry_decoder(enc, canon, terminate)
                     }
-                    RegistryKind::Ucs2Le => {
-                        self.convert_declared_units(Encoding::Ucs2Le, terminate)
+                    RegistryKind::FixedWidth(fixed) => {
+                        self.convert_declared_units(fixed, terminate)
                     }
-                    RegistryKind::Ucs4(canonical) => {
-                        self.convert_declared_units(canonical, terminate)
+                    // Byte-wise decodes per tail exactly, and an UNCLASSIFIED
+                    // codec keeps that same behavior (see RegistryKind) — the
+                    // exhaustiveness test is what forbids the latter for the
+                    // current registry.
+                    RegistryKind::ByteWise | RegistryKind::Unclassified => {
+                        self.convert_via_registry(&bytes)
                     }
-                    RegistryKind::ByteWise => self.convert_via_registry(&bytes),
                 }
             }
             Encoding::Ebcdic => self.convert_via_registry(b"IBM037"),
@@ -2335,19 +2338,27 @@ fn push_utf8(out: &mut Vec<u8>, cp: u32) {
 ///   a chunk boundary may land where there is NO incomplete byte sequence,
 ///   so no byte carry can help: only the decoder's escape state survives
 /// ```
+///
+/// Classification is FAIL-CLOSED: every name the registry can resolve must be
+/// listed explicitly, and anything else is [`RegistryKind::Unclassified`].
+/// `registry_classification_is_exhaustive` asserts that over
+/// `registered_handler_names()`, so adding a codec to the registry (GBK, Big5,
+/// EUC-KR, another stateful codec) fails the suite until someone states its
+/// incremental semantics — instead of silently inheriting the per-tail path.
 enum RegistryKind {
     /// Multibyte or stateful codec: needs a PERSISTENT `encoding_rs::Decoder`.
     Streaming(&'static encoding_rs::Encoding, &'static str),
-    /// 2-byte fixed-width native codec (the registry's UCS-2 is host-order
-    /// little-endian, matching the glibc iconv the oracle serves).
-    Ucs2Le,
-    /// 4-byte fixed-width native codec: the registry's `UCS-4` is LE,
-    /// `UCS-4BE` is BE.
-    Ucs4(Encoding),
-    /// Byte-wise: single-byte sets (ISO-8859-x, windows-1252, EBCDIC) and
-    /// anything else the registry resolves to a per-tail-safe handler or to
-    /// no handler at all (raw bytes, diagnosed by the tokenizer).
+    /// Fixed-width code units (UTF-16 LE/BE, UCS-2, UCS-4 LE/BE): 0..width-1
+    /// trailing bytes carried in `pending_source`.
+    FixedWidth(Encoding),
+    /// One source byte is one character (ASCII/UTF-8, the ISO-8859 family,
+    /// windows-1252/874, IBM037/EBCDIC): a tail-wise decode through the
+    /// registered handler is exact.
     ByteWise,
+    /// A registry codec nobody has classified. Keeps the historical tail-wise
+    /// behavior so no existing stream changes, but is deliberately visible
+    /// (and forbidden by the exhaustiveness test for the CURRENT registry).
+    Unclassified,
 }
 
 /// Classify a declared registry encoding name (alias spellings accepted, via
@@ -2360,17 +2371,29 @@ fn registry_kind(name: &[u8]) -> RegistryKind {
         None => String::from_utf8_lossy(name).trim().to_ascii_lowercase(),
     };
     match lower.as_str() {
+        // ── Multibyte / stateful: persistent decoder ──────────────────────
         "shift_jis" | "sjis" | "cp932" | "ms_kanji" => {
             RegistryKind::Streaming(encoding_rs::SHIFT_JIS, "SHIFT_JIS")
         }
         "euc-jp" | "eucjp" => RegistryKind::Streaming(encoding_rs::EUC_JP, "EUC-JP"),
-        "iso-2022-jp" | "iso2022-jp" => {
+        "iso-2022-jp" | "iso2022jp" => {
             RegistryKind::Streaming(encoding_rs::ISO_2022_JP, "ISO-2022-JP")
         }
-        "ucs-2" | "ucs2" => RegistryKind::Ucs2Le,
-        "ucs-4" | "ucs-4le" | "ucs4le" => RegistryKind::Ucs4(Encoding::Ucs4Le),
-        "ucs-4be" | "ucs4be" => RegistryKind::Ucs4(Encoding::Ucs4Be),
-        _ => RegistryKind::ByteWise,
+        // ── Fixed-width code units ───────────────────────────────────────
+        "utf-16" | "utf16" | "utf-16le" | "utf16le" => RegistryKind::FixedWidth(Encoding::Utf16Le),
+        "utf-16be" | "utf16be" => RegistryKind::FixedWidth(Encoding::Utf16Be),
+        "ucs-2" | "ucs2" => RegistryKind::FixedWidth(Encoding::Ucs2Le),
+        "ucs-4" | "ucs-4le" | "ucs4le" => RegistryKind::FixedWidth(Encoding::Ucs4Le),
+        "ucs-4be" | "ucs4be" => RegistryKind::FixedWidth(Encoding::Ucs4Be),
+        // ── Explicitly byte-wise ─────────────────────────────────────────
+        "ascii" | "us-ascii" | "utf-8" | "utf8" | "iso-8859-1" | "iso8859-1" | "latin1"
+        | "latin-1" | "iso-8859-2" | "iso-8859-3" | "iso-8859-4" | "iso-8859-5" | "iso-8859-6"
+        | "iso-8859-7" | "iso-8859-8" | "iso-8859-9" | "iso-8859-10" | "iso-8859-11"
+        | "iso-8859-13" | "iso-8859-14" | "iso-8859-15" | "iso-8859-16" | "windows-1252"
+        | "cp1252" | "windows-874" | "ibm037" | "ebcdic" | "ebcdic-us" | "tis-620" => {
+            RegistryKind::ByteWise
+        }
+        _ => RegistryKind::Unclassified,
     }
 }
 
@@ -2441,9 +2464,11 @@ impl RegistrySourceDecoder {
             match res {
                 encoding_rs::DecoderResult::InputEmpty => break,
                 encoding_rs::DecoderResult::OutputFull => {
-                    // Cannot happen with a 4 KiB scratch buffer (the widest
-                    // expansion is 3 UTF-8 bytes per source byte), but never
-                    // spin if it somehow does.
+                    // Normal for a sufficiently large feed: the 4 KiB scratch
+                    // is refilled and the loop continues. A ZERO-PROGRESS
+                    // OutputFull cannot happen (the destination starts empty
+                    // and every decoded scalar fits well inside 4 KiB), but
+                    // breaking is cheaper than trusting that.
                     if read == 0 && written == 0 {
                         break;
                     }
@@ -3243,9 +3268,86 @@ mod tests {
     // ── Registry-served (declaration-named) source encodings ─────────────
     //
     // Shape of every fixture: an ASCII XML declaration that NAMES the
-    // encoding, followed by a body in that encoding. The declaration is read
-    // as ASCII/UTF-8 (upstream switches the encoding inside xmlParseXMLDecl,
-    // with `cur` past the declaration) and is never re-decoded; the body is.
+    // encoding, followed by a body in that encoding. For the ASCII-compatible
+    // declared codecs (Shift_JIS, EUC-JP, ISO-2022-JP, ISO-8859-x) converting
+    // the buffer leaves the declaration semantically unchanged. The
+    // unit-aligned declared codecs (UCS-2, declared UTF-16) are different — see
+    // `progressive_ucs2_partition_invariance_and_flush` — because upstream
+    // re-reads the converted buffer from byte zero, which mangles an ASCII
+    // declaration and makes those shapes fail (as the oracle does).
+
+    /// FAIL-CLOSED classification invariant: every codec in the process-wide
+    /// registry must have an explicit `RegistryKind`. Adding GBK/Big5/EUC-KR or
+    /// another stateful codec to the registry without deciding its incremental
+    /// semantics fails HERE, instead of silently acquiring the chunk-
+    /// independent tail path.
+    #[test]
+    fn registry_classification_is_exhaustive() {
+        let names = crate::xml::encoding::registered_handler_names();
+        // Guard against a vacuous pass: the registry must actually be populated.
+        assert!(
+            names.len() >= 30,
+            "expected the encoding registry to be populated, got {names:?}"
+        );
+        let mut unclassified = Vec::new();
+        for name in &names {
+            if matches!(registry_kind(name.as_bytes()), RegistryKind::Unclassified) {
+                unclassified.push(name.clone());
+            }
+        }
+        assert!(
+            unclassified.is_empty(),
+            "registry codecs with no incremental classification: {unclassified:?}\n\
+             classify each in registry_kind() (Streaming / FixedWidth / ByteWise)"
+        );
+    }
+
+    /// Spot-check that the classification is not just exhaustive but right.
+    #[test]
+    fn registry_classification_kinds() {
+        for name in [
+            &b"SHIFT_JIS"[..],
+            b"SJIS",
+            b"CP932",
+            b"EUC-JP",
+            b"EUCJP",
+            b"ISO-2022-JP",
+        ] {
+            assert!(
+                matches!(registry_kind(name), RegistryKind::Streaming(..)),
+                "{name:?} must be Streaming"
+            );
+        }
+        for name in [
+            &b"UCS-2"[..],
+            b"UCS-4",
+            b"UCS-4LE",
+            b"UCS-4BE",
+            b"UTF-16",
+            b"UTF-16LE",
+            b"UTF-16BE",
+        ] {
+            assert!(
+                matches!(registry_kind(name), RegistryKind::FixedWidth(_)),
+                "{name:?} must be FixedWidth"
+            );
+        }
+        for name in [
+            &b"ASCII"[..],
+            b"US-ASCII",
+            b"UTF-8",
+            b"IBM037",
+            b"EBCDIC-US",
+            b"ISO-8859-1",
+            b"ISO-8859-15",
+            b"windows-874",
+        ] {
+            assert!(
+                matches!(registry_kind(name), RegistryKind::ByteWise),
+                "{name:?} must be ByteWise"
+            );
+        }
+    }
 
     const SHIFT_JIS_DECL: &[u8] = b"<?xml version=\"1.0\" encoding=\"Shift_JIS\"?>";
     const EUC_JP_DECL: &[u8] = b"<?xml version=\"1.0\" encoding=\"EUC-JP\"?>";
