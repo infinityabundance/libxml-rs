@@ -190,6 +190,17 @@ are the verification.
 |---|---:|
 | cells | 4042 |
 | diverging cells | 4042 (100%) |
+| court/source sha of that run | `d762c286` (see `raw/pushdiff/run.txt`) |
+
+**Provenance note:** the frozen 4042-cell baseline was produced by the
+slice-0 court at `d762c286`, whose generator did not yet include the
+slice-1 CR-chain documents. `raw/pushdiff/run.txt` therefore records
+`candidate_sha=court_sha=d762c286`. Slice 1 EXTENDS the corpus
+(`cr-cr`, `cr-cr-cr`, `cr-cr-final`, `cr-cr-tags`, `cr-crlf-mix`), so the
+current HEAD's generator yields MORE cells; running it does not reproduce
+exactly 4042, by design — slice-0 history is not rewritten. Slice-1 runs
+should be read as “slice-0 corpus + slice-1 additions”, with the CR-chain
+cells reported separately.
 
 Run: `sh courts/suites/phase16/pushdiff-run.sh` from a clean tree; the
 gate is diffs = 0 after the stateful rewrite.
@@ -216,29 +227,39 @@ the withheld-CR bookkeeping is transitional scaffolding (the persistent
 machine keeps the bytes in the input buffer and parks the cursor before
 them instead).
 
-### 5. Character-data callback segmentation around raw CR / CRLF normalization
+### 5. Character-data callback segmentation (raw CR / CRLF + availability batching)
 
-Extracting each trace's (call → `characters` event) sequence shows the
-oracle splits character data when it meets a **raw CR** (upstream
-`xmlParseCharDataInternal`: a raw `0x0D` leaves the accelerated scan loop
-and reaches `invoke_callback`, which flushes the current run and then
-consumes the CR/CRLF so the normalized `\n` heads the NEXT callback).
-Plain LF does NOT split: the fast path advances over `0x0A` runs and
-increments line/column without dispatching. So
+Extracting each trace's (call → `characters` event) sequence shows a
+segmentation model that is more than “split at each CR/LF”. Three distinct
+mechanisms are visible in the oracle:
 
-```text
-one\r\ntwo\r\nthree\r\n
-oracle   : [one] [\ntwo] [\nthree] [\n]
-candidate: [one\ntwo\nthree\n]
-```
+1. **≥300-byte availability gate.** `XML_PARSER_BIG_BUFFER_SIZE` (300): in
+   CONTENT, upstream only enters `xmlParseCharDataInternal` when
+   `avail >= 300` OR `xmlParseLookupCharData` finds a `<`/`&` delimiter;
+   otherwise a non-final call `goto done` without touching the run. Long
+   text therefore dispatches in ~300-byte batches (observed: 317/320-byte
+   `characters` runs for the 4.4 KiB `text-long` doc fed in 64-byte chunks,
+   one every ~5 chunks).
+2. **CRLF in the fast path splits.** A raw `0x0D` followed by `0x0A` leaves
+   the accelerated scan; `xmlParseCharDataInternal` flushes the run before
+   it and consumes the CRLF so the normalized `\n` heads the NEXT callback —
+   hence `[one] [\ntwo] [\nthree] [\n]` for `one\r\ntwo\r\nthree\r\n`
+   (`text-crlf`, `cr-multi`). Plain LF does NOT split.
+3. **Lone CR takes the complex path and MERGES.** A raw CR not followed by
+   LF falls out of the fast path into `xmlParseCharDataComplex`, which
+   batches differently: lone-CR text yields a merged `[\ntwo\nthree\n]`,
+   not one callback per CR (`text-lone-cr`), and consecutive CRs merge
+   (`cr-crlf-mix` → `[\n\n\ny]`, `cr-cr` → `[\n\ny]`).
 
-(An earlier wording of this class said “splits at every CR/LF” — that was
-wrong: only the raw-CR path flushes.) The candidate merges the run;
-reproducing upstream's segmentation requires the scanner to end the
-current `Characters` token at a raw CR and let the next token begin at
-that CR (normalizing CR/CRLF to `\n`). Independent of chunking: visible
-with the whole document in one `b64` chunk, and relevant to every SAX
-consumer, not only push parsing.
+A first implementation attempt (end the `Characters` token at every raw CR)
+was measured against the oracle and **reverted**: it matches mechanisms 2
+for CRLF documents but diverges on lone/consecutive CRs (where upstream
+merges) and cannot reproduce the ≥300-byte batching at all. Mechanism 1 is
+inherently coupled to input availability — i.e. to the persistent engine's
+buffer/cursor model — so faithful class-5 segmentation lands with that
+engine, not as a scanner-local tweak. (It is observable with the whole
+document in one chunk, so it is independent of replay but NOT of the
+input-availability model.)
 
 ## What the divergences are (five systematic classes)
 

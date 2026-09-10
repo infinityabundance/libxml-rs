@@ -893,13 +893,19 @@ pub(crate) unsafe fn parse_chunk(
     // terminating call never withholds (upstream's condition requires
     // !terminate), so a document ending in `\r` still processes it.
     //
-    // A withheld `\r` is consumed only when this call gives the parser more
-    // to do: a nonempty chunk (the `\r`s become parseable input followed by
-    // the new bytes) or a terminating call (the `\r`s are final input). A
-    // ZERO-LENGTH non-final call must leave them parked: upstream's
-    // xmlParseTryOrFinish finds no `<`/`&` for a lone `\r`
-    // (xmlParseLookupCharData returns 0) and consumes nothing — flushing
-    // them here would deliver the EOL one zero-length call too early.
+    // A withheld `\r` is restored into the candidate's replay input only
+    // when this call gives the replay parser new bytes to work with (a
+    // nonempty chunk, so the `\r`s become parseable input followed by the
+    // new bytes) or terminates (the `\r`s are final input). This does NOT
+    // claim the replay parser's progress equals xmlParseTryOrFinish: upstream
+    // may still leave the CR unread even with more bytes available (char data
+    // below XML_PARSER_BIG_BUFFER_SIZE only advances when
+    // xmlParseLookupCharData finds a `<`/`&`). A ZERO-LENGTH non-final call
+    // must leave them parked: upstream's xmlParseTryOrFinish finds no
+    // `<`/`&` for a lone `\r` and consumes nothing — flushing them here
+    // would deliver the EOL one zero-length call too early. Emulating the
+    // remaining progress rules is deliberately NOT attempted here; the
+    // persistent engine deletes this scaffolding.
     // The withheld bytes are COUNTED (pending_crs), not flagged: consecutive
     // CRs must not collapse (upstream keeps every one in the buffer).
     let mut deferred_crs: usize = 0;
