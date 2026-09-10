@@ -66,7 +66,7 @@ cc -O1 -Wall -Wextra -Werror -o "$OUT/probe-cand" "$PROBE_SRC" \
 pick_modes() { # path -> echoes the sax2 modes to run
   local sz
   sz=$(stat -c %s "$1")
-  if   [ "$sz" -le 200 ];  then echo "b1 b2 b3 b5 b7 b16 b257 r3 r9 r77 Cb1 Cb257 Cr9 b1z2"
+  if   [ "$sz" -le 200 ];  then echo "b1 b2 b3 b5 b7 b16 b257 r3 r9 r77 Cb1 Cb5 Cb12 Cb257 Cr9 b1z2"
   elif [ "$sz" -le 2000 ]; then echo "b1 b2 b5 b64 b257 r1 r42 Cb5 Cr42 b64z2"
   elif [ "$sz" -le 9216 ]; then echo "b1 b7 b64 b1024 r2 r17 Cb64 r17z1"   # 9 KiB
   elif [ "$sz" -le 65536 ]; then echo "b16 b4096 b32768 r5 r23"
@@ -138,6 +138,31 @@ for pair in $reset_pairs; do
     tag="reset_${a}_${b}__$m"
     if ! run_cell "$tag" "" "$m" "$OUT/corpus/$a.xml" "$OUT/corpus/$b.xml"; then
       record_fail "reset $a -> $b" "$m" "$tag"
+    fi
+  done
+  for m in Rsb1 Rsib257; do
+    total=$((total + 1))
+    tag="sreset_${a}_${b}__$m"
+    if ! run_cell "$tag" "" "$m" "$OUT/corpus/$a.xml" "$OUT/corpus/$b.xml"; then
+      record_fail "suspended-reset $a -> $b" "$m" "$tag"
+    fi
+  done
+done
+
+# SUSPENDED xmlCtxtResetPush cells: A ends mid-construct (partial lexical
+# token / pending UTF-8 / pending CR / open element stack / DTD decl) and
+# the reset must clear exactly that machinery before B is parsed.
+suspended_pairs="raw-trunc-utf8:ns-rescope text-cr-end:attr-many \
+starttag-trunc-attr-val-dq:content-cdata doctype-trunc-elem-decl:cr-multi \
+endtag-trunc:doctype-subset-choice doctype-trunc-entity:text-unicode"
+for pair in $suspended_pairs; do
+  a=${pair%%:*}
+  b=${pair##*:}
+  for m in Rsb1 Rsib257; do
+    total=$((total + 1))
+    tag="sreset_${a}_${b}__$m"
+    if ! run_cell "$tag" "" "$m" "$OUT/corpus/$a.xml" "$OUT/corpus/$b.xml"; then
+      record_fail "suspended-reset $a -> $b" "$m" "$tag"
     fi
   done
 done

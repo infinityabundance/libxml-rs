@@ -48,6 +48,12 @@
  *             xmlCtxtResetPush(NULL, 0) then parse B under the plan
  *     Ri      reset mode: after A finishes, xmlCtxtResetPush(whole B),
  *             then only the terminating call
+ *     Rs      reset mode, SUSPENDED A: A is fed under the plan but never
+ *             finished (it ends mid-construct — partial lexical token /
+ *             pending UTF-8 / pending CR / open element stack / DTD decl),
+ *             then xmlCtxtResetPush(NULL, 0) and B is parsed under the
+ *             plan: the reset must clear the suspended machinery
+ *     Rsi     reset mode, SUSPENDED A, then xmlCtxtResetPush(whole B)
  *
  * Every plan ends with one terminating call (empty when the last chunk
  * ended exactly at the end of the document), then one REFEED call on the
@@ -455,7 +461,7 @@ struct Plan {
     unsigned int span;
     int ctor_init;    /* first split goes to xmlCreatePushParserCtxt */
     int zero_after;   /* K zero-length non-final calls after each chunk */
-    int reset_kind;   /* 0 none, 1 Rz (empty reset), 2 Ri (whole-B reset) */
+    int reset_kind;   /* 0 none, 1 Rz, 2 Ri, 3 Rs, 4 Rsi */
 };
 
 static int parse_plan(const char *mode, struct Plan *p) {
@@ -470,6 +476,11 @@ static int parse_plan(const char *mode, struct Plan *p) {
         m++;
         if (*m == 'z') { p->reset_kind = 1; m++; }
         else if (*m == 'i') { p->reset_kind = 2; m++; }
+        else if (*m == 's') {
+            m++;
+            if (*m == 'i') { p->reset_kind = 4; m++; }
+            else p->reset_kind = 3;
+        }
         else return -1;
     }
     if (*m == 'b') {
@@ -629,14 +640,23 @@ int main(int argc, char **argv) {
             rng_state = plan.seed;
             /* Parse document A under the plan. */
             feed_doc(&plan, c, da, la, 0, "A");
-            fprintf(TR, "> A-FINAL\n");
-            fflush(TR);
-            {
-                int rc = xmlParseChunk(c, NULL, 0, 1);
-                tail("A-FINAL", 0, rc, c);
+            if (plan.reset_kind == 1 || plan.reset_kind == 2) {
+                /* Completed A: finish it before the reset. */
+                fprintf(TR, "> A-FINAL\n");
+                fflush(TR);
+                {
+                    int rc = xmlParseChunk(c, NULL, 0, 1);
+                    tail("A-FINAL", 0, rc, c);
+                }
+            } else {
+                /* Suspended A: the document is deliberately NOT finished —
+                 * it ends mid-construct with partial lexical/UTF-8/CR/
+                 * element/DTD state parked. Reset from that state. */
+                fprintf(TR, "> A-SUSPENDED\n");
+                fflush(TR);
             }
             /* Reset. */
-            if (plan.reset_kind == 1) {
+            if (plan.reset_kind == 1 || plan.reset_kind == 3) {
                 fprintf(TR, "> RESET(empty)\n");
                 fflush(TR);
                 {
@@ -697,11 +717,29 @@ int main(int argc, char **argv) {
             fprintf(TR, "> CTOR len=%zu\n", n);
             fflush(TR);
             c = xmlCreatePushParserCtxt(&h, NULL, (const char *)doc, (int)n, NULL);
-            if (!c) { fprintf(TR, "no-ctxt\n"); fflush(TR); free(doc); continue; }
+            if (!c) {
+                fprintf(TR, "< CTOR ok=0\n");
+                fflush(TR);
+                free(doc);
+                continue;
+            }
             xmlCtxtSetErrorHandler(c, rec_err, NULL);
             CUR = c;
             STARTS = 0;
-            tail("CTOR", 0, c->errNo, c);
+            {
+                xmlParserInputPtr in = c->input;
+                fprintf(TR, "< CTOR ok=1 err=%d wf=%d in=%d",
+                        c->errNo, c->wellFormed, c->instate);
+                if (in != NULL) {
+                    fprintf(TR, " p=%ld l=%d col=%d i=%d n=%d",
+                            (long)(in->cur - in->base), in->line, in->col,
+                            c->inputNr, c->nameNr);
+                } else {
+                    fprintf(TR, " p=-1 l=-1 col=-1 i=-1 n=%d", c->nameNr);
+                }
+                fprintf(TR, "\n");
+                fflush(TR);
+            }
             off = n;
             /* The constructor's chunk is the first split; the plan keeps
              * its own rng state so subsequent splits advance normally. */

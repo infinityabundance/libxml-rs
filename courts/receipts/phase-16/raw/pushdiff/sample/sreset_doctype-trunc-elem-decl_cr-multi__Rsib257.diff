@@ -1,0 +1,12 @@
+==== suspended-reset doctype-trunc-elem-decl -> cr-multi mode=Rsib257 ====
+3a4
+> endDocument
+74c75
+< < B-FINAL 0 rc=0 err=0 wf=1 in=-1 p=261 l=23 col=1 i=1 n=0
+---
+> < B-FINAL 0 rc=0 err=0 wf=1 in=-1 p=259 l=22 col=5 i=1 n=0
+76,77c77
+< error dom=1 code=5 level=3 file= line=23 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< < REFEED 0 rc=5 err=5 wf=0 in=-1 p=261 l=23 col=1 i=1 n=0
+---
+> < REFEED 0 rc=0 err=0 wf=1 in=-1 p=259 l=22 col=5 i=1 n=0

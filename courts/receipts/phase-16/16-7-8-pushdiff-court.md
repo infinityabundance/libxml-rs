@@ -147,7 +147,42 @@ Notable new evidence:
   (111); the candidate's first post-stop call reports errNo 111 but
   rc=0 (its disableSAX gate returns after re-parsing).
 
-## Acceptance criteria for 16.7.8 (expanded)
+## Slice 0.3 — suspended-reset cells + forced constructor boundaries
+(freeze of slice 0; no further court expansion until the engine drives)
+
+Reviewer items closed before the stateful rewrite:
+
+1. **Suspended-reset cells** (`Rs<plan>` / `Rsi<plan>`): document A is fed
+   under the plan but NEVER finished — it ends mid-construct with partial
+   lexical token / pending UTF-8 / pending CR / open element stack / DTD
+   declaration parked — and only then is `xmlCtxtResetPush` called
+   (empty, or with whole B). Six truncated-A × unrelated-B pairs
+   (`raw-trunc-utf8`, `text-cr-end` (trailing CR pending),
+   `starttag-trunc-attr-val-dq`, `doctype-trunc-elem-decl`,
+   `endtag-trunc` (open stack), `doctype-trunc-entity`).
+2. **Forced constructor boundaries**: new corpus docs
+   (`ctor-utf8`, `ctor-utf8-cjk`, `ctor-entity`, `ctor-charref`,
+   `ctor-attr`, `ctor-attr-ns`, `ctor-dtd`) plus `Cb5`/`Cb12` plans so a
+   constructor-initial chunk ends inside a multibyte sequence, an entity
+   reference, an attribute value, or a DTD declaration.
+3. **CTOR trace nit**: the constructor record is now `< CTOR ok=1 err=…
+   wf=… in=… p=…` (no manufactured rc); `ok=0` when the context is NULL.
+4. **Receipt dedup**: the duplicated “Acceptance criteria” heading is
+   removed.
+
+### Frozen slice-0 baseline (unchanged parser)
+
+| metric | value |
+|---|---:|
+| cells | 3962 |
+| diverging cells | 3962 |
+
+All remaining divergence traces back to the three systemic classes
+(startDocument/endDocument call timing, REFEED-after-finish,
+end_in_lf CR deferral) plus their cursor/state consequences (nameNr
+inflation, p/l/col drift, rc-vs-errNo on refused calls). Every cell is
+regenerable with `sh courts/suites/phase16/pushdiff-run.sh`.
+
 ## What the divergences are (three systematic classes)
 
 ### 1. The candidate fires startDocument / endDocument on the wrong calls

@@ -1,0 +1,61 @@
+==== suspended-reset raw-trunc-utf8 -> ns-rescope mode=Rsb1 ====
+3c3,5
+< < A 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < A 0 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+5c7,9
+< < A 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < A 1 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+7,8d10
+< < A 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+< > A 3 len=1
+11,12c13,14
+< < A 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+< > A 4 len=1
+---
+> < A 2 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=2
+> > A 3 len=1
+14c16,18
+< < A 4 rc=81 err=81 wf=0 in=7 p=4 l=1 col=5 i=1 n=1
+---
+> < A 3 rc=0 err=81 wf=0 in=7 p=2 l=1 col=4 i=1 n=4
+> > A 4 len=1
+> < A 4 rc=81 err=81 wf=0 in=7 p=2 l=1 col=4 i=1 n=4
+16c20
+< < A 5 rc=81 err=81 wf=0 in=7 p=4 l=1 col=5 i=1 n=1
+---
+> < A 5 rc=81 err=81 wf=0 in=7 p=2 l=1 col=4 i=1 n=4
+18c22
+< < A 6 rc=81 err=81 wf=0 in=7 p=4 l=1 col=5 i=1 n=1
+---
+> < A 6 rc=81 err=81 wf=0 in=7 p=2 l=1 col=4 i=1 n=4
+20c24
+< < A 7 rc=81 err=81 wf=0 in=7 p=4 l=1 col=5 i=1 n=1
+---
+> < A 7 rc=81 err=81 wf=0 in=7 p=2 l=1 col=4 i=1 n=4
+25c29,31
+< < B 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < B 0 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+27c33,35
+< < B 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < B 1 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+29c37,39
+< < B 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+---
+> startDocument
+> endDocument
+> < B 2 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+32c42,43
+< < B 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+---

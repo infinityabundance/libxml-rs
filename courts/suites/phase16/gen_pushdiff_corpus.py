@@ -77,6 +77,15 @@ def main():
         "attr-dup.xml": "<a b=\"1\" b=\"2\"/>",
         "attr-empty.xml": "<a b=\"\" c=''/>",
         "attr-unicode.xml": "<a b=\"héllo ✓ 中文\"/>",
+        # --- constructor-boundary docs (C<plan>: first split lands inside a
+        # multibyte sequence / entity ref / attribute value / DTD decl) ----
+        "ctor-utf8.xml": "<a>€x</a>",
+        "ctor-utf8-cjk.xml": "<a>日本語</a>",
+        "ctor-entity.xml": "<a>&amp;y</a>",
+        "ctor-charref.xml": "<a>&#x1F600;y</a>",
+        "ctor-attr.xml": "<a b=\"v1\">t</a>",
+        "ctor-attr-ns.xml": "<r xmlns:z=\"urn:z\" z:k=\"v\"><z:c/></r>",
+        "ctor-dtd.xml": "<!DOCTYPE a [<!ELEMENT a EMPTY>]><a/>",
         "attr-ns-decl.xml": "<a xmlns=\"urn:d\" xmlns:x=\"urn:x\" x:b=\"1\"/>",
         "attr-ns-undec.xml": "<a xmlns=\"urn:d\" x:b=\"1\"/>",
         "attr-many.xml": "<a " + " ".join('a%d="v%d"' % (i, i) for i in range(40)) + "/>",
