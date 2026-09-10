@@ -824,7 +824,7 @@ pub unsafe extern "C" fn xmlCtxtResetPush(
         } else {
             CStr::from_ptr(filename).to_str().ok()
         };
-        let input = InputBuffer::from_memory(slice, uri);
+        let input = InputBuffer::for_push(slice, uri);
         helpers::setup_parser_input(ctxt, input);
 
         if !encoding.is_null() {
@@ -1428,7 +1428,7 @@ pub unsafe extern "C" fn xmlCreatePushParserCtxt(
         } else {
             CStr::from_ptr(filename).to_str().ok()
         };
-        let input = InputBuffer::from_memory(slice, uri);
+        let input = InputBuffer::for_push(slice, uri);
         helpers::setup_parser_input(ctxt, input);
         ctxt
     }

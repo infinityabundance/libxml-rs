@@ -276,6 +276,35 @@ impl std::error::Error for InputError {}
 // InputBuffer
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/// How the source encoding of an [`InputBuffer`] stands (§16.7.8 progressive
+/// decoding).
+///
+/// Upstream decides the source encoding inside the parser state machine: the
+/// `XML_PARSER_START` arm of `xmlParseTryOrFinish` refuses to run
+/// `xmlDetectEncoding` until four source bytes are available (and, for the
+/// EBCDIC signature `4C 6F A7 94`, until 200 are available, or the call is
+/// final). Encoding detection is therefore part of the *observable* push
+/// semantics, not a load-time detail — the candidate models it explicitly
+/// instead of inferring it from assorted booleans.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SourceDecoding {
+    /// Non-progressive input (memory/file/callback constructors): detection
+    /// ran once over the complete input at construction and never re-runs.
+    WholeBuffer,
+    /// Progressive (push) input still in upstream `XML_PARSER_START`: the
+    /// bytes received so far are held undecoded in
+    /// [`InputBuffer::pending_source`] because the encoding cannot be decided
+    /// yet. A non-final call with such an input parks exactly like
+    /// `xmlParseTryOrFinish`'s `goto done` — nothing is parsed, no event
+    /// fires and no error is raised. A terminating call always decides.
+    Parked,
+    /// Progressive input with a decided source encoding. The decoder is
+    /// installed (`encoding` / `converted_to_utf8`); source bytes may still
+    /// be held back as an incomplete encoding unit (an odd UTF-16 byte, a
+    /// lone high surrogate, a partial UTF-32 unit) until the rest arrives.
+    Decided,
+}
+
 /// Owned-or-borrowed byte storage of an [`InputBuffer`] (§16.5.2 — borrowed
 /// synchronous memory input).
 ///
@@ -388,6 +417,37 @@ pub(crate) struct InputBuffer {
     /// raises an I/O error on the first grow instead of parsing empty
     /// content (HOSTILE-CALLBACKS C4).
     io_failed: bool,
+    /// Progressive source-decoding state (see [`SourceDecoding`]).
+    decoding: SourceDecoding,
+    /// Source bytes received from the caller that have **not** been
+    /// materialized yet: undecoded because the encoding is still undecided
+    /// (`SourceDecoding::Parked`), or because they form an incomplete
+    /// encoding unit whose remainder has not arrived (UTF-16 half unit / lone
+    /// high surrogate, UTF-32 partial unit). This is the decoder's carry: no
+    /// chunk boundary is ever visible in the materialized stream, and no byte
+    /// is decoded twice.
+    pending_source: Vec<u8>,
+    /// RAW source bytes received through `push_bytes` — the source-side leg
+    /// of the complexity accounting. Materialized/consumed totals live beside
+    /// the bytes they describe (`materialized`, `pos`).
+    source_received: u64,
+    /// UTF-8/internal bytes this buffer has materialized (the unit the
+    /// scanner could ever consume). Backing `materialized_bytes()`;
+    /// transcoding may expand (ISO-8859-1 `E9` -> `C3 A9`) or, on
+    /// re-materialization of the whole buffer, be recomputed.
+    materialized: u64,
+    /// A definite invalid encoding unit was found (upstream
+    /// `XML_ENC_ERR_INPUT`: an unpaired low surrogate, a high surrogate
+    /// followed by a non-low unit, an out-of-range UCS-4 code point). Raised
+    /// immediately on the call that finds it, like `xmlParserInputBufferPush`
+    /// returning -1 -> `xmlCtxtErrIO`.
+    encoding_error: bool,
+    /// A TERMINATING call found an incomplete encoding unit still pending
+    /// (upstream `xmlParserCheckEOF`'s `xmlCharEncInput(..., flush=1)` ->
+    /// `XML_ENC_ERR_INPUT` -> `XML_ERR_INVALID_ENCODING`). Only surfaced when
+    /// the document itself parsed cleanly — `xmlParserCheckEOF` returns early
+    /// once `errNo` is set, so a malformed-document error wins.
+    truncated_source: bool,
 }
 
 impl std::fmt::Debug for InputBuffer {
@@ -402,6 +462,8 @@ impl std::fmt::Debug for InputBuffer {
             .field("len", &self.data.data_len())
             .field("bom_consumed", &self.bom_consumed)
             .field("converted_to_utf8", &self.converted_to_utf8)
+            .field("decoding", &self.decoding)
+            .field("pending_source", &self.pending_source.len())
             .finish()
     }
 }
@@ -435,8 +497,47 @@ impl InputBuffer {
             converted_to_utf8: false,
             decl_pending: false,
             io_failed: false,
+            decoding: SourceDecoding::WholeBuffer,
+            pending_source: Vec::new(),
+            source_received: 0,
+            materialized: 0,
+            encoding_error: false,
+            truncated_source: false,
         };
         ib.detect_bom_and_encoding();
+        ib
+    }
+
+    /// Create an `InputBuffer` for a push-parser session
+    /// (`xmlCreatePushParserCtxt` / `xmlCtxtResetPush` and the `xmlParseChunk`
+    /// fallback for a context with no stashed input).
+    ///
+    /// Unlike [`from_memory`](Self::from_memory), detection is PROGRESSIVE:
+    /// the initial chunk is appended through the push path, so a short initial
+    /// chunk parks exactly like upstream's `XML_PARSER_START` (`avail < 4`,
+    /// and the EBCDIC signature before 200 bytes) instead of being sniffed as
+    /// UTF-8 because the chunk happened to end early.
+    pub fn for_push(initial: &[u8], uri: Option<&str>) -> Self {
+        let mut ib = InputBuffer {
+            source: InputSource::Memory(Vec::new()),
+            data: InputBytes::Owned(Vec::new()),
+            pos: 0,
+            line: 1,
+            col: 1,
+            encoding: Encoding::None,
+            filename: uri.map(|s| s.to_string()),
+            bom_consumed: false,
+            converted_to_utf8: false,
+            decl_pending: false,
+            io_failed: false,
+            decoding: SourceDecoding::Parked,
+            pending_source: Vec::new(),
+            source_received: 0,
+            materialized: 0,
+            encoding_error: false,
+            truncated_source: false,
+        };
+        ib.push_bytes_ex(initial, false);
         ib
     }
 
@@ -477,6 +578,12 @@ impl InputBuffer {
             converted_to_utf8: false,
             decl_pending: false,
             io_failed: false,
+            decoding: SourceDecoding::WholeBuffer,
+            pending_source: Vec::new(),
+            source_received: 0,
+            materialized: 0,
+            encoding_error: false,
+            truncated_source: false,
         };
         // BOM/declaration detection may transcode (Borrowed → Owned) for
         // non-UTF-8 inputs; the plain UTF-8/ASCII path stays zero-copy.
@@ -488,44 +595,348 @@ impl InputBuffer {
     /// `xmlParseChunk` grows the parser input's base with each chunk; the
     /// candidate accumulates into the stashed buffer and parses on the
     /// terminating call (Phase-12 EXTERNAL-CONSUMERS court: parse4.c).
+    ///
+    /// This is the non-final entry point; see [`push_bytes_ex`](Self::push_bytes_ex)
+    /// for the `terminate` flag, which is what distinguishes "a truncated
+    /// encoding unit" (error) from "more input may follow" (suspension).
     pub fn push_bytes(&mut self, bytes: &[u8]) {
-        if bytes.is_empty() {
-            return;
-        }
-        let first_real_bytes = self.data.is_empty() && self.pos == 0 && !self.bom_consumed;
-        // Once the accumulated buffer has been transcoded to UTF-8, the raw
-        // tail still arrives in the declared (source) encoding. Convert just
-        // the new tail per the source encoding (KEY-1): single-byte legacy
-        // encodings (ISO-8859-x, windows-1252 …) and the other
-        // registry-served declared encodings are byte-wise/self-synchronizing
-        // enough to convert tail-chunk-wise like upstream's incremental
-        // encoder. For any other latched encoding, keep appending raw like
-        // upstream's buffered input does before the parser's own encoder
-        // processes it.
-        if self.converted_to_utf8 && !matches!(self.encoding, Encoding::Utf8 | Encoding::Ascii) {
-            if let Some(src_name) = self.legacy_source_encoding_name() {
-                let tail = crate::xml::encoding::decode_whole_buffer_declared(&src_name, bytes);
-                if let Ok(conv) = tail {
-                    self.data.make_owned().extend_from_slice(&conv);
-                    return;
+        self.push_bytes_ex(bytes, false);
+    }
+
+    /// Append raw bytes to the buffered input with the `xmlParseChunk`
+    /// `terminate` flag.
+    ///
+    /// # Progressive source decoding (§16.7.8)
+    ///
+    /// A push-session buffer decodes its source incrementally, mirroring
+    /// upstream's input-buffer encoder (`xmlParserInputBufferPush` ->
+    /// `xmlCharEncInput`):
+    ///
+    /// - While the encoding is undecided, bytes are held in
+    ///   [`pending_source`](Self::pending_source) and a non-final call parks at
+    ///   the `XML_PARSER_START` gate (`avail < 4`; the EBCDIC signature
+    ///   `4C 6F A7 94` waits for 200).
+    /// - Once decided, each call decodes the complete encoding units it can and
+    ///   keeps the incomplete trailing unit (odd UTF-16 byte, lone high
+    ///   surrogate, partial UTF-32 unit) as carry for the next call — never a
+    ///   whole-buffer re-decode, which would just move the replay parser's
+    ///   O(N²) down one layer.
+    /// - A definite invalid unit latches [`encoding_error`](Self::source_encoding_error)
+    ///   on any call; an incomplete unit still pending on a TERMINATING call
+    ///   latches [`truncated_source`](Self::source_truncated) (upstream
+    ///   `xmlParserCheckEOF`'s flush).
+    ///
+    /// For a non-progressive input (memory/file/callback whole-buffer
+    /// constructors) this keeps the historical behavior: the encoding was
+    /// decided at construction, and only the declaration re-sniff (KEY-1) may
+    /// still transcode.
+    pub(crate) fn push_bytes_ex(&mut self, bytes: &[u8], terminate: bool) {
+        self.source_received = self.source_received.saturating_add(bytes.len() as u64);
+        match self.decoding {
+            SourceDecoding::WholeBuffer => {
+                if self.data.is_empty() && self.pos == 0 && !self.bom_consumed {
+                    // A whole-buffer input being pushed to with nothing yet
+                    // buffered (the `xmlParseChunk` fallback for a context
+                    // whose input was never set up for push): begin
+                    // progressive decoding from scratch.
+                    self.decoding = SourceDecoding::Parked;
+                    self.push_progressive(bytes, terminate);
+                } else {
+                    // A push onto an already-materialized whole-buffer input:
+                    // the encoding was decided at construction, so continue
+                    // incrementally from here (upstream `xmlParseChunk` on a
+                    // memory/IO parser context).
+                    self.decoding = SourceDecoding::Decided;
+                    self.append_decided(bytes, terminate);
                 }
-                // Undecodable tail: append raw; the tokenizer reports the
-                // invalid-character error.
-                self.data.make_owned().extend_from_slice(bytes);
-                return;
+            }
+            SourceDecoding::Parked => self.push_progressive(bytes, terminate),
+            SourceDecoding::Decided => self.append_decided(bytes, terminate),
+        }
+    }
+
+    /// Hold `bytes` back until the source encoding can be decided; decide now
+    /// when this call gives upstream's `XML_PARSER_START` enough evidence.
+    fn push_progressive(&mut self, bytes: &[u8], terminate: bool) {
+        self.pending_source.extend_from_slice(bytes);
+        if self.try_decide(terminate) {
+            self.decoding = SourceDecoding::Decided;
+        }
+    }
+
+    /// Upstream `xmlParseTryOrFinish`'s `XML_PARSER_START` gates:
+    ///
+    /// ```c
+    /// if ((!terminate) && (avail < 4))
+    ///     goto done;
+    /// if ((CMP4(CUR_PTR, 0x4C, 0x6F, 0xA7, 0x94)) && (!terminate) && (avail < 200))
+    ///     goto done;
+    /// ```
+    ///
+    /// `avail` here is the number of undecided source bytes held back.
+    fn try_decide(&mut self, terminate: bool) -> bool {
+        let avail = self.pending_source.len();
+        if !terminate {
+            if avail < 4 {
+                return false;
+            }
+            if self.pending_source[..4] == [0x4C, 0x6F, 0xA7, 0x94] && avail < 200 {
+                return false;
             }
         }
-        // Appending makes the buffer owned (§16.5.2 — push chunks cannot
-        // borrow caller memory across xmlParseChunk calls).
-        self.data.make_owned().extend_from_slice(bytes);
-        // Re-run detection when the first real bytes arrive (the buffer was
-        // constructed empty) or when an in-progress `<?xml` declaration may
-        // have just completed on this push (KEY-1: a BOM-less declared
-        // encoding such as `encoding="iso-8859-1"` only becomes visible once
-        // enough of the stream has accumulated).
-        if first_real_bytes || (self.decl_pending && !self.converted_to_utf8) {
-            self.detect_bom_and_encoding();
+        self.decide(terminate);
+        true
+    }
+
+    /// Run upstream `xmlDetectEncoding` over the held source bytes and install
+    /// the matching decoder.
+    fn decide(&mut self, terminate: bool) {
+        let src = core::mem::take(&mut self.pending_source);
+        let at = |i: usize| src.get(i).copied().unwrap_or(0);
+        let n = src.len();
+
+        // Order mirrors `detect_bom_and_encoding` / upstream xmlDetectEncoding:
+        // the 4-byte patterns first (the UTF-32LE BOM begins with the UTF-16LE
+        // BOM, so it must be tested before it), then the 2/3-byte BOMs.
+        if n >= 4 && at(0) == 0x3C && at(1) == 0x00 && at(2) == 0x00 && at(3) == 0x00 {
+            self.install_unit_decoder(src, Encoding::Ucs4Le, 0, terminate);
+        } else if n >= 4 && at(0) == 0x00 && at(1) == 0x00 && at(2) == 0x00 && at(3) == 0x3C {
+            self.install_unit_decoder(src, Encoding::Ucs4Be, 0, terminate);
+        } else if n >= 4 && at(0) == 0x3C && at(1) == 0x00 && at(2) == 0x3F && at(3) == 0x00 {
+            self.install_unit_decoder(src, Encoding::Utf16Le, 0, terminate);
+        } else if n >= 4 && at(0) == 0x00 && at(1) == 0x3C && at(2) == 0x00 && at(3) == 0x3F {
+            self.install_unit_decoder(src, Encoding::Utf16Be, 0, terminate);
+        } else if n >= 4 && at(0) == 0x4C && at(1) == 0x6F && at(2) == 0xA7 && at(3) == 0x94 {
+            // EBCDIC signature: the whole stream is decoded through the
+            // registered IBM037 handler (single-byte, so tail-wise decoding
+            // needs no carry).
+            self.encoding = Encoding::Ebcdic;
+            self.data = InputBytes::Owned(src);
+            self.convert_declared_native_encoding();
+            self.materialized = self.data.data_len() as u64;
+        } else if n >= 3 && at(0) == 0xEF && at(1) == 0xBB && at(2) == 0xBF {
+            self.decide_utf8(src, 3);
+        } else if n >= 4 && at(0) == 0xFF && at(1) == 0xFE && at(2) == 0x00 && at(3) == 0x00 {
+            self.install_unit_decoder(src, Encoding::Ucs4Le, 4, terminate);
+        } else if n >= 4 && at(0) == 0x00 && at(1) == 0x00 && at(2) == 0xFE && at(3) == 0xFF {
+            self.install_unit_decoder(src, Encoding::Ucs4Be, 4, terminate);
+        } else if n >= 2 && at(0) == 0xFF && at(1) == 0xFE {
+            self.install_unit_decoder(src, Encoding::Utf16Le, 2, terminate);
+        } else if n >= 2 && at(0) == 0xFE && at(1) == 0xFF {
+            self.install_unit_decoder(src, Encoding::Utf16Be, 2, terminate);
+        } else {
+            self.decide_utf8(src, 0);
         }
+    }
+
+    /// Install `enc` and decode `src[skip..]` as whole code units, keeping an
+    /// incomplete trailing unit pending.
+    fn install_unit_decoder(&mut self, src: Vec<u8>, enc: Encoding, skip: usize, terminate: bool) {
+        self.encoding = enc;
+        self.converted_to_utf8 = true;
+        self.data = InputBytes::Owned(Vec::new());
+        self.materialized = 0;
+        // A leading BOM is consumed and not materialized (upstream advances
+        // `input->cur` past it before switching the encoder).
+        self.pos = 0;
+        self.col = 1;
+        self.pending_source = src[skip..].to_vec();
+        self.decode_units_tail(terminate);
+    }
+
+    /// Materialize a UTF-8 source (optionally after a `skip`-byte BOM) and run
+    /// the declaration sniff so a declared legacy encoding still transcodes
+    /// (KEY-1).
+    fn decide_utf8(&mut self, src: Vec<u8>, bom: usize) {
+        self.encoding = Encoding::Utf8;
+        self.materialized = src.len() as u64;
+        self.data = InputBytes::Owned(src);
+        if bom > 0 {
+            self.pos = bom;
+            self.col = bom + 1;
+            self.bom_consumed = true;
+        }
+        self.detect_encoding_from_xml_declaration();
+        self.convert_declared_native_encoding();
+    }
+
+    /// Decode as many complete source units as possible from
+    /// [`pending_source`](Self::pending_source) into the materialized buffer,
+    /// leaving an incomplete trailing unit pending for the next call.
+    fn decode_units_tail(&mut self, terminate: bool) {
+        let src = core::mem::take(&mut self.pending_source);
+        let mut out: Vec<u8> = Vec::with_capacity(src.len());
+        let mut consumed = 0usize;
+        let definite_error = match self.encoding {
+            Encoding::Utf16Le => decode_utf16_units(&src, false, &mut out, &mut consumed),
+            Encoding::Utf16Be => decode_utf16_units(&src, true, &mut out, &mut consumed),
+            Encoding::Ucs4Le => decode_ucs4_units(&src, false, &mut out, &mut consumed),
+            Encoding::Ucs4Be => decode_ucs4_units(&src, true, &mut out, &mut consumed),
+            _ => return,
+        };
+        if !out.is_empty() {
+            self.data.make_owned().extend_from_slice(&out);
+            self.materialized = self.materialized.saturating_add(out.len() as u64);
+        }
+        self.pending_source = src[consumed..].to_vec();
+        if definite_error {
+            self.encoding_error = true;
+        } else if terminate && !self.pending_source.is_empty() {
+            // `xmlParserCheckEOF`: a terminating call flushes the encoder and a
+            // still-incomplete unit is a truncated sequence.
+            self.truncated_source = true;
+        }
+    }
+
+    /// Append to an input whose source encoding is already decided.
+    fn append_decided(&mut self, bytes: &[u8], terminate: bool) {
+        match &self.encoding {
+            Encoding::Utf16Le | Encoding::Utf16Be | Encoding::Ucs4Le | Encoding::Ucs4Be
+                if self.converted_to_utf8 =>
+            {
+                self.pending_source.extend_from_slice(bytes);
+                self.decode_units_tail(terminate);
+            }
+            Encoding::Iso8859_1 | Encoding::Ebcdic | Encoding::Other(_)
+                if self.converted_to_utf8 =>
+            {
+                if bytes.is_empty() {
+                    return;
+                }
+                match self.legacy_source_encoding_name() {
+                    Some(src_name) => {
+                        match crate::xml::encoding::decode_whole_buffer_declared(&src_name, bytes) {
+                            Ok(conv) => {
+                                self.data.make_owned().extend_from_slice(&conv);
+                                self.materialized =
+                                    self.materialized.saturating_add(conv.len() as u64);
+                            }
+                            // Undecodable tail: append raw; the tokenizer
+                            // reports the invalid-character error.
+                            Err(()) => self.append_raw(bytes),
+                        }
+                    }
+                    None => self.append_raw(bytes),
+                }
+            }
+            _ => {
+                // UTF-8 family (UTF-8/ASCII, or a declaration that has not
+                // named a legacy encoding yet). The raw source bytes are the
+                // materialized bytes; only the still-pending `<?xml ...?>'
+                // sniff can switch the encoding (KEY-1).
+                self.append_raw(bytes);
+                if bytes.is_empty() {
+                    return;
+                }
+                if self.decl_pending && !self.converted_to_utf8 {
+                    self.detect_encoding_from_xml_declaration();
+                    self.convert_declared_native_encoding();
+                    if self.converted_to_utf8 {
+                        self.materialized = self.data.data_len() as u64;
+                    }
+                }
+            }
+        }
+    }
+
+    /// Append raw source bytes to the materialized stream.
+    fn append_raw(&mut self, bytes: &[u8]) {
+        self.data.make_owned().extend_from_slice(bytes);
+        self.materialized = self.materialized.saturating_add(bytes.len() as u64);
+    }
+
+    /// Fold any held-back source bytes into the raw buffer, so a caller
+    /// encoding override sees the whole stream (upstream switches the encoding
+    /// before the parse and before any detection).
+    fn absorb_pending_source(&mut self) {
+        if self.pending_source.is_empty() {
+            return;
+        }
+        let held = core::mem::take(&mut self.pending_source);
+        self.materialized = self.materialized.saturating_add(held.len() as u64);
+        self.data.make_owned().extend_from_slice(&held);
+        if self.decoding == SourceDecoding::Parked {
+            self.decoding = SourceDecoding::Decided;
+        }
+    }
+
+    // ── Progressive decoding state queries ───────────────────────────────
+
+    /// The progressive source-decoding state.
+    pub(crate) const fn source_decoding(&self) -> SourceDecoding {
+        self.decoding
+    }
+
+    /// Whether this input is parked in upstream `XML_PARSER_START`: a
+    /// non-final call with such an input must parse nothing and fire nothing.
+    pub(crate) fn source_parked(&self) -> bool {
+        self.decoding == SourceDecoding::Parked
+    }
+
+    /// Whether the decoder found a definite invalid encoding unit
+    /// (`XML_ENC_ERR_INPUT`) — reported on the call that found it.
+    pub(crate) const fn source_encoding_error(&self) -> bool {
+        self.encoding_error
+    }
+
+    /// Whether a terminating call left an incomplete encoding unit pending
+    /// (upstream `xmlParserCheckEOF`'s encoder flush).
+    pub(crate) const fn source_truncated(&self) -> bool {
+        self.truncated_source
+    }
+
+    /// RAW source bytes received through `push_bytes`.
+    pub(crate) const fn source_bytes_received(&self) -> u64 {
+        self.source_received
+    }
+
+    /// UTF-8/internal bytes materialized so far — the only unit the scanner
+    /// can consume (transcoding may expand: ISO-8859-1 `E9` -> `C3 A9`).
+    pub(crate) const fn materialized_bytes(&self) -> u64 {
+        self.materialized
+    }
+
+    /// Source bytes received but not yet materialized (see
+    /// [`pending_source`](Self::pending_source)).
+    pub(crate) fn pending_source(&self) -> &[u8] {
+        &self.pending_source
+    }
+
+    /// `(line, col)` at the end of the materialized stream, with upstream's
+    /// line-break semantics (`\r\n` counts once). Used to report an error at
+    /// the end of the decoded input (the encoder flush position).
+    pub(crate) fn end_line_col(&self) -> (usize, usize) {
+        let bytes: &[u8] = &self.data;
+        let mut line = 1usize;
+        let mut col = 1usize;
+        let mut i = 0usize;
+        while i < bytes.len() {
+            match bytes[i] {
+                b'\n' => {
+                    line += 1;
+                    col = 1;
+                    i += 1;
+                }
+                b'\r' => {
+                    if i + 1 < bytes.len() && bytes[i + 1] == b'\n' {
+                        i += 2;
+                    } else {
+                        i += 1;
+                    }
+                    line += 1;
+                    col = 1;
+                }
+                b if b < 0x80 => {
+                    col += 1;
+                    i += 1;
+                }
+                b => {
+                    col += 1;
+                    i += Self::utf8_char_len(b);
+                }
+            }
+        }
+        (line, col)
     }
 
     /// Produce an independent copy of this buffer at its current state, so
@@ -548,6 +959,12 @@ impl InputBuffer {
             converted_to_utf8: self.converted_to_utf8,
             decl_pending: self.decl_pending,
             io_failed: self.io_failed,
+            decoding: self.decoding,
+            pending_source: self.pending_source.clone(),
+            source_received: self.source_received,
+            materialized: self.materialized,
+            encoding_error: self.encoding_error,
+            truncated_source: self.truncated_source,
         }
     }
 
@@ -577,6 +994,12 @@ impl InputBuffer {
             converted_to_utf8: false,
             decl_pending: false,
             io_failed: false,
+            decoding: SourceDecoding::WholeBuffer,
+            pending_source: Vec::new(),
+            source_received: 0,
+            materialized: 0,
+            encoding_error: false,
+            truncated_source: false,
         };
         ib.detect_bom_and_encoding();
         Ok(ib)
@@ -605,6 +1028,12 @@ impl InputBuffer {
             converted_to_utf8: false,
             decl_pending: false,
             io_failed: false,
+            decoding: SourceDecoding::WholeBuffer,
+            pending_source: Vec::new(),
+            source_received: 0,
+            materialized: 0,
+            encoding_error: false,
+            truncated_source: false,
         };
         ib.detect_bom_and_encoding();
         Ok(ib)
@@ -628,6 +1057,12 @@ impl InputBuffer {
             converted_to_utf8: false,
             decl_pending: false,
             io_failed: true,
+            decoding: SourceDecoding::WholeBuffer,
+            pending_source: Vec::new(),
+            source_received: 0,
+            materialized: 0,
+            encoding_error: false,
+            truncated_source: false,
         }
     }
 
@@ -913,6 +1348,10 @@ impl InputBuffer {
     /// the raw bytes are gone). The converted stream replaces `data` and the
     /// position resets so the caller can repopulate the `_xmlParserInput`.
     pub(crate) fn apply_name_encoding_override(&mut self, name: &[u8]) -> bool {
+        // A caller override is upstream `xmlSwitchEncoding` before the parse:
+        // it precedes any detection, so held-back (undecided) source bytes
+        // must be visible to it.
+        self.absorb_pending_source();
         if self.converted_to_utf8 {
             // Raw bytes already transcoded (BOM UTF-16 / declared Latin-1):
             // re-decoding the UTF-8 stream under the override would corrupt
@@ -952,6 +1391,9 @@ impl InputBuffer {
     /// strings this way). Returns false when no conversion applies (the raw
     /// bytes stay; BOM/declaration detection then decides as usual).
     pub(crate) fn apply_explicit_input_encoding(&mut self, name: &[u8]) -> bool {
+        // See apply_name_encoding_override: an explicit encoding precedes all
+        // detection, so undecided source bytes must be visible here.
+        self.absorb_pending_source();
         if self.converted_to_utf8 || self.data.is_empty() {
             return false;
         }
@@ -1558,13 +2000,97 @@ impl InputBuffer {
 
     /// Reset the buffer to the beginning of the input.
     ///
-    /// This allows re-parsing the same input from the start.
+    /// This allows re-parsing the same input from the start. A progressive
+    /// (push) buffer keeps its decoded stream and decoder state: only the
+    /// read cursor is rewound.
     pub fn reset(&mut self) {
         self.pos = 0;
         self.line = 1;
         self.col = 1;
         self.bom_consumed = false;
-        self.detect_bom_and_encoding();
+        if self.decoding == SourceDecoding::WholeBuffer {
+            self.detect_bom_and_encoding();
+        }
+    }
+}
+
+/// Decode complete UTF-16 code units from `src` into `out`.
+///
+/// Returns `true` on a definite encoding error — upstream
+/// `UTF16LEToUTF8`/`UTF16BEToUTF8`'s `XML_ENC_ERR_INPUT` arms: an unpaired
+/// low surrogate, or a high surrogate followed by a non-low unit. `consumed`
+/// reports how many leading source bytes formed complete units; a trailing
+/// incomplete unit (an odd byte, or a high surrogate whose low half has not
+/// arrived) stays unconsumed and is the caller's carry.
+fn decode_utf16_units(src: &[u8], be: bool, out: &mut Vec<u8>, consumed: &mut usize) -> bool {
+    let unit = |i: usize| -> u16 {
+        if be {
+            u16::from_be_bytes([src[i], src[i + 1]])
+        } else {
+            u16::from_le_bytes([src[i], src[i + 1]])
+        }
+    };
+
+    let mut i = 0usize;
+    while i + 2 <= src.len() {
+        let c = unit(i);
+        if (0xD800..=0xDBFF).contains(&c) {
+            // High surrogate: its low half must be present, and must be a low
+            // surrogate (`inend - in < 4` in upstream = carry, not error).
+            if i + 4 > src.len() {
+                break;
+            }
+            let d = unit(i + 2);
+            if !(0xDC00..=0xDFFF).contains(&d) {
+                *consumed = i;
+                return true;
+            }
+            let cp = 0x10000 + ((c as u32 - 0xD800) << 10) + (d as u32 - 0xDC00);
+            push_utf8(out, cp);
+            i += 4;
+        } else if (0xDC00..=0xDFFF).contains(&c) {
+            // Unpaired low surrogate.
+            *consumed = i;
+            return true;
+        } else {
+            push_utf8(out, c as u32);
+            i += 2;
+        }
+    }
+    *consumed = i;
+    false
+}
+
+/// Decode complete UTF-32 (UCS-4) code units from `src` into `out`.
+///
+/// Returns `true` on a definite encoding error (a surrogate code point or an
+/// out-of-range value, matching upstream `fixed_width_input`). A trailing
+/// partial unit (0–3 bytes) stays unconsumed as the caller's carry.
+fn decode_ucs4_units(src: &[u8], be: bool, out: &mut Vec<u8>, consumed: &mut usize) -> bool {
+    let mut i = 0usize;
+    while i + 4 <= src.len() {
+        let raw = [src[i], src[i + 1], src[i + 2], src[i + 3]];
+        let cp = if be {
+            u32::from_be_bytes(raw)
+        } else {
+            u32::from_le_bytes(raw)
+        };
+        if cp > 0x10FFFF || (0xD800..=0xDFFF).contains(&cp) {
+            *consumed = i;
+            return true;
+        }
+        push_utf8(out, cp);
+        i += 4;
+    }
+    *consumed = i;
+    false
+}
+
+/// Append `cp` to `out` as UTF-8 (surrogates never reach here).
+fn push_utf8(out: &mut Vec<u8>, cp: u32) {
+    if let Some(c) = char::from_u32(cp) {
+        let mut buf = [0u8; 4];
+        out.extend_from_slice(c.encode_utf8(&mut buf).as_bytes());
     }
 }
 
@@ -2307,5 +2833,198 @@ mod tests {
             all.contains('ä'),
             "duplicated converted buffer must still read as UTF-8, got {all:?}"
         );
+    }
+
+    // ── §16.7.8 progressive source decoding ────────────────────────────────
+
+    /// Drive a fresh push buffer through `parts` (all NON-final) and return it
+    /// with the source still open.
+    fn push_parts(parts: &[&[u8]]) -> InputBuffer {
+        let mut ib = InputBuffer::for_push(&[], None);
+        for p in parts {
+            ib.push_bytes_ex(p, false);
+        }
+        ib
+    }
+
+    /// Materialized stream for a partition closed by a terminating call.
+    fn materialized(parts: &[&[u8]]) -> Vec<u8> {
+        let mut ib = push_parts(parts);
+        ib.push_bytes_ex(&[], true);
+        ib.remaining().to_vec()
+    }
+
+    fn utf16le(s: &str) -> Vec<u8> {
+        s.encode_utf16().flat_map(u16::to_le_bytes).collect()
+    }
+
+    fn utf16be(s: &str) -> Vec<u8> {
+        s.encode_utf16().flat_map(u16::to_be_bytes).collect()
+    }
+
+    fn utf32le(s: &str) -> Vec<u8> {
+        s.chars().flat_map(|c| (c as u32).to_le_bytes()).collect()
+    }
+
+    /// Upstream `xmlParseTryOrFinish`'s `XML_PARSER_START` gate: a non-final
+    /// call with fewer than four source bytes parks — the encoding is not
+    /// decided, nothing is materialized, and the bytes are held.
+    #[test]
+    fn progressive_parks_until_the_start_gate_is_satisfied() {
+        let mut ib = push_parts(&[b"<"]);
+        assert!(ib.source_parked());
+        assert_eq!(ib.materialized_bytes(), 0);
+        assert_eq!(ib.pending_source(), b"<");
+        ib.push_bytes_ex(b"a", false);
+        ib.push_bytes_ex(b"/", false);
+        assert!(ib.source_parked(), "avail < 4 must keep parking");
+        assert_eq!(ib.pending_source(), b"<a/");
+        assert_eq!(ib.source_bytes_received(), 3);
+        ib.push_bytes_ex(b">", false);
+        assert!(!ib.source_parked());
+        assert_eq!(ib.remaining(), b"<a/>");
+        assert_eq!(ib.materialized_bytes(), 4);
+        assert_eq!(ib.source_bytes_received(), 4);
+    }
+
+    /// A UTF-8 BOM split across calls: `EF BB` cannot be recognized yet, so
+    /// the buffer must park instead of defaulting to UTF-8.
+    #[test]
+    fn progressive_utf8_bom_split_across_calls() {
+        let mut ib = push_parts(&[b"\xef\xbb"]);
+        assert!(ib.source_parked());
+        assert_eq!(ib.materialized_bytes(), 0);
+        ib.push_bytes_ex(b"\xbf<a/>", false);
+        assert!(!ib.source_parked());
+        assert!(ib.bom_was_consumed());
+        assert_eq!(ib.remaining(), b"<a/>");
+        assert_eq!(ib.materialized_bytes() as usize, ib.len());
+    }
+
+    /// A UTF-16LE BOM split at every byte position must still decode the whole
+    /// document — the classic "BOM split across two writes" bug.
+    #[test]
+    fn progressive_utf16le_bom_split_matches_whole_source_decode() {
+        let mut src = vec![0xFF, 0xFE];
+        src.extend(utf16le("<a>x</a>"));
+        let whole = materialized(&[&src]);
+        assert_eq!(whole, b"<a>x</a>");
+        for split in 1..5 {
+            let ib = push_parts(&[&src[..split], &src[split..]]);
+            assert_eq!(ib.encoding(), &Encoding::Utf16Le);
+            assert_eq!(ib.remaining(), b"<a>x</a>", "split at {split}");
+        }
+    }
+
+    /// A half code unit at the end of the available source is SUSPENSION, not
+    /// an error: it waits for the rest. Only a terminating call turns a still
+    /// incomplete unit into the encoder-truncation error.
+    #[test]
+    fn progressive_truncated_unit_is_suspension_then_error_on_terminate() {
+        let mut src = vec![0xFF, 0xFE];
+        src.extend(utf16le("<a>x</a>"));
+        src.push(0x20); // half of a trailing code unit
+        let mut ib = push_parts(&[&src]);
+        assert!(!ib.source_encoding_error());
+        assert!(!ib.source_truncated());
+        assert_eq!(ib.pending_source(), &[0x20]);
+        assert_eq!(ib.remaining(), b"<a>x</a>");
+        // The terminating call flushes the encoder: the byte is still never
+        // consumed, and the incomplete unit becomes the error.
+        ib.push_bytes_ex(&[], true);
+        assert!(ib.source_truncated());
+        assert!(!ib.source_encoding_error());
+        assert_eq!(ib.pending_source(), &[0x20]);
+        assert_eq!(ib.remaining(), b"<a>x</a>");
+    }
+
+    /// The high half of a surrogate pair is carried until its low half
+    /// arrives in a later call (upstream `inend - in < 4` -> break).
+    #[test]
+    fn progressive_utf16_surrogate_split_across_calls() {
+        let mut src = vec![0xFF, 0xFE];
+        src.extend(utf16le("<a>🎉</a>"));
+        let hi = src.windows(2).position(|w| w == [0x3C, 0xD8]).unwrap();
+        let ib = push_parts(&[
+            &src[..2],
+            &src[2..hi + 2],
+            &src[hi + 2..hi + 4],
+            &src[hi + 4..],
+        ]);
+        assert_eq!(ib.remaining(), "<a>🎉</a>".as_bytes());
+    }
+
+    /// An unpaired low surrogate is a DEFINITE error on the call that finds it
+    /// (upstream `XML_ENC_ERR_INPUT`), not a carry.
+    #[test]
+    fn progressive_utf16_lone_low_surrogate_is_immediate_error() {
+        let mut src = vec![0xFF, 0xFE];
+        src.extend(utf16le("<a>x</a>"));
+        src.extend([0x00, 0xDC]);
+        let ib = push_parts(&[&src]);
+        assert!(ib.source_encoding_error());
+        assert!(!ib.source_truncated());
+    }
+
+    /// A high surrogate followed by a non-low unit is likewise definite.
+    #[test]
+    fn progressive_utf16_high_then_non_low_is_immediate_error() {
+        let mut src = vec![0xFF, 0xFE];
+        src.extend(utf16le("<a>x</a>"));
+        src.extend([0x3C, 0xD8, 0x41, 0x00]); // high surrogate then 'A'
+        let ib = push_parts(&[&src]);
+        assert!(ib.source_encoding_error());
+    }
+
+    /// The EBCDIC signature needs 200 available source bytes on a non-final
+    /// call (upstream `xmlDetectEBCDIC` cannot pick a code page earlier).
+    #[test]
+    fn progressive_ebcdic_signature_parks_until_two_hundred_bytes() {
+        let mut src = vec![0x4C, 0x6F, 0xA7, 0x94];
+        src.resize(199, 0x40);
+        let mut ib = push_parts(&[&src]);
+        assert!(ib.source_parked(), "EBCDIC signature parks below 200 bytes");
+        assert_eq!(ib.materialized_bytes(), 0);
+        ib.push_bytes_ex(&[0x40], false);
+        assert!(!ib.source_parked());
+        assert_eq!(ib.encoding(), &Encoding::Ebcdic);
+        assert!(ib.remaining().starts_with(b"<?xm"));
+    }
+
+    /// The architectural property behind the decoder: any source chunk
+    /// partitioning materializes the same UTF-8 stream as whole-source
+    /// decoding. This is independent of any oracle comparison.
+    #[test]
+    fn progressive_partition_equivalence_is_exact() {
+        let mut cases: Vec<Vec<u8>> = Vec::new();
+        cases.push({
+            let mut v = vec![0xFF, 0xFE];
+            v.extend(utf16le("<a>🎉x</a>"));
+            v
+        });
+        cases.push({
+            let mut v = vec![0xFE, 0xFF];
+            v.extend(utf16be("<a>🎉x</a>"));
+            v
+        });
+        cases.push(utf16le("<?xml version=\"1.0\"?><a>x</a>"));
+        cases.push(utf16be("<?xml version=\"1.0\"?><a>x</a>"));
+        cases.push(utf32le("<?xml version=\"1.0\"?><a>x</a>"));
+        cases.push({
+            let mut v = vec![0xFF, 0xFE, 0x00, 0x00];
+            v.extend(utf32le("<a>x</a>"));
+            v
+        });
+
+        for src in &cases {
+            let whole = materialized(&[src]);
+            assert!(!whole.is_empty());
+            for split in 1..src.len() {
+                let ib = push_parts(&[&src[..split], &src[split..]]);
+                assert_eq!(ib.remaining(), whole.as_slice(), "{src:?} split at {split}");
+                assert_eq!(ib.materialized_bytes() as usize, ib.len());
+                assert_eq!(ib.source_bytes_received() as usize, src.len());
+            }
+        }
     }
 }

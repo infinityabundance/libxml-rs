@@ -876,7 +876,7 @@ pub(crate) unsafe fn parse_chunk(
     let mut base: InputBuffer = {
         let ptr = take_stashed_input_buffer(ctxt);
         if ptr.is_null() {
-            InputBuffer::from_memory(&[], None)
+            InputBuffer::for_push(&[], None)
         } else {
             // SAFETY: ptr is a valid Box<InputBuffer> from Box::into_raw.
             unsafe { *Box::from_raw(ptr) }
@@ -931,8 +931,39 @@ pub(crate) unsafe fn parse_chunk(
 
     // Append the chunk to the accumulated input (upstream xmlParseChunk
     // grows ctxt->input's base with each chunk; the candidate parses the
-    // whole accumulated stream).
-    base.push_bytes(slice);
+    // whole accumulated stream). `terminate` is what lets the source decoder
+    // tell a truncated encoding unit at the end of the stream (an error) from
+    // one that more input may still complete (a suspension).
+    base.push_bytes_ex(slice, terminate != 0);
+
+    // UPSTREAM-PARITY (parser.c xmlParseTryOrFinish `case XML_PARSER_START`):
+    // a NON-final call whose source input cannot decide its encoding yet
+    // (`avail < 4`; the EBCDIC signature `4C 6F A7 94` waits for 200 bytes)
+    // parks — nothing is parsed, no event fires, no error is raised. The held
+    // source bytes stay buffered for the call that brings enough (or the
+    // terminating call, which always detects).
+    if base.source_parked() {
+        stash_input_buffer(ctxt, Box::into_raw(Box::new(base)));
+        return 0;
+    }
+
+    // UPSTREAM-PARITY (parser.c xmlParseChunk): when the source encoder finds
+    // a definite invalid unit, xmlParserInputBufferPush fails and
+    // xmlParseChunk reports xmlCtxtErrIO's XML_ERR_INVALID_ENCODING (81)
+    // immediately — before xmlParseTryOrFinish runs, so no event fires on
+    // this call and every later call returns the recorded errNo.
+    if base.source_encoding_error() {
+        let (line, col) = base.end_line_col();
+        raise_invalid_encoding(ctxt, line as c_int, col as c_int);
+        return unsafe { (*ctxt).errNo };
+    }
+    // An incomplete unit left pending by THIS terminating call keeps the
+    // bytes unread: upstream only turns it into an error in
+    // xmlParserCheckEOF, and only if the document itself parsed cleanly.
+    let source_truncated = base.source_truncated();
+    // Error position for the encoder flush: the end of the decoded stream
+    // (computed here because `base` is consumed by the final parse).
+    let (end_line, end_col) = base.end_line_col();
 
     // Capture the consumer-set wellFormed BEFORE the first parse mutates it
     // (PHP expat-compat zeroes it at create; see PushState docs). Restored
@@ -1085,8 +1116,66 @@ pub(crate) unsafe fn parse_chunk(
         if unsafe { (*ctxt).wellFormed } == 0 {
             return unsafe { (*ctxt).errNo };
         }
+        // UPSTREAM-PARITY (parser.c xmlParserCheckEOF): the terminating call
+        // flushes the encoder (`xmlCharEncInput(..., flush = 1)`). A source
+        // unit still incomplete at that point is XML_ERR_INVALID_ENCODING.
+        // The check only runs when the document itself parsed cleanly —
+        // xmlParserCheckEOF returns early once errNo is set, so a
+        // malformed-document error (e.g. tag not finished) wins.
+        if source_truncated && unsafe { (*ctxt).errNo } == 0 {
+            raise_invalid_encoding(ctxt, end_line as c_int, end_col as c_int);
+            return unsafe { (*ctxt).errNo };
+        }
         rc
         // parser is dropped here.
+    }
+}
+
+/// Raise upstream `xmlCtxtErrIO(ctxt, XML_ERR_INVALID_ENCODING)` — the error
+/// the input-buffer encoder produces, either from
+/// `xmlParserInputBufferPush` (a definite invalid unit) or from
+/// `xmlParserCheckEOF`'s flush of a still-incomplete unit
+/// (`xmlCharEncInput(..., flush = 1)` -> `XML_ENC_ERR_INPUT` ->
+/// `XML_ERR_INVALID_ENCODING`, domain `XML_FROM_IO`, level fatal, message
+/// "Invalid bytes in character encoding").
+///
+/// `xmlCtxtErrIO` routes through `xmlCtxtVErr`, so this mirrors the parser's
+/// own fatal-error bookkeeping: `errNo` = code, `wellFormed` = 0,
+/// `disableSAX` = 1 (every later `xmlParseChunk` returns the recorded errNo),
+/// and the error is delivered through the context's structured/generic error
+/// channel.
+///
+/// # Safety
+///
+/// `ctxt` must be a valid, initialized `_xmlParserCtxt`.
+unsafe fn raise_invalid_encoding(ctxt: *mut _xmlParserCtxt, line: c_int, col: c_int) {
+    let code = crate::abi::types::XML_ERR_INVALID_ENCODING;
+    // SAFETY: caller guarantees ctxt is valid and initialized.
+    unsafe {
+        (*ctxt).errNo = code;
+        (*ctxt).wellFormed = 0;
+        (*ctxt).disableSAX = 1;
+        (*ctxt).nbErrors = (*ctxt).nbErrors.wrapping_add(1);
+        let delivery = crate::xml::errors::parser_delivery(ctxt);
+        let msg = c"Invalid bytes in character encoding\n";
+        crate::xml::errors::raise_error_streamed(
+            ctxt as *mut c_void,
+            crate::abi::types::XML_FROM_IO,
+            code,
+            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+            ptr::null(),
+            line,
+            col,
+            ptr::null(),
+            ptr::null(),
+            ptr::null(),
+            0,
+            msg.as_ptr(),
+            None,
+            None,
+            delivery,
+            None,
+        );
     }
 }
 
