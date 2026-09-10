@@ -580,9 +580,17 @@ impl XmlTokenizer {
     /// parser-side error raising.
     pub fn capture_error_pos(&self) -> (c_int, c_int, Option<(Vec<u8>, usize)>) {
         let byte_pos = self.input.current_pos().2;
-        let (line, col) = self.line_col_at(byte_pos);
+        // Upstream reports the CURRENT input's TRACKED line/col (`input->line`,
+        // `input->col`), never a value reconstructed from the byte offset. The
+        // two differ after a raw `NEXT` consume that skips the column bump —
+        // notably the trailing `;` of a general entity reference (upstream
+        // xmlParseEntityRefInternal ends with NEXT without xmlCurrentChar
+        // col++), after which the column lags the byte offset by one for the
+        // rest of the line. Recomputing hid that lag from every error raised at
+        // the cursor (the oracle-shadow court's entity documents).
+        let (line, col, _) = self.input.current_ref().pos();
         let window = self.window_at(byte_pos);
-        (line, col, window)
+        (line as c_int, col as c_int, window)
     }
 
     /// Compute the 1-based line and character column for a byte position,

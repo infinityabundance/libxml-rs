@@ -121,10 +121,47 @@ doc("shadow-doctype-ext.xml", b'<!DOCTYPE a SYSTEM "a.dtd"><a/>')
 
 # ── 14: references ──────────────────────────────────────────────────────
 # Character references expand inline through the same `xmlParseReference` the
-# recursive parser calls. A GENERAL entity reference is still a remainder: it
-# needs the entity-input window and upstream's `characters` + `reference`
-# dual dispatch, which is the next slice.
+# recursive parser calls. A GENERAL entity reference runs upstream's
+# `xmlCtxtParseEntity` — a sub-parse of the replacement text with the entity
+# input pushed — and then dispatches `reference` back at the document position.
 doc("shadow-charref.xml", b"<a>&#65;&amp;&#x42;</a>")
+
+# ── 15: general entity content (xmlCtxtParseEntity) ─────────────────────
+# The SAX half of xmlCtxtParseEntity: the entity's replacement text is parsed
+# with the entity input PUSHED, so every callback observes `ctxt->input` inside
+# the entity buffer, and `reference` fires afterwards at the document position.
+#
+#   entity-text     a single text run becomes one `characters` callback
+#   entity-markup   markup in the replacement text becomes SAX element events
+#   entity-nested   a reference inside entity content is expanded into the
+#                   SCANNING entity's input, not the document's
+#   entity-undef    an undeclared nested reference is a fatal raised INSIDE the
+#                   entity input (and the document is NOT finished)
+#   entity-repeat   upstream re-parses and re-dispatches the content on EVERY
+#                   reference (`ent->children` stays NULL without a tree)
+#   entity-misc     comments, PIs and CDATA are content too
+#   entity-unclosed a replacement text that ends inside an open element is
+#                   "Premature end of data in tag %s line %d"
+#   entity-endtag   a top-level end tag in the content is "chunk is not well
+#                   balanced" (XML_ERR_NOT_WELL_BALANCED), raised BEFORE it is
+#                   consumed
+for name, data in [
+    ("shadow-entity-text.xml", b'<!DOCTYPE a [<!ENTITY e "x">]><a>&e;</a>'),
+    ("shadow-entity-markup.xml", b'<!DOCTYPE a [<!ENTITY e "<b/>">]><a>&e;</a>'),
+    (
+        "shadow-entity-nested.xml",
+        b'<!DOCTYPE a [<!ENTITY b "B"><!ENTITY e "x&b;y">]><a>&e;</a>',
+    ),
+    ("shadow-entity-undef.xml", b'<!DOCTYPE a [<!ENTITY e "x&y;">]><a>&e;</a>'),
+    ("shadow-entity-repeat.xml", b'<!DOCTYPE a [<!ENTITY e "x">]><a>&e;&e;</a>'),
+    (
+        "shadow-entity-misc.xml",
+        b'<!DOCTYPE a [<!ENTITY e "<!--c--><?p d?><![CDATA[q]]>">]><a>&e;</a>',
+    ),
+    ("shadow-entity-unclosed.xml", b'<!DOCTYPE a [<!ENTITY e "<b>">]><a>&e;</a>'),
+    ("shadow-entity-endtag.xml", b'<!DOCTYPE a [<!ENTITY e "</a>">]><a>&e;</a>'),
+]:
+    doc(name, data)
 
 
 def main():

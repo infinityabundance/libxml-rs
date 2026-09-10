@@ -65,12 +65,15 @@
 //! ```
 //!
 //! Entity CHARACTER references (`&#65;`, `&amp;`) and parameter/entity
-//! declaration CALLBACKS are handled. A GENERAL entity reference (`&e;`) is the
-//! one remaining construct: it needs the entity-input window and upstream's
-//! `characters` + `reference` dual dispatch, so it is still reported as
-//! [`StepOutcome::Unsupported`] — a LOUD fatal, never a silent fallback to
-//! replay. Its availability scan (`lookup_char`) is implemented so the
-//! construct parks correctly rather than mis-scanning.
+//! declaration CALLBACKS are handled. A GENERAL entity reference runs
+//! upstream's `xmlCtxtParseEntity`: the replacement text is parsed with the
+//! entity input pushed onto the tokenizer's stack (SEALED, so a construct can
+//! never read into the referencing document) while `inputTab`/`inputNr` expose
+//! the entity input as `ctxt->input`, exactly as upstream does, and the
+//! `reference` event fires afterwards at the document position. That is the
+//! SAX half (`ctxt->node == NULL`); the tree half still fills `ent->children`
+//! through [`XmlParser::parse_reference`]. Its availability scan
+//! (`lookup_char`) parks the construct until the `;` is available.
 //!
 //! DOCTYPE is modelled in upstream's TWO phases: the declaration HEAD (which
 //! records the root/external identifiers and fires `internalSubset`) is parsed
@@ -844,8 +847,15 @@ impl XmlParser {
                 return self.unsupported(machine, "entity/character reference");
             };
             if self.parse_reference(&data).is_err() {
-                self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
-                self.finish_document(machine);
+                // UPSTREAM-PARITY (xmlParseTryOrFinish, XML_PARSER_CONTENT's
+                // `&` arm): `xmlParseReference(ctxt); break;` — a fatal inside
+                // the reference leaves `instate` UNCHANGED and does NOT call
+                // xmlFinishDocument. The `while (disableSAX == 0)` loop then
+                // exits and xmlParseChunk returns errNo at its
+                // `errNo != OK && disableSAX != 0` guard, before the terminate
+                // block. Setting EOF + finishing here dispatched a spurious
+                // endDocument (the oracle-shadow court's
+                // shadow-entity-undef cell).
                 return StepOutcome::Fatal;
             }
             machine.note_event();

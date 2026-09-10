@@ -108,8 +108,8 @@ const WINDOW_MODES: &[&str] = &["b1024", "b4096", "b1024i"];
 /// Documents at or below this many bytes use [`SMALL_MODES`]. Duplicates the
 /// launcher's threshold on purpose (see [`SMALL_MODES`]).
 const SMALL_DOC_MAX: usize = 200;
-/// 18 small x 10 + 2 long x 4 + 8 window x 3.
-const SHADOW_CELL_TOTAL: usize = 212;
+/// 26 small x 10 + 2 long x 4 + 8 window x 3.
+const SHADOW_CELL_TOTAL: usize = 292;
 
 /// Documents whose FULL diagnostic records (message payload included) are
 /// asserted, not just their canonical form.
@@ -1057,6 +1057,8 @@ mod tests {
             "shadow-utf16invalid.xml",
             "shadow-longtext.xml",
             "shadow-ns.xml",
+            "shadow-entity-text.xml",
+            "shadow-entity-endtag.xml",
         ] {
             assert!(
                 reports.iter().any(|r| r.doc == doc),

@@ -254,6 +254,12 @@ pub(crate) struct XmlParser {
     /// `Entity: line N: ` info + window after the parent window
     /// (HOSTILE-FAILURE F2). Consumed by `raise_parser_error`.
     cur_error_tail: Option<(c_int, Option<(Vec<u8>, usize)>)>,
+    /// Entity-amplification accumulation slot for references nested inside an
+    /// entity-content sub-parse. Upstream's `xmlParserEntityCheck` takes the
+    /// slot from `ctxt->input->entity->expandedSize`; the candidate records it
+    /// here while [`Self::parse_entity_content_sax`] is running (NULL at the
+    /// document level, where `ctxt->sizeentcopy` is the target).
+    entity_slot: *mut c_ulong,
 }
 
 /// Per-element context handed from the (heavy) start-tag processing to the
@@ -371,6 +377,7 @@ impl XmlParser {
             dtd_attr_defaults: Vec::new(),
             dtd_attr_types: Vec::new(),
             cur_error_tail: None,
+            entity_slot: ptr::null_mut(),
         }
     }
 
@@ -3124,6 +3131,15 @@ impl XmlParser {
     ) -> Result<(), ()> {
         let open =
             self.parse_element_start(name, attributes, attr_end, attr_start, end_pos, empty)?;
+        self.parse_element_from_open(open)
+    }
+
+    /// Drive one already-opened element to its matching end tag: the content
+    /// loop plus the close sequence (upstream `xmlParseContentInternal` entered
+    /// from `xmlParseElement`). Split out of [`Self::parse_element`] so the
+    /// entity-content sub-parse ([`Self::parse_entity_content_sax`]) can reuse
+    /// the SAME loop for a nested element instead of growing a second one.
+    fn parse_element_from_open(&mut self, open: OpenElement) -> Result<(), ()> {
         if open.empty {
             self.close_open_element(&open);
             return Ok(());
@@ -4476,16 +4492,30 @@ impl XmlParser {
                     }
                 }
             } else {
-                // UPSTREAM-PARITY (xmlParseReference): the entity content is
-                // parsed into ent->children on the first reference
-                // (xmlCtxtParseEntity), before the reference event fires.
-                self.parse_entity_content(entity, None)?;
+                // UPSTREAM-PARITY (parser.c xmlParseReference): the entity
+                // content is parsed by xmlCtxtParseEntity on the first
+                // reference, before the reference event fires. Upstream splits
+                // on `buildTree = (ctxt->node != NULL)`: with a tree the
+                // content populates `ent->children`; with only SAX callbacks
+                // nothing accumulates, `ent->children` stays NULL, and every
+                // reference re-parses and RE-DISPATCHES the content (the
+                // `else if (ent->children == NULL)` arm).
+                let sax_only = unsafe { (*self.ctxt).node }.is_null();
+                if sax_only {
+                    self.parse_entity_content_sax(entity)?;
+                } else {
+                    self.parse_entity_content(entity, None)?;
+                }
                 // UPSTREAM-PARITY (xmlParseReference): unconditional
-                // amplification check (also when not substituting).
+                // amplification check (also when not substituting). The
+                // accumulation slot is the SCANNING entity's `expandedSize`
+                // when this reference is nested inside entity content
+                // (upstream `ctxt->input->entity`), and `ctxt->sizeentcopy` at
+                // the document level.
                 let (_, _, dpos2) = self.tokenizer.current_pos();
                 if self.parser_entity_check(
                     unsafe { (*entity).expandedSize },
-                    ptr::null_mut(),
+                    self.entity_slot,
                     dpos2 as c_ulong,
                 ) {
                     return Err(());
@@ -4891,7 +4921,324 @@ impl XmlParser {
         Ok(())
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    /// UPSTREAM-PARITY (parser.c xmlCtxtParseEntity, the SAX half): parse the
+    /// entity's replacement text with the entity input PUSHED, dispatching SAX
+    /// events while `ctxt->input` sits inside the entity buffer, then pop it.
+    ///
+    /// This is the `buildTree == 0` branch — `ctxt->node == NULL`, a SAX-only
+    /// consumer. Upstream decides the branch with `buildTree = (ctxt->node !=
+    /// NULL)`: when a tree is being built the start-tag/resolvers build
+    /// `ent->children`; with only SAX callbacks nothing accumulates, so
+    /// `ent->children` stays NULL and upstream's `else if (ent->children ==
+    /// NULL) xmlCtxtParseEntity(ctxt, ent)` re-parses and re-dispatches the
+    /// content on EVERY reference. That is why this method is entered afresh
+    /// each time rather than cached behind `XML_ENT_PARSED`.
+    ///
+    /// The event order is upstream's exactly: the content events fire while the
+    /// cursor is inside the entity input, and the `reference` event fires
+    /// afterwards, back at the document position (the caller does that).
+    ///
+    /// Safety: `ent` must be a live `_xmlEntity` whose `flags`/`content` fields
+    /// are consistent.
+    fn parse_entity_content_sax(&mut self, ent: *mut _xmlEntity) -> Result<(), ()> {
+        const XML_ENT_PARSED: c_int = 1 << 0;
+        const XML_ENT_CHECKED: c_int = 1 << 1;
+        const XML_ENT_EXPANDING: c_int = 1 << 3;
+
+        unsafe {
+            if ent.is_null() {
+                return Ok(());
+            }
+            if ((*ent).flags & XML_ENT_EXPANDING) != 0 {
+                self.cur_error_tail = Some((1, None));
+                self.raise_error_now(
+                    XML_FROM_PARSER,
+                    XML_ERR_ENTITY_LOOP,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "Detected an entity reference loop\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                );
+                return Err(());
+            }
+        }
+
+        // Resolve the replacement text. An internal entity always carries its
+        // literal content; an EXTERNAL general parsed entity is loaded only on
+        // the same gate `parse_entity_content` uses — which is also upstream's
+        // gate for calling xmlCtxtParseEntity at all
+        // (`(etype == INTERNAL) || (!NO_XXE && (replaceEntities || validate))`).
+        let mut owned: Option<Vec<u8>> = None;
+        unsafe {
+            if (*ent).content.is_null() {
+                let want_load = (*ent).etype == XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int
+                    && (self.options & XML_PARSE_NOENT) == 0
+                    && (self.options & XML_PARSE_NO_XXE) == 0
+                    && {
+                        let c = &*self.ctxt;
+                        c.replaceEntities != 0 || c.validate != 0
+                    };
+                if !want_load {
+                    (*ent).flags |= XML_ENT_PARSED;
+                    return Ok(());
+                }
+                let loaded = {
+                    let sys = (*ent).SystemID as *const c_char;
+                    let ext = (*ent).ExternalID as *const c_char;
+                    crate::abi::exports_parser::xmlLoadExternalEntity(sys, ext, self.ctxt)
+                };
+                if !loaded.is_null() {
+                    let base = (*loaded).base;
+                    let end = (*loaded).end;
+                    let len = end.offset_from(base).max(0) as usize;
+                    if !base.is_null() && len > 0 {
+                        owned = Some(core::slice::from_raw_parts(base, len).to_vec());
+                    }
+                    crate::abi::exports_xml2::xmlFreeInputStream(loaded);
+                }
+                if owned.is_none() {
+                    // Unloadable external entity: nothing to parse, exactly as
+                    // in the tree path.
+                    (*ent).flags |= XML_ENT_PARSED;
+                    return Ok(());
+                }
+            }
+        }
+        let bytes: &[u8] = match &owned {
+            Some(v) => v.as_slice(),
+            None => unsafe {
+                let content = (*ent).content;
+                let len = libc::strlen(content as *const c_char);
+                core::slice::from_raw_parts(content, len)
+            },
+        };
+
+        // Push the entity input, SEALED: it is a bounded input (upstream's
+        // `xmlParseContentInternal` stops at `input->cur >= input->end`), so a
+        // construct may never read into the referencing document.
+        self.tokenizer
+            .push_input(InputBuffer::from_memory(bytes, None));
+        let saved_barrier = self.tokenizer.input_mut().seal();
+        let entity_input = unsafe { self.enter_entity_input(ent) };
+        unsafe {
+            (*ent).flags |= XML_ENT_EXPANDING;
+        }
+        let saved_slot = self.entity_slot;
+        self.entity_slot = unsafe { core::ptr::addr_of_mut!((*ent).expandedSize) };
+
+        let result = self.entity_content_loop();
+
+        self.entity_slot = saved_slot;
+        unsafe {
+            (*ent).flags &= !XML_ENT_EXPANDING;
+            // Upstream xmlCtxtParseEntity's size accounting: `consumed` is the
+            // whole bounded entity input, added once (xmlSaturatedAdd, guarded
+            // by XML_ENT_CHECKED).
+            let consumed = self.tokenizer.input().current_ref().len() as c_ulong;
+            if ((*ent).flags & XML_ENT_CHECKED) == 0 {
+                (*ent).expandedSize = (*ent).expandedSize.saturating_add(consumed);
+            }
+            (*ent).flags |= XML_ENT_PARSED | XML_ENT_CHECKED;
+        }
+        unsafe {
+            self.exit_entity_input(entity_input.0, entity_input.1);
+        }
+        self.tokenizer.input_mut().unseal(saved_barrier);
+        let _ = self.tokenizer.pop_input();
+        result
+    }
+
+    /// The content loop of an entity sub-parse — upstream
+    /// `xmlParseContentInternal`, whose condition is
+    /// `cur < input->end && !PARSER_STOPPED` over the PUSHED entity input.
+    ///
+    /// Each item reuses the recursive parser's own machinery
+    /// ([`Self::parse_element_start`] + [`Self::parse_element_from_open`] for a
+    /// nested element, `sax_*` for the leaf constructs, [`Self::parse_reference`]
+    /// for a nested reference) so entity content and document content are the
+    /// same grammar. The input is sealed, so running out of bytes is the end of
+    /// the sub-parse rather than the referencing document.
+    fn entity_content_loop(&mut self) -> Result<(), ()> {
+        loop {
+            if self
+                .tokenizer()
+                .input()
+                .current_ref()
+                .remaining()
+                .is_empty()
+            {
+                return Ok(());
+            }
+            // Upstream `xmlParseContentInternal` breaks the content loop when an
+            // end tag would close the synthetic `#root`, WITHOUT consuming it;
+            // `xmlCtxtParseContentInternal` then reports the leftover input.
+            if self
+                .tokenizer()
+                .input()
+                .current_ref()
+                .remaining()
+                .starts_with(b"</")
+            {
+                unsafe { self.publish_input_window() };
+                return self.entity_not_well_balanced();
+            }
+            // The window must be refreshed before any callback the item
+            // dispatches: a handler reads `ctxt->input`, which must be the
+            // ENTITY input at that point (upstream publishes the same).
+            unsafe { self.publish_input_window() };
+            let next = self.tokenizer().next_token_raw();
+            self.raise_pending_errors();
+            // The token advanced the entity cursor; refresh again so a
+            // diagnostic an item raises is attributed to the position the
+            // oracle reports (the reference's trailing `;`), not to wherever
+            // the previous item left the published window.
+            unsafe { self.publish_input_window() };
+            if unsafe { (*self.ctxt).disableSAX } != 0 {
+                // `PARSER_STOPPED`: a fatal error or xmlStopParser ended the
+                // sub-parse (upstream's loop condition).
+                return Ok(());
+            }
+            match next {
+                XmlToken::StartTag {
+                    name,
+                    attributes,
+                    attr_end,
+                    attr_start,
+                    end_pos,
+                    empty,
+                    unterminated,
+                } => {
+                    if unterminated {
+                        // The entity input ended inside the start tag; the
+                        // tokenizer already recorded the diagnostic.
+                        return Err(());
+                    }
+                    let open = self.parse_element_start(
+                        name, attributes, attr_end, attr_start, end_pos, empty,
+                    )?;
+                    self.parse_element_from_open(open)?;
+                }
+                XmlToken::EndTag { .. } => {
+                    // Unreachable for a token start (the pre-token `</` check
+                    // catches the loop-closing end tag without consuming it),
+                    // but any other end-tag token still ends the sub-parse the
+                    // same way upstream does.
+                    return self.entity_not_well_balanced();
+                }
+                XmlToken::Characters(text) => self.sax_characters_text(&text),
+                XmlToken::Comment { data, .. } => self.sax_comment(&data),
+                XmlToken::ProcessingInstruction { target, data, .. } => self.sax_pi(&target, &data),
+                XmlToken::Cdata { data, .. } => self.sax_cdata(&data),
+                XmlToken::Reference(data) => self.parse_reference(&data)?,
+                XmlToken::Eof => return Ok(()),
+                _ => {
+                    if !self.is_recovery() {
+                        self.set_error(
+                            XML_ERR_INTERNAL_ERROR,
+                            "Unexpected token in entity content",
+                        );
+                        return Err(());
+                    }
+                }
+            }
+        }
+    }
+
+    /// `xmlFatalErr(ctxt, XML_ERR_NOT_WELL_BALANCED, NULL)` — the diagnostic
+    /// `xmlCtxtParseContentInternal` raises when the content loop stopped
+    /// before the entity input was exhausted.
+    fn entity_not_well_balanced(&mut self) -> Result<(), ()> {
+        self.raise_error_now(
+            XML_FROM_PARSER,
+            crate::abi::types::XML_ERR_NOT_WELL_BALANCED,
+            xmlErrorLevel::XML_ERR_FATAL as c_int,
+            "chunk is not well balanced\n".to_string(),
+            None,
+            None,
+            None,
+            0,
+        );
+        Err(())
+    }
+
+    /// Register the pushed entity input in the ABI input table at the stack's
+    /// TOP index: `inputTab[depth-1]` is a fresh `_xmlParserInput` over the
+    /// entity buffer, `inputNr` becomes `depth` (upstream `xmlCtxtPushInput`)
+    /// and `ctxt->input` points at it, so every callback that dereferences
+    /// `input->cur`/`input->line`/`input->col` sees the ENTITY's position while
+    /// the content is parsed — and a NESTED entity sees its own input, not the
+    /// document's.
+    ///
+    /// Returns `(index, input)` for [`Self::exit_entity_input`], or
+    /// `(0, NULL)` when the ABI table is unavailable.
+    unsafe fn enter_entity_input(&mut self, ent: *mut _xmlEntity) -> (usize, *mut _xmlParserInput) {
+        unsafe {
+            self.ensure_input_window();
+            let ctxt = &mut *self.ctxt;
+            if ctxt.inputTab.is_null() {
+                return (0, ptr::null_mut());
+            }
+            // The entity input was pushed already, so the stack depth is the
+            // table index one past the end.
+            let depth = self.tokenizer.input().depth();
+            let index = depth - 1;
+            if (ctxt.inputMax as usize) < depth {
+                // `setup_parser_input` allocates room for four inputs, so this
+                // is unreachable in practice; grow defensively rather than
+                // write out of bounds.
+                let new_max = depth.next_power_of_two().max(4);
+                let tab = crate::abi::allocator::xmlMallocImpl(
+                    new_max * core::mem::size_of::<*mut _xmlParserInput>(),
+                ) as *mut *mut _xmlParserInput;
+                if tab.is_null() {
+                    return (0, ptr::null_mut());
+                }
+                ptr::write_bytes(tab, 0, new_max);
+                for i in 0..(ctxt.inputMax.max(0) as usize) {
+                    *tab.add(i) = *ctxt.inputTab.add(i);
+                }
+                crate::abi::allocator::xmlFreeImpl(ctxt.inputTab as *mut c_void);
+                ctxt.inputTab = tab;
+                ctxt.inputMax = new_max as c_int;
+            }
+            let obj = crate::xml::parser::helpers::alloc_parser_input(
+                self.tokenizer.input().current_ref(),
+                None,
+            );
+            if obj.is_null() {
+                return (0, ptr::null_mut());
+            }
+            (*obj).entity = ent;
+            *ctxt.inputTab.add(index) = obj;
+            ctxt.inputNr = depth as c_int;
+            ctxt.input = obj;
+            (index, obj)
+        }
+    }
+
+    /// Undo [`Self::enter_entity_input`]: drop the entity input from the ABI
+    /// table, restore `inputNr`/`input` to the enclosing input, and release the
+    /// temporary `_xmlParserInput` (the backing bytes belong to the input
+    /// stack).
+    unsafe fn exit_entity_input(&mut self, index: usize, obj: *mut _xmlParserInput) {
+        unsafe {
+            let ctxt = &mut *self.ctxt;
+            if !ctxt.inputTab.is_null() {
+                *ctxt.inputTab.add(index) = ptr::null_mut();
+                if index > 0 {
+                    ctxt.input = *ctxt.inputTab.add(index - 1);
+                    ctxt.inputNr = index as c_int;
+                }
+            }
+            if !obj.is_null() {
+                crate::xml::parser::helpers::free_parser_input(obj);
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
     // Epilog parsing
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -4967,8 +5314,21 @@ impl XmlParser {
     /// token's end: a token ending at or before the boundary was delivered by
     /// the earlier partial parse; only tokens ending past it are new.
     fn below_delivery_boundary(&self) -> bool {
-        self.sax_suppress_until > 0
-            && self.tokenizer.input().current_pos().2 <= self.sax_suppress_until
+        if self.sax_suppress_until == 0 {
+            return false;
+        }
+        // The boundary is a DOCUMENT byte offset. While an entity sub-parse is
+        // active the current input is the entity's replacement text, whose
+        // offsets are not comparable to it; those events belong to the
+        // REFERENCE, so their document position is the BASE input's cursor at
+        // the reference (already advanced past `&name;` when the sub-parse
+        // starts) — the same position the `reference` event is measured at.
+        let pos = if self.tokenizer.input().depth() > 1 {
+            self.tokenizer.input().base_ref().pos().2
+        } else {
+            self.tokenizer.input().current_pos().2
+        };
+        pos <= self.sax_suppress_until
     }
 
     /// Fire `startDocument` SAX event.
@@ -6111,20 +6471,30 @@ impl XmlParser {
         unsafe {
             self.ensure_input_window();
             let ctxt = &mut *self.ctxt;
-            if ctxt.input.is_null() {
+            if ctxt.input.is_null() || ctxt.inputTab.is_null() {
                 return;
             }
-            // Entity inputs push ABOVE the base; the window published here is
-            // the base document's (the only input this slice has). Multi-input
-            // parity arrives with entity references.
-            self.tokenizer
-                .input()
-                .base_ref()
-                .populate_parser_input_without_filename(&mut *ctxt.input);
-            if !ctxt.inputTab.is_null() {
-                *ctxt.inputTab = ctxt.input;
+            // Every input on the stack is published into its own
+            // `_xmlParserInput` (`inputTab[i]`), and `ctxt->input` is the TOP
+            // one — upstream `xmlCtxtPushInput`/`xmlCtxtPopInput` keep exactly
+            // that relation. Outside an entity sub-parse the depth is 1 and
+            // this is the base document's window, unchanged.
+            let stack = self.tokenizer.input();
+            let depth = stack.depth();
+            for i in 0..depth {
+                let slot = ctxt.inputTab.add(i);
+                if (*slot).is_null() {
+                    continue;
+                }
+                stack
+                    .input_at(i)
+                    .populate_parser_input_without_filename(&mut **slot);
             }
-            ctxt.inputNr = 1;
+            ctxt.inputNr = depth as c_int;
+            let top = *ctxt.inputTab.add(depth - 1);
+            if !top.is_null() {
+                ctxt.input = top;
+            }
         }
     }
 
@@ -6584,10 +6954,36 @@ impl XmlParser {
         str3: Option<Vec<u8>>,
         int1: c_int,
     ) {
+        self.refresh_window_for_entity_error();
         let (line, col, window) = self.tokenizer.capture_error_pos();
         self.raise_parser_error(
             domain, code, level, msg, str1, str2, str3, int1, line, col, window, None,
         );
+    }
+
+    /// Refresh the published ABI window before an error is delivered while an
+    /// ENTITY sub-parse is active.
+    ///
+    /// Outside an entity sub-parse the driver refreshes the window at its step
+    /// boundaries and `sync_input_position` refreshes it per SAX event, so this
+    /// is a no-op (and, importantly, it must not clobber a `ctxt->input` that
+    /// `sync_input_position` pointed at a pushed input). Inside
+    /// `xmlCtxtParseEntity`'s content the entity cursor advances token by token
+    /// through the element content loop, which the driver's step boundary does
+    /// not see — an error there must still observe the entity position, exactly
+    /// as upstream's inline raise does. The presence of a registered entity
+    /// input (`inputTab[1]`) is precisely "an entity sub-parse is active".
+    fn refresh_window_for_entity_error(&mut self) {
+        unsafe {
+            let ctxt = &mut *self.ctxt;
+            if ctxt.inputTab.is_null() || ctxt.inputMax < 2 {
+                return;
+            }
+            if (*ctxt.inputTab.add(1)).is_null() {
+                return;
+            }
+            self.publish_input_window();
+        }
     }
 
     /// Raise an error attributed to a specific byte position (e.g. the

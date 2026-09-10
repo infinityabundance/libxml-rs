@@ -2690,6 +2690,14 @@ pub(crate) struct InputStack {
     inputs: Vec<InputBuffer>,
     /// Index of the current (top) input.
     current: usize,
+    /// Index of the lowest input that must NOT be auto-popped when exhausted.
+    ///
+    /// 0 for an ordinary stack. It is raised to the pushed entity input for the
+    /// duration of upstream's `xmlCtxtParseEntity` sub-parse: the entity's
+    /// replacement text is a BOUNDED input (upstream's `xmlParseContentInternal`
+    /// loop stops at `input->cur >= input->end`), so a construct may never read
+    /// into the referencing document.
+    barrier: usize,
 }
 
 impl std::fmt::Debug for InputStack {
@@ -2697,6 +2705,7 @@ impl std::fmt::Debug for InputStack {
         f.debug_struct("InputStack")
             .field("depth", &self.inputs.len())
             .field("current", &self.current)
+            .field("barrier", &self.barrier)
             .finish()
     }
 }
@@ -2707,7 +2716,29 @@ impl InputStack {
         InputStack {
             inputs: vec![base],
             current: 0,
+            barrier: 0,
         }
+    }
+
+    /// Seal the CURRENT input: it may no longer be auto-popped when exhausted,
+    /// so it behaves as the end of the logical stream. Used for the entity
+    /// sub-parse, whose content is a bounded input. Returns the previous
+    /// barrier so a NESTED sub-parse can restore it (a plain reset to 0 would
+    /// silently unseal the enclosing entity input).
+    pub(crate) fn seal(&mut self) -> usize {
+        let prev = self.barrier;
+        self.barrier = self.current;
+        prev
+    }
+
+    /// Undo [`Self::seal`], restoring the barrier it returned.
+    pub(crate) fn unseal(&mut self, prev: usize) {
+        self.barrier = prev;
+    }
+
+    /// The input at stack index `i` (0 = the base document).
+    pub(crate) fn input_at(&self, i: usize) -> &InputBuffer {
+        &self.inputs[i]
     }
 
     /// Push a new input onto the stack.
@@ -2721,10 +2752,11 @@ impl InputStack {
     /// Pop the current input from the stack.
     ///
     /// Returns the popped input, or `None` if the stack would become empty
-    /// (i.e., if there is only one input remaining).
+    /// (i.e., if there is only one input remaining) or if the current input is
+    /// sealed (see [`Self::seal`]).
     pub fn pop(&mut self) -> Option<InputBuffer> {
-        if self.inputs.len() <= 1 {
-            // Cannot pop the base input
+        if self.inputs.len() <= 1 || self.current <= self.barrier {
+            // Cannot pop the base or a sealed input.
             return None;
         }
         let popped = self.inputs.pop();
@@ -2806,15 +2838,15 @@ impl InputStack {
         let cur = &self.inputs[self.current];
         if cur.filename().is_none() && self.current > 0 {
             let parent = &self.inputs[self.current - 1];
+            // The parent's TRACKED (line, col) is exactly what upstream
+            // `xmlCtxtVErr` reports: it reads `ctxt->inputTab[inputNr-2]->col`,
+            // the same incrementally maintained column the published window
+            // carries (which lags the byte offset by one after a raw `NEXT`
+            // consume, e.g. an entity reference's trailing `;`). No adjustment
+            // is applied — an earlier `- 1` compensated for a column that was
+            // RECONSTRUCTED from the byte offset rather than tracked.
             let (pl, pc, _) = parent.pos();
-            // UPSTREAM-PARITY: a frozen (suspended) input's `col` lags the
-            // next-char position by the raw `NEXT` macro consumes (e.g. the
-            // trailing `;` of an entity reference — parserInternals.c
-            // xmlParseEntityRef ends with `NEXT` without the xmlCurrentChar
-            // col++). The oracle reports the last col-tracked char, so the
-            // candidate's 1-based next-char column is one ahead; clamp at 1
-            // (a newline consume resets col to 1 in both models).
-            (parent.filename(), pl, pc.saturating_sub(1).max(1))
+            (parent.filename(), pl, pc.max(1))
         } else {
             let (l, c, _) = cur.pos();
             (cur.filename(), l, c)
@@ -2864,8 +2896,12 @@ impl InputStack {
             self.inputs[self.current].skip_ascii_whitespace();
             // Continue across an exhausted non-base input only when the
             // whitespace run reached its end (a following byte may still be
-            // whitespace in the parent input).
-            if self.inputs.len() <= 1 || !self.inputs[self.current].is_eof() {
+            // whitespace in the parent input). A SEALED input is the end of the
+            // logical stream, so the loop must stop there.
+            if self.inputs.len() <= 1
+                || self.current <= self.barrier
+                || !self.inputs[self.current].is_eof()
+            {
                 return;
             }
         }
@@ -2898,9 +2934,12 @@ impl InputStack {
     }
 
     /// Pop any exhausted pushed inputs so that the current input always has
-    /// remaining data (or is the base input).
+    /// remaining data (or is the base input). A sealed input is never popped.
     fn pop_exhausted(&mut self) {
-        while self.inputs.len() > 1 && self.inputs[self.current].is_eof() {
+        while self.inputs.len() > 1
+            && self.current > self.barrier
+            && self.inputs[self.current].is_eof()
+        {
             self.inputs.pop();
             self.current = self.inputs.len() - 1;
         }
