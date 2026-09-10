@@ -75,7 +75,7 @@ pre-existing); per-backend parse fuzz clean.
 
 ### Published artifacts
 
-- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.48`
+- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.49`
 - GitHub: <https://github.com/infinityabundance/libxml-rs>
 
 ### Oracle verification
