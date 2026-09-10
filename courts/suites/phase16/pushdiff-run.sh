@@ -91,6 +91,7 @@ echo "generator_sha256=$(sha "$ROOT/courts/suites/phase16/gen_pushdiff_corpus.py
 echo "runner_sha256=$(sha "$ROOT/courts/suites/phase16/pushdiff-differential.sh")" >> "$OUT/run.txt"
 echo "probe_runner_sha256=$(sha "$ROOT/courts/suites/phase16/pushdiff-run.sh")" >> "$OUT/run.txt"
 echo "image=$IMAGE" >> "$OUT/run.txt"
+echo "pushdiff_filter=${PUSHDIFF_FILTER:-}" >> "$OUT/run.txt"
 docker inspect -f '{{.Id}}' "$IMAGE" 2>/dev/null | sed 's/^/image_id=/' >> "$OUT/run.txt" || true
 docker inspect -f '{{index .RepoDigests 0}}' "$IMAGE" 2>/dev/null | sed 's/^/image_digest=/' >> "$OUT/run.txt" || true
 uname -a >> "$OUT/run.txt" 2>/dev/null || true

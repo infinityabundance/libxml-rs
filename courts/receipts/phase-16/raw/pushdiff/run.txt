@@ -12,6 +12,7 @@ generator_sha256=4c24afc250ce3072ce1ee577f321354b4ebeb49763bd38c4ebeb2b72c5fef1b
 runner_sha256=35c41c5f7dedda5b7a01cd94de353170cf53d74dcd2df3e03ccc47445c20d1dd
 probe_runner_sha256=5753c97d39bc94c8302c21b9d1cc04716057ca828ad909f8d8d9c87e07169f83
 image=libxml-rs/phase14-debian:1
+pushdiff_filter=enc-   # recorded retroactively: this run used PUSHDIFF_FILTER=enc- (see console.log "docs: 19 (filter=enc-)")
 image_id=sha256:4366b5053d2a4f5829e2b827df2e7d4e0e23a3eac90174d22f265f4b0b9b06cd
 image_digest=
 Linux vanir 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 08:05:11 +0000 x86_64 GNU/Linux

@@ -313,6 +313,38 @@ call carrying half a code unit.
 
 ### Fix plan (next slice, before any XML-grammar wiring)
 
+#### Acceptance: decoder-specific vs full-trace
+
+These 355 cells run the COMPLETE push-parser trace, so the decoder fix
+cannot take them to `diffs = 0` on its own: the replay architecture
+independently differs from upstream on startDocument/endDocument timing,
+`NeedMoreInput` behavior, `ctxt->instate`, `cur-base`/`nameNr` progression,
+REFEED and class-5 segmentation. A fully correct decoder can therefore
+leave the full count unchanged.
+
+```text
+Decoder-specific gate (expected GREEN after the decoder work):
+  VALID cases    no premature encoding error; decoded element names,
+                 attributes and character payloads match the oracle;
+                 encoding boundaries do not change the semantic payload
+  INVALID cases  incomplete unit + !terminate parks (no error);
+                 incomplete unit + terminate yields the oracle's error
+                 domain/code (XML_FROM_I18N 81 "Invalid bytes in character
+                 encoding" for the isolated half-unit case); no malformed-XML
+                 error supersedes the isolated decoder error
+  DETECTION      BOM/signature detection at the oracle-compatible boundary;
+                 EBCDIC stays START through avail 199 and progresses at 200
+
+Full pushdiff trace (expected to STAY RED until the persistent push-parser
+lifecycle/state wiring lands): the 355/355 count above.
+```
+
+That is the causal isolation: the decoder work is judged on decoder
+observables; the full-trace byte identity is the later persistent-engine
+gate.
+
+#### Implementation plan
+
 - **Defer detection while undecided.** `detect_bom_and_encoding` must be
   able to report *undecided* (too few bytes + `!terminate`) instead of
   defaulting to UTF-8, and `push_bytes` must re-run detection on every
