@@ -1,10 +1,10 @@
 side=oracle-only (system libxml2)
-fixture_generation_sha=75d42dd37534858715174fe34877173cedc8ea5d
+fixture_generation_sha=9f0fb40eac3334261b30d35b8b3f4135b5960305
 fixture_tree_clean=yes
 fixture_consumer_note=the Rust gate src/xml/parser/pushshadow.rs consumes these; it pins the expected plan matrix independently
 corpus=courts/suites/phase16/shadow-corpus (verified against gen_shadow_corpus.py in-run)
 probe_sha256=3c3e456151d553a2748a1836bf8d4052d6eebd2a3d157f6b8fcedc445faed327
-generator_sha256=b02a3d618f1851b0f59c0d27d8df40c3937988176af8598b238c952488118ff4
+generator_sha256=9defaa19416ef961967ff2b4c143b0979ba3d1232e9f697d3836feed354fd348
 runner_sha256=443803ed36aed265ec5884bc052044516195e4419839959c616dedfb34d34efb
 plans_small=b1,b2,b3,b5,b257,Cb1,b1z2,b1i,Cb1i,r9-2
 plans_long=b1024,b4096,b1024i,r17-512

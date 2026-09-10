@@ -1,0 +1,37 @@
+== /court/suites/phase16/shadow-corpus/shadow-charref.xml bytes=23 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=3 woff0=0 wbytes0=[<a>]
+> CALL 1 len=3
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=startElementNs p=2 c=0 abs=2
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 1 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=6 woff0=3 wbytes0=[<a>&#6]
+> CALL 2 len=3
+! cb=characters p=8 c=0 abs=8
+characters len=1 [A]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=8 l=1 col=9 i=1 n=1 c=0 abs=8 pos0=0 line0=1 col0=9 byte0=8 win0=0 wsize0=9 woff0=8 wbytes0=[<a>&#65;&]
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=7 p=8 l=1 col=9 i=1 n=1 c=0 abs=8 pos0=0 line0=1 col0=9 byte0=8 win0=0 wsize0=12 woff0=8 wbytes0=[<a>&#65;&amp]
+> CALL 4 len=3
+! cb=characters p=13 c=0 abs=13
+characters len=1 [&]
+< CALL 4 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=15 woff0=13 wbytes0=[<a>&#65;&amp;&#]
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=18 woff0=13 wbytes0=[<a>&#65;&amp;&#x42]
+> CALL 6 len=3
+! cb=characters p=19 c=0 abs=19
+characters len=1 [B]
+< CALL 6 rc=0 err=0 wf=1 in=9 p=19 l=1 col=20 i=1 n=1 c=0 abs=19 pos0=0 line0=1 col0=20 byte0=19 win0=0 wsize0=21 woff0=19 wbytes0=[<a>&#65;&amp;&#x42;</]
+> CALL 7 len=2
+! cb=endElementNs p=23 c=0 abs=23
+endElementNs local=[a] prefix= uri=
+< CALL 7 rc=0 err=0 wf=1 in=14 p=23 l=1 col=24 i=1 n=0 c=0 abs=23 pos0=0 line0=1 col0=24 byte0=23 win0=0 wsize0=23 woff0=23 wbytes0=[<a>&#65;&amp;&#x42;</a>]
+> FINAL
+! cb=endDocument p=23 c=0 abs=23
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=23 l=1 col=24 i=1 n=0 c=0 abs=23 pos0=0 line0=1 col0=24 byte0=23 win0=0 wsize0=23 woff0=23 wbytes0=[<a>&#65;&amp;&#x42;</a>]
+> REFEED
+! cb=error p=23 c=0 abs=23
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=24 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=23 l=1 col=24 i=1 n=0 c=0 abs=23 pos0=0 line0=1 col0=24 byte0=23 win0=0 wsize0=46 woff0=23 wbytes0=[<a>&#65;&amp;&#x42;</a><a>&#65;&amp;&#x42;</a>]

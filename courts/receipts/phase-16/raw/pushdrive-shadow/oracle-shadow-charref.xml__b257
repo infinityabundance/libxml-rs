@@ -1,0 +1,23 @@
+== /court/suites/phase16/shadow-corpus/shadow-charref.xml bytes=23 mode=b257
+> CALL 0 len=23
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=startElementNs p=2 c=0 abs=2
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+! cb=characters p=8 c=0 abs=8
+characters len=1 [A]
+! cb=characters p=13 c=0 abs=13
+characters len=1 [&]
+! cb=characters p=19 c=0 abs=19
+characters len=1 [B]
+! cb=endElementNs p=23 c=0 abs=23
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=23 l=1 col=24 i=1 n=0 c=0 abs=23 pos0=0 line0=1 col0=24 byte0=23 win0=0 wsize0=23 woff0=23 wbytes0=[<a>&#65;&amp;&#x42;</a>]
+> FINAL
+! cb=endDocument p=23 c=0 abs=23
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=23 l=1 col=24 i=1 n=0 c=0 abs=23 pos0=0 line0=1 col0=24 byte0=23 win0=0 wsize0=23 woff0=23 wbytes0=[<a>&#65;&amp;&#x42;</a>]
+> REFEED
+! cb=error p=23 c=0 abs=23
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=24 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=23 l=1 col=24 i=1 n=0 c=0 abs=23 pos0=0 line0=1 col0=24 byte0=23 win0=0 wsize0=46 woff0=23 wbytes0=[<a>&#65;&amp;&#x42;</a><a>&#65;&amp;&#x42;</a>]

@@ -1,0 +1,65 @@
+== /court/suites/phase16/shadow-corpus/shadow-charref.xml bytes=23 mode=Cb1i
+> CTOR len=1
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=1 woff0=0 wbytes0=[<]
+> CALL 0 len=1
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=2 woff0=0 wbytes0=[<a]
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0 pos0=0 line0=1 col0=1 byte0=0 win0=0 wsize0=3 woff0=0 wbytes0=[<a>]
+> CALL 2 len=1
+! cb=startDocument p=0 c=0 abs=0
+startDocument
+! cb=startElementNs p=2 c=0 abs=2
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 2 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=4 woff0=3 wbytes0=[<a>&]
+> CALL 3 len=1
+< CALL 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=5 woff0=3 wbytes0=[<a>&#]
+> CALL 4 len=1
+< CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=6 woff0=3 wbytes0=[<a>&#6]
+> CALL 5 len=1
+< CALL 5 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1 c=0 abs=3 pos0=0 line0=1 col0=4 byte0=3 win0=0 wsize0=7 woff0=3 wbytes0=[<a>&#65]
+> CALL 6 len=1
+! cb=characters p=8 c=0 abs=8
+characters len=1 [A]
+< CALL 6 rc=0 err=0 wf=1 in=7 p=8 l=1 col=9 i=1 n=1 c=0 abs=8 pos0=0 line0=1 col0=9 byte0=8 win0=0 wsize0=8 woff0=8 wbytes0=[<a>&#65;]
+> CALL 7 len=1
+< CALL 7 rc=0 err=0 wf=1 in=7 p=8 l=1 col=9 i=1 n=1 c=0 abs=8 pos0=0 line0=1 col0=9 byte0=8 win0=0 wsize0=9 woff0=8 wbytes0=[<a>&#65;&]
+> CALL 8 len=1
+< CALL 8 rc=0 err=0 wf=1 in=7 p=8 l=1 col=9 i=1 n=1 c=0 abs=8 pos0=0 line0=1 col0=9 byte0=8 win0=0 wsize0=10 woff0=8 wbytes0=[<a>&#65;&a]
+> CALL 9 len=1
+< CALL 9 rc=0 err=0 wf=1 in=7 p=8 l=1 col=9 i=1 n=1 c=0 abs=8 pos0=0 line0=1 col0=9 byte0=8 win0=0 wsize0=11 woff0=8 wbytes0=[<a>&#65;&am]
+> CALL 10 len=1
+< CALL 10 rc=0 err=0 wf=1 in=7 p=8 l=1 col=9 i=1 n=1 c=0 abs=8 pos0=0 line0=1 col0=9 byte0=8 win0=0 wsize0=12 woff0=8 wbytes0=[<a>&#65;&amp]
+> CALL 11 len=1
+! cb=characters p=13 c=0 abs=13
+characters len=1 [&]
+< CALL 11 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=13 woff0=13 wbytes0=[<a>&#65;&amp;]
+> CALL 12 len=1
+< CALL 12 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=14 woff0=13 wbytes0=[<a>&#65;&amp;&]
+> CALL 13 len=1
+< CALL 13 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=15 woff0=13 wbytes0=[<a>&#65;&amp;&#]
+> CALL 14 len=1
+< CALL 14 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=16 woff0=13 wbytes0=[<a>&#65;&amp;&#x]
+> CALL 15 len=1
+< CALL 15 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=17 woff0=13 wbytes0=[<a>&#65;&amp;&#x4]
+> CALL 16 len=1
+< CALL 16 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1 c=0 abs=13 pos0=0 line0=1 col0=14 byte0=13 win0=0 wsize0=18 woff0=13 wbytes0=[<a>&#65;&amp;&#x42]
+> CALL 17 len=1
+! cb=characters p=19 c=0 abs=19
+characters len=1 [B]
+< CALL 17 rc=0 err=0 wf=1 in=7 p=19 l=1 col=20 i=1 n=1 c=0 abs=19 pos0=0 line0=1 col0=20 byte0=19 win0=0 wsize0=19 woff0=19 wbytes0=[<a>&#65;&amp;&#x42;]
+> CALL 18 len=1
+< CALL 18 rc=0 err=0 wf=1 in=7 p=19 l=1 col=20 i=1 n=1 c=0 abs=19 pos0=0 line0=1 col0=20 byte0=19 win0=0 wsize0=20 woff0=19 wbytes0=[<a>&#65;&amp;&#x42;<]
+> CALL 19 len=1
+< CALL 19 rc=0 err=0 wf=1 in=9 p=19 l=1 col=20 i=1 n=1 c=0 abs=19 pos0=0 line0=1 col0=20 byte0=19 win0=0 wsize0=21 woff0=19 wbytes0=[<a>&#65;&amp;&#x42;</]
+> CALL 20 len=1
+< CALL 20 rc=0 err=0 wf=1 in=9 p=19 l=1 col=20 i=1 n=1 c=0 abs=19 pos0=0 line0=1 col0=20 byte0=19 win0=0 wsize0=22 woff0=19 wbytes0=[<a>&#65;&amp;&#x42;</a]
+> CALL 21 len=1
+! cb=endElementNs p=23 c=0 abs=23
+endElementNs local=[a] prefix= uri=
+! cb=endDocument p=23 c=0 abs=23
+endDocument
+< CALL 21 rc=0 err=0 wf=1 in=-1 p=23 l=1 col=24 i=1 n=0 c=0 abs=23 pos0=0 line0=1 col0=24 byte0=23 win0=0 wsize0=23 woff0=23 wbytes0=[<a>&#65;&amp;&#x42;</a>]
+> REFEED
+! cb=error p=23 c=0 abs=23
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=24 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=23 l=1 col=24 i=1 n=0 c=0 abs=23 pos0=0 line0=1 col0=24 byte0=23 win0=0 wsize0=46 woff0=23 wbytes0=[<a>&#65;&amp;&#x42;</a><a>&#65;&amp;&#x42;</a>]
