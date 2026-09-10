@@ -32,12 +32,23 @@
 //!   `endDocument`, report an unfinished tag or empty document, or move
 //!   EPILOG → EOF. [`PushMachine::resume`] therefore takes `terminate` and
 //!   never reports `NeedMoreInput` when `terminate` is true.
-//! - **Absolute vs physical position.** [`PushMachine::bytes_consumed`] is
-//!   an ABSOLUTE, monotonic stream offset (for O(N) accounting). The
-//!   ABI-visible `ctxt->input->cur - ctxt->input->base` is NOT this value:
-//!   the physical buffer is rebased by `xmlParserShrink` whenever
-//!   `cur - base > 4096`, so it is owned by the input buffer, never by this
-//!   machine. Do not conflate them.
+//! - **Absolute vs physical position.** [`PushMachine::base_bytes_consumed`]
+//!   is an ABSOLUTE, monotonic offset into the BASE push stream (for O(N)
+//!   accounting). The ABI-visible `ctxt->input->cur - ctxt->input->base` is
+//!   NOT this value: the physical buffer is rebased by `xmlParserShrink`
+//!   whenever `cur - base > 4096`, and it is owned by the input buffer.
+//!   Likewise **line/column belong to the input**, not to this machine:
+//!   `InputBuffer`/`InputStack` owns `pos/line/col` per input, which is the
+//!   only model that survives entity content (an entity input has its own
+//!   cur/line/col; popping returns to the parent input's position). This
+//!   machine keeps no position fields of its own.
+//! - **Accounting scope.** `base_bytes_appended`/`base_bytes_consumed`
+//!   count the BASE push stream (bytes passed to `xmlParseChunk`). Bytes
+//!   examined from expanded entity inputs are not "appended" — they are
+//!   [`PushMachine::total_scan_work`], so `<a>&big;</a>` can never make a
+//!   correct implementation look like it violated the invariant. Advancing
+//!   consumption past what was appended latches
+//!   [`PushMachine::accounting_violation`] instead of silently saturating.
 //! - **No mid-stream fallback.** A context must be committed to the
 //!   persistent path BEFORE its first immutable observable state (any SAX
 //!   event) is emitted, or not at all. Starting persistent and retreating
@@ -45,6 +56,12 @@
 //!   development the persistent path is exercised by dedicated tests;
 //!   `parse_chunk` stays on replay until the persistent grammar covers a
 //!   coherent subset, then whole contexts flip over.
+//! - **Reuse, don't fork, the grammar.** The driver must reuse the existing
+//!   tokenizer/parsing primitives; `state.rs` must not become the pull
+//!   parser while `push.rs` grows into a second, independently maintained
+//!   XML parser. Same XML semantics and the same SAX/DOM machinery — only
+//!   the execution model changes (persistent/resumable instead of
+//!   recursive whole-document replay).
 //! - **Locking.** The machine lives in the per-context side table. Its
 //!   global map mutex must NEVER be held across `resume()`/SAX callbacks
 //!   (that would serialize every push parser and risk callback reentrancy).
@@ -97,22 +114,24 @@ pub(crate) struct ParkedElement {
 /// next document).
 #[derive(Debug)]
 pub(crate) struct PushMachine {
-    /// ABSOLUTE, monotonic stream offset of the first byte not yet consumed
-    /// (O(N) accounting). This is NOT the ABI-visible `cur - base`; see the
-    /// module docs.
-    bytes_consumed: u64,
-    /// Bytes appended by the caller over the session.
-    bytes_appended: u64,
+    /// ABSOLUTE, monotonic offset into the BASE push stream of the first
+    /// byte not yet consumed (O(N) accounting). NOT the ABI-visible
+    /// `cur - base`; see the module docs.
+    base_bytes_consumed: u64,
+    /// Bytes appended to the BASE push stream over the session.
+    base_bytes_appended: u64,
     /// Scanner work: byte inspections / lookahead operations, which may
-    /// exceed the consumed count (peek, classify, look ahead, consume). The
-    /// complexity property to prove is "no whole-prefix restart", i.e.
-    /// `scan_work / bytes_appended` stays a bounded constant — not that it
-    /// equals 1.0.
-    scan_work: u64,
-    /// 1-based line of the consumed position (upstream `input->line`).
-    line: usize,
-    /// 1-based column of the consumed position (upstream `input->col`).
-    column: usize,
+    /// exceed the consumed count (peek, classify, look ahead, consume), and
+    /// which include bytes examined from expanded entity inputs that were
+    /// never appended through `xmlParseChunk`. The complexity property to
+    /// prove is "no whole-prefix restart", i.e. `total_scan_work /
+    /// base_bytes_appended` stays a bounded constant — not that it equals
+    /// 1.0.
+    total_scan_work: u64,
+    /// Set when consumption is advanced past what was appended (an
+    /// accounting bug, e.g. rescanning a prefix); makes the violation
+    /// visible instead of silently clamping `unread()` to 0.
+    accounting_violation: bool,
     /// Current document phase — EXACTLY the ABI-visible
     /// `xmlParserInputState` upstream keeps in `ctxt->instate` (all 19
     /// states), so the machine never maintains a lossy parallel enum.
@@ -135,17 +154,15 @@ pub(crate) struct PushMachine {
 }
 
 impl Default for PushMachine {
-    /// NOTE: manual impl — line/column start at 1 (upstream input->line and
-    /// input->col are 1-based). A derived `Default` would silently start
-    /// them at 0, which is exactly the kind of foundation bug that shows up
-    /// only after wiring.
+    /// NOTE: manual impl. Position (line/column) deliberately does NOT live
+    /// here — the input owns it (see the module docs); this struct only
+    /// defaults to `XML_PARSER_START` with zero accounting.
     fn default() -> Self {
         Self {
-            bytes_consumed: 0,
-            bytes_appended: 0,
-            scan_work: 0,
-            line: 1,
-            column: 1,
+            base_bytes_consumed: 0,
+            base_bytes_appended: 0,
+            total_scan_work: 0,
+            accounting_violation: false,
             phase: xmlParserInputState::XML_PARSER_START,
             open_elements: Vec::new(),
             ns_scope: Vec::new(),
@@ -164,31 +181,42 @@ impl PushMachine {
         Self::default()
     }
 
-    /// Append `len` newly received bytes. Zero-length calls (including
-    /// `xmlParseChunk(NULL, 0, 0)`) append nothing and must not advance any
-    /// state by themselves — they only re-run `resume()` over what is
-    /// already buffered (upstream's `xmlParseTryOrFinish` over the same
-    /// buffer), which is why the court's `zK` plans exist.
+    /// Append `len` newly received BASE-stream bytes. Zero-length calls
+    /// (including `xmlParseChunk(NULL, 0, 0)`) append nothing and must not
+    /// advance any state by themselves — they only re-run `resume()` over
+    /// what is already buffered (upstream's `xmlParseTryOrFinish` over the
+    /// same buffer), which is why the court's `zK` plans exist.
     pub(crate) fn append(&mut self, len: usize) {
-        self.bytes_appended = self.bytes_appended.saturating_add(len as u64);
+        self.base_bytes_appended = self.base_bytes_appended.saturating_add(len as u64);
     }
 
-    /// Record that `n` bytes have been consumed (the absolute cursor
-    /// advances past them).
+    /// Record that `n` BASE-stream bytes have been consumed (the absolute
+    /// cursor advances past them). Advancing past what was appended is an
+    /// accounting bug (e.g. a prefix rescan): it latches
+    /// [`Self::accounting_violation`] rather than silently clamping
+    /// `unread()` to zero. The violation is deliberately a STATE, not a
+    /// panic/`debug_assert`: it stays inspectable (and a malformed consumer
+    /// cannot be aborted by an internal bookkeeping bug).
     pub(crate) fn note_consumed(&mut self, n: usize) {
-        self.bytes_consumed = self.bytes_consumed.saturating_add(n as u64);
+        let new = self.base_bytes_consumed.saturating_add(n as u64);
+        if new > self.base_bytes_appended {
+            self.accounting_violation = true;
+        }
+        self.base_bytes_consumed = new;
     }
 
-    /// Record scanner work (byte inspections/lookahead) for the complexity
-    /// receipt. This is deliberately separate from `note_consumed`: peeking
-    /// and classifying are work but not consumption.
+    /// Record scanner work (byte inspections/lookahead, including bytes
+    /// examined from expanded entity inputs) for the complexity receipt.
+    /// Deliberately separate from `note_consumed`: peeking and classifying
+    /// are work but not consumption.
     pub(crate) fn note_scan_work(&mut self, n: usize) {
-        self.scan_work = self.scan_work.saturating_add(n as u64);
+        self.total_scan_work = self.total_scan_work.saturating_add(n as u64);
     }
 
-    /// Bytes appended but not yet consumed.
+    /// BASE-stream bytes appended but not yet consumed.
     pub(crate) fn unread(&self) -> u64 {
-        self.bytes_appended.saturating_sub(self.bytes_consumed)
+        self.base_bytes_appended
+            .saturating_sub(self.base_bytes_consumed)
     }
 
     /// Run one pass. `terminate` is the `xmlParseChunk` final flag.
@@ -205,10 +233,18 @@ impl PushMachine {
         if self.fatal || self.stopped {
             return PushProgress::Fatal;
         }
-        if self.phase == xmlParserInputState::XML_PARSER_EOF {
+        // EOF is only "nothing left to validate" when nothing is unread.
+        // With unread bytes this must NOT short-circuit: upstream pushes the
+        // bytes, xmlParseTryOrFinish makes no progress in XML_PARSER_EOF,
+        // and the terminating block's xmlParserCheckEOF raises
+        // XML_ERR_DOCUMENT_END ("Extra content") — divergence class 4's
+        // REFEED case. Reporting DocumentComplete here would reintroduce
+        // exactly the bug the engine exists to remove.
+        if self.phase == xmlParserInputState::XML_PARSER_EOF && self.unread() == 0 {
             return PushProgress::DocumentComplete;
         }
-        // Unread bytes OR a terminating call: a pass is possible. A
+        // Unread bytes OR a terminating call: a pass is possible (for EOF +
+        // unread that pass is the finalizer noticing the leftover input). A
         // zero-length NON-final call with nothing unread is the one case
         // that cannot progress — and must NOT be treated as EOF (class 2).
         if self.unread() > 0 || terminate {
@@ -225,29 +261,22 @@ impl PushMachine {
         self.phase = phase;
     }
 
-    pub(crate) const fn bytes_consumed(&self) -> u64 {
-        self.bytes_consumed
+    pub(crate) const fn base_bytes_consumed(&self) -> u64 {
+        self.base_bytes_consumed
     }
 
-    pub(crate) const fn bytes_appended(&self) -> u64 {
-        self.bytes_appended
+    pub(crate) const fn base_bytes_appended(&self) -> u64 {
+        self.base_bytes_appended
     }
 
-    pub(crate) const fn scan_work(&self) -> u64 {
-        self.scan_work
+    pub(crate) const fn total_scan_work(&self) -> u64 {
+        self.total_scan_work
     }
 
-    pub(crate) const fn line(&self) -> usize {
-        self.line
-    }
-
-    pub(crate) const fn column(&self) -> usize {
-        self.column
-    }
-
-    pub(crate) fn set_position(&mut self, line: usize, column: usize) {
-        self.line = line;
-        self.column = column;
+    /// Whether an accounting bug advanced consumption past the appended
+    /// base stream (e.g. a prefix rescan). Never expected to be true.
+    pub(crate) const fn accounting_violation(&self) -> bool {
+        self.accounting_violation
     }
 
     pub(crate) fn open_elements(&self) -> &[ParkedElement] {
@@ -304,7 +333,7 @@ impl PushMachine {
     /// Instrumentation gate: the O(N) invariant — no byte is consumed
     /// twice (the absolute cursor never moves backward).
     pub(crate) fn consumed_le_appended(&self) -> bool {
-        self.bytes_consumed <= self.bytes_appended
+        self.base_bytes_consumed <= self.base_bytes_appended
     }
 }
 
@@ -327,7 +356,7 @@ mod tests {
         assert_eq!(m.unread(), 0);
         assert_eq!(m.resume(false), PushProgress::NeedMoreInput);
         // ...and a zero-length call after real input parks the same way
-        // until the bytes are consumed.
+        // once the bytes are consumed.
         m.append(3);
         assert_eq!(m.resume(false), PushProgress::Progress);
         m.note_consumed(3);
@@ -360,18 +389,43 @@ mod tests {
     }
 
     #[test]
+    fn eof_with_unread_bytes_must_not_short_circuit() {
+        // REFEED (divergence class 4): a finished context fed more bytes
+        // with terminate=1 must NOT be reported complete — the leftover
+        // input is what xmlParserCheckEOF turns into XML_ERR_DOCUMENT_END.
+        let mut m = PushMachine::new();
+        m.append(8);
+        m.note_consumed(4);
+        m.set_phase(xmlParserInputState::XML_PARSER_EOF);
+        assert_eq!(m.unread(), 4);
+        assert_ne!(
+            m.resume(true),
+            PushProgress::DocumentComplete,
+            "EOF + unread bytes is unconsumed extra content, not a clean end"
+        );
+        assert_eq!(m.resume(true), PushProgress::Progress);
+        // Only when the leftover has been consumed does EOF mean complete.
+        m.note_consumed(4);
+        assert_eq!(m.resume(true), PushProgress::DocumentComplete);
+    }
+
+    #[test]
     fn zero_length_calls_do_not_advance_state() {
         let mut m = PushMachine::new();
         m.append(0);
-        assert_eq!(m.bytes_appended(), 0);
-        assert_eq!(m.bytes_consumed(), 0);
-        assert_eq!(m.scan_work(), 0);
+        assert_eq!(m.base_bytes_appended(), 0);
+        assert_eq!(m.base_bytes_consumed(), 0);
+        assert_eq!(m.total_scan_work(), 0);
         // A zero-length non-final call after real input re-runs over the
         // same buffer: the cursor parks where the last pass stopped.
         m.append(3);
         m.note_consumed(2);
         m.append(0);
-        assert_eq!(m.bytes_consumed(), 2, "zero-length call consumed nothing");
+        assert_eq!(
+            m.base_bytes_consumed(),
+            2,
+            "zero-length call consumed nothing"
+        );
         assert_eq!(m.unread(), 1);
     }
 
@@ -385,23 +439,41 @@ mod tests {
         // re-consume the first four bytes.
         m.append(2);
         m.note_consumed(2);
-        assert_eq!(m.bytes_consumed(), 6);
-        assert_eq!(m.bytes_appended(), 12);
+        assert_eq!(m.base_bytes_consumed(), 6);
+        assert_eq!(m.base_bytes_appended(), 12);
         assert_eq!(m.unread(), 6);
-        assert!(m.consumed_le_appended());
+        assert!(!m.accounting_violation());
+    }
+
+    #[test]
+    fn accounting_violation_is_visible_not_clamped() {
+        // Advancing consumption past the appended base stream is a bug
+        // (e.g. a prefix rescan). `unread()` would clamp to 0; the latch
+        // makes the violation observable instead of hiding it.
+        let mut m = PushMachine::new();
+        m.append(100);
+        m.note_consumed(101);
+        assert!(m.accounting_violation());
+        assert_eq!(m.unread(), 0);
+        assert!(!m.consumed_le_appended());
     }
 
     #[test]
     fn scan_work_is_separate_from_consumption() {
-        // Peeking/classifying is work but not consumption: the complexity
-        // property is a bounded scan_work/appended ratio, not equality.
+        // Peeking/classifying is work but not consumption; entity-expanded
+        // bytes are scan work that never passed through `append`.
         let mut m = PushMachine::new();
         m.append(4);
-        m.note_scan_work(9); // e.g. lookahead across a construct
+        m.note_scan_work(9);
         m.note_consumed(4);
-        assert_eq!(m.bytes_consumed(), 4);
-        assert_eq!(m.scan_work(), 9);
+        m.note_scan_work(1000); // bytes examined from an expanded entity
+        assert_eq!(m.base_bytes_consumed(), 4);
+        assert_eq!(m.total_scan_work(), 1009);
         assert!(m.consumed_le_appended());
+        assert!(
+            !m.accounting_violation(),
+            "entity scan work is not appended bytes"
+        );
     }
 
     #[test]
@@ -430,13 +502,15 @@ mod tests {
     }
 
     #[test]
-    fn default_starts_at_line_and_column_one() {
+    fn default_is_a_clean_start_with_no_position_authority() {
+        // Position (line/column) is owned by the input, not the machine: the
+        // machine exposes no position fields at all.
         let m = PushMachine::default();
-        assert_eq!(m.line(), 1);
-        assert_eq!(m.column(), 1);
-        let n = PushMachine::new();
-        assert_eq!(n.line(), 1);
-        assert_eq!(n.column(), 1);
+        assert_eq!(m.phase(), xmlParserInputState::XML_PARSER_START);
+        assert_eq!(m.base_bytes_appended(), 0);
+        assert_eq!(m.base_bytes_consumed(), 0);
+        assert_eq!(m.unread(), 0);
+        assert!(!m.accounting_violation());
     }
 
     #[test]
@@ -465,7 +539,7 @@ mod tests {
     }
 
     #[test]
-    fn eof_phase_reports_document_complete() {
+    fn eof_phase_with_nothing_unread_reports_document_complete() {
         let mut m = PushMachine::new();
         m.append(4);
         m.note_consumed(4);
