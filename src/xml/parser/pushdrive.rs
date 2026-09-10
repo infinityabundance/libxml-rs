@@ -1506,25 +1506,41 @@ impl XmlParser {
             // xmlParseStartTag2, so they must be flushed here — before the
             // refusal — or the fatal would be swallowed and the parse would
             // report success (the push name-length-limit test).
-            let codes = self.tokenizer().peek_error_codes();
-            self.flush_push_errors();
-            // Two upstream failures present identically here but end in
-            // DIFFERENT states, so they must be told apart by the diagnostic
-            // the tokenizer recorded:
             //
-            //   XML_ERR_GT_REQUIRED — xmlParseStartTag2 parsed the NAME and
-            //     failed on the tag END. It does NOT return NULL: the push
-            //     arm falls through to `if (ctxt->nameNr == 0) instate =
-            //     XML_PARSER_EPILOG else CONTENT`, and no xmlFinishDocument
-            //     runs. xmlParseChunk then returns errNo at its
-            //     errNo/disableSAX guard, so no endDocument fires and the
-            //     context rests at that phase (the starttag-trunc cell).
-            //
-            //   anything else (XML_ERR_NAME_REQUIRED, a truncated tag with no
-            //     '>' at all) — xmlParseStartTag2 returned NULL, and the arm
-            //     sets `instate = XML_PARSER_EOF; xmlFinishDocument(ctxt)`,
-            //     so endDocument DOES fire (raw-high-name).
+            // The GT_REQUIRED variant is DEFERRED by the tokenizer: upstream
+            // dispatches `startElementNs` inside xmlParseStartTag2 and only the
+            // surrounding ARM (which runs afterwards) reports the missing `>`.
+            let mut codes = self.tokenizer().peek_error_codes();
+            codes.extend(self.tokenizer().peek_deferred_error_codes());
             if codes.contains(&crate::abi::types::XML_ERR_GT_REQUIRED) {
+                // Two upstream failures present identically here but end in
+                // DIFFERENT states, so they must be told apart by the
+                // diagnostic the tokenizer recorded:
+                //
+                //   XML_ERR_GT_REQUIRED — xmlParseStartTag2 parsed the NAME
+                //     and its ATTRIBUTES, dispatched the start event, and
+                //     failed on the tag END. It does NOT return NULL: the push
+                //     arm falls through to `if (ctxt->nameNr == 0) instate =
+                //     XML_PARSER_EPILOG else CONTENT`, calls `nodePop`/
+                //     `spacePop` (so no element is opened) and no
+                //     xmlFinishDocument runs. xmlParseChunk then returns errNo
+                //     at its errNo/disableSAX guard, so no endDocument fires
+                //     (the starttag-trunc cells).
+                //
+                //   anything else (XML_ERR_NAME_REQUIRED, a truncated tag with
+                //     no '>' at all) — xmlParseStartTag2 returned NULL, and the
+                //     arm sets `instate = XML_PARSER_EOF;
+                //     xmlFinishDocument(ctxt)`, so endDocument DOES fire
+                //     (raw-high-name).
+                self.flush_push_errors();
+                // The start event (and every per-attribute diagnostic
+                // `parse_element_start` raises) fires BEFORE the code-73
+                // report. The returned element is DISCARDED: upstream does not
+                // push the name for a tag whose end is missing.
+                let _ = self.parse_element_start_inner(
+                    name, attributes, attr_end, attr_start, end_pos, empty, false,
+                );
+                self.raise_deferred_errors();
                 let phase = if machine.open_elements().is_empty() {
                     xmlParserInputState::XML_PARSER_EPILOG
                 } else {
@@ -1533,6 +1549,7 @@ impl XmlParser {
                 self.set_phase(machine, phase);
                 return StepOutcome::Fatal;
             }
+            self.flush_push_errors();
             self.set_phase(machine, xmlParserInputState::XML_PARSER_EOF);
             self.finish_document(machine);
             return StepOutcome::Fatal;

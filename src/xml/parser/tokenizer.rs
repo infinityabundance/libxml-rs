@@ -607,6 +607,26 @@ impl XmlTokenizer {
         core::mem::take(&mut self.errors)
     }
 
+    /// Record a diagnostic at the CURRENT position that upstream raises later
+    /// in the same construct (see `deferred_errors`).
+    pub fn record_deferred_error(
+        &mut self,
+        domain: c_int,
+        code: c_int,
+        level: c_int,
+        msg: String,
+        str1: Option<Vec<u8>>,
+        str2: Option<Vec<u8>>,
+        str3: Option<Vec<u8>>,
+        int1: c_int,
+        enc_bytes: Option<([u8; 4], usize)>,
+    ) {
+        let pos = self.input.current_pos().2;
+        self.record_deferred_error_at(
+            domain, code, level, msg, str1, str2, str3, int1, pos, enc_bytes,
+        );
+    }
+
     /// Record a diagnostic that upstream raises LATER in the same construct
     /// than the general scan would. See `deferred_errors`.
     #[allow(clippy::too_many_arguments)]
@@ -648,6 +668,22 @@ impl XmlTokenizer {
         core::mem::take(&mut self.deferred_errors)
     }
 
+    /// Drain only the deferred diagnostics whose code appears in `codes`,
+    /// leaving the rest queued for their own upstream raise point.
+    pub fn take_deferred_errors_matching(&mut self, codes: &[c_int]) -> Vec<ErrorInfo> {
+        let mut matched = Vec::new();
+        let mut rest = Vec::new();
+        for e in core::mem::take(&mut self.deferred_errors) {
+            if codes.contains(&e.code) {
+                matched.push(e);
+            } else {
+                rest.push(e);
+            }
+        }
+        self.deferred_errors = rest;
+        matched
+    }
+
     /// The codes of the diagnostics recorded by the last scan, WITHOUT
     /// consuming them. The push driver uses this to distinguish two failures
     /// that present identically as an unterminated start tag but end in
@@ -655,6 +691,12 @@ impl XmlTokenizer {
     #[allow(dead_code)]
     pub(crate) fn peek_error_codes(&self) -> Vec<c_int> {
         self.errors.iter().map(|e| e.code).collect()
+    }
+
+    /// The codes of the DEFERRED diagnostics recorded by the last scan,
+    /// WITHOUT consuming them (see `deferred_errors`).
+    pub(crate) fn peek_deferred_error_codes(&self) -> Vec<c_int> {
+        self.deferred_errors.iter().map(|e| e.code).collect()
     }
 
     /// Whether the current input has no bytes at all (upstream
@@ -1237,7 +1279,14 @@ impl XmlTokenizer {
             };
             if self.push_start_tag {
                 // xmlParseTryOrFinish's START_TAG arm: no line, int1 = 0.
-                self.record_error(
+                //
+                // DEFERRED: this diagnostic is raised AFTER the start-element
+                // event. upstream xmlParseStartTag2 dispatches
+                // startElementNs itself and only the ARM (which runs once
+                // xmlParseStartTag2 returned) reports the missing '>' — see the
+                // oracle's `starttag-trunc-name` cell (startElement, then the
+                // code-73 error).
+                self.record_deferred_error(
                     crate::abi::types::XML_FROM_PARSER,
                     crate::abi::types::XML_ERR_GT_REQUIRED,
                     crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
@@ -2018,7 +2067,9 @@ impl XmlTokenizer {
                         crate::abi::types::XML_ERR_HYPHEN_IN_COMMENT,
                         crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
                         msg,
-                        None,
+                        // upstream xmlFatalErrMsgStr(..., "Double hyphen within
+                        // comment: <!--%.50s\n", buf) — the preview is `str1`.
+                        Some(preview),
                         None,
                         None,
                         0,
@@ -2121,17 +2172,7 @@ impl XmlTokenizer {
                 }
             }
             if unterminated && !self.silent_truncated {
-                self.record_error(
-                    crate::abi::types::XML_FROM_PARSER,
-                    crate::abi::types::XML_ERR_CDATA_NOT_FINISHED,
-                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                    "Premature end of data in CDATA section\n".to_string(),
-                    None,
-                    None,
-                    None,
-                    0,
-                    None,
-                );
+                self.record_cdata_not_finished(&content);
             }
             return XmlToken::Cdata {
                 data: XmlText::Owned(content),
@@ -2213,33 +2254,85 @@ impl XmlTokenizer {
             }
         }
 
-        if unterminated {
-            // upstream xmlParseCDSect: EOF → "Premature end of data in
-            // CDATA section\n" (XML_ERR_CDATA_NOT_FINISHED). The parser
-            // raises this only when the CDATA is in element content; at
-            // document level it reports the invalid element name instead.
-            // EOF-truncated by construction: incremental probes/partial
-            // deliveries must not raise it.
-            if !self.silent_truncated {
-                self.record_error(
-                    crate::abi::types::XML_FROM_PARSER,
-                    crate::abi::types::XML_ERR_CDATA_NOT_FINISHED,
-                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
-                    "Premature end of data in CDATA section\n".to_string(),
-                    None,
-                    None,
-                    None,
-                    0,
-                    None,
-                );
-            }
+        let data = self.finish_text_run(&mut owned, seg_start, content_end, at_base);
+        if unterminated && !self.silent_truncated {
+            // upstream xmlParseCDSect: EOF -> the XML_ERR_CDATA_NOT_FINISHED
+            // diagnostic. The parser raises it only when the CDATA is in
+            // element content; at document level it reports the invalid
+            // element name instead. EOF-truncated by construction: incremental
+            // probes/partial deliveries must not raise it.
+            let bytes: Vec<u8> = match &data {
+                XmlText::Owned(v) => v.clone(),
+                XmlText::Span { start, end } => {
+                    self.input.base_ref().raw_range(*start, *end).to_vec()
+                }
+            };
+            self.record_cdata_not_finished(&bytes);
         }
 
         XmlToken::Cdata {
-            data: self.finish_text_run(&mut owned, seg_start, content_end, at_base),
+            data,
             unterminated,
             start_pos,
         }
+    }
+
+    /// Upstream `xmlParseCDSect`'s EOF diagnostic for an unterminated CDATA
+    /// section.
+    ///
+    /// The scanner reads `r`, `s` and `cur` one character apart, so when the
+    /// input runs out the failure comes from one of two places:
+    ///   * fewer than two content characters — the initial `r`/`s` reads
+    ///     already failed and the table message for XML_ERR_CDATA_NOT_FINISHED
+    ///     applies (upstream `xmlFatalErr(..., NULL)`); that table entry does
+    ///     not exist, so it renders as the generic "Unregistered error
+    ///     message";
+    ///   * two or more — `xmlFatalErrMsgStr(ctxt, ..., "CData section not
+    ///     finished\n%.50s\n", buf)` where `buf` is the accumulated content
+    ///     with the LAST TWO characters still in flight (they were never
+    ///     copied) and `%.50s` truncates to 50 BYTES in both the message and
+    ///     `str1`.
+    fn record_cdata_not_finished(&mut self, content: &[u8]) {
+        let nchars = content.iter().filter(|&&b| (b & 0xC0) != 0x80).count();
+        if nchars < 2 {
+            self.record_error(
+                crate::abi::types::XML_FROM_PARSER,
+                crate::abi::types::XML_ERR_CDATA_NOT_FINISHED,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                "Unregistered error message\n".to_string(),
+                None,
+                None,
+                None,
+                0,
+                None,
+            );
+            return;
+        }
+        let mut cut = content.len();
+        for _ in 0..2 {
+            if cut == 0 {
+                break;
+            }
+            cut -= 1;
+            while cut > 0 && (content[cut] & 0xC0) == 0x80 {
+                cut -= 1;
+            }
+        }
+        let preview: Vec<u8> = content[..cut].iter().copied().take(50).collect();
+        self.record_error(
+            crate::abi::types::XML_FROM_PARSER,
+            crate::abi::types::XML_ERR_CDATA_NOT_FINISHED,
+            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+            format!(
+                "CData section not finished\n{}\n",
+                String::from_utf8_lossy(&preview)
+            ),
+            Some(preview),
+            None,
+            None,
+            0,
+            None,
+        );
     }
 
     /// Scan a DOCTYPE body (after `<!DOCTYPE`).

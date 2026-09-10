@@ -3520,6 +3520,29 @@ impl XmlParser {
         end_pos: usize,
         empty: bool,
     ) -> Result<OpenElement, ()> {
+        self.parse_element_start_inner(name, attributes, attr_end, attr_start, end_pos, empty, true)
+    }
+
+    /// `parse_element_start` with the name-stack push under caller control.
+    ///
+    /// Upstream splits the work: `xmlParseStartTag2` parses the name and
+    /// attributes, dispatches `startElementNs` and returns; the `>`/`/`
+    /// handling and the `nameNsPush` happen in the START_TAG ARM. A tag whose
+    /// end is missing therefore still fires its start event, but never opens an
+    /// element — the arm reports `XML_ERR_GT_REQUIRED` and calls `nodePop`
+    /// instead (`starttag-trunc-name`). The push driver passes `push_name =
+    /// false` for that shape.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn parse_element_start_inner(
+        &mut self,
+        name: Vec<u8>,
+        attributes: Vec<(Vec<u8>, Vec<u8>)>,
+        attr_end: Vec<usize>,
+        attr_start: Vec<usize>,
+        end_pos: usize,
+        empty: bool,
+        push_name: bool,
+    ) -> Result<OpenElement, ()> {
         // Line where this element's start tag appeared (used for upstream
         // "Opening and ending tag mismatch: X line N and Y" diagnostics).
         let open_line = {
@@ -3527,7 +3550,9 @@ impl XmlParser {
             l
         };
         // Push element name onto the context name stack
-        self.push_name(&name);
+        if push_name {
+            self.push_name(&name);
+        }
 
         // UPSTREAM-PARITY: attribute values are parsed with
         // xmlParseAttValueInternal, which substitutes character references
@@ -3954,7 +3979,7 @@ impl XmlParser {
         // whole attribute list has been parsed (and after every per-attribute
         // namespace diagnostic), so "Attribute %s redefined" is raised here,
         // not with the tag's other scan errors.
-        self.raise_deferred_errors();
+        self.raise_deferred_errors_matching(&[crate::abi::types::XML_ERR_ATTRIBUTE_REDEFINED]);
 
         // Fire startElement SAX event. The default SAX2 handler manages
         // nodeTab/nodeNr internally. For SAX2 parses the element's own
@@ -7030,6 +7055,13 @@ impl XmlParser {
     /// order — upstream raises them at their detection points).
     pub(crate) fn raise_pending_errors(&mut self) {
         let errors = self.tokenizer.take_errors();
+        self.raise_error_infos(errors);
+    }
+
+    /// Raise the deferred diagnostics whose code is in `codes`, leaving the
+    /// others queued for a later upstream point.
+    pub(crate) fn raise_deferred_errors_matching(&mut self, codes: &[c_int]) {
+        let errors = self.tokenizer.take_deferred_errors_matching(codes);
         self.raise_error_infos(errors);
     }
 
