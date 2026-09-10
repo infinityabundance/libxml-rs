@@ -1442,6 +1442,14 @@ impl XmlParser {
             } else {
                 &name
             };
+            // UPSTREAM-PARITY (parser.c xmlParseTryOrFinish's XML_PARSER_END_TAG
+            // arm): the SAX2 scanner is handed the open tag
+            // (`xmlParseEndTag2(ctxt, &ctxt->pushTab[nameNr - 1])`) and reports
+            // `tag->line`, while the SAX1 scanner is called as
+            // `xmlParseEndTag1(ctxt, 0)` — a LITERAL zero — so a SAX1 consumer
+            // sees "line 0" here even though the terminate block reads the real
+            // `pushTab[].line`.
+            let line = if self.sax2_mode() { top_line } else { 0 };
             // A stray end tag closes the CURRENT element anyway (upstream keeps
             // scanning after the mismatch).
             self.raise_error_now(
@@ -1451,13 +1459,13 @@ impl XmlParser {
                 format!(
                     "Opening and ending tag mismatch: {} line {} and {}\n",
                     String::from_utf8_lossy(&top_name),
-                    top_line,
+                    line,
                     String::from_utf8_lossy(shown_name)
                 ),
                 Some(top_name.clone()),
                 Some(shown_name.to_vec()),
                 None,
-                top_line as c_int,
+                line as c_int,
             );
         }
         let open = OpenElement {
@@ -1516,11 +1524,12 @@ impl XmlParser {
                 // sets instate = EOF and calls xmlFinishDocument. The raise
                 // sits on the '!', one byte past the tag's '<'.
                 XmlToken::DocType { .. } => {
+                    let msg = self.start_tag_invalid_name_msg();
                     self.raise_error_at(
                         XML_FROM_PARSER,
                         crate::abi::types::XML_ERR_NAME_REQUIRED,
                         xmlErrorLevel::XML_ERR_FATAL as c_int,
-                        "StartTag: invalid element name\n".to_string(),
+                        msg.to_string(),
                         None,
                         None,
                         None,
@@ -1615,16 +1624,16 @@ impl XmlParser {
                     self.close_open_element(&open);
                     machine.note_event();
                 } else {
-                    // UPSTREAM-PARITY (SAX1 push): `xmlParseStartTag` (the SAX1
-                    // scanner) pushes the element name with `namePush`, which
-                    // fills `nameTab` but NOT `pushTab[].line` — so every
-                    // diagnostic that reads the open element's line (the
+                    // UPSTREAM-PARITY (parser.c xmlParseTryOrFinish's
+                    // XML_PARSER_START_TAG arm): the `>` case calls
+                    // `nameNsPush(ctxt, name, prefix, URI, line, nbNs)`
+                    // UNCONDITIONALLY — for a SAX1 consumer too, since
+                    // `xmlParseStartTag` only parses the tag and the ARM owns
+                    // the push. `line` was captured at the arm's start, so
+                    // every diagnostic that reads the open element's line (the
                     // end-tag mismatch, "Premature end of data in tag ... line
-                    // %d") reports 0 for a SAX1 consumer. The SAX2 scanner
-                    // calls `nameNsPush(..., line, nbNs)` and reports the real
-                    // line.
-                    let line = if self.sax2_mode() { open.open_line } else { 0 };
-                    machine.push_element(open.name.clone(), line, open.ns_scope_mark);
+                    // %d") reports the element's real line under EITHER scanner.
+                    machine.push_element(open.name.clone(), open.open_line, open.ns_scope_mark);
                 }
                 let phase = if machine.open_elements().is_empty() {
                     xmlParserInputState::XML_PARSER_EPILOG

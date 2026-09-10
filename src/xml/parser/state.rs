@@ -510,6 +510,18 @@ impl XmlParser {
         }
     }
 
+    /// The `XML_ERR_NAME_REQUIRED` wording for a FAILED start-tag name parse:
+    /// upstream `xmlParseStartTag` (the SAX1 scanner) says
+    /// "xmlParseStartTag: invalid element name", `xmlParseStartTag2` says
+    /// "StartTag: invalid element name".
+    pub(crate) fn start_tag_invalid_name_msg(&self) -> &'static str {
+        if self.sax2_mode() {
+            "StartTag: invalid element name\n"
+        } else {
+            "xmlParseStartTag: invalid element name\n"
+        }
+    }
+
     /// Return whether the most recent probe parse paused at an
     /// end-of-input that could still continue (incomplete document).
     pub(crate) const fn is_paused(&self) -> bool {
@@ -836,11 +848,12 @@ impl XmlParser {
             // CDATA-termination error first.
             if let XmlToken::Cdata { start_pos, .. } = &token {
                 self.tokenizer.take_errors();
+                let msg = self.start_tag_invalid_name_msg();
                 self.raise_error_at(
                     XML_FROM_PARSER,
                     XML_ERR_NAME_REQUIRED,
                     xmlErrorLevel::XML_ERR_FATAL as c_int,
-                    "StartTag: invalid element name\n".to_string(),
+                    msg.to_string(),
                     None,
                     None,
                     None,
@@ -983,13 +996,14 @@ impl XmlParser {
                 }
                 XmlToken::EndTag { start_pos, .. } => {
                     // UPSTREAM-PARITY: an end tag at document level fails the
-                    // element-name parse → "StartTag: invalid element name"
-                    // at the position right after '<'.
+                    // element-name parse (the SAX2/SAX1 start-tag wording
+                    // applies) at the position right after '<'.
+                    let msg = self.start_tag_invalid_name_msg();
                     self.raise_error_at(
                         XML_FROM_PARSER,
                         XML_ERR_NAME_REQUIRED,
                         xmlErrorLevel::XML_ERR_FATAL as c_int,
-                        "StartTag: invalid element name\n".to_string(),
+                        msg.to_string(),
                         None,
                         None,
                         None,
@@ -3524,10 +3538,15 @@ impl XmlParser {
                     // clears wellFormed, which decides whether the doc is
                     // kept, not whether scanning continues.
                     if end_name.as_slice() != cur.name.as_slice() {
-                        // UPSTREAM-PARITY (xmlParseEndTag2):
-                        // XML_ERR_TAG_NAME_MISMATCH (76), FATAL,
-                        // str1 = open name, str2 = close name,
-                        // int1 = open line. Upstream consumes the end
+                        // UPSTREAM-PARITY (xmlParseEndTag2 vs xmlParseEndTag1):
+                        // XML_ERR_TAG_NAME_MISMATCH (76), FATAL, str1 = open
+                        // name, str2 = close name, int1 = open line. The SAX2
+                        // scanner receives the open tag and reports
+                        // `tag->line`; the SAX1 scanner is called as
+                        // `xmlParseEndTag1(ctxt, 0)` — a LITERAL zero (the
+                        // push arm and `xmlParseElementEnd` agree).
+                        //
+                        // Upstream consumes the end
                         // tag's `>` (NEXT1) BEFORE this raise, so
                         // ctxt->input sits on the end tag's own line
                         // when the generic error handler fires — PHP
@@ -3537,6 +3556,7 @@ impl XmlParser {
                         // many lines with no SAX event in between,
                         // DOMDocument_loadXML_error2_gte2_12's line 7).
                         self.sync_input_position();
+                        let line = if self.sax2_mode() { cur.open_line } else { 0 };
                         self.raise_error_now(
                             XML_FROM_PARSER,
                             XML_ERR_TAG_NAME_MISMATCH,
@@ -3544,13 +3564,13 @@ impl XmlParser {
                             format!(
                                 "Opening and ending tag mismatch: {} line {} and {}\n",
                                 String::from_utf8_lossy(&cur.name),
-                                cur.open_line,
+                                line,
                                 String::from_utf8_lossy(&end_name)
                             ),
                             Some(cur.name.clone()),
                             Some(end_name.clone()),
                             None,
-                            cur.open_line as c_int,
+                            line as c_int,
                         );
                         // The stray end tag closes the current element:
                         // fall through to the normal end-element path
@@ -3737,11 +3757,12 @@ impl XmlParser {
                         self.pop_name();
                         return Err(());
                     }
+                    let msg = self.start_tag_invalid_name_msg();
                     self.raise_error_now(
                         XML_FROM_PARSER,
                         XML_ERR_NAME_REQUIRED,
                         xmlErrorLevel::XML_ERR_FATAL as c_int,
-                        "StartTag: invalid element name\n".to_string(),
+                        msg.to_string(),
                         None,
                         None,
                         None,
@@ -3825,6 +3846,13 @@ impl XmlParser {
             self.push_name(&name);
         }
 
+        // SAX1 vs SAX2 element dispatch follows upstream xmlCtxtInitializeLate
+        // (parser.c). SAX1 consumers (PHP xml_parser_create, non-namespace
+        // expat-compat) receive the raw QName and the full attribute list with
+        // xmlns declarations as ordinary attributes and NO namespace
+        // processing — upstream xmlParseStartTag. bug50576/bug72714.
+        let sax2 = self.sax2_mode();
+
         // UPSTREAM-PARITY: attribute values are parsed with
         // xmlParseAttValueInternal, which substitutes character references
         // always, predefined entities always, and declared entities when
@@ -3845,10 +3873,18 @@ impl XmlParser {
             // whitespace and &#x20; collapse to a single space and lead/trail
             // spaces are trimmed, while &#x9;/&#xA;/&#xD; character references
             // survive as literal control chars (c14n-20 inC14N4).
-            let normalize = self
-                .attr_type_for(&name, &n)
-                .map(|t| t > crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_CDATA as c_int)
-                .unwrap_or(false);
+            //
+            // The SAX1 scanner xmlParseStartTag does NOT consult the DTD at
+            // all: it reads every value through `xmlParseAttribute` ->
+            // `xmlParseAttValue` -> `xmlParseAttValueInternal(..., special = 0,
+            // ...)`, for which `normalize` is false — so a SAX1 consumer sees
+            // the value with its runs and its leading/trailing spaces intact
+            // (court inC14N4 `-s sax1`).
+            let normalize = sax2
+                && self
+                    .attr_type_for(&name, &n)
+                    .map(|t| t > crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_CDATA as c_int)
+                    .unwrap_or(false);
             // UPSTREAM-PARITY (xmlParseStartTag2): `if (attvalue == NULL) goto
             // next_attr;` — an attribute whose value scan FAILED is dropped and
             // the rest of the tag is still parsed (its events are then
@@ -3859,13 +3895,6 @@ impl XmlParser {
             new_attributes.push((n, value, had_ref));
         }
         let attributes = new_attributes;
-
-        // SAX1 vs SAX2 element dispatch follows upstream xmlCtxtInitializeLate
-        // (parser.c). SAX1 consumers (PHP xml_parser_create, non-namespace
-        // expat-compat) receive the raw QName and the full attribute list with
-        // xmlns declarations as ordinary attributes and NO namespace
-        // processing — upstream xmlParseStartTag. bug50576/bug72714.
-        let sax2 = self.sax2_mode();
 
         // Separate namespace declarations from regular attributes.
         let mut ns_decls: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
