@@ -863,22 +863,24 @@ the progressive source decoder are untouched. That claim was MEASURED, not
 asserted: the full unfiltered court was run from a pristine tree at every
 commit in the series.
 
-| | pre `93fd8282` | step 5 `bad79052` | step 5b `57b2f05c` |
-|---|---:|---:|---:|
-| docs / cells | 257 / 4702 | 257 / 4702 | 257 / 4702 |
-| diverging cells | 4702 | 4702 | 4702 |
-| candidate `.so` sha256 | `37d69eb1…` | `3a0b4871…` | `3a0b4871…` |
+| | pre `93fd8282` | step 5 `bad79052` | step 5b `57b2f05c` | step 6b `8a3e438b` |
+|---|---:|---:|---:|---:|
+| docs / cells | 257 / 4702 | 257 / 4702 | 257 / 4702 | 257 / 4702 |
+| diverging cells | 4702 | 4702 | 4702 | 4702 |
+| candidate `.so` sha256 | `37d69eb1…` | `3a0b4871…` | `3a0b4871…` | `dfb3d725…` |
+| probe sha256 | `ab3f1a93…` | `ab3f1a93…` | `ab3f1a93…` | `24e70bdb…` |
 
-The court output is byte-identical across all three runs (all 4702 `DIFF`
-lines, same order, same summary). Beyond that, the candidate `.so` is
-BIT-IDENTICAL between `bad79052` and `57b2f05c` — the build genuinely ran on
-both, and the artifact is unchanged because every change lives in code the
-release build eliminates as dead (the driver is court-only and `parse_chunk`
-does not call it). The pre-run's hash differs only because `93fd8282` bumped
-the crate version, and the version string is embedded in the library.
+The court console is byte-identical across all four runs (all 4702 `DIFF`
+lines, same order, same summary). Step 5b additionally had a BIT-IDENTICAL
+`.so` against step 5, because every change lived in release-dead code. Step 6b
+does NOT claim bit-identity: it adds a `pub(crate)` method and changes a guard,
+which shifts code layout, and it edits the probe itself (an opt-in
+inline-final modifier — no plan in the differential script uses `i`, and the
+byte-identical trace confirms it is inert). The behavioural claim for both is
+the byte-identical court output.
 
 Provenance: `courts/receipts/phase-16/raw/pushdrive-step5/` (pre/post around
-`bad79052`) and `courts/receipts/phase-16/raw/pushdrive-step5b/` (step 5b).
+`bad79052`), `raw/pushdrive-step5b/`, and `raw/pushdrive-step6b/`.
 This is also the first full-corpus baseline at 257 documents — the frozen
 slice-0 baseline (4042 cells) was a smaller corpus, and the decoder slice only
 ran the court filtered to 31 `enc-*` documents (565 cells).
