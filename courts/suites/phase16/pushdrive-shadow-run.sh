@@ -45,12 +45,21 @@ docker run --rm \
 set -euo pipefail
 export LC_ALL=C
 mkdir -p /tmp/shadow
-python3 /court/suites/phase16/gen_shadow_corpus.py /tmp/shadow/corpus \
-  > /tmp/shadow/corpus.list
+# The corpus is COMMITTED (courts/suites/phase16/shadow-corpus) so the oracle
+# probe and the Rust driver court read byte-identical documents. The generator
+# is run first only to prove it still reproduces them exactly.
+python3 /court/suites/phase16/gen_shadow_corpus.py /tmp/shadow/gen > /dev/null
+for f in /court/suites/phase16/shadow-corpus/*.xml; do
+  base=$(basename "$f")
+  if ! cmp -s "$f" "/tmp/shadow/gen/$base"; then
+    echo "shadow corpus drift: $base does not match gen_shadow_corpus.py" >&2
+    exit 1
+  fi
+done
 cc -O1 -Wall -Wextra -Werror -o /tmp/shadow/probe \
   /court/suites/phase16/pushdiff-probe.c \
   -I/usr/local/include/libxml2 -L/usr/local/lib -lxml2 -Wl,-rpath,/usr/local/lib
-for f in /tmp/shadow/corpus/*.xml; do
+for f in /court/suites/phase16/shadow-corpus/*.xml; do
   base=$(basename "$f")
   sz=$(stat -c %s "$f")
   if [ "$sz" -le 200 ]; then
@@ -70,6 +79,7 @@ echo "oracle traces: $(ls -1 /scanout | wc -l)"
   echo "court_sha=$(git -C "$ROOT" rev-parse HEAD)"
   echo "tree_clean=yes"
   echo "side=oracle-only (system libxml2)"
+  echo "corpus=courts/suites/phase16/shadow-corpus (verified against gen_shadow_corpus.py in-run)"
   echo "probe_sha256=$(sha256sum "$ROOT/courts/suites/phase16/pushdiff-probe.c" | cut -d" " -f1)"
   echo "generator_sha256=$(sha256sum "$ROOT/courts/suites/phase16/gen_shadow_corpus.py" | cut -d" " -f1)"
   echo "runner_sha256=$(sha256sum "$ROOT/courts/suites/phase16/pushdrive-shadow-run.sh" | cut -d" " -f1)"
