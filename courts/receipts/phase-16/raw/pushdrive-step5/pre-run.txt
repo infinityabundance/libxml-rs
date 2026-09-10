@@ -1,0 +1,20 @@
+candidate_sha=93fd8282deb9180cc8687b5a121640d92032c06c
+court_sha=93fd8282deb9180cc8687b5a121640d92032c06c
+tree_clean=yes
+candidate_target_dir=/mnt/1tb_kingston/libxml-rs/target/release
+candidate_libxml2_binary=/mnt/1tb_kingston/libxml-rs/target/release/liblibxml_rs.so
+candidate_libxml2_sha256=37d69eb127ebf03a445c54e2fe28e12970be72068de22a1438903effaae699af
+cargo_lock_sha256=c25c80fa510c020b2950504eebb25a054a76bf5d59fec12b32740e0b7cc5f6a3
+rustc=rustc 1.98.0 (88d9e12ae 2026-08-18) (rustc --version at build time)
+cargo=cargo 1.98.0 (797e8a9bc 2026-08-05)
+probe_sha256=ab3f1a9325aa510414d904b8201766b0b300a1a7af0f0308a2332221d3eb9215
+generator_sha256=98605a3f462384e56f14ded52bda864be7a4c15f1940f1b49e1aeceb17df38c7
+runner_sha256=35c41c5f7dedda5b7a01cd94de353170cf53d74dcd2df3e03ccc47445c20d1dd
+decoder_gate_sha256=e3054a4baa2addca418a1f6c1b47694c86e40033020be4b20490b1da378425d6
+probe_runner_sha256=2a79f4e240824c3755f5bd5b4090aae21ba6dbd07fa378f1aa772556e7339ae6
+image=libxml-rs/phase14-debian:1
+pushdiff_filter=
+image_id=sha256:4366b5053d2a4f5829e2b827df2e7d4e0e23a3eac90174d22f265f4b0b9b06cd
+image_digest=
+Linux vanir 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 08:05:11 +0000 x86_64 GNU/Linux
+model name	: AMD Ryzen 7 9800X3D 8-Core Processor

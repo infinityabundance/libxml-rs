@@ -759,6 +759,26 @@ rot).
 
 **`cargo test --lib`: 1308 passed / 0 failed / 2 ignored.**
 
+### No-regression evidence (full court, before vs after)
+
+The driver is reached only from `pushdrive::tests`; `helpers::parse_chunk` and
+the progressive source decoder are untouched. That claim was MEASURED, not
+asserted: the full unfiltered court was run at both commits either side of the
+change from a pristine tree.
+
+| | pre `93fd8282` | post `bad79052` |
+|---|---:|---:|
+| docs / cells | 257 / 4702 | 257 / 4702 |
+| diverging cells | 4702 | 4702 |
+
+The court output is byte-identical (all 4702 `DIFF` lines, same order, same
+summary); only `candidate_sha`, `court_sha` and the candidate binary sha256
+differ. Provenance: `courts/receipts/phase-16/raw/pushdrive-step5/`
+(`pre-run.txt`, `post-run.txt`, `README.md`). Note this is also the first
+full-corpus baseline at 257 documents — the frozen slice-0 baseline (4042
+cells) was a smaller corpus, and the decoder slice only ran the court filtered
+to 31 `enc-*` documents (565 cells).
+
 ### Explicitly NOT claimed
 
 - Oracle parity for the push trace. The driver has not been compared to
