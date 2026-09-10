@@ -1,70 +1,70 @@
 == /court/suites/phase16/shadow-corpus/shadow-attr.xml bytes=10 mode=b1z2
 > CALL 0 len=1
-< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 1 ZERO
-< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 1 ZERO
-< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 1 len=1
-< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 2 ZERO
-< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 2 ZERO
-< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 2 len=1
-< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 3 ZERO
-< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 3 ZERO
-< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 3 len=1
 startDocument
-< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 4 ZERO
-< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 4 ZERO
-< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 4 len=1
-< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 5 ZERO
-< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 5 ZERO
-< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 5 len=1
-< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 6 ZERO
-< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 6 ZERO
-< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 6 len=1
-< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 7 ZERO
-< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 7 ZERO
-< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 7 len=1
-< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 8 ZERO
-< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 8 ZERO
-< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 8 len=1
-< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 9 ZERO
-< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 9 ZERO
-< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0 c=0 abs=0
 > CALL 9 len=1
 startElementNs local=[a] prefix= uri= ns=0 att=1 def=0 [a local=p prefix= uri= value=v end=1]
 endElementNs local=[a] prefix= uri=
-< CALL 9 rc=0 err=0 wf=1 in=14 p=10 l=1 col=11 i=1 n=0
+< CALL 9 rc=0 err=0 wf=1 in=14 p=10 l=1 col=11 i=1 n=0 c=0 abs=10
 > CALL 10 ZERO
-< CALL 10 rc=0 err=0 wf=1 in=14 p=10 l=1 col=11 i=1 n=0
+< CALL 10 rc=0 err=0 wf=1 in=14 p=10 l=1 col=11 i=1 n=0 c=0 abs=10
 > CALL 10 ZERO
-< CALL 10 rc=0 err=0 wf=1 in=14 p=10 l=1 col=11 i=1 n=0
+< CALL 10 rc=0 err=0 wf=1 in=14 p=10 l=1 col=11 i=1 n=0 c=0 abs=10
 > FINAL
 endDocument
-< FINAL 0 rc=0 err=0 wf=1 in=-1 p=10 l=1 col=11 i=1 n=0
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=10 l=1 col=11 i=1 n=0 c=0 abs=10
 > REFEED
 error dom=1 code=5 level=3 file= line=1 i1=0 i2=11 str1= str2= str3= msg=Extra content at the end of the document\n
-< REFEED 0 rc=5 err=5 wf=0 in=-1 p=10 l=1 col=11 i=1 n=0
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=10 l=1 col=11 i=1 n=0 c=0 abs=10
