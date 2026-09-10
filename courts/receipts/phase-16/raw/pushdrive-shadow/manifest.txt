@@ -1,11 +1,11 @@
-candidate_sha=cc342a082671896805cceb282a1ccd42bf51ee82
-court_sha=cc342a082671896805cceb282a1ccd42bf51ee82
-tree_clean=yes
 side=oracle-only (system libxml2)
+fixture_generation_sha=659d81b66e38f3407d894c45729feda394dba5ad
+fixture_tree_clean=yes
+fixture_consumer_note=the Rust gate src/xml/parser/pushshadow.rs consumes these; it pins the expected plan matrix independently
 corpus=courts/suites/phase16/shadow-corpus (verified against gen_shadow_corpus.py in-run)
 probe_sha256=24e70bdb41c49af5a37b1c6cab5b8a46280852f467a6bef6a123567361de480d
-generator_sha256=1fc57f654cb0b65786765d64c29a1619c0289cfedf6dd47777149e944073ea5a
-runner_sha256=a54ad9366904b872d401be2c244390cc7b759a437fed6861c6a5dba14f40ad4b
+generator_sha256=0c6d3a5d601d71827983af84e843926a3e98e73178908915726afdbe353e9a9a
+runner_sha256=1b643eac8a6ccd8414ba44cc09ae9c40a8052a9da6face7786e75b3a1d3f32c8
 plans_small=b1,b2,b3,b5,b257,Cb1,b1z2,b1i,Cb1i,r9-2
 plans_long=b1024,b4096,b1024i,r17-512
 image=libxml-rs/phase14-debian:1

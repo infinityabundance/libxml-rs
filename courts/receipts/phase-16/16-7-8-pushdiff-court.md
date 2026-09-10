@@ -968,8 +968,42 @@ shadow: 78 cells, 78 match, 0 diverge
 ```
 
 Every cell matches the oracle per call, including both encoder documents. The
-court asserts all of them — there is no known-red allowlist — with coverage
-guards so a missing fixture cannot masquerade as a pass.
+court asserts all of them — there is no known-red allowlist.
+
+### The fixture matrix is asserted, not merely observed
+
+Shape-only coverage guards are NOT sufficient, and the hole was real: with
+"document X occurs somewhere", "some inline-final cell exists" and "some random
+cell exists", hiding the single fixture
+`oracle-shadow-utf16trunc.xml__b1i` would have produced
+`77 cells, 77 match, 0 diverge` while satisfying every guard.
+
+`assert_shadow_matrix()` therefore recomputes the expected matrix **in Rust**
+from constants that deliberately duplicate the shell launcher — deleting a mode
+from the runner and regenerating the fixtures must FAIL rather than quietly
+narrow the court:
+
+```text
+small (<= 200 bytes): b1 b2 b3 b5 b257 Cb1 b1z2 b1i Cb1i r9-2
+long:                 b1024 b4096 b1024i r17-512
+```
+
+It compares each document's actual mode set, requires the sum to equal the
+computed total, and pins the absolute count (`SHADOW_CELL_TOTAL = 78`).
+Verified by falsification: hiding `oracle-shadow-utf16trunc.xml__b1i` now fails
+with `shadow fixture matrix mismatch for shadow-utf16trunc.xml (19 bytes)`.
+
+Diagnostics are compared canonically (`dom`/`code`/`level`/`line`/`int1`/
+`int2`) for the general court, and in FULL — message payload included — for the
+two encoder documents, whose records are stable and are the contract under
+test.
+
+### Provenance naming
+
+The oracle-only fixture manifest dropped `candidate_sha`/`court_sha` (there is
+no candidate in that run) in favour of `fixture_generation_sha`,
+`fixture_tree_clean` and `probe_sha256`, with an explicit note that the
+consuming Rust gate names its own commit separately.
 
 ### The three defects this court found, and their fixes
 
