@@ -1,61 +1,61 @@
 ==== corpus/enc-utf16le-bom.xml mode=b1 ====
-3c3,5
-< < CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
----
-> startDocument
-> error dom=1 code=9 level=3 file= line=1 i1=255 i2=1 str1= str2= str3= msg=Incomplete UTF-8 sequence starting with FF\n
-> < CALL 0 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-5c7
-< < CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
----
-> < CALL 1 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-7c9
-< < CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
----
-> < CALL 2 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-9c11
+9c9,11
 < < CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
 ---
-> < CALL 3 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-11c13
+> startDocument
+> endDocument
+> < CALL 3 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+11c13,15
 < < CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
 ---
-> < CALL 4 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-13,14c15
-< startDocument
+> startDocument
+> endDocument
+> < CALL 4 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+14c18,19
 < < CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
 ---
-> < CALL 5 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-16c17
+> endDocument
+> < CALL 5 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+16c21,23
 < < CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
 ---
-> < CALL 6 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-18,19c19
-< startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+> startDocument
+> endDocument
+> < CALL 6 rc=0 err=0 wf=1 in=7 p=0 l=1 col=1 i=1 n=0
+17a25
+> startDocument
+19c27
 < < CALL 7 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
 ---
-> < CALL 7 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-21c21
+> < CALL 7 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=2
+21c29
 < < CALL 8 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
 ---
-> < CALL 8 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-23c23
+> < CALL 8 rc=0 err=0 wf=1 in=7 p=2 l=1 col=4 i=1 n=4
+23c31,32
 < < CALL 9 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
 ---
-> < CALL 9 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-25c25
+> characters len=1 [x]
+> < CALL 9 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=6
+25c34
 < < CALL 10 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
 ---
-> < CALL 10 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-27,28c27
+> < CALL 10 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=8
+27,28c36,37
 < characters len=1 [x]
 < < CALL 11 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
 ---
-> < CALL 11 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-30c29
+> endDocument
+> < CALL 11 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=10
+30c39,40
 < < CALL 12 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
 ---
-> < CALL 12 rc=9 err=9 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-32c31
+> endDocument
+> < CALL 12 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=12
+32c42,43
 < < CALL 13 rc=0 err=0 wf=1 in=9 p=4 l=1 col=5 i=1 n=1
 ---
+> endDocument
+> < CALL 13 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=14
+34c45,46
+< < CALL 14 rc=0 err=0 wf=1 in=9 p=4 l=1 col=5 i=1 n=1

@@ -1,61 +1,61 @@
 ==== corpus/enc-ebcdic-long.xml mode=b1 ====
-3c3,5
-< < CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+403c403,404
+< < CALL 199 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> startDocument
-> error dom=1 code=4 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Start tag expected, '<' not found\n
-> < CALL 0 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-5c7
-< < CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=176 [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+> < CALL 199 rc=0 err=0 wf=1 in=7 p=200 l=1 col=201 i=1 n=2
+405c406,407
+< < CALL 200 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 1 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-7c9
-< < CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 200 rc=0 err=0 wf=1 in=7 p=201 l=1 col=202 i=1 n=4
+407c409,410
+< < CALL 201 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 2 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-9c11
-< < CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 201 rc=0 err=0 wf=1 in=7 p=202 l=1 col=203 i=1 n=6
+409c412,413
+< < CALL 202 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 3 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-11c13
-< < CALL 4 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 202 rc=0 err=0 wf=1 in=7 p=203 l=1 col=204 i=1 n=8
+411c415,416
+< < CALL 203 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 4 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-13c15
-< < CALL 5 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 203 rc=0 err=0 wf=1 in=7 p=204 l=1 col=205 i=1 n=10
+413c418,419
+< < CALL 204 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 5 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-15c17
-< < CALL 6 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 204 rc=0 err=0 wf=1 in=7 p=205 l=1 col=206 i=1 n=12
+415c421,422
+< < CALL 205 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 6 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-17c19
-< < CALL 7 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 205 rc=0 err=0 wf=1 in=7 p=206 l=1 col=207 i=1 n=14
+417c424,425
+< < CALL 206 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 7 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-19c21
-< < CALL 8 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 206 rc=0 err=0 wf=1 in=7 p=207 l=1 col=208 i=1 n=16
+419c427,428
+< < CALL 207 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 8 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-21c23
-< < CALL 9 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 207 rc=0 err=0 wf=1 in=7 p=208 l=1 col=209 i=1 n=18
+421c430,431
+< < CALL 208 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 9 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-23c25
-< < CALL 10 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 208 rc=0 err=0 wf=1 in=7 p=209 l=1 col=210 i=1 n=20
+423c433,434
+< < CALL 209 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 10 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-25c27
-< < CALL 11 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 209 rc=0 err=0 wf=1 in=7 p=210 l=1 col=211 i=1 n=22
+425c436,437
+< < CALL 210 rc=0 err=0 wf=1 in=7 p=24 l=1 col=25 i=1 n=1
 ---
-> < CALL 11 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-27c29
-< < CALL 12 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
----
-> < CALL 12 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-29c31
-< < CALL 13 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
----
-> < CALL 13 rc=4 err=4 wf=0 in=1 p=0 l=1 col=1 i=1 n=0
-31c33
-< < CALL 14 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> characters len=1 [x]
+> < CALL 210 rc=0 err=0 wf=1 in=7 p=211 l=1 col=212 i=1 n=24

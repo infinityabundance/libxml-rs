@@ -773,10 +773,25 @@ impl XmlParser {
                 );
                 return Err(());
             }
+            // Document-level non-whitespace character data: upstream's MISC
+            // state never scans char data — a non-'<' byte goes straight to
+            // XML_PARSER_START_TAG, which raises XML_ERR_DOCUMENT_EMPTY
+            // "Start tag expected, '<' not found". The tokenizer's character
+            // scan would otherwise record XML_ERR_INVALID_CHAR ("PCDATA
+            // invalid Char value 0" etc.) for an invalid byte in that run and
+            // supersede the start-tag diagnostic (phase-16.7.8 push court:
+            // `enc-utf32be-bom`, where upstream's missing UTF-32 BOM leaves
+            // raw NUL bytes at the document start — the oracle reports code 4,
+            // the candidate reported code 9). Drop those diagnostics first,
+            // exactly like the CDATA arm above.
+            if let XmlToken::Characters(text) = &token {
+                if !self.text_is_whitespace_only(text) {
+                    self.tokenizer.take_errors();
+                }
+            }
             self.raise_pending_errors();
             match token {
                 XmlToken::Eof => {
-                    // Empty document or end of prolog without a root:
                     // upstream "Start tag expected, '<' not found" (only
                     // while wellFormed). In an incremental probe (or an
                     // eager-partial delivery) the root element simply has not

@@ -1254,6 +1254,28 @@ impl XmlTokenizer {
         // Consume '?'
         self.input.read_char();
 
+        // UPSTREAM-PARITY (parser.c xmlParseTryOrFinish: every PI-bearing state
+        // — XML_DECL, MISC, CONTENT, EPILOG — gates xmlParsePI behind
+        // `(!terminate) && (!xmlParseLookupString(ctxt, 2, "?>", 2))`): on a
+        // NON-final push call a `<?` construct is only scanned once its `?>`
+        // is already present in the available input; otherwise the whole
+        // construct is deferred (xmlParseLookupString searches from cur+2, so
+        // even `<?>` parks until it is complete). This subsumes the
+        // truncation cases of the declaration, an empty target (`<?`) and a
+        // complete-looking reserved name (`<?xml` with no blank yet): none of
+        // them reaches xmlParsePI/xmlParseXMLDecl upstream, so none of them
+        // may raise PI_NOT_STARTED / RESERVED_XML_NAME on a non-final call.
+        if self.silent_truncated
+            && !self
+                .input
+                .current_ref()
+                .remaining()
+                .windows(2)
+                .any(|w| w == b"?>")
+        {
+            return XmlToken::Eof;
+        }
+
         // Peek ahead to see if the next characters are "xml" (case-sensitive)
         // followed by a blank.
         let next_bytes = self.peek_bytes(4);
@@ -1280,21 +1302,6 @@ impl XmlTokenizer {
             self.input.read_char(); // x
             self.input.read_char(); // m
             self.input.read_char(); // l
-                                    // UPSTREAM-PARITY (parser.c XML_PARSER_XML_DECL state): the
-                                    // declaration is only scanned once a "?>" is available in the
-                                    // current buffer; without it a non-final push call defers the
-                                    // whole construct (the pseudo-attributes may complete on a later
-                                    // call — test_feed_parser_bytes feeds `<?xml version=` alone).
-            if self.silent_truncated
-                && !self
-                    .input
-                    .current_ref()
-                    .remaining()
-                    .windows(2)
-                    .any(|w| w == b"?>")
-            {
-                return XmlToken::Eof;
-            }
             return self.scan_xml_decl_rest();
         }
 
@@ -1302,18 +1309,6 @@ impl XmlTokenizer {
         // a target that starts with "xml" (case-insensitive) is reserved.
         let target = self.scan_name();
         if target.is_empty() {
-            // UPSTREAM-PARITY (parser.c xmlParseTryOrFinish XML_PARSER_XML_DECL
-            // -> xmlParsePI): upstream only enters xmlParsePI once a "?>" is
-            // available (or the call terminates). A NON-final push call whose
-            // available input ends immediately after "<?" therefore parks and
-            // the target name may complete on a later call — it never reaches
-            // xmlParsePITarget, so no PI_NOT_STARTED is raised. Same deferral
-            // idiom as the XML-declaration scan above and `scan_start_tag`.
-            // (`<?>` DOES report the missing target name: the construct is
-            // complete, so the remainder is not empty.)
-            if self.silent_truncated && self.input.current_ref().remaining().is_empty() {
-                return XmlToken::Eof;
-            }
             // upstream xmlParsePI: target == NULL → "xmlParsePI : no target
             // name\n" (XML_ERR_PI_NOT_STARTED), at the current position.
             self.record_error(
