@@ -432,6 +432,16 @@ pub(crate) struct InputBuffer {
     /// chunk boundary is ever visible in the materialized stream, and no byte
     /// is decoded twice.
     pending_source: Vec<u8>,
+    /// A declared non-UTF-8 source encoding switches the input where the
+    /// declaration names it, and upstream `xmlSwitchInputEncoding` REBASES the
+    /// physical window there: the raw bytes before that point are counted in
+    /// `input->consumed` and `input->base` moves to the switch position. The
+    /// absolute position is unchanged (`consumed + (cur - base)` still holds),
+    /// which is why `xmlCtxtGetInputPosition` keeps reporting the true byte
+    /// offset while `cur - base` becomes small (`iso-8859-1.xml` reports
+    /// `p=2 c=41 abs=43` right after the declaration). This is the switch
+    /// offset measured from the start of the materialized data; 0 = none.
+    decl_switch_abs: usize,
     /// RAW source bytes received through `push_bytes` — the source-side leg
     /// of the complexity accounting. Materialized/consumed totals live beside
     /// the bytes they describe (`materialized`, `pos`).
@@ -552,6 +562,7 @@ impl InputBuffer {
             decoding: SourceDecoding::WholeBuffer,
             pending_source: Vec::new(),
             source_received: 0,
+            decl_switch_abs: 0,
             materialized: 0,
             consumed_bias: 0,
             window_base_abs: 0,
@@ -589,6 +600,7 @@ impl InputBuffer {
             decoding: SourceDecoding::Parked,
             pending_source: Vec::new(),
             source_received: 0,
+            decl_switch_abs: 0,
             materialized: 0,
             consumed_bias: 0,
             window_base_abs: 0,
@@ -641,6 +653,7 @@ impl InputBuffer {
             decoding: SourceDecoding::WholeBuffer,
             pending_source: Vec::new(),
             source_received: 0,
+            decl_switch_abs: 0,
             materialized: 0,
             consumed_bias: 0,
             window_base_abs: 0,
@@ -1183,6 +1196,7 @@ impl InputBuffer {
             decoding: self.decoding,
             pending_source: self.pending_source.clone(),
             source_received: self.source_received,
+            decl_switch_abs: self.decl_switch_abs,
             materialized: self.materialized,
             consumed_bias: self.consumed_bias,
             window_base_abs: self.window_base_abs,
@@ -1229,6 +1243,7 @@ impl InputBuffer {
             decoding: SourceDecoding::WholeBuffer,
             pending_source: Vec::new(),
             source_received: 0,
+            decl_switch_abs: 0,
             materialized: 0,
             consumed_bias: 0,
             window_base_abs: 0,
@@ -1267,6 +1282,7 @@ impl InputBuffer {
             decoding: SourceDecoding::WholeBuffer,
             pending_source: Vec::new(),
             source_received: 0,
+            decl_switch_abs: 0,
             materialized: 0,
             consumed_bias: 0,
             window_base_abs: 0,
@@ -1300,6 +1316,7 @@ impl InputBuffer {
             decoding: SourceDecoding::WholeBuffer,
             pending_source: Vec::new(),
             source_received: 0,
+            decl_switch_abs: 0,
             materialized: 0,
             consumed_bias: 0,
             window_base_abs: 0,
@@ -1485,6 +1502,10 @@ impl InputBuffer {
         if self.converted_to_utf8 {
             return;
         }
+        // Upstream rebases the physical window at the encoding switch; the
+        // absolute stream (and every absolute offset) is unaffected.
+        let switch = self.decl_switch_abs;
+        let had_switch = switch > 0;
         match &self.encoding {
             Encoding::Iso8859_1 => {
                 // take_owned: an Owned buffer moves its Vec out (no copy); a
@@ -1525,6 +1546,9 @@ impl InputBuffer {
             Encoding::Utf16Le => self.convert_declared_units(Encoding::Utf16Le, terminate),
             Encoding::Utf16Be => self.convert_declared_units(Encoding::Utf16Be, terminate),
             _ => {}
+        }
+        if had_switch && self.converted_to_utf8 {
+            self.window_base_abs = switch;
         }
     }
 
@@ -1894,9 +1918,44 @@ impl InputBuffer {
         };
 
         // Find encoding="..." or encoding='...'
-        if let Some(enc) = Self::extract_encoding_from_pi(pi_str) {
+        if let Some((enc, value_end)) = Self::extract_encoding_with_end(pi_str) {
             self.encoding = Encoding::from_name(&enc);
+            // Upstream `xmlParseXMLDecl` switches the input encoding the moment
+            // the encoding attribute's value ends, so the switch offset is the
+            // byte just past its closing quote (measured in `data`).
+            self.decl_switch_abs = self.pos + value_end;
         }
+    }
+
+    /// `extract_encoding_from_pi` plus the offset just past the value's closing
+    /// quote (upstream's `xmlSwitchInputEncoding` point).
+    fn extract_encoding_with_end(pi: &str) -> Option<(String, usize)> {
+        let pi_lower = pi.to_ascii_lowercase();
+        let kw_pos = pi_lower.find("encoding")?;
+
+        let after_kw = &pi[kw_pos + 8..]; // skip past "encoding"
+        let after_kw_trimmed = after_kw.trim_start();
+        let kw_space = after_kw.len() - after_kw_trimmed.len();
+
+        if !after_kw_trimmed.starts_with('=') {
+            return None;
+        }
+        let after_eq = &after_kw_trimmed[1..];
+        let after_eq_trimmed = after_eq.trim_start();
+        let eq_space = after_eq.len() - after_eq_trimmed.len();
+
+        let quote = after_eq_trimmed.chars().next()?;
+        if quote != '"' && quote != '\'' {
+            return None;
+        }
+
+        let value_start = 1; // skip opening quote
+        let value_end = after_eq_trimmed[value_start..].find(quote)? + value_start;
+
+        let value = after_eq_trimmed[value_start..value_end].to_string();
+        // Offset just past the closing quote, relative to `pi`.
+        let end = kw_pos + 8 + kw_space + 1 + eq_space + value_end + 1;
+        Some((value, end))
     }
 
     /// Extract the encoding name from an XML processing instruction.

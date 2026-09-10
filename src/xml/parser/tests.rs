@@ -892,8 +892,15 @@ unsafe extern "C" fn sax1_end_pos(ctx: *mut c_void, _name: *const xmlChar) {
     let input = unsafe { (*ctxt).input };
     if !input.is_null() && !(*input).base.is_null() {
         let line = unsafe { (*input).line };
-        let byte = unsafe { (*input).cur.offset_from((*input).base) };
-        END_POS.with(|p| p.borrow_mut().push((line, byte as usize)));
+        // The reported byte index is upstream `xmlCtxtGetInputPosition`'s
+        // `input->consumed + (cur - base)` — NOT `cur - base` alone. The two
+        // agree until the physical window is REBASED (a declared non-UTF-8
+        // encoding moves `base` to the switch point and counts the prefix in
+        // `consumed`), and PHP's `xml_get_current_byte_index` uses the full
+        // formula.
+        let consumed = unsafe { (*input).consumed } as usize;
+        let byte = unsafe { (*input).cur.offset_from((*input).base) } as usize;
+        END_POS.with(|p| p.borrow_mut().push((line, consumed + byte)));
     }
 }
 
