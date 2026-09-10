@@ -193,8 +193,8 @@ def main():
         "raw-overlong.xml": b"<a>\xc0\xaf</a>",
         "raw-high-name.xml": b"<\xf0\xa0\x80</a>",
         # Genuinely EOF-truncated UTF-8: the stream ENDS inside a multibyte
-        # sequence (the decoder needs 1/2/3 more continuation bytes and the
-        # non-final feed must SUSPEND, not error):
+        # sequence — each example below lacks exactly ONE final continuation
+        # byte, so the non-final feed must SUSPEND, not error:
         "raw-pending-utf8-2.xml": b"<a>\xc3",
         "raw-pending-utf8-3.xml": b"<a>\xe2\x82",
         "raw-pending-utf8-4.xml": b"<a>\xf0\x9f\x8e",

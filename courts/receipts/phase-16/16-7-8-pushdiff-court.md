@@ -194,9 +194,14 @@ are the verification.
 Run: `sh courts/suites/phase16/pushdiff-run.sh` from a clean tree; the
 gate is diffs = 0 after the stateful rewrite.
 
-## What the divergences are (three systematic classes)
+## What the divergences are (four systematic classes)
 
-### 1. The candidate fires startDocument / endDocument on the wrong calls
+All four have the same architectural root cause — the whole-buffer replay
+design, which runs a complete-document parser on every non-final call —
+but they are independently observable behaviors. The stateful engine must
+close each one.
+
+### 1. Lifecycle / event-timing mismatch
 
 The oracle's `xmlParseTryOrFinish` does not fire `startDocument` until it
 can leave `XML_PARSER_START` (the `avail < 4` gate on non-final calls) and
@@ -216,7 +221,27 @@ not surface startDocument/endDocument timing to userland), which is why it
 sealed despite the divergence. SAX-event consumers (lxml `iterparse`,
 nokogiri SAX push) DO observe it.
 
-### 2. REFEED on a finished context
+### 2. `NeedMoreInput` treated as EOF / malformed input
+
+Independently observable semantic failure of using a complete-document
+parser on an incomplete non-final stream: the candidate emits an error
+where upstream simply parks. The slice-0.3.1 pending-UTF-8 / pending-entity
+cells prove it — the oracle reaches the reset point with rc=0 err=0 wf=1
+while the candidate prematurely reports XML_ERR_INVALID_ENCODING (rc=81)
+for `<a>\xC3` / `<a>\xE2\x82` / `<a>\xF0\x9F\x8E` and an entity error for
+`<a>&am`. This is not cursor fallout from class 1: it is the missing
+`IncrementalResult::NeedMoreInput` semantic (byte exhaustion +
+terminate=0 is SUSPENSION, never EOF).
+
+### 3. Trailing-CR `end_in_lf` deferral mismatch
+
+Upstream `xmlParseChunk` strips a trailing `\r` from a non-final chunk and
+re-pushes it AFTER `xmlParseTryOrFinish`, so a CRLF pair split across two
+chunks still normalizes to one `\n` and a lone trailing `\r` is not
+treated as an EOL (or dispatched into that call's text run) until the next
+chunk arrives. The candidate appends and parses the `\r` immediately.
+
+### 4. Finished-context REFEED behavior mismatch
 
 After a well-formed document finishes (context at XML_PARSER_EOF), feeding
 the document again with terminate=1 makes the ORACLE push the bytes and
@@ -224,14 +249,6 @@ raise "Extra content at the end of the document" (XML_ERR_DOCUMENT_END →
 errNo 5, wellFormed 0, rc 5). The candidate's `parse_chunk` EOF gate
 returns 0 early without pushing or parsing (rc 0, wellFormed 1). gh12254's
 parse-twice surface.
-
-### 3. `end_in_lf` — a chunk ending in `\r` (no deferral)
-
-Upstream `xmlParseChunk` strips a trailing `\r` from a non-final chunk and
-re-pushes it AFTER `xmlParseTryOrFinish`, so a CRLF pair split across two
-chunks still normalizes to one `\n` and a lone trailing `\r` is not
-treated as an EOL (or dispatched into that call's text run) until the next
-chunk arrives. The candidate appends and parses the `\r` immediately.
 
 ## Why this matters for 16.7.8
 

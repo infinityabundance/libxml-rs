@@ -5,32 +5,44 @@
 # (document, chunking-plan) cell whose oracle trace differs from the
 # candidate trace, byte-for-byte.
 #
-# Evidentiary chain: the launcher REFUSES to run from a dirty worktree, so
-# the shas recorded in run.txt unambiguously identify the committed court
-# source AND the committed candidate source that produced the result.
-# run.txt additionally records cryptographic fingerprints of the probe /
-# corpus generator / runner, the candidate library binary actually mounted
-# as /candidate, and the oracle container image ID + repo digest (a local
-# tag like libxml-rs/phase14-debian:1 is mutable; the ID/digest is not).
+# Evidentiary chain: the launcher refuses to run from anything but a
+# pristine worktree (including untracked files — the courts tree is mounted
+# into the container, so an untracked replacement court file must not be
+# able to influence a run recorded as clean), and it BUILDS the candidate
+# itself after establishing that clean source state, into a dedicated
+# target directory, so the recorded candidate binary sha256 chains to the
+# recorded candidate_sha through a deterministic build invocation:
+#
+#   clean committed tree
+#     -> cargo build --locked --release (fresh target dir)
+#     -> facade generation
+#     -> candidate binary sha256
+#     -> court run
+#
+# run.txt additionally records the Cargo.lock sha256, rustc version,
+# probe/generator/runner fingerprints, and the oracle image ID + repo
+# digest (a local tag like libxml-rs/phase14-debian:1 is mutable).
 #
 # Recommended workflow:
-#   commit the court        →  sh pushdiff-run.sh   →  commit the evidence
+#   commit the court  ->  sh pushdiff-run.sh  ->  commit the evidence
+#
+# Env: SKIP_BUILD=1 reuses an existing candidate build (fast iteration;
+# not the forensic default).
 #
 # Usage: sh courts/suites/phase16/pushdiff-run.sh [out-dir] [image]
-# Env: BENCH_IMAGE default libxml-rs/phase14-debian:1. Requires a release
-# build: cargo build --release --lib && sh tools/packaging/facade-gen.sh
-# target/release (so /candidate carries the current engine).
+# Env: BENCH_IMAGE default libxml-rs/phase14-debian:1.
 set -eu
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 OUT="${1:-$ROOT/courts/receipts/phase-16/raw/pushdiff}"
 IMAGE="${BENCH_IMAGE:-libxml-rs/phase14-debian:1}"
 
-# Refuse a dirty tree: candidate_source_sha / court_source_sha must name a
-# committed state, not a working tree.
-if ! git -C "$ROOT" diff --quiet 2>/dev/null || \
-   ! git -C "$ROOT" diff --cached --quiet 2>/dev/null; then
-  echo "pushdiff-run.sh: working tree is dirty — commit the court first so" >&2
-  echo "the recorded source shas are unambiguous." >&2
+# The clean-tree seal: NO modified/staged/untracked (non-ignored) files.
+# candidate_sha / court_sha must name a committed state, and nothing
+# outside git may influence the run.
+if [ -n "$(git -C "$ROOT" status --porcelain --untracked-files=all 2>/dev/null)" ]; then
+  echo "pushdiff-run.sh: worktree is not pristine (modified, staged or" >&2
+  echo "untracked files present) — commit everything first so the recorded" >&2
+  echo "source shas and the clean-tree seal are unambiguous." >&2
   exit 1
 fi
 
@@ -44,12 +56,30 @@ OUT="$(cd "$OUT" && pwd)"
 sha() { sha256sum "$1" 2>/dev/null | cut -d' ' -f1; }
 
 CANDIDATE_SHA="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
-CAND_LIB="$(readlink -f "$ROOT/target/release/lib/libxml2.so" 2>/dev/null || echo none)"
+
+# Build the candidate from the recorded source state into a DEDICATED
+# target directory (SKIP_BUILD=1 reuses an existing build for fast
+# iteration). A fresh directory makes the binary-sha -> source-sha chain
+# deterministic: the hash cannot come from a stale pre-existing build.
+CAND_DIR="$ROOT/target/pushdiff-court"
+if [ "${SKIP_BUILD:-0}" != "1" ]; then
+  echo "building candidate (target-dir=$CAND_DIR) ..."
+  rm -rf "$CAND_DIR"
+  cargo build --locked --manifest-path "$ROOT/Cargo.toml" \
+    --target-dir "$CAND_DIR" --release --lib || exit 1
+  sh "$ROOT/tools/packaging/facade-gen.sh" "$CAND_DIR/release" || exit 1
+fi
+
+CAND_LIB="$(readlink -f "$CAND_DIR/release/lib/libxml2.so" 2>/dev/null || echo none)"
 echo "candidate_sha=$CANDIDATE_SHA" > "$OUT/run.txt"
 echo "court_sha=$CANDIDATE_SHA" >> "$OUT/run.txt"
 echo "tree_clean=yes" >> "$OUT/run.txt"
+echo "candidate_target_dir=$CAND_DIR/release" >> "$OUT/run.txt"
 echo "candidate_libxml2_binary=$CAND_LIB" >> "$OUT/run.txt"
 echo "candidate_libxml2_sha256=$(sha "$CAND_LIB")" >> "$OUT/run.txt"
+echo "cargo_lock_sha256=$(sha "$ROOT/Cargo.lock")" >> "$OUT/run.txt"
+rustc --version 2>/dev/null | sed 's/^/rustc=/;s/$/ (rustc --version at build time)/' >> "$OUT/run.txt" || true
+cargo --version 2>/dev/null | sed 's/^/cargo=/' >> "$OUT/run.txt" || true
 echo "probe_sha256=$(sha "$ROOT/courts/suites/phase16/pushdiff-probe.c")" >> "$OUT/run.txt"
 echo "generator_sha256=$(sha "$ROOT/courts/suites/phase16/gen_pushdiff_corpus.py")" >> "$OUT/run.txt"
 echo "runner_sha256=$(sha "$ROOT/courts/suites/phase16/pushdiff-differential.sh")" >> "$OUT/run.txt"
@@ -62,7 +92,7 @@ grep -m1 'model name' /proc/cpuinfo >> "$OUT/run.txt" || true
 
 docker run --rm \
   -v "$ROOT/courts":/court:ro \
-  -v "$ROOT/target/release":/candidate:ro \
+  -v "$CAND_DIR/release":/candidate:ro \
   -v "$OUT":/scanout \
   "$IMAGE" \
   bash /court/suites/phase16/pushdiff-differential.sh 2>&1 | tee "$OUT/console.log"
