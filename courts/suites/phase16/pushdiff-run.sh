@@ -57,24 +57,26 @@ sha() { sha256sum "$1" 2>/dev/null | cut -d' ' -f1; }
 
 CANDIDATE_SHA="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
 
-# Build the candidate from the recorded source state into a DEDICATED
-# target directory (SKIP_BUILD=1 reuses an existing build for fast
-# iteration). A fresh directory makes the binary-sha -> source-sha chain
-# deterministic: the hash cannot come from a stale pre-existing build.
-CAND_DIR="$ROOT/target/pushdiff-court"
+# Build the candidate from the recorded source state. build.rs's
+# find_target_dir walks up from OUT_DIR to the first component literally
+# named "target", so cargo outputs and the generated lib//include/ layout
+# can only share one directory: the canonical target/release. Cleaning the
+# package first makes the binary-sha -> source-sha chain deterministic
+# (the hashed .so cannot be a stale pre-existing build).
 if [ "${SKIP_BUILD:-0}" != "1" ]; then
-  echo "building candidate (target-dir=$CAND_DIR) ..."
-  rm -rf "$CAND_DIR"
+  echo "building candidate (target/release) ..."
+  cargo clean --manifest-path "$ROOT/Cargo.toml" -p libxml-rs --release || exit 1
   cargo build --locked --manifest-path "$ROOT/Cargo.toml" \
-    --target-dir "$CAND_DIR" --release --lib || exit 1
-  sh "$ROOT/tools/packaging/facade-gen.sh" "$CAND_DIR/release" || exit 1
+    --release --lib || exit 1
+  sh "$ROOT/tools/packaging/facade-gen.sh" "$ROOT/target/release" || exit 1
 fi
 
-CAND_LIB="$(readlink -f "$CAND_DIR/release/lib/libxml2.so" 2>/dev/null || echo none)"
+CAND_DIR="$ROOT/target/release"
+CAND_LIB="$(readlink -f "$CAND_DIR/lib/libxml2.so" 2>/dev/null || echo none)"
 echo "candidate_sha=$CANDIDATE_SHA" > "$OUT/run.txt"
 echo "court_sha=$CANDIDATE_SHA" >> "$OUT/run.txt"
 echo "tree_clean=yes" >> "$OUT/run.txt"
-echo "candidate_target_dir=$CAND_DIR/release" >> "$OUT/run.txt"
+echo "candidate_target_dir=$CAND_DIR" >> "$OUT/run.txt"
 echo "candidate_libxml2_binary=$CAND_LIB" >> "$OUT/run.txt"
 echo "candidate_libxml2_sha256=$(sha "$CAND_LIB")" >> "$OUT/run.txt"
 echo "cargo_lock_sha256=$(sha "$ROOT/Cargo.lock")" >> "$OUT/run.txt"
@@ -92,7 +94,7 @@ grep -m1 'model name' /proc/cpuinfo >> "$OUT/run.txt" || true
 
 docker run --rm \
   -v "$ROOT/courts":/court:ro \
-  -v "$CAND_DIR/release":/candidate:ro \
+  -v "$CAND_DIR":/candidate:ro \
   -v "$OUT":/scanout \
   "$IMAGE" \
   bash /court/suites/phase16/pushdiff-differential.sh 2>&1 | tee "$OUT/console.log"
