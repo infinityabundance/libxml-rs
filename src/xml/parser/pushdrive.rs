@@ -281,6 +281,19 @@ impl XmlParser {
             }
             // `avail = end - cur; if (avail < 1) goto done`
             if self.push_remaining_len() == 0 {
+                // The top input may be an ENTITY expansion pushed by
+                // `parse_reference` (upstream `xmlCtxtPushInput`, the
+                // `XML_PARSE_NOENT` substitution path). When it is exhausted,
+                // the entity input is popped and the document resumes —
+                // upstream's `xmlParseTryOrFinish` loop pops the input at its
+                // end (`xmlCtxtPopInput`). Without this the driver reported the
+                // document as truncated while standing on a finished entity
+                // input (XML_ERR_TAG_NOT_FINISHED for a substituted reference).
+                if self.input_stack().depth() > 1 {
+                    let _ = self.tokenizer().pop_input();
+                    unsafe { self.publish_input_window() };
+                    continue;
+                }
                 break;
             }
             // Refresh before the step: any callback it dispatches must observe
@@ -870,7 +883,20 @@ impl XmlParser {
             let XmlToken::Reference(data) = token else {
                 return self.unsupported(machine, "entity/character reference");
             };
-            if self.parse_reference(&data).is_err() {
+            let r = self.parse_reference(&data);
+            // `parse_reference`'s `XML_PARSE_NOENT` substitution path pushes the
+            // entity's replacement text as a new input for the SAX pass
+            // (upstream `xmlCtxtPushInput`). The driver's scanner is bound to the
+            // base document, so drain that input here through the same
+            // entity-content loop the recursive parser uses — otherwise the
+            // driver would stand on a finished entity input and report the
+            // document truncated (XML_ERR_TAG_NOT_FINISHED).
+            if r.is_ok() && self.input_stack().depth() > 1 {
+                if self.drain_pushed_entity_inputs().is_err() {
+                    return StepOutcome::Fatal;
+                }
+            }
+            if r.is_err() {
                 // UPSTREAM-PARITY (xmlParseTryOrFinish, XML_PARSER_CONTENT's
                 // `&` arm): `xmlParseReference(ctxt); break;` — a fatal inside
                 // the reference leaves `instate` UNCHANGED and does NOT call

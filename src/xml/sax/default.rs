@@ -66,7 +66,10 @@ use crate::abi::structs::*;
 use crate::abi::types::xmlChar;
 use crate::abi::types::xmlDocProperties::{XML_DOC_DTDVALID, XML_DOC_NSVALID, XML_DOC_WELLFORMED};
 use crate::abi::types::xmlElementType::*;
-use crate::abi::types::XML_PARSE_COMPACT;
+use crate::abi::types::{
+    XML_ERR_INTERNAL_ERROR, XML_ERR_RESOURCE_LIMIT, XML_MAX_HUGE_LENGTH, XML_MAX_TEXT_LENGTH,
+    XML_PARSE_BIG_LINES, XML_PARSE_COMPACT, XML_PARSE_HUGE,
+};
 use crate::xml::tree;
 
 /// Default SAX2 handlers that build a DOM tree from SAX events.
@@ -89,15 +92,24 @@ pub(crate) mod default_sax_handler {
     }
 
     /// Current source line from the parser input (0 when unavailable).
+    /// Current source line from the parser input, clamped to `USHRT_MAX`
+    /// (0 when unavailable).
+    ///
+    /// UPSTREAM-PARITY (`SAX2.c`): every node-line assignment uses
+    /// `(unsigned) ctxt->input->line < (unsigned) USHRT_MAX ? line : USHRT_MAX`
+    /// — a negative line casts to a huge unsigned value and therefore also
+    /// clamps. Truncating with `as u16` instead wraps the value, which breaks
+    /// both `xmlGetLineNo` and `XML_PARSE_BIG_LINES` (the real line then lives
+    /// in `node->psvi`).
     unsafe fn current_line(ctxt: *mut _xmlParserCtxt) -> u16 {
         if ctxt.is_null() || (*ctxt).input.is_null() {
             return 0;
         }
         let l = (*(*ctxt).input).line;
-        if l < 0 {
-            0
-        } else {
+        if (l as u32) < u32::from(u16::MAX) {
             l as u16
+        } else {
+            u16::MAX
         }
     }
 
@@ -164,49 +176,198 @@ pub(crate) mod default_sax_handler {
         }
     }
 
-    /// Merge character data into an existing text node (upstream
-    /// `xmlNodeAddContent` semantics): the bytes are appended to the node's
-    /// own content buffer, keeping the tree flat (a single text node).
+    /// Raise a fatal parser error at the current input position through the
+    /// parser's generic/streamed error channel (upstream `xmlFatalErr` ->
+    /// `xmlCtxtErr`), the way the default tree-builder callbacks report a
+    /// resource limit or an internal invariant violation.
     ///
-    /// Compact (inline) content is promoted to a heap allocation on the first
-    /// merge — an interrupted character-data stream (e.g. an entity
-    /// reference) is never compact, matching the oracle's debug output.
+    /// UPSTREAM-PARITY (`xmlCtxtVErr`): a fatal (or catastrophic) error sets
+    /// `errNo`, clears `wellFormed`, bumps `nbErrors` and — because
+    /// `XML_ERR_RESOURCE_LIMIT`/`XML_ERR_ENTITY_LOOP`/catastrophic levels are
+    /// treated specially — sets `disableSAX = 2` so the parser really stops.
     ///
     /// # Safety
     ///
-    /// - `node` must be NULL or a valid `_xmlNode` that stays alive for the
-    ///   call; `ch` must be NULL or a valid buffer of at least `len` bytes;
-    ///   when the node's content is heap-allocated it must be an
-    ///   `xmlReallocImpl`-compatible allocation; the caller must not mutate
-    ///   the node or `ch` concurrently.
-    unsafe fn merge_into_text_node(node: *mut _xmlNode, ch: *const xmlChar, len: c_int) {
+    /// - `ctxt` must be a valid parser context; `str1`/`msg` valid C strings.
+    unsafe fn raise_fatal_at_input(
+        ctxt: *mut _xmlParserCtxt,
+        code: c_int,
+        str1: *const c_char,
+        msg: *const c_char,
+    ) {
+        unsafe {
+            let mut file_ptr: *const c_char = ptr::null();
+            let mut line: c_int = 0;
+            let mut col: c_int = 0;
+            let mut window: Option<(Vec<u8>, usize)> = None;
+            if !(*ctxt).input.is_null() {
+                let inp = &*(*ctxt).input;
+                file_ptr = inp.filename as *const c_char;
+                line = inp.line;
+                col = inp.col;
+                if !inp.base.is_null()
+                    && !inp.end.is_null()
+                    && (inp.end as usize) >= (inp.base as usize)
+                {
+                    let len = inp.end.offset_from(inp.base) as usize;
+                    let data = core::slice::from_raw_parts(inp.base, len);
+                    let byte_pos = if !inp.cur.is_null() {
+                        inp.cur.offset_from(inp.base) as usize
+                    } else {
+                        0
+                    };
+                    window = crate::xml::parser::tokenizer::window_at_data(data, byte_pos);
+                }
+            }
+            (*ctxt).errNo = code;
+            (*ctxt).wellFormed = 0;
+            (*ctxt).nbErrors = (*ctxt).nbErrors.wrapping_add(1);
+            // UPSTREAM-PARITY (xmlCtxtVErr): RESOURCE_LIMIT is catastrophic —
+            // disableSAX = 2 really stops the parser.
+            (*ctxt).disableSAX = 2;
+            let delivery = crate::xml::errors::parser_delivery(ctxt);
+            let window_ref = window.as_ref().map(|(w, caret)| (w.as_slice(), *caret));
+            crate::xml::errors::raise_error_streamed(
+                ctxt as *mut c_void,
+                crate::abi::types::XML_FROM_PARSER,
+                code,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                file_ptr,
+                line,
+                col,
+                str1,
+                ptr::null(),
+                ptr::null(),
+                0,
+                msg,
+                window_ref,
+                None,
+                delivery,
+                None,
+            );
+        }
+    }
+
+    /// Upstream `xmlFatalErr(ctxt, XML_ERR_RESOURCE_LIMIT, "Text node too
+    /// long, try XML_PARSE_HUGE")`: the message is composed as
+    /// `"<errString>: <info>\n"` with `str1 = info`.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` must be a valid parser context.
+    unsafe fn raise_text_too_long(ctxt: *mut _xmlParserCtxt) {
+        unsafe {
+            let info = c"Text node too long, try XML_PARSE_HUGE";
+            let msg = c"Resource limit exceeded: Text node too long, try XML_PARSE_HUGE\n";
+            raise_fatal_at_input(ctxt, XML_ERR_RESOURCE_LIMIT, info.as_ptr(), msg.as_ptr());
+        }
+    }
+
+    /// Upstream `xmlFatalErr(ctxt, XML_ERR_INTERNAL_ERROR, "xmlSAX2Text: no
+    /// content")` — the tree/text bookkeeping is inconsistent, which upstream
+    /// documents as "Shouldn't happen".
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` must be a valid parser context.
+    unsafe fn raise_text_internal_error(ctxt: *mut _xmlParserCtxt, info: &core::ffi::CStr) {
+        unsafe {
+            let msg = format!("Internal error: {}\n", info.to_string_lossy());
+            let msg_c = std::ffi::CString::new(msg).unwrap_or_default();
+            raise_fatal_at_input(ctxt, XML_ERR_INTERNAL_ERROR, info.as_ptr(), msg_c.as_ptr());
+        }
+    }
+
+    /// Append `len` bytes of `ch` to an existing text node, reproducing
+    /// upstream `xmlSAX2Text`'s merge branch (`SAX2.c`).
+    ///
+    /// The parser context carries `nodelen`/`nodemem` — the byte length and
+    /// allocation capacity of the current text node's content. Upstream keeps
+    /// them precisely so that appending grows the buffer GEOMETRICALLY
+    /// (`newSize * 2`) instead of re-measuring with `strlen` and reallocating
+    /// to the exact size on every callback. The latter is O(N²) for a text run
+    /// delivered in chunks, which is the normal push-parser shape (and the
+    /// reason upstream has the bookkeeping at all).
+    ///
+    /// It also enforces upstream's text-node size limit — `XML_MAX_TEXT_LENGTH`,
+    /// lifted to `XML_MAX_HUGE_LENGTH` by `XML_PARSE_HUGE` — as a fatal
+    /// `XML_ERR_RESOURCE_LIMIT`.
+    ///
+    /// Returns `true` when the bytes were appended.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` must be a valid parser context opened by the parser (its
+    ///   `nodelen`/`nodemem` must describe `node->content`); `node` must be a
+    ///   live text node; `ch` a valid buffer of at least `len` bytes.
+    unsafe fn merge_into_text_node(
+        ctxt: *mut _xmlParserCtxt,
+        node: *mut _xmlNode,
+        ch: *const xmlChar,
+        len: c_int,
+    ) -> bool {
         if node.is_null() || ch.is_null() || len <= 0 {
-            return;
+            return false;
         }
         unsafe {
-            let existing_len = crate::xml::string::xml_strlen((*node).content);
-            let total = existing_len + len as usize;
-            if content_is_inline(node) {
-                // The current content lives inside the node struct; promote
-                // it to a heap buffer before appending.
-                let merged = allocator::xmlMallocImpl(total + 1) as *mut xmlChar;
-                if merged.is_null() {
-                    return;
-                }
-                ptr::copy_nonoverlapping((*node).content, merged, existing_len);
-                ptr::copy_nonoverlapping(ch, merged.add(existing_len), len as usize);
-                *merged.add(total) = 0;
-                (*node).content = merged;
+            let c = &mut *ctxt;
+            let max_size = if (c.options & XML_PARSE_HUGE) != 0 {
+                XML_MAX_HUGE_LENGTH
             } else {
-                let new = allocator::xmlReallocImpl((*node).content as *mut c_void, total + 1)
-                    as *mut xmlChar;
-                if new.is_null() {
-                    return;
-                }
-                ptr::copy_nonoverlapping(ch, new.add(existing_len), len as usize);
-                *new.add(total) = 0;
-                (*node).content = new;
+                XML_MAX_TEXT_LENGTH
+            };
+            let old_size = c.nodelen;
+            let orig_mem = c.nodemem;
+            let mut capacity = orig_mem;
+            let mut content = (*node).content;
+            // Upstream's "Shouldn't happen": the last child is a text node the
+            // parser itself appended to, so its bookkeeping must be live.
+            if content.is_null() || capacity <= 0 || old_size < 0 {
+                raise_text_internal_error(ctxt, c"xmlSAX2Text: no content");
+                return false;
             }
+            if len > max_size || old_size > max_size - len {
+                raise_text_too_long(ctxt);
+                return false;
+            }
+            let new_size = old_size + len;
+            if new_size >= capacity {
+                capacity = if new_size <= 20 {
+                    40
+                } else if new_size > c_int::MAX / 2 {
+                    c_int::MAX
+                } else {
+                    new_size * 2
+                };
+                // Content that lives inside the node struct (COMPACT) or in
+                // the context dictionary must not be realloc'ed in place;
+                // move it into a fresh heap buffer (upstream xmlSAX2Text).
+                let dict_owned = orig_mem == old_size + 1
+                    && !c.dict.is_null()
+                    && crate::abi::exports_hash::xmlDictOwns(c.dict, content) != 0;
+                if content_is_inline(node) || dict_owned {
+                    let fresh = allocator::xmlMallocImpl(capacity as usize) as *mut xmlChar;
+                    if fresh.is_null() {
+                        return false;
+                    }
+                    ptr::copy_nonoverlapping(content, fresh, old_size as usize);
+                    (*node).properties = ptr::null_mut();
+                    content = fresh;
+                } else {
+                    let fresh = allocator::xmlReallocImpl(content as *mut c_void, capacity as usize)
+                        as *mut xmlChar;
+                    if fresh.is_null() {
+                        return false;
+                    }
+                    content = fresh;
+                }
+                c.nodemem = capacity;
+                (*node).content = content;
+            }
+            ptr::copy_nonoverlapping(ch, content.add(old_size as usize), len as usize);
+            *content.add(new_size as usize) = 0;
+            c.nodelen = new_size;
+            true
         }
     }
 
@@ -1236,9 +1397,41 @@ pub(crate) mod default_sax_handler {
     // Content handlers
     // ═══════════════════════════════════════════════════════════════════════
 
+    /// Upstream `xmlSAX2Text`'s tail: a text node records the current input
+    /// line, clamped to `USHRT_MAX`; beyond that (`XML_PARSE_BIG_LINES`) the
+    /// real line is stored in `psvi` as `XML_INT_TO_PTR(line)` and read back by
+    /// `xmlGetLineNo` (`tree.c`). No other node type records the big line, so
+    /// callers pass the type they are handling.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` must be a valid parser context; `node` a live node of `type_`.
+    unsafe fn set_text_node_line(ctxt: *mut _xmlParserCtxt, node: *mut _xmlNode, type_: c_int) {
+        if node.is_null() || ctxt.is_null() || (*ctxt).input.is_null() {
+            return;
+        }
+        if type_ != XML_TEXT_NODE as c_int {
+            return;
+        }
+        let l = (*(*ctxt).input).line;
+        if (l as u32) < u32::from(u16::MAX) {
+            (*node).line = l as u16;
+        } else {
+            (*node).line = u16::MAX;
+            if ((*ctxt).options & XML_PARSE_BIG_LINES) != 0 {
+                (*node).psvi = l as usize as *mut c_void;
+            }
+        }
+    }
+
     /// Default `characters` handler.
     ///
-    /// Creates a text node and adds it to the current element.
+    /// UPSTREAM-PARITY (`SAX2.c` `xmlSAX2Characters` -> `xmlSAX2Text`): the
+    /// bytes are merged into the parent's LAST child when it is a text node,
+    /// and otherwise become a new text node. The merge grows the content with
+    /// the `ctxt->nodelen`/`nodemem` bookkeeping (amortised O(1)) instead of
+    /// re-measuring with `strlen` and reallocating to the exact size on every
+    /// callback — which is O(N²) for a text run delivered in chunks.
     ///
     /// # SAFETY
     ///
@@ -1252,38 +1445,43 @@ pub(crate) mod default_sax_handler {
 
         // SAFETY: The context is guaranteed valid by the caller.
         unsafe {
-            let c = &*ctxt;
-
             // Determine the parent node (current element or document).
-            let parent = if c.nodeNr > 0 && !c.nodeTab.is_null() {
-                let idx = (c.nodeNr - 1) as usize;
-                *c.nodeTab.add(idx)
-            } else {
-                c.myDoc as *mut _xmlNode
+            let parent = {
+                let c = &*ctxt;
+                if c.nodeNr > 0 && !c.nodeTab.is_null() {
+                    let idx = (c.nodeNr - 1) as usize;
+                    *c.nodeTab.add(idx)
+                } else {
+                    c.myDoc as *mut _xmlNode
+                }
             };
 
             if parent.is_null() {
                 return;
             }
 
-            // UPSTREAM-PARITY: xmlSAX2Characters merges character data into
-            // the parent's LAST child when it is a text node (xmlNodeAddContent).
-            // An interrupted character-data stream (e.g. an entity reference)
-            // is never compact, so the merge promotes compact content to heap.
-            // §16.5: the last child is parent->last — O(1) — never a sibling
-            // walk (a root with N element children + inter-element whitespace
-            // runs was O(N) per text event = O(N²) per document).
+            // UPSTREAM-PARITY (SAX2.c xmlSAX2Text): merge character data into
+            // the parent's LAST child when it is a text node. §16.5: the last
+            // child is parent->last — O(1) — never a sibling walk (a root with
+            // N element children + inter-element whitespace runs was O(N) per
+            // text event = O(N²) per document).
             let last = (*parent).last;
             if !last.is_null() && (*last).type_ == XML_TEXT_NODE as c_int {
-                merge_into_text_node(last, ch, len);
+                if merge_into_text_node(ctxt, last, ch, len) {
+                    set_text_node_line(ctxt, last, XML_TEXT_NODE as c_int);
+                }
                 return;
             }
 
             let text = parser_new_text_node(ctxt, ch, len, false);
 
             if !text.is_null() {
-                (*text).line = current_line(ctxt);
                 tree::add_child(parent, text);
+                // UPSTREAM-PARITY (SAX2.c xmlSAX2Text): a freshly created node
+                // starts its content bookkeeping at exactly (len, len + 1).
+                (*ctxt).nodelen = len;
+                (*ctxt).nodemem = len + 1;
+                set_text_node_line(ctxt, text, XML_TEXT_NODE as c_int);
             }
         }
     }
@@ -1422,6 +1620,12 @@ pub(crate) mod default_sax_handler {
             if !cdata.is_null() {
                 (*cdata).line = current_line(ctxt);
                 tree::add_child(parent, cdata);
+                // UPSTREAM-PARITY (SAX2.c xmlSAX2Text via xmlSAX2CDataBlock): the
+                // create branch always resets the content bookkeeping, so a
+                // later merge (HTML only — XML never merges CDATA) starts from a
+                // consistent (len, len + 1).
+                (*ctxt).nodelen = len;
+                (*ctxt).nodemem = len + 1;
             }
         }
     }

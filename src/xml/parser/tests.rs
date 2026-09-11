@@ -2097,3 +2097,249 @@ fn test_doctype_transport_raw_entity_value_but_expansion_normalized() {
         tree::free_doc(doc);
     }
 }
+
+// ── §16.7.8: the default tree-builder character-data path ───────────────────
+//
+// These pin the three upstream `xmlSAX2Text` (SAX2.c) properties the persistent
+// push driver depends on once tree-building contexts are eligible: the
+// `nodelen`/`nodemem` geometric growth (amortised O(1) appends instead of an
+// O(N²) `strlen` + exact-size realloc per callback), the text-node size limit,
+// and `XML_PARSE_BIG_LINES` (a line past `USHRT_MAX` is kept in `node->psvi`).
+
+/// One in-memory push context over the DEFAULT SAX2 tree builder, driven by
+/// the caller. Returns `(ctxt, doc)`; the caller frees both.
+unsafe fn push_tree_ctxt(options: c_int) -> *mut _xmlParserCtxt {
+    let ctxt = crate::abi::exports_parser::xmlCreatePushParserCtxt(
+        ptr::null_mut(),
+        ptr::null_mut(),
+        ptr::null(),
+        0,
+        ptr::null(),
+    );
+    assert!(!ctxt.is_null());
+    if options != 0 {
+        crate::abi::exports_xml2::xmlCtxtUseOptions(ctxt, options);
+    }
+    ctxt
+}
+
+/// A text run delivered in many chunks must merge into ONE text node whose
+/// buffer carries spare capacity. Exact-size reallocation (the pre-port
+/// behavior) leaves `nodemem == nodelen + 1` after every merge; upstream's
+/// `newSize * 2` growth leaves slack, which is what makes the append amortised
+/// O(1) rather than O(N²) for a push parse.
+#[test]
+fn test_push_tree_text_merge_grows_geometrically() {
+    unsafe {
+        let ctxt = push_tree_ctxt(0);
+        let feed = |b: &[u8]| {
+            crate::abi::exports_xml2::xmlParseChunk(
+                ctxt,
+                b.as_ptr() as *const i8,
+                b.len() as c_int,
+                0,
+            )
+        };
+        feed(b"<a>");
+        let chunk = vec![b'x'; 64 * 1024];
+        for _ in 0..8 {
+            feed(&chunk);
+        }
+        assert_ne!((*ctxt).wellFormed, 0, "still well-formed mid-document");
+        assert!(
+            (*ctxt).nodemem > (*ctxt).nodelen + 1,
+            "text content must carry geometric slack (nodelen={} nodemem={})",
+            (*ctxt).nodelen,
+            (*ctxt).nodemem
+        );
+        feed(b"</a>");
+        assert_eq!(
+            crate::abi::exports_xml2::xmlParseChunk(ctxt, ptr::null(), 0, 1),
+            0
+        );
+        let doc = (*ctxt).myDoc;
+        let root = tree::doc_get_root_element(doc);
+        let text = (*root).children;
+        assert_eq!(
+            (*text).type_,
+            crate::abi::types::xmlElementType::XML_TEXT_NODE as c_int
+        );
+        let content = crate::xml::string::xmlstr_to_bytes((*text).content);
+        assert_eq!(content.len(), 8 * 64 * 1024);
+        assert!(content.iter().all(|&b| b == b'x'));
+        (*ctxt).myDoc = ptr::null_mut();
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        tree::free_doc(doc);
+    }
+}
+
+/// Feeding more than `XML_MAX_TEXT_LENGTH` (10 000 000) bytes of character data
+/// into one tree text node is a fatal `XML_ERR_RESOURCE_LIMIT`, exactly as
+/// upstream `xmlSAX2Text` reports it (code 114, `disableSAX = 2`).
+#[test]
+fn test_push_tree_text_node_limit_is_fatal() {
+    unsafe {
+        let ctxt = push_tree_ctxt(0);
+        let feed = |b: &[u8]| {
+            crate::abi::exports_xml2::xmlParseChunk(
+                ctxt,
+                b.as_ptr() as *const i8,
+                b.len() as c_int,
+                0,
+            )
+        };
+        feed(b"<a>");
+        let chunk = vec![b'x'; 1024 * 1024];
+        for _ in 0..11 {
+            feed(&chunk);
+        }
+        assert_eq!((*ctxt).errNo, crate::abi::types::XML_ERR_RESOURCE_LIMIT);
+        assert_eq!((*ctxt).wellFormed, 0);
+        assert_eq!(
+            (*ctxt).disableSAX,
+            2,
+            "RESOURCE_LIMIT really stops the parser"
+        );
+        tree::free_doc((*ctxt).myDoc);
+        (*ctxt).myDoc = ptr::null_mut();
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+    }
+}
+
+/// `XML_PARSE_BIG_LINES`: a source line past `USHRT_MAX` clamps `node->line`
+/// to 65535 and stores the real line in `node->psvi`; without the option only
+/// the clamp happens. `xmlGetLineNo` reads the `psvi` back.
+#[test]
+fn test_push_tree_big_lines_keeps_line_in_psvi() {
+    unsafe {
+        let mut doc = Vec::from(&b"<a>"[..]);
+        doc.extend(std::iter::repeat(b'\n').take(70_000));
+        doc.extend_from_slice(b"<b/></a>");
+        for big in [false, true] {
+            let options = if big {
+                crate::abi::types::XML_PARSE_BIG_LINES
+            } else {
+                0
+            };
+            let ctxt = push_tree_ctxt(options);
+            assert_eq!(
+                crate::abi::exports_xml2::xmlParseChunk(
+                    ctxt,
+                    doc.as_ptr() as *const i8,
+                    doc.len() as c_int,
+                    1
+                ),
+                0
+            );
+            let root = tree::doc_get_root_element((*ctxt).myDoc);
+            let text = (*root).children;
+            assert_eq!(
+                (*text).type_,
+                crate::abi::types::xmlElementType::XML_TEXT_NODE as c_int
+            );
+            assert_eq!((*text).line, u16::MAX, "line clamps at USHRT_MAX");
+            if big {
+                assert!(
+                    !(*text).psvi.is_null() && (*text).psvi as usize > usize::from(u16::MAX),
+                    "BIG_LINES stores the real line in psvi"
+                );
+            } else {
+                assert!((*text).psvi.is_null(), "no psvi without BIG_LINES");
+            }
+            let pdoc = (*ctxt).myDoc;
+            (*ctxt).myDoc = ptr::null_mut();
+            crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+            tree::free_doc(pdoc);
+        }
+    }
+}
+
+/// `XML_PARSE_NOENT` general-entity substitution through the persistent push
+/// driver. `parse_reference`'s substitution path pushes the replacement text
+/// as a new input for the SAX pass (upstream `xmlCtxtPushInput`); the driver's
+/// scanner is bound to the base document, so `step_content` must drain that
+/// input instead of standing on it (which reported XML_ERR_TAG_NOT_FINISHED).
+/// Covered across SAX1/SAX2, with and without a `getEntity` handler and with
+/// the default tree builder.
+#[test]
+fn test_push_noent_entity_substitution_all_shapes() {
+    unsafe {
+        let doc = b"<!DOCTYPE root [ <!ENTITY ref \"ent\"> ]><root>a&ref;b</root>";
+        // (label, sax1_handlers, custom_get_entity, default_tree)
+        let cases: &[(&str, bool, bool, bool)] = &[
+            ("sax1+getEntity", true, true, false),
+            ("sax1", true, false, false),
+            ("tree", false, false, true),
+            ("sax2+getEntity", false, true, false),
+        ];
+        for &(label, sax1h, ge, tree) in cases {
+            reset_push_capture();
+            let ctxt;
+            let mut sax_box: *mut crate::abi::structs::_xmlSAXHandler = ptr::null_mut();
+            if tree {
+                ctxt = crate::abi::exports_parser::xmlCreatePushParserCtxt(
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    ptr::null(),
+                    0,
+                    ptr::null(),
+                );
+            } else {
+                let mut h = crate::abi::structs::_xmlSAXHandler {
+                    ..std::mem::zeroed()
+                };
+                h.initialized = 1;
+                h.startElement = Some(sax1_start);
+                h.endElement = Some(sax1_end);
+                h.characters = Some(sax1_chars_log);
+                if ge {
+                    h.getEntity = Some(sax_ge_resolve);
+                }
+                sax_box = Box::into_raw(Box::new(h));
+                ctxt = crate::abi::exports_parser::xmlCreatePushParserCtxt(
+                    sax_box,
+                    ptr::null_mut(),
+                    ptr::null(),
+                    0,
+                    ptr::null(),
+                );
+            }
+            assert!(!ctxt.is_null());
+            crate::abi::exports_xml2::xmlCtxtUseOptions(ctxt, crate::abi::types::XML_PARSE_NOENT);
+            let rc = crate::abi::exports_xml2::xmlParseChunk(
+                ctxt,
+                doc.as_ptr() as *const i8,
+                doc.len() as c_int,
+                1,
+            );
+            assert_eq!(rc, 0, "{label}: substituted document must parse cleanly");
+            assert_eq!((*ctxt).errNo, 0, "{label}");
+            if !tree {
+                let runs = SAX_CHAR_LOG.with(|l| l.borrow().clone());
+                let shown: Vec<String> = runs
+                    .iter()
+                    .map(|r| String::from_utf8_lossy(r).to_string())
+                    .collect();
+                assert_eq!(shown, vec!["a", "ent", "b"], "{label}");
+            } else {
+                // The tree carries the substituted text as one text node.
+                let root = tree::doc_get_root_element((*ctxt).myDoc);
+                let text = (*root).children;
+                assert_eq!(
+                    crate::xml::string::xmlstr_to_bytes((*text).content),
+                    b"aentb",
+                    "{label}"
+                );
+            }
+            let d = (*ctxt).myDoc;
+            (*ctxt).myDoc = ptr::null_mut();
+            crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+            if !d.is_null() {
+                tree::free_doc(d);
+            }
+            if !sax_box.is_null() {
+                drop(Box::from_raw(sax_box));
+            }
+        }
+    }
+}

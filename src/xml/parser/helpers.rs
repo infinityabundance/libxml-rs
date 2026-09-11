@@ -231,8 +231,14 @@ pub(crate) fn free_push_session(ctxt: *mut _xmlParserCtxt) {
 /// interning (`NODICT`), compact node storage (`COMPACT`) or the tokenizer's
 /// version rule (`OLD10`) are allowed: they are honored by the same shared
 /// routines the replay engine calls.
+///
+/// Also allowed, because the driver's shared routines honor them exactly:
+/// entity substitution (`NOENT`), CDATA-as-text (`NOCDATA`), the no-network
+/// policy (`NONET` — the driver never fetches an external resource anyway) and
+/// big source lines (`BIG_LINES`). lxml's default parse-option set is exactly
+/// `NOENT | NOCDATA | NONET | COMPACT | BIG_LINES`, so without these a
+/// progressive lxml parse stayed on the replay engine.
 const PUSH_PERSISTENT_UNSUPPORTED_OPTIONS: c_int = crate::abi::types::XML_PARSE_RECOVER
-    | crate::abi::types::XML_PARSE_NOENT
     | crate::abi::types::XML_PARSE_DTDLOAD
     | crate::abi::types::XML_PARSE_DTDATTR
     | crate::abi::types::XML_PARSE_DTDVALID
@@ -240,15 +246,12 @@ const PUSH_PERSISTENT_UNSUPPORTED_OPTIONS: c_int = crate::abi::types::XML_PARSE_
     | crate::abi::types::XML_PARSE_NOBLANKS
     | crate::abi::types::XML_PARSE_SAX1
     | crate::abi::types::XML_PARSE_XINCLUDE
-    | crate::abi::types::XML_PARSE_NONET
     | crate::abi::types::XML_PARSE_NSCLEAN
-    | crate::abi::types::XML_PARSE_NOCDATA
     | crate::abi::types::XML_PARSE_NOXINCNODE
     | crate::abi::types::XML_PARSE_NOBASEFIX
     | crate::abi::types::XML_PARSE_HUGE
     | crate::abi::types::XML_PARSE_OLDSAX
-    | crate::abi::types::XML_PARSE_IGNORE_ENC
-    | crate::abi::types::XML_PARSE_BIG_LINES;
+    | crate::abi::types::XML_PARSE_IGNORE_ENC;
 
 /// Whether `ctxt` may commit to the persistent driver (see
 /// [`PUSH_PERSISTENT_UNSUPPORTED_OPTIONS`]).

@@ -85,6 +85,11 @@ static int STARTS = 0;       /* start-element counter, reset per document */
  * so the identity `consumed + (cur - base) == absolute` is measured rather than
  * inferred (it is exactly what xmlCtxtGetInputPosition reconstructs). */
 static int WINDOW_MODE = 0;
+/* Optional parse-option mask applied to every context the probe creates
+ * (`-o <mask>`). Default 0 keeps every existing cell byte-identical; the
+ * option-dimension cells exercise contexts that request entity substitution,
+ * CDATA-as-text, big lines and no-network policy. */
+static int OPTIONS = 0;
 
 static void esc_bytes(const xmlChar *s, int len) {
     int i;
@@ -682,6 +687,11 @@ int main(int argc, char **argv) {
         if (strcmp(argv[2], "sax1") == 0) sax1 = 1;
         iarg = 3;
     }
+    if (strcmp(argv[iarg], "-o") == 0) {
+        if (argc < iarg + 2) return 1;
+        OPTIONS = (int)strtol(argv[iarg + 1], NULL, 0);
+        iarg += 2;
+    }
     if (strcmp(argv[iarg], "-S") == 0) {
         if (argc < iarg + 3) return 1;
         STOP_AFTER = atoi(argv[iarg + 1]);
@@ -722,6 +732,7 @@ int main(int argc, char **argv) {
             c = xmlCreatePushParserCtxt(&h, NULL, NULL, 0, NULL);
             if (!c) { fprintf(TR, "no-ctxt\n"); fflush(TR); continue; }
             xmlCtxtSetErrorHandler(c, rec_err, NULL);
+            if (OPTIONS) xmlCtxtUseOptions(c, OPTIONS);
             CUR = c;
             STARTS = 0;
             rng_state = plan.seed;
@@ -811,6 +822,7 @@ int main(int argc, char **argv) {
                 continue;
             }
             xmlCtxtSetErrorHandler(c, rec_err, NULL);
+            if (OPTIONS) xmlCtxtUseOptions(c, OPTIONS);
             CUR = c;
             STARTS = 0;
             {
@@ -840,6 +852,7 @@ int main(int argc, char **argv) {
             c = xmlCreatePushParserCtxt(&h, NULL, NULL, 0, NULL);
             if (!c) { fprintf(TR, "no-ctxt\n"); fflush(TR); free(doc); continue; }
             xmlCtxtSetErrorHandler(c, rec_err, NULL);
+            if (OPTIONS) xmlCtxtUseOptions(c, OPTIONS);
             CUR = c;
             STARTS = 0;
             rng_state = plan.seed;

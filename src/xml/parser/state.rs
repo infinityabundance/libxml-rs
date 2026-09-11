@@ -5600,6 +5600,25 @@ impl XmlParser {
         result
     }
 
+    /// Drain every input that `parse_reference`'s `XML_PARSE_NOENT` substitution
+    /// path pushed on top of the base document (upstream `xmlCtxtPushInput`,
+    /// popped by upstream's content loop).
+    ///
+    /// The recursive parser drains them from its own content loop, which reads
+    /// the CURRENT input; the persistent driver's scanners are bound to the base
+    /// document (`push_bounds` / `abs_byte`), so the driver consumes such an
+    /// input through this helper instead of stepping on it.
+    pub(crate) fn drain_pushed_entity_inputs(&mut self) -> Result<(), ()> {
+        while self.tokenizer.input().depth() > 1 {
+            let saved_barrier = self.tokenizer.input_mut().seal();
+            let result = self.entity_content_loop();
+            self.tokenizer.input_mut().unseal(saved_barrier);
+            let _ = self.tokenizer.pop_input();
+            result?;
+        }
+        Ok(())
+    }
+
     /// The content loop of an entity sub-parse — upstream
     /// `xmlParseContentInternal`, whose condition is
     /// `cur < input->end && !PARSER_STOPPED` over the PUSHED entity input.

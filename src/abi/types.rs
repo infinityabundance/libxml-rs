@@ -553,9 +553,9 @@ pub const XML_IO_ENOENT: c_int = 1524;
 
 pub const XML_MAX_TEXT_LENGTH: c_int = 10_000_000;
 pub const XML_MAX_NAME_LENGTH: c_int = 50_000;
-pub const XML_MAX_DICTIONARY_LIMIT: c_int = 1_000_000;
-pub const XML_MAX_LOOKUP_LIMIT: c_int = 1_000_000;
-pub const XML_MAX_HUGE_LENGTH: c_int = 100_000_000;
+pub const XML_MAX_DICTIONARY_LIMIT: c_int = 100_000_000;
+pub const XML_MAX_LOOKUP_LIMIT: c_int = 10_000_000;
+pub const XML_MAX_HUGE_LENGTH: c_int = 1_000_000_000;
 
 // ── XPath parser-context error codes (upstream xmlXPathError) ──────────
 //
