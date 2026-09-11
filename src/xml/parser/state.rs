@@ -7083,11 +7083,25 @@ impl XmlParser {
     /// sits at the tag's closing `>` when the SAX start-element callback
     /// fires — the depth-error window must be captured there,
     /// HOSTILE-FAILURE F1).
+    /// Place the C `input->cur` exactly at an ABSOLUTE stream byte offset,
+    /// leaving `base`/`end`/`line`/`col`/`consumed` as [`Self::sync_input_position`]
+    /// published them.
+    ///
+    /// `byte_pos` is an absolute offset into the materialized stream, while
+    /// the C `base` points at the PHYSICAL WINDOW base — which a declared
+    /// encoding switch moves (`InputBuffer::window_base_abs`, reported through
+    /// `consumed`). Adding the absolute offset to that base would land
+    /// `cur - base` too far by the window offset, and the expat-compat byte
+    /// index `consumed + (cur - base)` (PHP `XML_GetCurrentByteIndex`) would
+    /// report `consumed + byte_pos` instead of `byte_pos` — the
+    /// `bug26614_libxml_gte2_11` divergence for an `iso-8859-1`-declared
+    /// document. Subtract the window base so the identity holds.
     fn sync_cur_at(&mut self, byte_pos: usize) {
+        let wb = self.tokenizer.input().current_ref().window_base_abs();
         unsafe {
             let ctxt = &mut *self.ctxt;
             if !ctxt.input.is_null() && !(*ctxt.input).base.is_null() {
-                (*ctxt.input).cur = (*ctxt.input).base.add(byte_pos);
+                (*ctxt.input).cur = (*ctxt.input).base.add(byte_pos.saturating_sub(wb));
             }
         }
     }
