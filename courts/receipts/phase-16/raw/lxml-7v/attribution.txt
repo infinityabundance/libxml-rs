@@ -87,6 +87,42 @@ CONCLUSION
 * The remaining 163 are a separate XSLT / HTML / XML-Schema / XPath parity
   program; the isoschematron cluster's root cause is documented above.
 
+PART 3 — THREE XSLT BUGS FIXED FROM THAT ROOT CAUSE (commit 5785ccd)
+--------------------------------------------------------------------
+Chasing the isoschematron cluster found three real, oracle-verified defects:
+
+1. Template selection passed a NULL transform context to `xsltTestPattern`, and
+   `match_step` treats predicates as satisfied without a context — so every
+   predicate-bearing `match` pattern matched EVERY node.
+2. `evaluate_predicates` set the XPath context to the PREVIOUS context node
+   (`saved_node`) instead of the node under test.
+3. `copy_node_deep` had no attribute arm, so `xsl:copy-of select="@*"` dropped
+   every attribute.
+
+Result on the isolated oracle probes (direct libxslt, no lxml):
+  `iso_dsdl_include.xsl` -> candidate NOW BYTE-IDENTICAL to the oracle
+                            (513 bytes with attributes; was 66 bytes of PIs)
+  minimal `match="*[@hit]"` repro -> identical to the oracle
+Regression tests added; `cargo test --lib` 1322 passed; PHP six-gate
+unchanged (1250 passed / 0 failed).
+
+NEWLY EXPOSED (NOT introduced, but now reachable) — the next blocker:
+With predicates honored and attributes copied, the isoschematron pipeline
+reaches `iso_abstract_expand.xsl`'s real recursive macro expansion.
+Isolated with the same probe:
+
+    oracle    iso_abstract_expand.xsl + abstract schematron  -> 632 bytes, instant
+    candidate iso_abstract_expand.xsl + abstract schematron  -> does not finish in 20 s
+
+So `lxml.tests.test_isoschematron` now HANGS (it previously errored out early
+because templates matched the wrong nodes). The engine spends unbounded time
+in one `xsl:for-each` / `xsl:apply-templates` cycle at shallow stack depth
+(gdb shows a ~20-frame stack with repeated allocation inside
+`process_apply_templates` -> `xsltPushVariable`), i.e. a node-set iteration /
+macro-expansion non-termination in the transform engine — a separate,
+pre-existing scalability defect. Reproducer retained:
+`/tmp/it/xslt/iso_abstract_expand.xsl` + `/tmp/it/xslt/abs.xml` (see sch.py).
+
 NOTE: always verify LD_LIBRARY_PATH with ldd. A directory that does not exist
 inside the container silently falls back to /usr/local/lib — the ORACLE — which
 invalidated an earlier "pristine passes" comparison in this session.
