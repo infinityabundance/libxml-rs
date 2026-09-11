@@ -2527,16 +2527,67 @@ pub(crate) unsafe fn process_text(ctxt: *mut _xsltTransformContext, inst: *mut _
     }
 }
 
+/// Evaluate the sequence constructor of an instruction into a string.
+///
+/// # UPSTREAM-PARITY
+///
+/// Port of templates.c `xsltEvalTemplateString`: a temporary DETACHED
+/// `fake` element is created (its `doc` is `ctxt->output`, but it is not
+/// linked into the result tree), the sequence constructor `inst->children`
+/// is instantiated into it, and the element's string value
+/// (`xmlNodeGetContent`) is returned.
+///
+/// `xsl:comment` and `xsl:processing-instruction` use this to build their
+/// content, so every instruction child (in particular `xsl:value-of`)
+/// contributes. Taking `xmlNodeGetContent` of the instruction's first
+/// child instead — as this code once did — silently drops everything after
+/// the first text run (lxml test_isoschematron / iso_abstract_expand emits
+/// `<!--Start pattern based on abstract <value-of .../>-->`).
+///
+/// Returns a newly allocated string, or NULL when the instruction has no
+/// children / on allocation failure. The caller owns the result.
+///
+/// # SAFETY
+///
+/// - `ctxt` and `inst` must be valid pointers.
+pub(crate) unsafe fn eval_template_string(
+    ctxt: *mut _xsltTransformContext,
+    inst: *mut _xmlNode,
+) -> *mut xmlChar {
+    if ctxt.is_null() || inst.is_null() || (*inst).children.is_null() {
+        return ptr::null_mut();
+    }
+    // xmlNewDocNode(ctxt->output, NULL, "fake", NULL)
+    let fake = new_node(ptr::null_mut(), c"fake".as_ptr() as *const xmlChar);
+    if fake.is_null() {
+        return ptr::null_mut();
+    }
+    (*fake).doc = (*ctxt).output;
+    let saved_insert = (*ctxt).insert;
+    (*ctxt).insert = fake;
+    execute_content(ctxt, (*inst).children);
+    (*ctxt).insert = saved_insert;
+    let ret = node_get_content(fake);
+    free_node(fake);
+    ret
+}
+
 /// Process `xsl:comment`.
 ///
 /// # SAFETY
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_comment(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let content = node_get_content((*inst).children);
-    if !content.is_null() {
-        append_comment_node(ctxt, content);
-        libc::free(content as *mut libc::c_void);
+    // UPSTREAM-PARITY (transform.c xsltComment): the content is the string
+    // value of the instantiated sequence constructor, and a comment node is
+    // ALWAYS added — even when the result is empty (xmlNewComment(NULL)).
+    let value = eval_template_string(ctxt, inst);
+    let node = new_comment(value as *const xmlChar);
+    if !value.is_null() {
+        libc::free(value as *mut libc::c_void);
+    }
+    if !node.is_null() {
+        append_to_result(ctxt, node);
     }
 }
 
@@ -2556,7 +2607,7 @@ pub(crate) unsafe fn process_pi(ctxt: *mut _xsltTransformContext, inst: *mut _xm
     if name_str.is_null() {
         return;
     }
-    let content = node_get_content((*inst).children);
+    let content = eval_template_string(ctxt, inst);
     append_pi_node(ctxt, name_str, content);
     if !content.is_null() {
         libc::free(content as *mut libc::c_void);

@@ -925,17 +925,6 @@ pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
                 }
             }
         }
-        t if t == XML_DOCUMENT_NODE as c_int || t == XML_HTML_DOCUMENT_NODE as c_int => {
-            let root = doc_get_root_element(node as *mut _xmlDoc);
-            if !root.is_null() {
-                let sub = node_get_content(root);
-                if !sub.is_null() {
-                    let len = crate::abi::exports_xml2::xmlStrlen(sub);
-                    result.extend_from_slice(core::slice::from_raw_parts(sub, len as usize));
-                    allocator::xmlFreeImpl(sub as *mut c_void);
-                }
-            }
-        }
         t if t == XML_NAMESPACE_DECL as c_int => {
             // XPath namespace node (an independent `_xmlNs` copy cast to
             // `_xmlNode`, xmlXPathNodeSetDupNs semantics): its string-value is
@@ -951,10 +940,19 @@ pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
             }
         }
         _ => {
-            // Element and everything else: concatenate descendant text
-            // content (XPath 1.0 string-value semantics — §4.2 / tree.c
-            // xmlNodeGetContent, which walks the full subtree, not just
-            // direct text children).
+            // Element, document, document-fragment and everything else:
+            // concatenate descendant text content (XPath 1.0 string-value
+            // semantics — §4.2 / tree.c xmlNodeGetContent).
+            //
+            // UPSTREAM-PARITY (tree.c xmlNodeGetContent / xmlBufGetNodeContent):
+            // for XML_DOCUMENT_NODE / XML_HTML_DOCUMENT_NODE / XML_DOCUMENT_FRAG_NODE
+            // upstream calls xmlBufGetChildContent, which walks EVERY child of the
+            // document — not just xmlDocGetRootElement(). This matters for result
+            // tree fragments (libxslt's xsl:variable / xsl:with-param inline content),
+            // whose RVT document holds bare text nodes with NO element root: the
+            // previous xmlDocGetRootElement-only arm stringified such an RVT to "",
+            // so `xsl:value-of select="$var"` produced nothing (lxml
+            // test_isoschematron / iso_abstract_expand).
             let mut child = (*node).children;
             while !child.is_null() {
                 let ctype = (*child).type_;
