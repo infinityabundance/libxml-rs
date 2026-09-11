@@ -2446,24 +2446,34 @@ pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mu
     // Borrowed pointers into the stylesheet when no namespace attribute is
     // present; `ns_str` (owned) when the attribute supplied a value. The
     // binding below copies the href/prefix before `ns_str` is freed.
-    // Split an explicit prefix from the QName. `name_str` is an owned (heap)
-    // AVT result, so NUL-terminating the ':' in place yields the prefix and the
-    // local name at name_str[pos+1..]. Upstream xsltElement expands the QName
-    // and passes its prefix to xsltGetSpecialNamespace; dropping it declared
-    // the namespace with a NULL prefix, so `local-name()` on the resulting
-    // namespace node was empty and the Schematron skeleton's
+    // Split an explicit prefix from the QName. Upstream xsltElement expands
+    // the QName and passes its prefix to xsltGetSpecialNamespace; dropping it
+    // declared the namespace with a NULL prefix, so `local-name()` on the
+    // resulting namespace node was empty and the Schematron skeleton's
     // `namespace::*[local-name()='xsi']` selected nothing.
+    //
+    // `name_str` (an AVT result) is treated as READ-ONLY: it may alias an
+    // interned stylesheet-dictionary string, and NUL-terminating the ':' in
+    // place corrupted the dictionary (a later HTML parse produced `<bodyID>`
+    // instead of `<body>`). The local name is the already-NUL-terminated tail;
+    // the prefix gets its own buffer, freed once the binding no longer needs it.
     let mut elem_name: *const xmlChar = name_str;
     let mut qname_prefix: *const xmlChar = ptr::null();
+    let mut qname_prefix_owned: *mut xmlChar = ptr::null_mut();
     {
         let mut i = 0usize;
         while *name_str.add(i) != 0 && *name_str.add(i) != b':' as xmlChar {
             i += 1;
         }
         if *name_str.add(i) == b':' as xmlChar {
-            *name_str.add(i) = 0;
-            qname_prefix = name_str;
-            elem_name = name_str.add(i + 1);
+            let buf = libc::malloc(i + 1) as *mut xmlChar;
+            if !buf.is_null() {
+                ptr::copy_nonoverlapping(name_str, buf, i);
+                *buf.add(i) = 0;
+                qname_prefix = buf;
+                qname_prefix_owned = buf;
+                elem_name = name_str.add(i + 1);
+            }
         }
     }
     let mut borrowed_href: *const xmlChar = ptr::null();
@@ -2492,6 +2502,9 @@ pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mu
         if !ns_str.is_null() {
             libc::free(ns_str as *mut libc::c_void);
         }
+        if !qname_prefix_owned.is_null() {
+            libc::free(qname_prefix_owned as *mut libc::c_void);
+        }
         return;
     }
     append_to_result(ctxt, elem);
@@ -2513,6 +2526,9 @@ pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mu
     libc::free(name_str as *mut libc::c_void);
     if !ns_str.is_null() {
         libc::free(ns_str as *mut libc::c_void);
+    }
+    if !qname_prefix_owned.is_null() {
+        libc::free(qname_prefix_owned as *mut libc::c_void);
     }
     let saved_insert = (*ctxt).insert;
     (*ctxt).insert = elem;

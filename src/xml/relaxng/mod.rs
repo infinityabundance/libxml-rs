@@ -2106,18 +2106,18 @@ fn rng_validate_element_pattern(
         if !content_ok {
             ctxt.errors.truncate(saved_err2);
             ctxt.nb_errors = saved_nb2;
-            if children.is_empty() {
+            // UPSTREAM-PARITY (relaxng.c XML_RELAXNG_ERR_ELEMWRONG): report the
+            // first child the content model could not consume. The message is
+            // exactly "Did not expect element %s there" (php
+            // DOMDocument_relaxNGValidate_error1 matches it verbatim).
+            let max_end = ends.iter().copied().max().unwrap_or(0);
+            if max_end < children.len() {
                 ctxt.record_error(format!(
-                    "Element '{}': Expecting an element, got nothing",
-                    node_name
+                    "Did not expect element {} there",
+                    get_local_name(children[max_end])
                 ));
             } else {
-                let first = children[0];
-                ctxt.record_error(format!(
-                    "Element '{}': Did not expect element {} there",
-                    node_name,
-                    get_local_name(first)
-                ));
+                ctxt.record_error("Expecting an element, got nothing".to_string());
             }
         }
 
