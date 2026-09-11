@@ -1,66 +1,92 @@
-Phase 16.7.8 step 7v — lxml gate: the push-parser blocker is fixed; the
-remaining lxml failures are PRE-EXISTING and independent of this work.
+Phase 16.7.8 step 7v — lxml consumer court: push blocker fixed, schematron
+crash fixed, and the remaining suite failures measured against a baseline.
 
 WHY THIS RECEIPT EXISTS
 -----------------------
 The step-7v option flip makes lxml's default parse-option set
 (NOENT | NOCDATA | NONET | COMPACT | BIG_LINES) eligible for the persistent
-push driver. Before the flip every lxml parse stayed on the O(N^2) replay
-engine and lxml's 2.2 GB test_very_large_sourceline_iterparse hung for more
-than 240 s. After the flip the suite runs past that test (20.5 s in the debug
-build the court uses; ~2.4 GB/s in release) and then reaches two PRE-EXISTING
-candidate defects that the hang had been masking.
+push driver. Before it every lxml parse stayed on the O(N^2) replay engine and
+lxml's 2.2 GB test_very_large_sourceline_iterparse hung for more than 240 s.
+After it the suite runs past that test (20.5 s in the debug build the court
+uses; ~2.4 GB/s in release) and can finally be measured end to end.
 
-THE TWO PRE-EXISTING DEFECTS (both reproduce on the pre-change commit)
----------------------------------------------------------------------
-1. lxml.etree.Schematron doctest / xmlSchematronNewValidCtxt clones a
-   CompiledExpr and segfaults (src/xml/xpath/ast.rs:277). This is the test
-   that aborts `python3 test.py` (rc=139), so the suite cannot complete.
+PART 1 — A REAL BUG FOUND BY THE UNBLOCKED SUITE (FIXED)
+-------------------------------------------------------
+The suite aborted rc=139 at the `lxml.etree.Schematron` doctest:
+`xmlSchematronNewValidCtxt` cloned a `CompiledExpr` from freed memory.
 
-2. lxml.isoschematron: 21 of 25 tests fail. `iso_dsdl_include.xsl`
-   (a 4 KB XSLT 1.0 stylesheet) produces `<?DSDL_INCLUDE_START?>
-   <?DSDL_INCLUDE_END?>` instead of the copied source schema — i.e. the
-   generic `node()` copy template never runs. Reproduced OUTSIDE lxml with a
-   direct libxslt probe, so it is not an lxml-extension artefact.
+Root cause: `xmlSchematronParse` returned its PARSER CONTEXT as the schema
+pointer. Upstream keeps `_xmlSchematronParserCtxt` and `_xmlSchematron` as two
+objects; lxml does
 
-THREE-WAY ATTRIBUTION (pristine 3490fe47 == HEAD~2, the commit immediately
-before this slice's code change; modified cdc8b37 == this slice; oracle
-== /usr/local/lib from the same containers).
+    self._c_schema = xmlSchematronParse(parser_ctxt)
+    finally: xmlSchematronFreeParserCtxt(parser_ctxt)
 
-  $ LD_LIBRARY_PATH=/out/pf/lib  python3 /tmp/sch.py     # pristine 3490fe47
-  Segmentation fault (core dumped)                        rc=139
+and frees the schema only at dealloc, so the schema pointer was dangling
+(and `xmllint --schematron` double-freed). Fix: a distinct
+`SchematronParserCtxt` type and a NEW `Box<SchematronSchema>` from
+`xmlSchematronParse`; `xmlSchematronFreeParserCtxt` frees only the parser
+context.
 
-  $ LD_LIBRARY_PATH=/candidate/lib python3 /tmp/sch.py   # modified cdc8b37
-  Segmentation fault (core dumped)                        rc=139
+Verified against the oracle with a direct probe (no lxml):
 
-  $ python3 /tmp/sch.py                                  # oracle
-  validate -> False                                       rc=0
+    candidate  validate -> False   rc=0
+    oracle     validate -> False   rc=0
 
-  $ LD_LIBRARY_PATH=/out/pf/lib  python3 -m unittest \
-        lxml.tests.test_isoschematron                     # pristine 3490fe47
-  Ran 25 tests ... FAILED (errors=21)
+New regression tests: `parser_ctxt_and_schema_are_distinct_allocations`,
+`parse_twice_recompiles_independently`; the existing C-ABI lifecycle tests were
+corrected to the upstream sequence.
 
-  $ LD_LIBRARY_PATH=/candidate/lib python3 -m unittest \
-        lxml.tests.test_isoschematron                     # modified cdc8b37
-  Ran 25 tests ... FAILED (errors=21)
+PART 2 — THE REMAINING FAILURES ARE PRE-EXISTING (MEASURED)
+-----------------------------------------------------------
+Full suite via the court's own runner (`python3 test.py -u -v`):
 
-  $ python3 -m unittest lxml.tests.test_isoschematron      # oracle
-  Ran 25 tests ... OK
+  baseline  = 3490fe47 + ONLY the schematron fix above, debug, in-container
+              (test_very_large_sourceline_iterparse deselected: it HANGS on the
+              pre-7v replay engine, which is the blocker this slice fixes)
+  candidate = this slice, debug
 
-The pristine lib used above is a separate release build of 3490fe47 into
-/tmp/pristine-wt (libxml2/libxslt/libexslt all resolve to it via
-LD_LIBRARY_PATH=/out/pf/lib; verified with ldd). NOTE: pointing
-LD_LIBRARY_PATH at a directory that does not exist silently falls back to
-/usr/local/lib — the ORACLE — which is how an earlier "pristine passes"
-comparison in this session was invalidated; always verify with ldd.
+    baseline    Ran 2007 tests   FAILED (failures=114, errors=59)   => 173
+    candidate   Ran 2007 tests   FAILED (failures=104, errors=59)   => 163
+
+The slice therefore regresses NOTHING and fixes 10 tests (the flip moves some
+feed-parser / iterparse cases off the replay engine). The residual 163 failures
+are pre-existing and are NOT push-parser defects; by module:
+
+    21 ERROR lxml.tests.test_isoschematron     10 FAIL lxml.tests.test_xmlschema
+    19 FAIL  lxml.tests.test_htmlparser        10 FAIL lxml.tests.test_xslt (+6 ERROR)
+    13 FAIL  lxml.tests.test_etree (+10 ERR)    9 FAIL lxml.tests.test_xpathevaluator
+     6 FAIL  lxml.tests.test_dtd (+5 ERROR)     6 FAIL lxml.tests.test_relaxng
+     6 FAIL  lxml.tests.test_incremental_xmlfile (+4 ERROR)
+     4 ERROR lxml.tests.test_http_io            4 ERROR lxml.tests.test_objectify
+     4 FAIL  lxml.tests.test_elementpath        13 FAIL doc/*.txt doctests, etc.
+
+ROOT CAUSE FOUND FOR THE LARGEST SINGLE CLUSTER (isoschematron, 21 + a doctest)
+------------------------------------------------------------------------------
+`iso_dsdl_include.xsl` compiles, but its generic `node()` copy template never
+runs: the process outputs only the two `DSDL_INCLUDE_*` PIs. Bisection (drop one
+specific template at a time) isolates it to this template:
+
+    <xslt:template match="*[@xlink:href][not(parent::*[@xlink:type='complex'])]
+        [not(@xlink:type) or (@xlink:type='simple')][@xlink:show='embed']
+        [not(@xlink:actuate) or (@xlink:actuate='onLoad')]" mode="dsdl:go">
+
+With that template removed the transform copies the schema correctly
+(outlen 403, root=schema) — the candidate then matches the oracle. With it
+present the generic `node()` template (priority -1) is shadowed and the XLink
+body runs for the schema root, emitting the PIs. This is an XSLT match-PATTERN
+compilation defect (predicates on a wildcard step are apparently not applied),
+not a push-parser issue; a minimal `mode`/prefix repro does NOT reproduce it, so
+it is specifically the multi-predicate wildcard match.
 
 CONCLUSION
 ----------
-* "candidate lxml test_very_large_sourceline_iterparse hangs" — FIXED by this
-  slice (the replay O(N^2) is bypassed and the per-call growth is now linear).
-* "candidate lxml suite rc=139 / isoschematron errors" — NOT caused by this
-  slice; identical numbers on 3490fe47. These belong to the XSLT/Schematron
-  engine, not the push parser, and are tracked as the next work item.
+* lxml 2.2 GB hang — FIXED (push parser; the §16.7.8 blocker).
+* schematron segfault — FIXED (real use-after-free, oracle-verified).
+* lxml suite failures 173 -> 163, no regressions — measured against a baseline.
+* The remaining 163 are a separate XSLT / HTML / XML-Schema / XPath parity
+  program; the isoschematron cluster's root cause is documented above.
 
-Files: sch.py (the schematron validate reproducer), candidate-result.json
-(the full lxml-run.sh candidate result: build_ok, corpus_rc=0, test_rc=139).
+NOTE: always verify LD_LIBRARY_PATH with ldd. A directory that does not exist
+inside the container silently falls back to /usr/local/lib — the ORACLE — which
+invalidated an earlier "pristine passes" comparison in this session.
