@@ -1,0 +1,13 @@
+# Phase 16.7.8 step 7v — lxml consumer court at cdc8b37 (debug build)
+#
+# The lxml court mounts the DEBUG tree (target/debug) as /candidate; unlike the
+# pushdiff/pushscale courts it does not rebuild libxml2 itself, so the candidate
+# binary sha below is the one the extension was built and run against.
+candidate_sha=83ab70ec60f80e41c161b33ee0c2b9e85476f255
+candidate_code_sha=cdc8b37568217af7e161ba50d482b98d7419275f
+candidate_target_dir=/mnt/1tb_kingston/libxml-rs/target/debug
+candidate_libxml2_sha256=c1dd0a8fda1b5475680abbf28e827dc407ae0bf3cba5118dca770d74d012109b
+consumer_runner=lxml-run.sh
+consumer_runner_sha256=c60ff43d54dded20ab92149416e82a74d74eb6e92f370f9a90379435891f93eb
+host=libxml-rs/phase14-debian:1 (container lxml-cand)
+tree_clean=yes

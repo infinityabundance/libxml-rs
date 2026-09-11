@@ -1,0 +1,66 @@
+Phase 16.7.8 step 7v — lxml gate: the push-parser blocker is fixed; the
+remaining lxml failures are PRE-EXISTING and independent of this work.
+
+WHY THIS RECEIPT EXISTS
+-----------------------
+The step-7v option flip makes lxml's default parse-option set
+(NOENT | NOCDATA | NONET | COMPACT | BIG_LINES) eligible for the persistent
+push driver. Before the flip every lxml parse stayed on the O(N^2) replay
+engine and lxml's 2.2 GB test_very_large_sourceline_iterparse hung for more
+than 240 s. After the flip the suite runs past that test (20.5 s in the debug
+build the court uses; ~2.4 GB/s in release) and then reaches two PRE-EXISTING
+candidate defects that the hang had been masking.
+
+THE TWO PRE-EXISTING DEFECTS (both reproduce on the pre-change commit)
+---------------------------------------------------------------------
+1. lxml.etree.Schematron doctest / xmlSchematronNewValidCtxt clones a
+   CompiledExpr and segfaults (src/xml/xpath/ast.rs:277). This is the test
+   that aborts `python3 test.py` (rc=139), so the suite cannot complete.
+
+2. lxml.isoschematron: 21 of 25 tests fail. `iso_dsdl_include.xsl`
+   (a 4 KB XSLT 1.0 stylesheet) produces `<?DSDL_INCLUDE_START?>
+   <?DSDL_INCLUDE_END?>` instead of the copied source schema — i.e. the
+   generic `node()` copy template never runs. Reproduced OUTSIDE lxml with a
+   direct libxslt probe, so it is not an lxml-extension artefact.
+
+THREE-WAY ATTRIBUTION (pristine 3490fe47 == HEAD~2, the commit immediately
+before this slice's code change; modified cdc8b37 == this slice; oracle
+== /usr/local/lib from the same containers).
+
+  $ LD_LIBRARY_PATH=/out/pf/lib  python3 /tmp/sch.py     # pristine 3490fe47
+  Segmentation fault (core dumped)                        rc=139
+
+  $ LD_LIBRARY_PATH=/candidate/lib python3 /tmp/sch.py   # modified cdc8b37
+  Segmentation fault (core dumped)                        rc=139
+
+  $ python3 /tmp/sch.py                                  # oracle
+  validate -> False                                       rc=0
+
+  $ LD_LIBRARY_PATH=/out/pf/lib  python3 -m unittest \
+        lxml.tests.test_isoschematron                     # pristine 3490fe47
+  Ran 25 tests ... FAILED (errors=21)
+
+  $ LD_LIBRARY_PATH=/candidate/lib python3 -m unittest \
+        lxml.tests.test_isoschematron                     # modified cdc8b37
+  Ran 25 tests ... FAILED (errors=21)
+
+  $ python3 -m unittest lxml.tests.test_isoschematron      # oracle
+  Ran 25 tests ... OK
+
+The pristine lib used above is a separate release build of 3490fe47 into
+/tmp/pristine-wt (libxml2/libxslt/libexslt all resolve to it via
+LD_LIBRARY_PATH=/out/pf/lib; verified with ldd). NOTE: pointing
+LD_LIBRARY_PATH at a directory that does not exist silently falls back to
+/usr/local/lib — the ORACLE — which is how an earlier "pristine passes"
+comparison in this session was invalidated; always verify with ldd.
+
+CONCLUSION
+----------
+* "candidate lxml test_very_large_sourceline_iterparse hangs" — FIXED by this
+  slice (the replay O(N^2) is bypassed and the per-call growth is now linear).
+* "candidate lxml suite rc=139 / isoschematron errors" — NOT caused by this
+  slice; identical numbers on 3490fe47. These belong to the XSLT/Schematron
+  engine, not the push parser, and are tracked as the next work item.
+
+Files: sch.py (the schematron validate reproducer), candidate-result.json
+(the full lxml-run.sh candidate result: build_ok, corpus_rc=0, test_rc=139).
