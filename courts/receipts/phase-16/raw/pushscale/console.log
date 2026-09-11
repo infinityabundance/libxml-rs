@@ -1,14 +1,14 @@
 # small-chunk curve (1 KiB chunks): 20/40/80 MB
-oracle    n=20480 chunks=20480 bytes=21073920 secs=0.01 MB/s=1615.6 wellFormed=1
-candidate n=20480 chunks=20480 bytes=21073920 secs=0.02 MB/s=959.5 wellFormed=1
-oracle    n=40960 chunks=40960 bytes=42147840 secs=0.02 MB/s=1738.3 wellFormed=1
-candidate n=40960 chunks=40960 bytes=42147840 secs=0.04 MB/s=1037.1 wellFormed=1
-oracle    n=81920 chunks=81920 bytes=84295680 secs=0.05 MB/s=1666.1 wellFormed=1
-candidate n=81920 chunks=81920 bytes=84295680 secs=0.07 MB/s=1095.6 wellFormed=1
+oracle    n=20480 chunks=20480 bytes=21073920 secs=0.01 MB/s=1802.8 wellFormed=1
+candidate n=20480 chunks=20480 bytes=21073920 secs=0.02 MB/s=1003.5 wellFormed=1
+oracle    n=40960 chunks=40960 bytes=42147840 secs=0.02 MB/s=1659.2 wellFormed=1
+candidate n=40960 chunks=40960 bytes=42147840 secs=0.04 MB/s=1004.9 wellFormed=1
+oracle    n=81920 chunks=81920 bytes=84295680 secs=0.04 MB/s=1789.6 wellFormed=1
+candidate n=81920 chunks=81920 bytes=84295680 secs=0.08 MB/s=1010.1 wellFormed=1
 # large-chunk curve (1 MiB chunks): ~5/10/21 GB
-oracle    n=5120 chunks=5120 bytes=5368734720 secs=2.03 MB/s=2520.3 wellFormed=1
-candidate n=5120 chunks=5120 bytes=5368734720 secs=2.69 MB/s=1906.4 wellFormed=1
-oracle    n=10240 chunks=10240 bytes=10737469440 secs=4.07 MB/s=2516.7 wellFormed=1
-candidate n=10240 chunks=10240 bytes=10737469440 secs=5.61 MB/s=1825.3 wellFormed=1
-oracle    n=20480 chunks=20480 bytes=21474938880 secs=8.04 MB/s=2546.6 wellFormed=1
-candidate n=20480 chunks=20480 bytes=21474938880 secs=11.23 MB/s=1823.8 wellFormed=1
+oracle    n=5120 chunks=5120 bytes=5368734720 secs=2.01 MB/s=2545.8 wellFormed=1
+candidate n=5120 chunks=5120 bytes=5368734720 secs=2.55 MB/s=2009.0 wellFormed=1
+oracle    n=10240 chunks=10240 bytes=10737469440 secs=4.05 MB/s=2526.7 wellFormed=1
+candidate n=10240 chunks=10240 bytes=10737469440 secs=5.26 MB/s=1948.6 wellFormed=1
+oracle    n=20480 chunks=20480 bytes=21474938880 secs=8.00 MB/s=2560.4 wellFormed=1
+candidate n=20480 chunks=20480 bytes=21474938880 secs=10.77 MB/s=1901.8 wellFormed=1
