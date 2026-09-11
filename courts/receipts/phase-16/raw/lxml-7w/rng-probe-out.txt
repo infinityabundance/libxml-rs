@@ -1,0 +1,7 @@
+=== CAND ===
+RNG_PARSE_OK
+VALIDATE_RC=1
+Expected more child elements for content model at '/schema'
+=== ORACLE ===
+RNG_PARSE_OK
+VALIDATE_RC=0

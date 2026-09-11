@@ -1,0 +1,13 @@
+<sch:schema xmlns:sch="http://purl.oclc.org/dsdl/schematron">
+  <sch:title>iso schematron validation</sch:title>
+  <sch:ns uri="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi"/>
+  <sch:pattern abstract="true" id="abstract.dateTime.tz_utc">
+    <sch:rule context="$datetime">
+      <sch:let name="lastchar" value="substring(./text(), string-length(./text()))"/>
+      <sch:assert test="$lastchar='Z'">[ERROR] <sch:value-of select="name(.)"/></sch:assert>
+    </sch:rule>
+  </sch:pattern>
+  <sch:pattern is-a="abstract.dateTime.tz_utc" id="datetime">
+    <sch:param name="datetime" value="datetime"/>
+  </sch:pattern>
+</sch:schema>

@@ -1,0 +1,20 @@
+candidate_sha=804c303fc25e5b2de3de96db034b46cb32515bbd
+candidate_parent_sha=fd62c8ed468f3d17d1c70cc797c7e667c927c71e
+evidence_kind=root-cause fix (XSLT result-tree-fragment stringify + xsl:comment/PI content)
+release_libxml2_sha256=51c5ca514de2f7f83915e32c99b7d6a91b209cc333726a2fb5b3041115ed0179
+debug_libxml2_sha256=088cdd2bafb43ea1b703f771a472d241f33515026133cc4a08590e2e43624966
+host=libxml-rs/phase14-debian:1 (container lxml-cand / ephemeral docker run for the probes)
+oracle_libxml2=2.15.3 oracle_libxslt=1.1.45
+probe=xsltprobe.c (loads a stylesheet + optional doc, dumps the result document)
+probe_recipe=docker run --rm -v /tmp/it:/it -v $PWD/target/release:/candidate:ro libxml-rs/phase14-debian:1 (candidate LD_LIBRARY_PATH=/candidate/lib; oracle binary run with LD_LIBRARY_PATH unset so it resolves /usr/local/lib)
+probe_compare=probe-compare.txt (byte-exact comparison of the candidate and oracle ---OUT--- blocks)
+probe_result=all 5 fixtures byte-identical (mA 64B, mB 70B, mC 85B, macro 128B, iso_abstract_expand+abs.xml 632B)
+lxml_suite_command=cd /src/lxml && python3 test.py -u -v   (container lxml-cand, LD_LIBRARY_PATH=/candidate/lib = target/debug)
+lxml_suite_previous=104 failures / 58 errors  (courts/receipts/phase-16/raw/lxml-7v/suite-candidate.txt)
+lxml_suite_now=103 failures / 58 errors
+lxml_suite_fixed=test_extension_element_process_children (lxml.tests.test_xslt.ETreeXSLTExtElementTestCase)
+lxml_suite_regressions=(none)
+unit_tests=cargo test --lib -> 1324 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+tree_clean=yes
+note=lxml test_isoschematron remains 20 errors: those are RelaxNG validation failures of the schematron schema against iso-schematron.rng, a separate engine defect (see rngprobe evidence), not this XSLT path

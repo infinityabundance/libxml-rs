@@ -1,0 +1,90 @@
+===== mA CAND =====
+res->children=0x5650bb7d86e0 res->last=0x5650bb7d86e0 root=out outlen=63
+---OUT---
+<?xml version="1.0"?>
+<out xmlns:iae="urn:iae"><v>HI</v></out>
+
+---END---
+===== mA ORACLE =====
+res->children=0x562e03af7f90 res->last=0x562e03af7f90 root=out outlen=63
+---OUT---
+<?xml version="1.0"?>
+<out xmlns:iae="urn:iae"><v>HI</v></out>
+
+---END---
+===== mB CAND =====
+res->children=0x5576472d1c00 res->last=0x5576472d1c00 root=out outlen=69
+---OUT---
+<?xml version="1.0"?>
+<out xmlns:iae="urn:iae"><v>datetime</v></out>
+
+---END---
+===== mB ORACLE =====
+res->children=0x56470c0c8860 res->last=0x56470c0c8860 root=out outlen=69
+---OUT---
+<?xml version="1.0"?>
+<out xmlns:iae="urn:iae"><v>datetime</v></out>
+
+---END---
+===== mC CAND =====
+res->children=0x5648e1c0cbd0 res->last=0x5648e1c0cbd0 root=out outlen=84
+---OUT---
+<?xml version="1.0"?>
+<out xmlns:iae="urn:iae"><a>TEXT</a><b>VAL</b><c>CT</c></out>
+
+---END---
+===== mC ORACLE =====
+res->children=0x559e3cec29a0 res->last=0x559e3cec29a0 root=out outlen=84
+---OUT---
+<?xml version="1.0"?>
+<out xmlns:iae="urn:iae"><a>TEXT</a><b>VAL</b><c>CT</c></out>
+
+---END---
+===== macro CAND =====
+res->children=0x5566b7e34f60 res->last=0x5566b7e34f60 root=out outlen=127
+---OUT---
+<?xml version="1.0"?>
+<out xmlns:iso="http://purl.oclc.org/dsdl/schematron" xmlns:iae="urn:iae"><v>$datetime</v><w>0</w></out>
+
+---END---
+===== macro ORACLE =====
+res->children=0x55612a844b60 res->last=0x55612a844b60 root=out outlen=127
+---OUT---
+<?xml version="1.0"?>
+<out xmlns:iso="http://purl.oclc.org/dsdl/schematron" xmlns:iae="urn:iae"><v>$datetime</v><w>0</w></out>
+
+---END---
+===== iso_abstract_expand CAND =====
+res->children=0x55d9fba10250 res->last=0x55d9fba10250 root=schema outlen=632
+---OUT---
+<?xml version="1.0"?>
+<sch:schema xmlns:sch="http://purl.oclc.org/dsdl/schematron">
+  <sch:title>iso schematron validation</sch:title>
+  <sch:ns uri="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi"/>
+  <!--Suppressed abstract pattern abstract.dateTime.tz_utc was here-->
+  <!--Start pattern based on abstract abstract.dateTime.tz_utc--><sch:pattern id="datetime">
+    <sch:rule context="datetime">
+      <sch:let name="lastchar" value="substring(./text(), string-length(./text()))"/>
+      <sch:assert test="$lastchar='Z'">[ERROR] <sch:value-of select="name(.)"/></sch:assert>
+    </sch:rule>
+  </sch:pattern>
+</sch:schema>
+
+---END---
+===== iso_abstract_expand ORACLE =====
+res->children=0x5589642f6320 res->last=0x5589642f6320 root=schema outlen=632
+---OUT---
+<?xml version="1.0"?>
+<sch:schema xmlns:sch="http://purl.oclc.org/dsdl/schematron">
+  <sch:title>iso schematron validation</sch:title>
+  <sch:ns uri="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi"/>
+  <!--Suppressed abstract pattern abstract.dateTime.tz_utc was here-->
+  <!--Start pattern based on abstract abstract.dateTime.tz_utc--><sch:pattern id="datetime">
+    <sch:rule context="datetime">
+      <sch:let name="lastchar" value="substring(./text(), string-length(./text()))"/>
+      <sch:assert test="$lastchar='Z'">[ERROR] <sch:value-of select="name(.)"/></sch:assert>
+    </sch:rule>
+  </sch:pattern>
+</sch:schema>
+
+---END---

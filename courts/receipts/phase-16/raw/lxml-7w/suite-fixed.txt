@@ -1,0 +1,1 @@
+test_extension_element_process_children (lxml.tests.test_xslt.ETreeXSLTExtElementTestCase.test_extension_element_process_children)
