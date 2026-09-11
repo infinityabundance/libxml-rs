@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<sch:schema xmlns:sch="http://purl.oclc.org/dsdl/schematron">
+  <sch:title>t</sch:title>
+  <sch:pattern id="p"><sch:rule context="a"><sch:assert test="b">msg</sch:assert></sch:rule></sch:pattern>
+</sch:schema>

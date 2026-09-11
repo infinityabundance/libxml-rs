@@ -1,0 +1,21 @@
+candidate_sha=09e1c6a0ba618ecc02f87053c98d39db853dccc0
+candidate_parent_sha=804c303fc25e5b2de3de96db034b46cb32515bbd
+evidence_kind=root-cause fix (RELAX NG content-model matching)
+release_libxml2_sha256=a185d474beb96834c8d1e824a70b5be9de72ab0e6b797a7ccb5d2781686f2b38
+debug_libxml2_sha256=dc61e047e5abd84132c5b9dbf547f94edb9399dbe7393dec8f271fcf35a793f8
+host=libxml-rs/phase14-debian:1 (container lxml-cand and an ephemeral docker run for the RNG probe)
+oracle_libxml2=2.15.3
+probe=rngprobe.c (xmlRelaxNGParse + xmlRelaxNGValidateDoc on a schema/doc pair)
+probe_result=sct1.xml and sct2.xml (unprefixed and sch:-prefixed schematron schemas) both parse and VALIDATE_RC=0, matching the oracle; before the fix the candidate reported RELAXNGV errors ("Does not match expected element pattern 'schema'", "Expected more child elements for content model at '/schema'")
+lxml_suite_command=cd /src/lxml && python3 test.py -u -v
+lxml_suite_baseline_2d822ee3=failures=104 / errors=58
+lxml_suite_previous_receipt=101 failures / 58 errors (after the result-tree-fragment fix)
+lxml_suite_now=99 failures / 57 errors
+lxml_suite_fixed=test_relaxng, test_relaxng_error, test_relaxng_shortcut, test_relaxng_stringio, test_schematron_invalid_args
+lxml_suite_regressions=(none)
+test_relaxng_cluster=7 failures -> 3 (generic_error, invalid_schema2, validation.txt doctest remain)
+test_isoschematron_cluster=20 errors -> 19 (the RNG gate now passes; the next blocker is that applying iso_svrl_for_xslt1.xsl returns only text instead of the generated stylesheet)
+unit_tests=cargo test --lib -> 1324 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+tree_clean=yes
+note=the Relax NG engine previously assumed each top-level content pattern consumes exactly one child node and matched name classes against the prefixed qname, so no real grammar (attributes under optional, group/interleave, recursive refs, prefixed documents) was handled. The new matcher separates attribute and child-element passes and backtracks over content spans.

@@ -1,0 +1,6 @@
+test_extension_element_process_children (lxml.tests.test_xslt.ETreeXSLTExtElementTestCase.test_extension_element_process_children)
+test_relaxng (lxml.tests.test_relaxng.ETreeRelaxNGTestCase.test_relaxng)
+test_relaxng_error (lxml.tests.test_relaxng.ETreeRelaxNGTestCase.test_relaxng_error)
+test_relaxng_shortcut (lxml.tests.test_relaxng.ETreeRelaxNGTestCase.test_relaxng_shortcut)
+test_relaxng_stringio (lxml.tests.test_relaxng.ETreeRelaxNGTestCase.test_relaxng_stringio)
+test_schematron_invalid_args (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_invalid_args)
