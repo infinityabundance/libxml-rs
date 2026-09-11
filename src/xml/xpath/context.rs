@@ -203,6 +203,13 @@ pub struct XPathContext {
     /// Bound variables (name → value).
     pub variables: HashMap<String, XPathValue>,
 
+    /// Values shadowed by a same-named binding further in (LIFO). XSLT scoping
+    /// allows a template parameter to shadow an outer variable of the same
+    /// name (e.g. a recursive template passing `<xsl:with-param
+    /// name="caller">`). Popping the inner binding must RESTORE the outer
+    /// value, not delete the name.
+    pub variable_shadow: HashMap<String, Vec<XPathValue>>,
+
     /// Namespace bindings (prefix → URI).
     pub namespaces: HashMap<String, String>,
 
@@ -271,6 +278,7 @@ impl Clone for XPathContext {
         cloned.context_position = self.context_position;
         cloned.context_size = self.context_size;
         cloned.variables = self.variables.clone();
+        cloned.variable_shadow = self.variable_shadow.clone();
         cloned.namespaces = self.namespaces.clone();
         cloned.error = self.error.clone();
         cloned.proximity_position = self.proximity_position;
@@ -307,6 +315,7 @@ impl XPathContext {
             context_position: 1,
             context_size: 1,
             variables: HashMap::new(),
+            variable_shadow: HashMap::new(),
             namespaces: HashMap::new(),
             functions: HashMap::new(),
             function_lookup: None,
@@ -528,14 +537,34 @@ impl XPathContext {
     /// It will be found by [`resolve_variable`](Self::resolve_variable) before
     /// any C callback is consulted.
     pub fn register_variable(&mut self, name: &str, value: XPathValue) {
-        self.variables.insert(name.to_string(), value);
+        // A same-named binding in an inner scope SHADOWS the outer one; keep the
+        // previous value so `unregister_variable` restores it instead of
+        // deleting the name (XSLT recursive templates re-bind `$caller`-style
+        // parameters on every call).
+        if let Some(previous) = self.variables.insert(name.to_string(), value) {
+            self.variable_shadow
+                .entry(name.to_string())
+                .or_default()
+                .push(previous);
+        }
     }
 
-    /// Remove a variable binding from the context's variable hash.
+    /// Remove a variable binding from the context's variable hash, restoring
+    /// the shadowed value if there is one.
     ///
     /// Used to unwind local XSLT variable scopes when a variable is popped
     /// from the transform variable stack.
     pub fn unregister_variable(&mut self, name: &str) {
+        if let Some(stack) = self.variable_shadow.get_mut(name) {
+            if let Some(previous) = stack.pop() {
+                if stack.is_empty() {
+                    self.variable_shadow.remove(name);
+                }
+                self.variables.insert(name.to_string(), previous);
+                return;
+            }
+            self.variable_shadow.remove(name);
+        }
         self.variables.remove(name);
     }
 

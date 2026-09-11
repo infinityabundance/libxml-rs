@@ -1381,17 +1381,27 @@ pub(crate) unsafe fn apply_templates_with_params(
     params: *mut _xsltStackElem,
 ) {
     // Push the params onto the parameter stack.
+    //
+    // Snapshot the with-param list BEFORE pushing: `xsltPushVariable` rewires
+    // `(*var).next` into the variable-stack chain, so walking `params.next`
+    // while pushing reads a link that has already been rewritten. When the
+    // rewritten link points back at the same element the traversal becomes a
+    // cycle and the push loop never terminates (unbounded allocation) — the
+    // `iso_abstract_expand.xsl` non-termination.
+    let mut to_push: Vec<*mut _xsltStackElem> = Vec::new();
     let mut p = params;
     while !p.is_null() {
-        crate::xslt::parameters::xsltPushParam(ctxt, p);
+        to_push.push(p);
         p = (*p).next;
+    }
+    let nparams = to_push.len();
+    for param in to_push {
+        crate::xslt::parameters::xsltPushParam(ctxt, param);
     }
     apply_templates_to_node(ctxt, node, mode);
     // Pop the params.
-    let mut p = params;
-    while !p.is_null() {
+    for _ in 0..nparams {
         crate::xslt::parameters::xsltPopParam(ctxt);
-        p = (*p).next;
     }
 }
 
@@ -4718,6 +4728,64 @@ mod tests {
             assert!(out.contains("x=\"1\""), "attribute x copied: {out}");
             assert!(out.contains("y=\"2\""), "attribute y copied: {out}");
             assert!(out.contains("z=\"3\""), "attribute z copied: {out}");
+        }
+    }
+
+    #[test]
+    /// `xsl:apply-templates` collects its `xsl:with-param` list ONCE and reuses
+    /// it for every selected node. `xsltPushVariable` rewires `(*var).next` into
+    /// the variable-stack chain, so walking that list while pushing both loses
+    /// parameters and can form a cycle (`p.next == p`) that never terminates —
+    /// the `iso_abstract_expand.xsl` hang. The list is snapshotted before the
+    /// first push.
+    fn test_xslt_with_param_list_survives_repeated_apply() {
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\"><out><xsl:apply-templates select=\"r/a|r/b\">\
+                <xsl:with-param name=\"p\" select=\"'V'\"/>\
+              </xsl:apply-templates></out></xsl:template>\
+              <xsl:template match=\"a|b\"><xsl:param name=\"p\"/><n><xsl:value-of select=\"$p\"/></n></xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?><r><a/><b/></r>\0";
+            let out = run_transform(xsl, src);
+            assert_eq!(
+                out.matches("<n>V</n>").count(),
+                2,
+                "both nodes see the param: {out}"
+            );
+        }
+    }
+
+    #[test]
+    /// An inner parameter binding of the same name must SHADOW the outer one
+    /// and, on pop, restore it rather than deleting the name. Recursive
+    /// templates (e.g. `iso_abstract_expand.xsl`) re-bind `$caller` on every
+    /// call; deleting on pop made the outer `$caller` undefined for the next
+    /// iteration.
+    fn test_xslt_with_param_shadowing_is_restored() {
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\"><out><xsl:apply-templates select=\"r\"/></out></xsl:template>\
+              <xsl:template match=\"r\"><xsl:call-template name=\"outer\">\
+                <xsl:with-param name=\"p\" select=\"'outer'\"/>\
+              </xsl:call-template></xsl:template>\
+              <xsl:template name=\"outer\"><xsl:param name=\"p\"/>\
+                <one><xsl:value-of select=\"$p\"/></one>\
+                <xsl:call-template name=\"inner\"><xsl:with-param name=\"p\" select=\"'inner'\"/></xsl:call-template>\
+                <two><xsl:value-of select=\"$p\"/></two>\
+              </xsl:template>\
+              <xsl:template name=\"inner\"><xsl:param name=\"p\"/><mid><xsl:value-of select=\"$p\"/></mid></xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?><r/>\0";
+            let out = run_transform(xsl, src);
+            assert!(out.contains("<one>outer</one>"), "outer value: {out}");
+            assert!(out.contains("<mid>inner</mid>"), "inner shadow: {out}");
+            assert!(
+                out.contains("<two>outer</two>"),
+                "outer value restored after the inner call: {out}"
+            );
         }
     }
 
