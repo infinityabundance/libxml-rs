@@ -1,5 +1,5 @@
-Ran 2007 tests in 27.504s
-FAILED (failures=104, errors=59)
+Ran 2007 tests in 27.826s
+FAILED (failures=104, errors=58)
     libxml used:      (2, 15, 3)
     libxslt used:     (1, 1, 45)
 --- FAIL/ERROR ids ---
@@ -44,7 +44,6 @@ ERROR: test_schematron_from_element (lxml.tests.test_isoschematron.ETreeISOSchem
 ERROR: test_schematron_from_file (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_from_file)
 ERROR: test_schematron_from_tree (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_from_tree)
 ERROR: test_schematron_invalid_args (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_invalid_args)
-ERROR: test_schematron_invalid_schema_empty (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_invalid_schema_empty)
 ERROR: test_schematron_phases (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_phases)
 ERROR: test_schematron_phases_kwarg (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_phases_kwarg)
 ERROR: test_schematron_relaxng_embedded (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_relaxng_embedded)

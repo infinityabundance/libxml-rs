@@ -1,15 +1,16 @@
-candidate_sha=cb830ae16ab3caeb000dc3f0658cd2e225324721
-candidate_parent_sha=cb3bb89b98ee333ddac60de408892e8ffb1b9993
+candidate_sha=2d822ee3400a8917d84aef5fc3d5b7a89dd893f3
+candidate_parent_sha=84bc64f88dc8a2f6b4e19fe0784a732a470a7e10
 baseline_sha=3490fe47
 baseline_kind=3490fe47 plus ONLY the schematron parser-ctxt/schema split
 candidate_target_dir=/mnt/1tb_kingston/libxml-rs/target/debug
-candidate_libxml2_sha256=784c2f9318dfbe41e1af688e19acded4c62a72a8be33f56b1aec778318ee141d
+candidate_libxml2_sha256=777f0057d7ba3e80b933342fb5fc9b9aec5dcfaa0d4b6ebca78acb9d3260424e
 consumer_runner=lxml-run.sh
 consumer_runner_sha256=c60ff43d54dded20ab92149416e82a74d74eb6e92f370f9a90379435891f93eb
 suite_command=cd /src/lxml && python3 test.py -u -v
-candidate_suite=Ran 2007 tests; FAILED (failures=104, errors=59)
+candidate_suite=Ran 2007 tests; FAILED (failures=104, errors=58)
 baseline_suite=Ran 2007 tests; FAILED (failures=114, errors=59)
 baseline_note=test_very_large_sourceline_iterparse deselected in the baseline (hangs on the pre-7v replay engine)
 note=the lxml court mounts the DEBUG tree (target/debug) as /candidate and does not rebuild libxml2 itself
+note2=candidate_sha is the code commit for this round (see git log); the debug lib sha above is authoritative
 host=libxml-rs/phase14-debian:1 (container lxml-cand)
 tree_clean=yes

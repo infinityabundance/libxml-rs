@@ -123,6 +123,43 @@ macro-expansion non-termination in the transform engine — a separate,
 pre-existing scalability defect. Reproducer retained:
 `/tmp/it/xslt/iso_abstract_expand.xsl` + `/tmp/it/xslt/abs.xml` (see sch.py).
 
+PART 4 — THE NON-TERMINATION FIXED (commit 2d822ee)
+--------------------------------------------------
+Two engine bugs behind that non-termination:
+
+1. `apply_templates_with_params` walked the `xsl:with-param` list while pushing
+   it onto the variable stack, but `xsltPushVariable` REWRITES `(*var).next`
+   into the variable-stack chain. Once the rewritten link pointed back at the
+   same element the traversal became a cycle (`p.next == p`) and the push loop
+   never terminated (RSS grew ~26 MB/s; a temporary cycle guard proved it
+   directly). The list is snapshotted before the first push and popped by
+   count — the same shape `process_call_template` already used.
+2. `XPathContext::unregister_variable` DELETED the name on pop, so an inner
+   binding of a name shadowed an outer one and then destroyed it. Recursive
+   templates re-bind the same parameter every call (`<xsl:with-param
+   name="caller">`), so after the first inner call the outer `$caller` was
+   undefined. The context now keeps a per-name shadow stack and restores the
+   previous value on pop.
+
+Result on the isolated reproducer (direct libxslt, no lxml):
+
+    before: never finishes (>20 s, >465 MB)
+    after : correct `schema` result, ~1 ms
+
+lxml:
+    test_isoschematron         was HANG, now 0.044 s / 20 errors (was 21)
+    full suite                 163 -> 162 failures (104 failures, 58 errors)
+    PHP six-gate               unchanged: 1250 passed / 0 failed
+
+Regression tests: `test_xslt_with_param_list_survives_repeated_apply` (would
+cycle without the snapshot) and `test_xslt_with_param_shadowing_is_restored`
+(verified to FAIL against the old `unregister_variable`).
+
+NEXT: the isoschematron cluster's remaining 20 errors come from macro
+substitution values (`$datetime`-style parameters expand to the empty string),
+not from the loop — the candidate now produces a structurally correct result
+with empty attribute/test values (520 vs the oracle's 632 bytes).
+
 NOTE: always verify LD_LIBRARY_PATH with ldd. A directory that does not exist
 inside the container silently falls back to /usr/local/lib — the ORACLE — which
 invalidated an earlier "pristine passes" comparison in this session.
