@@ -1,0 +1,88 @@
+== /scanout/corpus/deep-selfclose.xml bytes=214 mode=Cr42
+> CTOR len=55
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=19
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=6 p=72 l=1 col=73 i=1 n=24
+> CALL 1 len=19
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 1 rc=0 err=0 wf=1 in=6 p=90 l=1 col=91 i=1 n=30
+> CALL 2 len=32
+startElementNs local=[b] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[b] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+< CALL 2 rc=0 err=0 wf=1 in=9 p=122 l=1 col=123 i=1 n=23
+> CALL 3 len=23
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+< CALL 3 rc=0 err=0 wf=1 in=9 p=146 l=1 col=147 i=1 n=17
+> CALL 4 len=13
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+< CALL 4 rc=0 err=0 wf=1 in=9 p=158 l=1 col=159 i=1 n=14
+> CALL 5 len=26
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+< CALL 5 rc=0 err=0 wf=1 in=7 p=186 l=1 col=187 i=1 n=7
+> CALL 6 len=23
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endElementNs local=[a] prefix= uri=
+< CALL 6 rc=0 err=0 wf=1 in=7 p=210 l=1 col=211 i=1 n=1
+> CALL 7 len=4
+endElementNs local=[a] prefix= uri=
+< CALL 7 rc=0 err=0 wf=1 in=14 p=214 l=1 col=215 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=214 l=1 col=215 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=215 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=214 l=1 col=215 i=1 n=0

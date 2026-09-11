@@ -1,0 +1,17 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inNsXml.xml bytes=182 mode=Cb257
+> CTOR len=182
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+startElementNs local=[foo] prefix= uri=http://z0 ns=1 att=1 def=0 {=http://z0} [a local=id prefix=xml uri=http://www.w3.org/XML/1998/namespace value=23 end=1]
+characters len=3 [\n  ]
+startElementNs local=[bar] prefix= uri=http://z0 ns=2 att=1 def=0 {xsi=http://www.w3.org/2001/XMLSchema-instance} {xsd=http://www.w3.org/2001/XMLSchema} [a local=type prefix=xsi uri=http://www.w3.org/2001/XMLSchema-instance value=xsd:string end=1]
+characters len=4 [data]
+endElementNs local=[bar] prefix= uri=http://z0
+characters len=1 [\n]
+endElementNs local=[foo] prefix= uri=http://z0
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=182 l=4 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=4 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=182 l=4 col=1 i=1 n=0

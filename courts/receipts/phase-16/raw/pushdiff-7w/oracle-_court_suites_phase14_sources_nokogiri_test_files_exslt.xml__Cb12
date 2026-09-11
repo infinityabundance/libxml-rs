@@ -1,0 +1,49 @@
+== /court/suites/phase14/sources/nokogiri/test/files/exslt.xml bytes=125 mode=Cb12
+> CTOR len=12
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=12
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 1 len=12
+startElementNs local=[root] prefix= uri= ns=0 att=0 def=0
+characters len=4 [\n   ]
+< CALL 1 rc=0 err=0 wf=1 in=6 p=32 l=3 col=4 i=1 n=1
+> CALL 2 len=12
+startElementNs local=[max] prefix= uri= ns=0 att=0 def=0
+characters len=7 [\n      ]
+< CALL 2 rc=0 err=0 wf=1 in=6 p=44 l=4 col=7 i=1 n=2
+> CALL 3 len=12
+startElementNs local=[value] prefix= uri= ns=0 att=0 def=0
+characters len=1 [1]
+endElementNs local=[value] prefix= uri=
+< CALL 3 rc=0 err=0 wf=1 in=7 p=60 l=4 col=23 i=1 n=2
+> CALL 4 len=12
+characters len=7 [\n      ]
+< CALL 4 rc=0 err=0 wf=1 in=6 p=67 l=5 col=7 i=1 n=2
+> CALL 5 len=12
+startElementNs local=[value] prefix= uri= ns=0 att=0 def=0
+characters len=1 [3]
+endElementNs local=[value] prefix= uri=
+< CALL 5 rc=0 err=0 wf=1 in=7 p=83 l=5 col=23 i=1 n=2
+> CALL 6 len=12
+characters len=7 [\n      ]
+< CALL 6 rc=0 err=0 wf=1 in=6 p=90 l=6 col=7 i=1 n=2
+> CALL 7 len=12
+startElementNs local=[value] prefix= uri= ns=0 att=0 def=0
+characters len=1 [2]
+endElementNs local=[value] prefix= uri=
+< CALL 7 rc=0 err=0 wf=1 in=7 p=106 l=6 col=23 i=1 n=2
+> CALL 8 len=12
+characters len=4 [\n   ]
+endElementNs local=[max] prefix= uri=
+characters len=1 [\n]
+< CALL 8 rc=0 err=0 wf=1 in=9 p=117 l=8 col=1 i=1 n=1
+> CALL 9 len=5
+endElementNs local=[root] prefix= uri=
+< CALL 9 rc=0 err=0 wf=1 in=14 p=125 l=9 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=125 l=9 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=9 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=125 l=9 col=1 i=1 n=0

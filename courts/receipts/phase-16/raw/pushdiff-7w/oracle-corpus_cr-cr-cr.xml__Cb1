@@ -1,0 +1,36 @@
+== /scanout/corpus/cr-cr-cr.xml bytes=12 mode=Cb1
+> CTOR len=1
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=1
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=1
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 2 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 3 len=1
+< CALL 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 4 len=1
+< CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 5 len=1
+< CALL 5 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 6 len=1
+< CALL 6 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 7 len=1
+characters len=1 [x]
+characters len=4 [\n\n\ny]
+< CALL 7 rc=0 err=0 wf=1 in=7 p=8 l=1 col=9 i=1 n=1
+> CALL 8 len=1
+< CALL 8 rc=0 err=0 wf=1 in=9 p=8 l=1 col=9 i=1 n=1
+> CALL 9 len=1
+< CALL 9 rc=0 err=0 wf=1 in=9 p=8 l=1 col=9 i=1 n=1
+> CALL 10 len=1
+endElementNs local=[a] prefix= uri=
+< CALL 10 rc=0 err=0 wf=1 in=14 p=12 l=1 col=13 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=12 l=1 col=13 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=13 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=12 l=1 col=13 i=1 n=0

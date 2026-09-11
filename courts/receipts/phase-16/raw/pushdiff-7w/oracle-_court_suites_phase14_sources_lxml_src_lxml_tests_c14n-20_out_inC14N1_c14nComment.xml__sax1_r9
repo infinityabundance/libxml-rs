@@ -1,0 +1,28 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N1_c14nComment.xml bytes=156 mode=r9
+> CALL 0 len=12
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=41
+startDocument
+pi target=xml-stylesheet data=href="doc.xsl"\n   type="text/xsl"   
+startElement [doc]
+characters len=13 [Hello, world!]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=74 l=3 col=19 i=1 n=1
+> CALL 3 len=53
+comment [ Comment 1 ]
+endElement [doc]
+pi target=pi-without-data data=
+comment [ Comment 2 ]
+< CALL 3 rc=0 err=0 wf=1 in=14 p=138 l=6 col=1 i=1 n=0
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=14 p=138 l=6 col=1 i=1 n=0
+> CALL 5 len=12
+comment [ Comment 3 ]
+< CALL 5 rc=0 err=0 wf=1 in=14 p=156 l=6 col=19 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=156 l=6 col=19 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=6 i1=0 i2=19 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=156 l=6 col=19 i=1 n=0

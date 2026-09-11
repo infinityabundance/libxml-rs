@@ -1,0 +1,13 @@
+== /scanout/corpus/ctor-utf8-cjk.xml bytes=16 mode=r77
+> CALL 0 len=16
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+characters len=9 [\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e]
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=16 l=1 col=11 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=16 l=1 col=11 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=11 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=16 l=1 col=11 i=1 n=0

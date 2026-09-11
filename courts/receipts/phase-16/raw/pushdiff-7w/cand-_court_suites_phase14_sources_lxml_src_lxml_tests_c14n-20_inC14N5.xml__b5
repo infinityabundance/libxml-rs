@@ -1,0 +1,145 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inC14N5.xml bytes=315 mode=b5
+> CALL 0 len=5
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=5
+< CALL 7 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=5
+< CALL 8 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=5
+< CALL 9 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=5
+< CALL 10 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=5
+internalSubset name=doc ext= sys=
+< CALL 11 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 12 len=5
+< CALL 12 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 13 len=5
+< CALL 13 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 14 len=5
+< CALL 14 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 15 len=5
+< CALL 15 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 16 len=5
+< CALL 16 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 17 len=5
+< CALL 17 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 18 len=5
+< CALL 18 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 19 len=5
+< CALL 19 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 20 len=5
+< CALL 20 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 21 len=5
+< CALL 21 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 22 len=5
+< CALL 22 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 23 len=5
+< CALL 23 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 24 len=5
+< CALL 24 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 25 len=5
+< CALL 25 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 26 len=5
+< CALL 26 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 27 len=5
+< CALL 27 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 28 len=5
+< CALL 28 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 29 len=5
+< CALL 29 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 30 len=5
+< CALL 30 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 31 len=5
+< CALL 31 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 32 len=5
+< CALL 32 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 33 len=5
+< CALL 33 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 34 len=5
+< CALL 34 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 35 len=5
+< CALL 35 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 36 len=5
+< CALL 36 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 37 len=5
+< CALL 37 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 38 len=5
+< CALL 38 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 39 len=5
+attributeDecl elem=doc name=attrExtEnt type=1 def=3 val= enum=
+entityDecl name=ent1 type=1 pub= sys= content=Hello
+entityDecl name=ent2 type=2 pub= sys=world.txt content=
+unparsedEntityDecl name=entExt pub= sys=earth.gif nota=gif
+notationDecl name=gif pub= sys=viewgif.exe
+externalSubset name=doc ext= sys=
+< CALL 39 rc=0 err=0 wf=1 in=4 p=200 l=8 col=1 i=1 n=0
+> CALL 40 len=5
+< CALL 40 rc=0 err=0 wf=1 in=6 p=200 l=8 col=1 i=1 n=0
+> CALL 41 len=5
+< CALL 41 rc=0 err=0 wf=1 in=6 p=200 l=8 col=1 i=1 n=0
+> CALL 42 len=5
+< CALL 42 rc=0 err=0 wf=1 in=6 p=200 l=8 col=1 i=1 n=0
+> CALL 43 len=5
+< CALL 43 rc=0 err=0 wf=1 in=6 p=200 l=8 col=1 i=1 n=0
+> CALL 44 len=5
+startElementNs local=[doc] prefix= uri= ns=0 att=1 def=0 [a local=attrExtEnt prefix= uri= value=entExt end=1]
+< CALL 44 rc=0 err=0 wf=1 in=7 p=225 l=8 col=26 i=1 n=1
+> CALL 45 len=5
+characters len=4 [\n   ]
+< CALL 45 rc=0 err=0 wf=1 in=7 p=229 l=9 col=4 i=1 n=1
+> CALL 46 len=5
+characters len=5 [Hello]
+reference [ent1]
+< CALL 46 rc=0 err=0 wf=1 in=7 p=235 l=9 col=10 i=1 n=1
+> CALL 47 len=5
+characters len=2 [, ]
+< CALL 47 rc=0 err=0 wf=1 in=7 p=237 l=9 col=12 i=1 n=1
+> CALL 48 len=5
+error dom=1 code=26 level=3 file= line=9 i1=0 i2=18 str1=ent2 str2= str3= msg=Entity 'ent2' not defined\n
+< CALL 48 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 49 len=5
+< CALL 49 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 50 len=5
+< CALL 50 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 51 len=5
+< CALL 51 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 52 len=5
+< CALL 52 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 53 len=5
+< CALL 53 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 54 len=5
+< CALL 54 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 55 len=5
+< CALL 55 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 56 len=5
+< CALL 56 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 57 len=5
+< CALL 57 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 58 len=5
+< CALL 58 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 59 len=5
+< CALL 59 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 60 len=5
+< CALL 60 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 61 len=5
+< CALL 61 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 62 len=5
+< CALL 62 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> FINAL
+< FINAL 0 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> REFEED
+< REFEED 0 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1

@@ -1,0 +1,10 @@
+== /scanout/corpus/raw-pending-utf8-3.xml bytes=5 mode=Cb5
+> CTOR len=5
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+error dom=1 code=9 level=3 file= line=1 i1=226 i2=4 str1= str2= str3= msg=Incomplete UTF-8 sequence starting with E2\n
+< FINAL 0 rc=9 err=9 wf=0 in=7 p=4 l=1 col=5 i=1 n=1
+> REFEED
+< REFEED 0 rc=9 err=9 wf=0 in=7 p=4 l=1 col=5 i=1 n=1

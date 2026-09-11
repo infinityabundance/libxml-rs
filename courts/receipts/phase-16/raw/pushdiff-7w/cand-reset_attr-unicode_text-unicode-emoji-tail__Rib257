@@ -1,0 +1,22 @@
+== RESET /scanout/corpus/attr-unicode.xml(26) -> /scanout/corpus/text-unicode-emoji-tail.xml(14) mode=Rib257
+> A 0 len=26
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=1 def=0 [a local=b prefix= uri= value=h\xc3\xa9llo \xe2\x9c\x93 \xe4\xb8\xad\xe6\x96\x87 end=1]
+endElementNs local=[a] prefix= uri=
+< A 0 rc=0 err=0 wf=1 in=14 p=26 l=1 col=20 i=1 n=0
+> A-FINAL
+endDocument
+< A-FINAL 0 rc=0 err=0 wf=1 in=-1 p=26 l=1 col=20 i=1 n=0
+> RESET(whole-B)
+< RESET 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> B-FINAL
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+characters len=3 [abc]
+characters len=4 [\xf0\x9f\x8e\x89]
+endElementNs local=[a] prefix= uri=
+endDocument
+< B-FINAL 0 rc=0 err=0 wf=1 in=-1 p=14 l=1 col=12 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=12 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=14 l=1 col=12 i=1 n=0

@@ -1,0 +1,19 @@
+== /scanout/corpus/doctype-entity-nested.xml bytes=48 mode=b257
+> CALL 0 len=48
+startDocument
+internalSubset name=a ext= sys=
+entityDecl name=e type=1 pub= sys= content=<b>x</b>
+externalSubset name=a ext= sys=
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[b] prefix= uri= ns=0 att=0 def=0
+characters len=1 [x]
+endElementNs local=[b] prefix= uri=
+reference [e]
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=48 l=2 col=11 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=48 l=2 col=11 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=11 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=48 l=2 col=11 i=1 n=0

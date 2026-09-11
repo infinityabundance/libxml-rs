@@ -1,0 +1,11 @@
+== /scanout/corpus/doctype-trunc-cond.xml bytes=42 mode=b257
+> CALL 0 len=42
+startDocument
+internalSubset name=a ext= sys=
+< CALL 0 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0
+> FINAL
+error dom=1 code=118 level=3 file= line=1 i1=0 i2=14 str1= str2= str3= msg=Content error in the internal subset\n
+error dom=1 code=118 level=3 file= line=1 i1=0 i2=16 str1= str2= str3= msg=Content error in the internal subset\n
+< FINAL 0 rc=118 err=118 wf=0 in=4 p=15 l=1 col=16 i=1 n=0
+> REFEED
+< REFEED 0 rc=118 err=118 wf=0 in=4 p=15 l=1 col=16 i=1 n=0

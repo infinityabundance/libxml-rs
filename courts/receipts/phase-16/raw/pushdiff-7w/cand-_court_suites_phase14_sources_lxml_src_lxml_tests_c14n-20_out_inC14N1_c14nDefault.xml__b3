@@ -1,0 +1,81 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N1_c14nDefault.xml bytes=100 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=3
+< CALL 7 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=3
+< CALL 8 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=3
+< CALL 9 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=3
+< CALL 10 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=3
+< CALL 11 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=3
+< CALL 12 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=3
+< CALL 13 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 14 len=3
+< CALL 14 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 15 len=3
+< CALL 15 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 16 len=3
+< CALL 16 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 17 len=3
+< CALL 17 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 18 len=3
+startDocument
+pi target=xml-stylesheet data=href="doc.xsl"\n   type="text/xsl"   
+< CALL 18 rc=0 err=0 wf=1 in=1 p=56 l=3 col=1 i=1 n=0
+> CALL 19 len=3
+< CALL 19 rc=0 err=0 wf=1 in=6 p=56 l=3 col=1 i=1 n=0
+> CALL 20 len=3
+startElementNs local=[doc] prefix= uri= ns=0 att=0 def=0
+< CALL 20 rc=0 err=0 wf=1 in=7 p=61 l=3 col=6 i=1 n=1
+> CALL 21 len=3
+< CALL 21 rc=0 err=0 wf=1 in=7 p=61 l=3 col=6 i=1 n=1
+> CALL 22 len=3
+< CALL 22 rc=0 err=0 wf=1 in=7 p=61 l=3 col=6 i=1 n=1
+> CALL 23 len=3
+< CALL 23 rc=0 err=0 wf=1 in=7 p=61 l=3 col=6 i=1 n=1
+> CALL 24 len=3
+characters len=13 [Hello, world!]
+< CALL 24 rc=0 err=0 wf=1 in=7 p=74 l=3 col=19 i=1 n=1
+> CALL 25 len=3
+< CALL 25 rc=0 err=0 wf=1 in=9 p=74 l=3 col=19 i=1 n=1
+> CALL 26 len=3
+endElementNs local=[doc] prefix= uri=
+< CALL 26 rc=0 err=0 wf=1 in=14 p=81 l=4 col=1 i=1 n=0
+> CALL 27 len=3
+< CALL 27 rc=0 err=0 wf=1 in=14 p=81 l=4 col=1 i=1 n=0
+> CALL 28 len=3
+< CALL 28 rc=0 err=0 wf=1 in=14 p=81 l=4 col=1 i=1 n=0
+> CALL 29 len=3
+< CALL 29 rc=0 err=0 wf=1 in=14 p=81 l=4 col=1 i=1 n=0
+> CALL 30 len=3
+< CALL 30 rc=0 err=0 wf=1 in=14 p=81 l=4 col=1 i=1 n=0
+> CALL 31 len=3
+< CALL 31 rc=0 err=0 wf=1 in=14 p=81 l=4 col=1 i=1 n=0
+> CALL 32 len=3
+< CALL 32 rc=0 err=0 wf=1 in=14 p=81 l=4 col=1 i=1 n=0
+> CALL 33 len=1
+pi target=pi-without-data data=
+< CALL 33 rc=0 err=0 wf=1 in=14 p=100 l=4 col=20 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=100 l=4 col=20 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=4 i1=0 i2=20 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=100 l=4 col=20 i=1 n=0

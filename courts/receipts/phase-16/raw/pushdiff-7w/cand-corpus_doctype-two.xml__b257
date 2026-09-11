@@ -1,0 +1,12 @@
+== /scanout/corpus/doctype-two.xml bytes=28 mode=b257
+> CALL 0 len=28
+startDocument
+internalSubset name=a ext= sys=
+externalSubset name=a ext= sys=
+error dom=1 code=68 level=3 file= line=1 i1=0 i2=14 str1= str2= str3= msg=StartTag: invalid element name\n
+endDocument
+< CALL 0 rc=68 err=68 wf=0 in=-1 p=13 l=1 col=14 i=1 n=0
+> FINAL
+< FINAL 0 rc=68 err=68 wf=0 in=-1 p=13 l=1 col=14 i=1 n=0
+> REFEED
+< REFEED 0 rc=68 err=68 wf=0 in=-1 p=13 l=1 col=14 i=1 n=0

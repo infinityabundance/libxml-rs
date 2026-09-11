@@ -1,0 +1,10 @@
+== /scanout/corpus/raw-trunc-utf8.xml bytes=8 mode=r77
+> CALL 0 len=8
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+error dom=8 code=81 level=3 file= line=1 i1=0 i2=4 str1= str2= str3= msg=Invalid bytes in character encoding\n
+< CALL 0 rc=81 err=81 wf=0 in=7 p=4 l=1 col=5 i=1 n=1
+> FINAL
+< FINAL 0 rc=81 err=81 wf=0 in=7 p=4 l=1 col=5 i=1 n=1
+> REFEED
+< REFEED 0 rc=81 err=81 wf=0 in=7 p=4 l=1 col=5 i=1 n=1

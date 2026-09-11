@@ -1,0 +1,20 @@
+== /scanout/corpus/doctype-notations.xml bytes=82 mode=r9
+> CALL 0 len=12
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+internalSubset name=a ext= sys=
+< CALL 1 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0
+> CALL 2 len=36
+notationDecl name=n pub= sys=urn:n
+unparsedEntityDecl name=e pub= sys=urn:e nota=n
+externalSubset name=a ext= sys=
+startElement [a]
+endElement [a]
+< CALL 2 rc=0 err=0 wf=1 in=14 p=82 l=2 col=5 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=82 l=2 col=5 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=82 l=2 col=5 i=1 n=0

@@ -1,0 +1,10 @@
+== /scanout/corpus/endtag-trunc3.xml bytes=6 mode=r77
+> CALL 0 len=6
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=9 p=3 l=1 col=4 i=1 n=1
+> FINAL
+error dom=1 code=73 level=3 file= line=1 i1=0 i2=7 str1= str2= str3= msg=expected '>'\n
+< FINAL 0 rc=73 err=73 wf=0 in=14 p=6 l=1 col=7 i=1 n=0
+> REFEED
+< REFEED 0 rc=73 err=73 wf=0 in=14 p=6 l=1 col=7 i=1 n=0

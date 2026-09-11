@@ -1,0 +1,18 @@
+== /scanout/corpus/raw-overlong.xml bytes=9 mode=b2
+> CALL 0 len=2
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=2
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 1 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 2 len=2
+error dom=8 code=81 level=3 file= line=1 i1=0 i2=4 str1= str2= str3= msg=Invalid bytes in character encoding\n
+< CALL 2 rc=81 err=81 wf=0 in=7 p=5 l=1 col=6 i=1 n=1
+> CALL 3 len=2
+< CALL 3 rc=81 err=81 wf=0 in=7 p=5 l=1 col=6 i=1 n=1
+> CALL 4 len=1
+< CALL 4 rc=81 err=81 wf=0 in=7 p=5 l=1 col=6 i=1 n=1
+> FINAL
+< FINAL 0 rc=81 err=81 wf=0 in=7 p=5 l=1 col=6 i=1 n=1
+> REFEED
+< REFEED 0 rc=81 err=81 wf=0 in=7 p=5 l=1 col=6 i=1 n=1

@@ -1,0 +1,164 @@
+== /scanout/corpus/attr-many.xml bytes=384 mode=Cb5
+> CTOR len=5
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=5
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=5
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=5
+< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=5
+< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=5
+< CALL 10 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=5
+< CALL 11 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=5
+< CALL 12 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=5
+< CALL 13 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 14 len=5
+< CALL 14 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 15 len=5
+< CALL 15 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 16 len=5
+< CALL 16 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 17 len=5
+< CALL 17 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 18 len=5
+< CALL 18 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 19 len=5
+< CALL 19 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 20 len=5
+< CALL 20 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 21 len=5
+< CALL 21 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 22 len=5
+< CALL 22 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 23 len=5
+< CALL 23 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 24 len=5
+< CALL 24 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 25 len=5
+< CALL 25 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 26 len=5
+< CALL 26 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 27 len=5
+< CALL 27 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 28 len=5
+< CALL 28 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 29 len=5
+< CALL 29 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 30 len=5
+< CALL 30 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 31 len=5
+< CALL 31 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 32 len=5
+< CALL 32 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 33 len=5
+< CALL 33 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 34 len=5
+< CALL 34 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 35 len=5
+< CALL 35 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 36 len=5
+< CALL 36 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 37 len=5
+< CALL 37 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 38 len=5
+< CALL 38 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 39 len=5
+< CALL 39 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 40 len=5
+< CALL 40 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 41 len=5
+< CALL 41 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 42 len=5
+< CALL 42 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 43 len=5
+< CALL 43 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 44 len=5
+< CALL 44 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 45 len=5
+< CALL 45 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 46 len=5
+< CALL 46 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 47 len=5
+< CALL 47 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 48 len=5
+< CALL 48 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 49 len=5
+< CALL 49 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 50 len=5
+< CALL 50 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 51 len=5
+< CALL 51 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 52 len=5
+< CALL 52 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 53 len=5
+< CALL 53 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 54 len=5
+< CALL 54 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 55 len=5
+< CALL 55 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 56 len=5
+< CALL 56 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 57 len=5
+< CALL 57 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 58 len=5
+< CALL 58 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 59 len=5
+< CALL 59 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 60 len=5
+< CALL 60 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 61 len=5
+< CALL 61 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 62 len=5
+< CALL 62 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 63 len=5
+< CALL 63 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 64 len=5
+< CALL 64 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 65 len=5
+< CALL 65 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 66 len=5
+< CALL 66 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 67 len=5
+< CALL 67 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 68 len=5
+< CALL 68 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 69 len=5
+< CALL 69 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 70 len=5
+< CALL 70 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 71 len=5
+< CALL 71 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 72 len=5
+< CALL 72 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 73 len=5
+< CALL 73 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 74 len=5
+< CALL 74 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 75 len=4
+startElementNs local=[a] prefix= uri= ns=0 att=40 def=0 [a local=a0 prefix= uri= value=v0 end=1] [a local=a1 prefix= uri= value=v1 end=1] [a local=a2 prefix= uri= value=v2 end=1] [a local=a3 prefix= uri= value=v3 end=1] [a local=a4 prefix= uri= value=v4 end=1] [a local=a5 prefix= uri= value=v5 end=1] [a local=a6 prefix= uri= value=v6 end=1] [a local=a7 prefix= uri= value=v7 end=1] [a local=a8 prefix= uri= value=v8 end=1] [a local=a9 prefix= uri= value=v9 end=1] [a local=a10 prefix= uri= value=v10 end=1] [a local=a11 prefix= uri= value=v11 end=1] [a local=a12 prefix= uri= value=v12 end=1] [a local=a13 prefix= uri= value=v13 end=1] [a local=a14 prefix= uri= value=v14 end=1] [a local=a15 prefix= uri= value=v15 end=1] [a local=a16 prefix= uri= value=v16 end=1] [a local=a17 prefix= uri= value=v17 end=1] [a local=a18 prefix= uri= value=v18 end=1] [a local=a19 prefix= uri= value=v19 end=1] [a local=a20 prefix= uri= value=v20 end=1] [a local=a21 prefix= uri= value=v21 end=1] [a local=a22 prefix= uri= value=v22 end=1] [a local=a23 prefix= uri= value=v23 end=1] [a local=a24 prefix= uri= value=v24 end=1] [a local=a25 prefix= uri= value=v25 end=1] [a local=a26 prefix= uri= value=v26 end=1] [a local=a27 prefix= uri= value=v27 end=1] [a local=a28 prefix= uri= value=v28 end=1] [a local=a29 prefix= uri= value=v29 end=1] [a local=a30 prefix= uri= value=v30 end=1] [a local=a31 prefix= uri= value=v31 end=1] [a local=a32 prefix= uri= value=v32 end=1] [a local=a33 prefix= uri= value=v33 end=1] [a local=a34 prefix= uri= value=v34 end=1] [a local=a35 prefix= uri= value=v35 end=1] [a local=a36 prefix= uri= value=v36 end=1] [a local=a37 prefix= uri= value=v37 end=1] [a local=a38 prefix= uri= value=v38 end=1] [a local=a39 prefix= uri= value=v39 end=1]
+endElementNs local=[a] prefix= uri=
+< CALL 75 rc=0 err=0 wf=1 in=14 p=384 l=1 col=385 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=384 l=1 col=385 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=385 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=384 l=1 col=385 i=1 n=0

@@ -1,0 +1,12 @@
+== /court/suites/phase14/sources/lxml/doc/test.xml bytes=5 mode=r9
+> CALL 0 len=5
+startDocument
+startElement [a]
+endElement [a]
+< CALL 0 rc=0 err=0 wf=1 in=14 p=5 l=2 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=5 l=2 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=5 l=2 col=1 i=1 n=0

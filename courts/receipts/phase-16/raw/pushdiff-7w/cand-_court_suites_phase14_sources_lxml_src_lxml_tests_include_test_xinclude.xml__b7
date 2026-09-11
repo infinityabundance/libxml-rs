@@ -1,0 +1,45 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/include/test_xinclude.xml bytes=96 mode=b7
+> CALL 0 len=7
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=7
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=7
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=7
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=7
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=7
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=7
+startElementNs local=[doc] prefix= uri= ns=1 att=0 def=0 {xi=http://www.w3.org/2001/XInclude}
+< CALL 6 rc=0 err=0 wf=1 in=7 p=48 l=1 col=49 i=1 n=1
+> CALL 7 len=7
+characters len=1 [\n]
+startElementNs local=[foo] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[foo] prefix= uri=
+< CALL 7 rc=0 err=0 wf=1 in=7 p=55 l=2 col=7 i=1 n=1
+> CALL 8 len=7
+characters len=1 [\n]
+< CALL 8 rc=0 err=0 wf=1 in=6 p=56 l=3 col=1 i=1 n=1
+> CALL 9 len=7
+< CALL 9 rc=0 err=0 wf=1 in=6 p=56 l=3 col=1 i=1 n=1
+> CALL 10 len=7
+< CALL 10 rc=0 err=0 wf=1 in=6 p=56 l=3 col=1 i=1 n=1
+> CALL 11 len=7
+< CALL 11 rc=0 err=0 wf=1 in=6 p=56 l=3 col=1 i=1 n=1
+> CALL 12 len=7
+startElementNs local=[include] prefix=xi uri=http://www.w3.org/2001/XInclude ns=0 att=1 def=0 [a local=href prefix= uri= value=../test.xml end=1]
+endElementNs local=[include] prefix=xi uri=http://www.w3.org/2001/XInclude
+characters len=1 [\n]
+< CALL 12 rc=0 err=0 wf=1 in=7 p=90 l=4 col=1 i=1 n=1
+> CALL 13 len=5
+endElementNs local=[doc] prefix= uri=
+< CALL 13 rc=0 err=0 wf=1 in=14 p=96 l=4 col=7 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=96 l=4 col=7 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=4 i1=0 i2=7 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=96 l=4 col=7 i=1 n=0

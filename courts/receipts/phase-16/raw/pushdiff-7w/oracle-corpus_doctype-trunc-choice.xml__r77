@@ -1,0 +1,13 @@
+== /scanout/corpus/doctype-trunc-choice.xml bytes=29 mode=r77
+> CALL 0 len=16
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=13
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> FINAL
+internalSubset name=a ext= sys=
+error dom=1 code=55 level=3 file= line=1 i1=0 i2=30 str1= str2= str3= msg=ContentDecl : ',' '|' or ')' expected\n
+error dom=1 code=118 level=3 file= line=1 i1=0 i2=30 str1= str2= str3= msg=Content error in the internal subset\n
+< FINAL 0 rc=118 err=118 wf=0 in=4 p=29 l=1 col=30 i=1 n=0
+> REFEED
+< REFEED 0 rc=118 err=118 wf=0 in=4 p=29 l=1 col=30 i=1 n=0

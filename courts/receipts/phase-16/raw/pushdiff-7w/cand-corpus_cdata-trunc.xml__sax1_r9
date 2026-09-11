@@ -1,0 +1,12 @@
+== /scanout/corpus/cdata-trunc.xml bytes=13 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [a]
+< CALL 0 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> FINAL
+error dom=1 code=63 level=3 file= line=1 i1=0 i2=14 str1= str2= str3= msg=Unregistered error message\n
+< FINAL 0 rc=63 err=63 wf=0 in=7 p=13 l=1 col=14 i=1 n=1
+> REFEED
+< REFEED 0 rc=63 err=63 wf=0 in=7 p=13 l=1 col=14 i=1 n=1

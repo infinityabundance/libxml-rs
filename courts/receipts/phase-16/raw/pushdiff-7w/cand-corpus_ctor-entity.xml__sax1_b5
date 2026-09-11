@@ -1,0 +1,18 @@
+== /scanout/corpus/ctor-entity.xml bytes=13 mode=b5
+> CALL 0 len=5
+startDocument
+startElement [a]
+< CALL 0 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 1 len=5
+characters len=1 [&]
+characters len=1 [y]
+< CALL 1 rc=0 err=0 wf=1 in=7 p=9 l=1 col=10 i=1 n=1
+> CALL 2 len=3
+endElement [a]
+< CALL 2 rc=0 err=0 wf=1 in=14 p=13 l=1 col=14 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=13 l=1 col=14 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=14 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=13 l=1 col=14 i=1 n=0

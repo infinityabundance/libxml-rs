@@ -1,0 +1,11 @@
+== /scanout/corpus/starttag-trunc-attr-eq.xml bytes=8 mode=r77
+> CALL 0 len=8
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> FINAL
+error dom=1 code=39 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=AttValue: " or ' expected\n
+error dom=1 code=65 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=attributes construct error\n
+error dom=1 code=73 level=3 file= line=1 i1=0 i2=9 str1=abc str2= str3= msg=Couldn't find end of Start Tag abc\n
+< FINAL 0 rc=73 err=73 wf=0 in=14 p=8 l=1 col=9 i=1 n=0
+> REFEED
+< REFEED 0 rc=73 err=73 wf=0 in=14 p=8 l=1 col=9 i=1 n=0

@@ -1,0 +1,75 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inNsSort_c14nPrefix.xml bytes=200 mode=b7
+> CALL 0 len=7
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=7
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=7
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=7
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=7
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=7
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=7
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=7
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=7
+< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=7
+< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=7
+< CALL 10 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=7
+< CALL 11 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=7
+< CALL 12 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=7
+< CALL 13 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 14 len=7
+< CALL 14 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 15 len=7
+< CALL 15 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 16 len=7
+startElementNs local=[foo] prefix=n2 uri=http://z3 ns=3 att=3 def=0 {n0=http://z1} {n1=http://z2} {n2=http://z3} [a local=att3 prefix=n0 uri=http://z1 value=val3 end=1] [a local=att1 prefix=n1 uri=http://z2 value=val1 end=1] [a local=att2 prefix=n1 uri=http://z2 value=val2 end=1]
+characters len=2 [\n ]
+< CALL 16 rc=0 err=0 wf=1 in=7 p=118 l=2 col=2 i=1 n=1
+> CALL 17 len=7
+startElementNs local=[bar] prefix=n0 uri=http://z1 ns=0 att=0 def=0
+< CALL 17 rc=0 err=0 wf=1 in=7 p=126 l=2 col=10 i=1 n=2
+> CALL 18 len=7
+< CALL 18 rc=0 err=0 wf=1 in=9 p=126 l=2 col=10 i=1 n=2
+> CALL 19 len=7
+endElementNs local=[bar] prefix=n0 uri=http://z1
+characters len=2 [\n ]
+< CALL 19 rc=0 err=0 wf=1 in=6 p=137 l=3 col=2 i=1 n=1
+> CALL 20 len=7
+< CALL 20 rc=0 err=0 wf=1 in=6 p=137 l=3 col=2 i=1 n=1
+> CALL 21 len=7
+< CALL 21 rc=0 err=0 wf=1 in=6 p=137 l=3 col=2 i=1 n=1
+> CALL 22 len=7
+< CALL 22 rc=0 err=0 wf=1 in=6 p=137 l=3 col=2 i=1 n=1
+> CALL 23 len=7
+< CALL 23 rc=0 err=0 wf=1 in=6 p=137 l=3 col=2 i=1 n=1
+> CALL 24 len=7
+< CALL 24 rc=0 err=0 wf=1 in=6 p=137 l=3 col=2 i=1 n=1
+> CALL 25 len=7
+startElementNs local=[bar] prefix=n0 uri=http://z1 ns=1 att=1 def=0 {n3=http://z0} [a local=att3 prefix=n3 uri=http://z0 value=val3 end=1]
+< CALL 25 rc=0 err=0 wf=1 in=7 p=181 l=3 col=46 i=1 n=2
+> CALL 26 len=7
+< CALL 26 rc=0 err=0 wf=1 in=9 p=181 l=3 col=46 i=1 n=2
+> CALL 27 len=7
+endElementNs local=[bar] prefix=n0 uri=http://z1
+characters len=1 [\n]
+< CALL 27 rc=0 err=0 wf=1 in=9 p=191 l=4 col=1 i=1 n=1
+> CALL 28 len=4
+endElementNs local=[foo] prefix=n2 uri=http://z3
+< CALL 28 rc=0 err=0 wf=1 in=14 p=200 l=4 col=10 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=200 l=4 col=10 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=4 i1=0 i2=10 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=200 l=4 col=10 i=1 n=0

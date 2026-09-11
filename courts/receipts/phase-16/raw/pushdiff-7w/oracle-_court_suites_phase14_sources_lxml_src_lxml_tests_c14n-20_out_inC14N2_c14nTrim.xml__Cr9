@@ -1,0 +1,33 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N2_c14nTrim.xml bytes=99 mode=Cr9
+> CTOR len=12
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=34
+startDocument
+startElementNs local=[doc] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[clean] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[clean] prefix= uri=
+startElementNs local=[dirty] prefix= uri= ns=0 att=0 def=0
+characters len=5 [A   B]
+endElementNs local=[dirty] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=6 p=40 l=1 col=41 i=1 n=1
+> CALL 1 len=41
+startElementNs local=[mixed] prefix= uri= ns=0 att=0 def=0
+characters len=1 [A]
+startElementNs local=[clean] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[clean] prefix= uri=
+characters len=1 [B]
+startElementNs local=[dirty] prefix= uri= ns=0 att=0 def=0
+characters len=5 [A   B]
+endElementNs local=[dirty] prefix= uri=
+characters len=1 [C]
+< CALL 1 rc=0 err=0 wf=1 in=9 p=85 l=1 col=86 i=1 n=2
+> CALL 2 len=12
+endElementNs local=[mixed] prefix= uri=
+endElementNs local=[doc] prefix= uri=
+< CALL 2 rc=0 err=0 wf=1 in=14 p=99 l=1 col=100 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=99 l=1 col=100 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=100 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=99 l=1 col=100 i=1 n=0

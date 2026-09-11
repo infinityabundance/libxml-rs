@@ -1,0 +1,8 @@
+wrote 183 generated docs to /scanout/corpus
+pushdiff docs: 257
+=== summary ===
+cells=4702 diffs=0
+docs=257
+manifest_cells=4702
+behavior_sha256=ebae174b42e61e436bd5911fdc01e13f876ae1009723cbfc67f414b162d69e1d
+PUSHDIFF: all 4702 cells byte-identical (oracle == candidate)

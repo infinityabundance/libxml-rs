@@ -1,0 +1,12 @@
+== /scanout/corpus/text-then-root.xml bytes=8 mode=r3
+> CALL 0 len=4
+startDocument
+error dom=1 code=4 level=3 file= line=1 i1=0 i2=1 str1= str2= str3= msg=Start tag expected, '<' not found
+endDocument
+< CALL 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=4
+< CALL 1 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> FINAL
+< FINAL 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0
+> REFEED
+< REFEED 0 rc=4 err=4 wf=0 in=-1 p=0 l=1 col=1 i=1 n=0

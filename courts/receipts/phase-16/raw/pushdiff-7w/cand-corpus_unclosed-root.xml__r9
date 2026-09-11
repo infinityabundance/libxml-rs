@@ -1,0 +1,13 @@
+== /scanout/corpus/unclosed-root.xml bytes=7 mode=r9
+> CALL 0 len=7
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[b] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=7 p=6 l=1 col=7 i=1 n=2
+> FINAL
+characters len=1 [x]
+error dom=1 code=77 level=3 file= line=1 i1=1 i2=8 str1=b str2= str3= msg=Premature end of data in tag b line 1\n
+endDocument
+< FINAL 0 rc=77 err=77 wf=0 in=-1 p=7 l=1 col=8 i=1 n=2
+> REFEED
+< REFEED 0 rc=77 err=77 wf=0 in=-1 p=7 l=1 col=8 i=1 n=2

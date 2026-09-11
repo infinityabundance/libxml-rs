@@ -1,0 +1,13 @@
+== /scanout/corpus/endtag-name.xml bytes=15 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [a]
+startElement [b]
+error dom=1 code=76 level=3 file= line=1 i1=0 i2=12 str1=b str2=a str3= msg=Opening and ending tag mismatch: b line 0 and a\n
+< CALL 0 rc=76 err=76 wf=0 in=7 p=11 l=1 col=12 i=1 n=1
+> CALL 1 len=3
+< CALL 1 rc=76 err=76 wf=0 in=7 p=11 l=1 col=12 i=1 n=1
+> FINAL
+< FINAL 0 rc=76 err=76 wf=0 in=7 p=11 l=1 col=12 i=1 n=1
+> REFEED
+< REFEED 0 rc=76 err=76 wf=0 in=7 p=11 l=1 col=12 i=1 n=1

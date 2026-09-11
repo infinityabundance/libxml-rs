@@ -1,0 +1,39 @@
+== /scanout/corpus/attr-dup.xml bytes=16 mode=b1
+> CALL 0 len=1
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=1
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=1
+startDocument
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=1
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=1
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=1
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=1
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=1
+< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=1
+< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=1
+< CALL 10 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=1
+< CALL 11 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=1
+< CALL 12 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=1
+< CALL 13 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 14 len=1
+< CALL 14 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 15 len=1
+error dom=1 code=42 level=3 file= line=1 i1=0 i2=15 str1=b str2= str3= msg=Attribute b redefined\n
+< CALL 15 rc=42 err=42 wf=0 in=14 p=16 l=1 col=17 i=1 n=0
+> FINAL
+< FINAL 0 rc=42 err=42 wf=0 in=14 p=16 l=1 col=17 i=1 n=0
+> REFEED
+< REFEED 0 rc=42 err=42 wf=0 in=14 p=16 l=1 col=17 i=1 n=0

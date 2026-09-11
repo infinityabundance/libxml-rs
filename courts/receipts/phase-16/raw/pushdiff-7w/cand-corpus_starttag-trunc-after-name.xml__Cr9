@@ -1,0 +1,10 @@
+== /scanout/corpus/starttag-trunc-after-name.xml bytes=5 mode=Cr9
+> CTOR len=5
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+startElementNs local=[abc] prefix= uri= ns=0 att=0 def=0
+error dom=1 code=73 level=3 file= line=1 i1=0 i2=6 str1=abc str2= str3= msg=Couldn't find end of Start Tag abc\n
+< FINAL 0 rc=73 err=73 wf=0 in=14 p=5 l=1 col=6 i=1 n=0
+> REFEED
+< REFEED 0 rc=73 err=73 wf=0 in=14 p=5 l=1 col=6 i=1 n=0

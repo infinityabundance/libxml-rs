@@ -1,0 +1,157 @@
+== /court/suites/phase14/sources/nokogiri/test/files/po.xml bytes=931 mode=r1
+> CALL 0 len=23
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=22 l=2 col=1 i=1 n=0
+> CALL 1 len=26
+< CALL 1 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 2 len=13
+startElementNs local=[purchaseOrder] prefix= uri= ns=0 att=1 def=0 [a local=orderDate prefix= uri= value=1999-10-20 end=1]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=60 l=2 col=39 i=1 n=1
+> CALL 3 len=39
+characters len=4 [\n   ]
+startElementNs local=[shipTo] prefix= uri= ns=0 att=1 def=0 [a local=country prefix= uri= value=US end=1]
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 3 rc=0 err=0 wf=1 in=7 p=98 l=4 col=13 i=1 n=3
+> CALL 4 len=27
+characters len=11 [Alice Smith]
+endElementNs local=[name] prefix= uri=
+characters len=7 [\n      ]
+< CALL 4 rc=0 err=0 wf=1 in=6 p=123 l=5 col=7 i=1 n=2
+> CALL 5 len=52
+startElementNs local=[street] prefix= uri= ns=0 att=0 def=0
+characters len=16 [123 Maple Street]
+endElementNs local=[street] prefix= uri=
+characters len=7 [\n      ]
+startElementNs local=[city] prefix= uri= ns=0 att=0 def=0
+< CALL 5 rc=0 err=0 wf=1 in=7 p=169 l=6 col=13 i=1 n=3
+> CALL 6 len=27
+characters len=11 [Mill Valley]
+endElementNs local=[city] prefix= uri=
+characters len=7 [\n      ]
+startElementNs local=[state] prefix= uri= ns=0 att=0 def=0
+characters len=2 [CA]
+< CALL 6 rc=0 err=0 wf=1 in=9 p=203 l=7 col=16 i=1 n=3
+> CALL 7 len=55
+endElementNs local=[state] prefix= uri=
+characters len=7 [\n      ]
+startElementNs local=[zip] prefix= uri= ns=0 att=0 def=0
+characters len=5 [90952]
+endElementNs local=[zip] prefix= uri=
+characters len=4 [\n   ]
+endElementNs local=[shipTo] prefix= uri=
+characters len=4 [\n   ]
+< CALL 7 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 8 len=42
+startElementNs local=[billTo] prefix= uri= ns=0 att=1 def=0 [a local=country prefix= uri= value=US end=1]
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+characters len=12 [Robert Smith]
+endElementNs local=[name] prefix= uri=
+< CALL 8 rc=0 err=0 wf=1 in=7 p=304 l=11 col=32 i=1 n=2
+> CALL 9 len=59
+characters len=7 [\n      ]
+startElementNs local=[street] prefix= uri= ns=0 att=0 def=0
+characters len=12 [8 Oak Avenue]
+endElementNs local=[street] prefix= uri=
+characters len=7 [\n      ]
+startElementNs local=[city] prefix= uri= ns=0 att=0 def=0
+characters len=8 [Old Town]
+< CALL 9 rc=0 err=0 wf=1 in=9 p=361 l=13 col=21 i=1 n=3
+> CALL 10 len=60
+endElementNs local=[city] prefix= uri=
+characters len=7 [\n      ]
+startElementNs local=[state] prefix= uri= ns=0 att=0 def=0
+characters len=2 [PA]
+endElementNs local=[state] prefix= uri=
+characters len=7 [\n      ]
+startElementNs local=[zip] prefix= uri= ns=0 att=0 def=0
+characters len=5 [95819]
+endElementNs local=[zip] prefix= uri=
+characters len=4 [\n   ]
+< CALL 10 rc=0 err=0 wf=1 in=9 p=419 l=16 col=4 i=1 n=2
+> CALL 11 len=51
+endElementNs local=[billTo] prefix= uri=
+characters len=4 [\n   ]
+startElementNs local=[comment] prefix= uri= ns=0 att=0 def=0
+characters len=29 [Hurry, my lawn is going wild!]
+< CALL 11 rc=0 err=0 wf=1 in=9 p=470 l=17 col=42 i=1 n=2
+> CALL 12 len=61
+endElementNs local=[comment] prefix= uri=
+characters len=4 [\n   ]
+startElementNs local=[items] prefix= uri= ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[item] prefix= uri= ns=0 att=1 def=0 [a local=partNum prefix= uri= value=872-AA end=1]
+characters len=10 [\n         ]
+< CALL 12 rc=0 err=0 wf=1 in=6 p=531 l=20 col=10 i=1 n=3
+> CALL 13 len=33
+startElementNs local=[productName] prefix= uri= ns=0 att=0 def=0
+characters len=9 [Lawnmower]
+endElementNs local=[productName] prefix= uri=
+< CALL 13 rc=0 err=0 wf=1 in=7 p=567 l=20 col=46 i=1 n=3
+> CALL 14 len=59
+characters len=10 [\n         ]
+startElementNs local=[quantity] prefix= uri= ns=0 att=0 def=0
+characters len=1 [1]
+endElementNs local=[quantity] prefix= uri=
+characters len=10 [\n         ]
+startElementNs local=[USPrice] prefix= uri= ns=0 att=0 def=0
+characters len=6 [148.95]
+< CALL 14 rc=0 err=0 wf=1 in=9 p=624 l=22 col=25 i=1 n=4
+> CALL 15 len=13
+endElementNs local=[USPrice] prefix= uri=
+< CALL 15 rc=0 err=0 wf=1 in=7 p=634 l=22 col=35 i=1 n=3
+> CALL 16 len=27
+characters len=10 [\n         ]
+startElementNs local=[comment] prefix= uri= ns=0 att=0 def=0
+< CALL 16 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 17 len=32
+characters len=24 [Confirm this is electric]
+endElementNs local=[comment] prefix= uri=
+characters len=7 [\n      ]
+< CALL 17 rc=0 err=0 wf=1 in=9 p=694 l=24 col=7 i=1 n=3
+> CALL 18 len=21
+endElementNs local=[item] prefix= uri=
+characters len=7 [\n      ]
+< CALL 18 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 19 len=54
+startElementNs local=[item] prefix= uri= ns=0 att=1 def=0 [a local=partNum prefix= uri= value=926-AA end=1]
+characters len=10 [\n         ]
+startElementNs local=[productName] prefix= uri= ns=0 att=0 def=0
+characters len=12 [Baby Monitor]
+< CALL 19 rc=0 err=0 wf=1 in=9 p=766 l=26 col=35 i=1 n=4
+> CALL 20 len=44
+endElementNs local=[productName] prefix= uri=
+characters len=10 [\n         ]
+startElementNs local=[quantity] prefix= uri= ns=0 att=0 def=0
+characters len=1 [1]
+endElementNs local=[quantity] prefix= uri=
+< CALL 20 rc=0 err=0 wf=1 in=7 p=812 l=27 col=32 i=1 n=3
+> CALL 21 len=14
+characters len=10 [\n         ]
+startElementNs local=[USPrice] prefix= uri= ns=0 att=0 def=0
+< CALL 21 rc=0 err=0 wf=1 in=7 p=831 l=28 col=19 i=1 n=4
+> CALL 22 len=31
+characters len=5 [39.98]
+endElementNs local=[USPrice] prefix= uri=
+characters len=10 [\n         ]
+< CALL 22 rc=0 err=0 wf=1 in=6 p=856 l=29 col=10 i=1 n=3
+> CALL 23 len=35
+startElementNs local=[shipDate] prefix= uri= ns=0 att=0 def=0
+characters len=10 [1999-05-21]
+endElementNs local=[shipDate] prefix= uri=
+characters len=7 [\n      ]
+< CALL 23 rc=0 err=0 wf=1 in=9 p=894 l=30 col=7 i=1 n=3
+> CALL 24 len=33
+endElementNs local=[item] prefix= uri=
+characters len=4 [\n   ]
+endElementNs local=[items] prefix= uri=
+characters len=1 [\n]
+endElementNs local=[purchaseOrder] prefix= uri=
+< CALL 24 rc=0 err=0 wf=1 in=14 p=931 l=33 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=931 l=33 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=33 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=931 l=33 col=1 i=1 n=0

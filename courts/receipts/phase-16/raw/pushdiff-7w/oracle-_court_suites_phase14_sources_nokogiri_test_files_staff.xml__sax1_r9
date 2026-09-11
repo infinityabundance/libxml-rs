@@ -1,0 +1,301 @@
+== /court/suites/phase14/sources/nokogiri/test/files/staff.xml bytes=2055 mode=r9
+> CALL 0 len=12
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+startDocument
+pi target=TEST-STYLE data=PIDATA
+< CALL 1 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 2 len=41
+< CALL 2 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 3 len=53
+internalSubset name=staff ext= sys=staff.dtd
+< CALL 3 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 5 len=52
+< CALL 5 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 6 len=45
+< CALL 6 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 7 len=52
+< CALL 7 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 8 len=44
+< CALL 8 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 9 len=54
+< CALL 9 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 10 len=28
+< CALL 10 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 11 len=52
+< CALL 11 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 12 len=45
+< CALL 12 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 13 len=55
+entityDecl name=ent1 type=1 pub= sys= content=es
+entityDecl name=ent2 type=1 pub= sys= content=1900 Dallas Road
+entityDecl name=ent3 type=1 pub= sys= content=Texas
+entityDecl name=ent4 type=1 pub= sys= content=<entElement domestic='Yes'>Element data</entElement><?PItarget PIdata?>
+unparsedEntityDecl name=ent5 pub=entityURI sys=entityFile nota=notation1
+entityDecl name=ent1 type=1 pub= sys= content=This entity should be discarded
+elementDecl name=br type=1 content=nil
+attributeDecl elem=br name=width type=1 def=1 val=0 enum=
+notationDecl name=notation1 pub=notation1File sys=
+notationDecl name=notation2 pub= sys=notation2File
+externalSubset name=staff ext= sys=staff.dtd
+comment [ This is comment number 1.]
+< CALL 13 rc=0 err=0 wf=1 in=6 p=565 l=15 col=1 i=1 n=0
+> CALL 14 len=42
+startElement [staff]
+characters len=2 [\n ]
+startElement [employee]
+characters len=3 [\n  ]
+startElement [employeeId]
+characters len=7 [EMP0001]
+< CALL 14 rc=0 err=0 wf=1 in=9 p=606 l=17 col=22 i=1 n=3
+> CALL 15 len=63
+endElement [employeeId]
+characters len=3 [\n  ]
+startElement [name]
+characters len=15 [Margaret Martin]
+endElement [name]
+characters len=3 [\n  ]
+startElement [position]
+characters len=10 [Accountant]
+< CALL 15 rc=0 err=0 wf=1 in=9 p=673 l=19 col=23 i=1 n=3
+> CALL 16 len=31
+endElement [position]
+characters len=14 [           \n  ]
+startElement [salary]
+< CALL 16 rc=0 err=0 wf=1 in=7 p=706 l=20 col=11 i=1 n=3
+> CALL 17 len=16
+characters len=6 [56,000]
+endElement [salary]
+< CALL 17 rc=0 err=0 wf=1 in=7 p=721 l=20 col=26 i=1 n=2
+> CALL 18 len=32
+characters len=3 [\n  ]
+startElement [gender]
+characters len=6 [Female]
+endElement [gender]
+characters len=3 [\n  ]
+< CALL 18 rc=0 err=0 wf=1 in=6 p=750 l=22 col=3 i=1 n=2
+> CALL 19 len=3
+< CALL 19 rc=0 err=0 wf=1 in=6 p=750 l=22 col=3 i=1 n=2
+> CALL 20 len=19
+startElement [address] [domestic]=Yes
+< CALL 20 rc=0 err=0 wf=1 in=7 p=774 l=22 col=27 i=1 n=3
+> CALL 21 len=19
+< CALL 21 rc=0 err=0 wf=1 in=7 p=774 l=22 col=27 i=1 n=3
+> CALL 22 len=20
+characters len=35 [1230 North Ave. Dallas, Texas 98551]
+< CALL 22 rc=0 err=0 wf=1 in=9 p=809 l=22 col=62 i=1 n=3
+> CALL 23 len=35
+endElement [address]
+characters len=2 [\n ]
+endElement [employee]
+characters len=2 [\n ]
+startElement [employee]
+characters len=3 [\n  ]
+< CALL 23 rc=0 err=0 wf=1 in=6 p=847 l=25 col=3 i=1 n=2
+> CALL 24 len=62
+startElement [employeeId]
+characters len=7 [EMP0002]
+endElement [employeeId]
+characters len=3 [\n  ]
+startElement [name]
+characters len=15 [Martha Raynolds]
+< CALL 24 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 25 len=28
+< CALL 25 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 26 len=64
+cdata len=59 [This is a CDATASection with EntityReference number 2 &ent2;]
+characters len=1 [\n]
+< CALL 26 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 27 len=45
+< CALL 27 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 28 len=2
+cdata len=64 [This is an adjacent CDATASection with a reference to a tab &tab;]
+< CALL 28 rc=0 err=0 wf=1 in=7 p=1051 l=27 col=77 i=1 n=3
+> CALL 29 len=54
+endElement [name]
+characters len=3 [\n  ]
+startElement [position]
+characters len=9 [Secretary]
+endElement [position]
+characters len=3 [\n  ]
+startElement [salary]
+< CALL 29 rc=0 err=0 wf=1 in=7 p=1102 l=29 col=11 i=1 n=3
+> CALL 30 len=22
+characters len=6 [35,000]
+endElement [salary]
+characters len=3 [\n  ]
+startElement [gender]
+< CALL 30 rc=0 err=0 wf=1 in=7 p=1128 l=30 col=11 i=1 n=3
+> CALL 31 len=34
+characters len=6 [Female]
+endElement [gender]
+characters len=3 [\n  ]
+< CALL 31 rc=0 err=0 wf=1 in=6 p=1146 l=31 col=3 i=1 n=2
+> CALL 32 len=43
+startElement [address] [domestic]=Yes [street]=Yes
+characters len=16 [1900 Dallas Road]
+reference [ent2]
+characters len=9 [ Dallas, ]
+characters len=5 [Texas]
+reference [ent3]
+< CALL 32 rc=0 err=0 wf=1 in=7 p=1204 l=31 col=61 i=1 n=3
+> CALL 33 len=14
+characters len=7 [\n 98554]
+< CALL 33 rc=0 err=0 wf=1 in=9 p=1211 l=32 col=7 i=1 n=3
+> CALL 34 len=57
+endElement [address]
+characters len=2 [\n ]
+endElement [employee]
+characters len=2 [\n ]
+startElement [employee]
+characters len=3 [\n  ]
+startElement [employeeId]
+characters len=7 [EMP0003]
+< CALL 34 rc=0 err=0 wf=1 in=9 p=1268 l=35 col=22 i=1 n=3
+> CALL 35 len=17
+endElement [employeeId]
+characters len=3 [\n  ]
+startElement [name]
+< CALL 35 rc=0 err=0 wf=1 in=7 p=1290 l=36 col=9 i=1 n=3
+> CALL 36 len=10
+characters len=12 [Roger\n Jones]
+< CALL 36 rc=0 err=0 wf=1 in=7 p=1302 l=37 col=7 i=1 n=3
+> CALL 37 len=1
+< CALL 37 rc=0 err=0 wf=1 in=9 p=1302 l=37 col=7 i=1 n=3
+> CALL 38 len=61
+endElement [name]
+characters len=3 [\n  ]
+startElement [position] [id]=partial_collision_id
+< CALL 38 rc=0 err=0 wf=1 in=7 p=1348 l=38 col=39 i=1 n=3
+> CALL 39 len=23
+characters len=18 [Department Manager]
+endElement [position]
+characters len=3 [\n  ]
+startElement [salary]
+< CALL 39 rc=0 err=0 wf=1 in=7 p=1388 l=39 col=11 i=1 n=3
+> CALL 40 len=62
+characters len=7 [100,000]
+endElement [salary]
+characters len=3 [\n  ]
+startElement [gender]
+startElement [entElement] [domestic]=Yes
+characters len=12 [Element data]
+endElement [entElement]
+pi target=PItarget data=PIdata
+reference [ent4]
+endElement [gender]
+characters len=3 [\n  ]
+< CALL 40 rc=0 err=0 wf=1 in=6 p=1433 l=41 col=3 i=1 n=2
+> CALL 41 len=41
+startElement [address] [domestic]=Yes [street]=No
+< CALL 41 rc=0 err=0 wf=1 in=7 p=1469 l=41 col=39 i=1 n=3
+> CALL 42 len=18
+characters len=29 [PO Box 27 Irving, texas 98553]
+endElement [address]
+< CALL 42 rc=0 err=0 wf=1 in=7 p=1508 l=41 col=78 i=1 n=2
+> CALL 43 len=49
+characters len=2 [\n ]
+endElement [employee]
+characters len=2 [\n ]
+startElement [employee]
+characters len=3 [\n  ]
+startElement [employeeId]
+characters len=7 [EMP0004]
+< CALL 43 rc=0 err=0 wf=1 in=9 p=1555 l=44 col=22 i=1 n=3
+> CALL 44 len=12
+endElement [employeeId]
+< CALL 44 rc=0 err=0 wf=1 in=7 p=1568 l=44 col=35 i=1 n=2
+> CALL 45 len=4
+characters len=3 [\n  ]
+< CALL 45 rc=0 err=0 wf=1 in=6 p=1571 l=45 col=3 i=1 n=2
+> CALL 46 len=26
+startElement [name]
+characters len=12 [Jeny Oconnor]
+endElement [name]
+characters len=3 [\n  ]
+< CALL 46 rc=0 err=0 wf=1 in=7 p=1599 l=46 col=3 i=1 n=2
+> CALL 47 len=21
+startElement [position]
+< CALL 47 rc=0 err=0 wf=1 in=7 p=1609 l=46 col=13 i=1 n=3
+> CALL 48 len=9
+characters len=18 [Personnel Director]
+< CALL 48 rc=0 err=0 wf=1 in=9 p=1627 l=46 col=31 i=1 n=3
+> CALL 49 len=3
+< CALL 49 rc=0 err=0 wf=1 in=9 p=1627 l=46 col=31 i=1 n=3
+> CALL 50 len=56
+endElement [position]
+characters len=3 [\n  ]
+startElement [salary]
+characters len=6 [95,000]
+endElement [salary]
+characters len=3 [\n  ]
+startElement [gender]
+characters len=6 [Female]
+< CALL 50 rc=0 err=0 wf=1 in=9 p=1681 l=48 col=17 i=1 n=3
+> CALL 51 len=49
+endElement [gender]
+characters len=3 [\n  ]
+startElement [address] [domestic]=Yes [street]=Y&ent1;
+< CALL 51 rc=0 err=0 wf=1 in=7 p=1734 l=49 col=44 i=1 n=3
+> CALL 52 len=20
+< CALL 52 rc=0 err=0 wf=1 in=7 p=1734 l=49 col=44 i=1 n=3
+> CALL 53 len=16
+characters len=34 [27 South Road. Dallas, Texas 98556]
+< CALL 53 rc=0 err=0 wf=1 in=9 p=1768 l=49 col=78 i=1 n=3
+> CALL 54 len=47
+endElement [address]
+characters len=2 [\n ]
+endElement [employee]
+characters len=2 [\n ]
+startElement [employee]
+characters len=3 [\n  ]
+startElement [employeeId]
+< CALL 54 rc=0 err=0 wf=1 in=7 p=1818 l=52 col=15 i=1 n=3
+> CALL 55 len=46
+characters len=7 [EMP0005]
+endElement [employeeId]
+characters len=3 [\n  ]
+startElement [name]
+characters len=12 [Robert Myers]
+endElement [name]
+< CALL 55 rc=0 err=0 wf=1 in=7 p=1866 l=53 col=28 i=1 n=2
+> CALL 56 len=57
+characters len=3 [\n  ]
+startElement [position]
+characters len=19 [Computer Specialist]
+endElement [position]
+characters len=3 [\n  ]
+startElement [salary]
+< CALL 56 rc=0 err=0 wf=1 in=7 p=1920 l=55 col=11 i=1 n=3
+> CALL 57 len=48
+characters len=6 [90,000]
+endElement [salary]
+characters len=3 [\n  ]
+startElement [gender]
+characters len=4 [male]
+endElement [gender]
+characters len=3 [\n  ]
+< CALL 57 rc=0 err=0 wf=1 in=6 p=1962 l=57 col=3 i=1 n=2
+> CALL 58 len=29
+startElement [address] [street]=Yes
+< CALL 58 rc=0 err=0 wf=1 in=7 p=1984 l=57 col=25 i=1 n=3
+> CALL 59 len=35
+characters len=37 [1821 Nordic. Road, Irving Texas 98558]
+endElement [address]
+characters len=2 [\n ]
+< CALL 59 rc=0 err=0 wf=1 in=9 p=2033 l=58 col=2 i=1 n=2
+> CALL 60 len=18
+endElement [employee]
+characters len=2 [\n ]
+endElement [staff]
+< CALL 60 rc=0 err=0 wf=1 in=14 p=2054 l=59 col=10 i=1 n=0
+> CALL 61 len=1
+< CALL 61 rc=0 err=0 wf=1 in=14 p=2055 l=60 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=2055 l=60 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=60 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=2055 l=60 col=1 i=1 n=0

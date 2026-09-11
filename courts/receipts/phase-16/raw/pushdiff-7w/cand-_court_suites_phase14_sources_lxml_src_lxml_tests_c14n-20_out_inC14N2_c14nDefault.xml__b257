@@ -1,0 +1,33 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N2_c14nDefault.xml bytes=169 mode=b257
+> CALL 0 len=169
+startDocument
+startElementNs local=[doc] prefix= uri= ns=0 att=0 def=0
+characters len=4 [\n   ]
+startElementNs local=[clean] prefix= uri= ns=0 att=0 def=0
+characters len=3 [   ]
+endElementNs local=[clean] prefix= uri=
+characters len=4 [\n   ]
+startElementNs local=[dirty] prefix= uri= ns=0 att=0 def=0
+characters len=11 [   A   B   ]
+endElementNs local=[dirty] prefix= uri=
+characters len=4 [\n   ]
+startElementNs local=[mixed] prefix= uri= ns=0 att=0 def=0
+characters len=15 [\n      A\n      ]
+startElementNs local=[clean] prefix= uri= ns=0 att=0 def=0
+characters len=3 [   ]
+endElementNs local=[clean] prefix= uri=
+characters len=15 [\n      B\n      ]
+startElementNs local=[dirty] prefix= uri= ns=0 att=0 def=0
+characters len=11 [   A   B   ]
+endElementNs local=[dirty] prefix= uri=
+characters len=12 [\n      C\n   ]
+endElementNs local=[mixed] prefix= uri=
+characters len=1 [\n]
+endElementNs local=[doc] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=169 l=11 col=7 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=169 l=11 col=7 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=11 i1=0 i2=7 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=169 l=11 col=7 i=1 n=0

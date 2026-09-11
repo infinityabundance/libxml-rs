@@ -1,0 +1,22 @@
+== /scanout/corpus/doctype-two.xml bytes=28 mode=Cb5
+> CTOR len=5
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=5
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+internalSubset name=a ext= sys=
+externalSubset name=a ext= sys=
+< CALL 1 rc=0 err=0 wf=1 in=6 p=12 l=1 col=13 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=6 p=12 l=1 col=13 i=1 n=0
+> CALL 3 len=5
+error dom=1 code=68 level=3 file= line=1 i1=0 i2=14 str1= str2= str3= msg=StartTag: invalid element name\n
+endDocument
+< CALL 3 rc=68 err=68 wf=0 in=-1 p=13 l=1 col=14 i=1 n=0
+> CALL 4 len=3
+< CALL 4 rc=68 err=68 wf=0 in=-1 p=13 l=1 col=14 i=1 n=0
+> FINAL
+< FINAL 0 rc=68 err=68 wf=0 in=-1 p=13 l=1 col=14 i=1 n=0
+> REFEED
+< REFEED 0 rc=68 err=68 wf=0 in=-1 p=13 l=1 col=14 i=1 n=0

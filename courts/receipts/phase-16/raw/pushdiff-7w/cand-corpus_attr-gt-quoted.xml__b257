@@ -1,0 +1,12 @@
+== /scanout/corpus/attr-gt-quoted.xml bytes=20 mode=b257
+> CALL 0 len=20
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=2 def=0 [a local=b prefix= uri= value=x>y end=1] [a local=c prefix= uri= value=a>b end=1]
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=20 l=1 col=21 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=20 l=1 col=21 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=21 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=20 l=1 col=21 i=1 n=0

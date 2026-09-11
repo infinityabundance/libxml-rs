@@ -1,0 +1,39 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/c14nComment.xml bytes=253 mode=b64z2
+> CALL 0 len=64
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=64
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=64
+startElementNs local=[CanonicalizationMethod] prefix=dsig uri=http://www.w3.org/2000/09/xmldsig# ns=2 att=1 def=0 {dsig=http://www.w3.org/2000/09/xmldsig#} {c14n2=http://www.w3.org/2010/xml-c14n2} [a local=Algorithm prefix= uri= value=http://www.w3.org/2010/xml-c14n2 end=1]
+characters len=2 [\n ]
+< CALL 2 rc=0 err=0 wf=1 in=6 p=171 l=2 col=2 i=1 n=1
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=6 p=171 l=2 col=2 i=1 n=1
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=6 p=171 l=2 col=2 i=1 n=1
+> CALL 3 len=61
+startElementNs local=[IgnoreComments] prefix=c14n2 uri=http://www.w3.org/2010/xml-c14n2 ns=0 att=0 def=0
+characters len=4 [true]
+endElementNs local=[IgnoreComments] prefix=c14n2 uri=http://www.w3.org/2010/xml-c14n2
+characters len=1 [\n]
+endElementNs local=[CanonicalizationMethod] prefix=dsig uri=http://www.w3.org/2000/09/xmldsig#
+< CALL 3 rc=0 err=0 wf=1 in=14 p=253 l=5 col=1 i=1 n=0
+> CALL 4 ZERO
+< CALL 4 rc=0 err=0 wf=1 in=14 p=253 l=5 col=1 i=1 n=0
+> CALL 4 ZERO
+< CALL 4 rc=0 err=0 wf=1 in=14 p=253 l=5 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=253 l=5 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=5 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=253 l=5 col=1 i=1 n=0

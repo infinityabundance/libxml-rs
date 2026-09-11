@@ -1,0 +1,51 @@
+== /scanout/corpus/doctype-subset-seq.xml bytes=49 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=3
+< CALL 7 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=3
+< CALL 8 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=3
+< CALL 9 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=3
+internalSubset name=a ext= sys=
+elementDecl name=a type=4 content={t=3 o=1 a={t=2 o=1 name=b prefix=} b={t=2 o=1 name=c prefix=}}
+externalSubset name=a ext= sys=
+< CALL 10 rc=0 err=0 wf=1 in=4 p=33 l=1 col=34 i=1 n=0
+> CALL 11 len=3
+< CALL 11 rc=0 err=0 wf=1 in=6 p=34 l=2 col=1 i=1 n=0
+> CALL 12 len=3
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 12 rc=0 err=0 wf=1 in=6 p=37 l=2 col=4 i=1 n=1
+> CALL 13 len=3
+startElementNs local=[b] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[b] prefix= uri=
+< CALL 13 rc=0 err=0 wf=1 in=7 p=41 l=2 col=8 i=1 n=1
+> CALL 14 len=3
+startElementNs local=[c] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[c] prefix= uri=
+< CALL 14 rc=0 err=0 wf=1 in=7 p=45 l=2 col=12 i=1 n=1
+> CALL 15 len=3
+< CALL 15 rc=0 err=0 wf=1 in=9 p=45 l=2 col=12 i=1 n=1
+> CALL 16 len=1
+endElementNs local=[a] prefix= uri=
+< CALL 16 rc=0 err=0 wf=1 in=14 p=49 l=2 col=16 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=49 l=2 col=16 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=16 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=49 l=2 col=16 i=1 n=0

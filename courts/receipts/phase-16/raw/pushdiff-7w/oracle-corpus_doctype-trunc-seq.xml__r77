@@ -1,0 +1,13 @@
+== /scanout/corpus/doctype-trunc-seq.xml bytes=32 mode=r77
+> CALL 0 len=16
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=16
+internalSubset name=a ext= sys=
+< CALL 1 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0
+> FINAL
+elementDecl name=a type=4 content={t=3 o=1 a={t=2 o=1 name=b prefix=} b={t=2 o=1 name=c prefix=}}
+error dom=1 code=61 level=3 file= line=1 i1=0 i2=33 str1= str2= str3= msg=DOCTYPE improperly terminated\n
+< FINAL 0 rc=61 err=61 wf=0 in=4 p=32 l=1 col=33 i=1 n=0
+> REFEED
+< REFEED 0 rc=61 err=61 wf=0 in=4 p=32 l=1 col=33 i=1 n=0

@@ -1,0 +1,203 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N3_c14nDefault.xml bytes=405 mode=b5
+> CALL 0 len=5
+startDocument
+startElementNs local=[doc] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=7 p=5 l=1 col=6 i=1 n=1
+> CALL 1 len=5
+characters len=4 [\n   ]
+< CALL 1 rc=0 err=0 wf=1 in=7 p=9 l=2 col=4 i=1 n=1
+> CALL 2 len=5
+startElementNs local=[e1] prefix= uri= ns=0 att=0 def=0
+< CALL 2 rc=0 err=0 wf=1 in=9 p=13 l=2 col=8 i=1 n=2
+> CALL 3 len=5
+endElementNs local=[e1] prefix= uri=
+< CALL 3 rc=0 err=0 wf=1 in=7 p=18 l=2 col=13 i=1 n=1
+> CALL 4 len=5
+characters len=4 [\n   ]
+< CALL 4 rc=0 err=0 wf=1 in=6 p=22 l=3 col=4 i=1 n=1
+> CALL 5 len=5
+startElementNs local=[e2] prefix= uri= ns=0 att=0 def=0
+< CALL 5 rc=0 err=0 wf=1 in=9 p=26 l=3 col=8 i=1 n=2
+> CALL 6 len=5
+endElementNs local=[e2] prefix= uri=
+< CALL 6 rc=0 err=0 wf=1 in=7 p=31 l=3 col=13 i=1 n=1
+> CALL 7 len=5
+characters len=4 [\n   ]
+< CALL 7 rc=0 err=0 wf=1 in=6 p=35 l=4 col=4 i=1 n=1
+> CALL 8 len=5
+< CALL 8 rc=0 err=0 wf=1 in=6 p=35 l=4 col=4 i=1 n=1
+> CALL 9 len=5
+< CALL 9 rc=0 err=0 wf=1 in=6 p=35 l=4 col=4 i=1 n=1
+> CALL 10 len=5
+< CALL 10 rc=0 err=0 wf=1 in=6 p=35 l=4 col=4 i=1 n=1
+> CALL 11 len=5
+< CALL 11 rc=0 err=0 wf=1 in=6 p=35 l=4 col=4 i=1 n=1
+> CALL 12 len=5
+startElementNs local=[e3] prefix= uri= ns=0 att=2 def=0 [a local=id prefix= uri= value=elem3 end=1] [a local=name prefix= uri= value=elem3 end=1]
+< CALL 12 rc=0 err=0 wf=1 in=9 p=63 l=4 col=32 i=1 n=2
+> CALL 13 len=5
+endElementNs local=[e3] prefix= uri=
+< CALL 13 rc=0 err=0 wf=1 in=7 p=68 l=4 col=37 i=1 n=1
+> CALL 14 len=5
+characters len=4 [\n   ]
+< CALL 14 rc=0 err=0 wf=1 in=6 p=72 l=5 col=4 i=1 n=1
+> CALL 15 len=5
+< CALL 15 rc=0 err=0 wf=1 in=6 p=72 l=5 col=4 i=1 n=1
+> CALL 16 len=5
+< CALL 16 rc=0 err=0 wf=1 in=6 p=72 l=5 col=4 i=1 n=1
+> CALL 17 len=5
+< CALL 17 rc=0 err=0 wf=1 in=6 p=72 l=5 col=4 i=1 n=1
+> CALL 18 len=5
+< CALL 18 rc=0 err=0 wf=1 in=6 p=72 l=5 col=4 i=1 n=1
+> CALL 19 len=5
+startElementNs local=[e4] prefix= uri= ns=0 att=2 def=0 [a local=id prefix= uri= value=elem4 end=1] [a local=name prefix= uri= value=elem4 end=1]
+< CALL 19 rc=0 err=0 wf=1 in=7 p=100 l=5 col=32 i=1 n=2
+> CALL 20 len=5
+endElementNs local=[e4] prefix= uri=
+< CALL 20 rc=0 err=0 wf=1 in=7 p=105 l=5 col=37 i=1 n=1
+> CALL 21 len=5
+characters len=4 [\n   ]
+< CALL 21 rc=0 err=0 wf=1 in=7 p=109 l=6 col=4 i=1 n=1
+> CALL 22 len=5
+< CALL 22 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 23 len=5
+< CALL 23 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 24 len=5
+< CALL 24 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 25 len=5
+< CALL 25 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 26 len=5
+< CALL 26 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 27 len=5
+< CALL 27 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 28 len=5
+< CALL 28 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 29 len=5
+< CALL 29 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 30 len=5
+< CALL 30 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 31 len=5
+< CALL 31 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 32 len=5
+< CALL 32 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 33 len=5
+< CALL 33 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 34 len=5
+< CALL 34 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 35 len=5
+< CALL 35 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 36 len=5
+< CALL 36 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 37 len=5
+< CALL 37 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 38 len=5
+< CALL 38 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 39 len=5
+< CALL 39 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 40 len=5
+< CALL 40 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 41 len=5
+< CALL 41 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 42 len=5
+< CALL 42 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 43 len=5
+< CALL 43 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 44 len=5
+< CALL 44 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 45 len=5
+< CALL 45 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 46 len=5
+< CALL 46 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 47 len=5
+< CALL 47 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 48 len=5
+< CALL 48 rc=0 err=0 wf=1 in=6 p=109 l=6 col=4 i=1 n=1
+> CALL 49 len=5
+startElementNs local=[e5] prefix= uri=http://example.org ns=3 att=4 def=0 {=http://example.org} {a=http://www.w3.org} {b=http://www.ietf.org} [a local=attr prefix= uri= value=I'm end=1] [a local=attr2 prefix= uri= value=all end=1] [a local=attr prefix=b uri=http://www.ietf.org value=sorted end=1] [a local=attr prefix=a uri=http://www.w3.org value=out end=1]
+< CALL 49 rc=0 err=0 wf=1 in=7 p=250 l=6 col=145 i=1 n=2
+> CALL 50 len=5
+endElementNs local=[e5] prefix= uri=http://example.org
+< CALL 50 rc=0 err=0 wf=1 in=7 p=255 l=6 col=150 i=1 n=1
+> CALL 51 len=5
+characters len=4 [\n   ]
+< CALL 51 rc=0 err=0 wf=1 in=7 p=259 l=7 col=4 i=1 n=1
+> CALL 52 len=5
+startElementNs local=[e6] prefix= uri= ns=0 att=0 def=0
+< CALL 52 rc=0 err=0 wf=1 in=7 p=263 l=7 col=8 i=1 n=2
+> CALL 53 len=5
+< CALL 53 rc=0 err=0 wf=1 in=7 p=263 l=7 col=8 i=1 n=2
+> CALL 54 len=5
+characters len=7 [\n      ]
+< CALL 54 rc=0 err=0 wf=1 in=6 p=270 l=8 col=7 i=1 n=2
+> CALL 55 len=5
+< CALL 55 rc=0 err=0 wf=1 in=6 p=270 l=8 col=7 i=1 n=2
+> CALL 56 len=5
+< CALL 56 rc=0 err=0 wf=1 in=6 p=270 l=8 col=7 i=1 n=2
+> CALL 57 len=5
+< CALL 57 rc=0 err=0 wf=1 in=6 p=270 l=8 col=7 i=1 n=2
+> CALL 58 len=5
+< CALL 58 rc=0 err=0 wf=1 in=6 p=270 l=8 col=7 i=1 n=2
+> CALL 59 len=5
+< CALL 59 rc=0 err=0 wf=1 in=6 p=270 l=8 col=7 i=1 n=2
+> CALL 60 len=5
+startElementNs local=[e7] prefix= uri=http://www.ietf.org ns=1 att=0 def=0 {=http://www.ietf.org}
+< CALL 60 rc=0 err=0 wf=1 in=7 p=302 l=8 col=39 i=1 n=3
+> CALL 61 len=5
+< CALL 61 rc=0 err=0 wf=1 in=7 p=302 l=8 col=39 i=1 n=3
+> CALL 62 len=5
+characters len=10 [\n         ]
+< CALL 62 rc=0 err=0 wf=1 in=6 p=312 l=9 col=10 i=1 n=3
+> CALL 63 len=5
+< CALL 63 rc=0 err=0 wf=1 in=6 p=312 l=9 col=10 i=1 n=3
+> CALL 64 len=5
+startElementNs local=[e8] prefix= uri= ns=1 att=0 def=0 {=}
+< CALL 64 rc=0 err=0 wf=1 in=7 p=325 l=9 col=23 i=1 n=4
+> CALL 65 len=5
+< CALL 65 rc=0 err=0 wf=1 in=7 p=325 l=9 col=23 i=1 n=4
+> CALL 66 len=5
+< CALL 66 rc=0 err=0 wf=1 in=7 p=325 l=9 col=23 i=1 n=4
+> CALL 67 len=5
+characters len=13 [\n            ]
+< CALL 67 rc=0 err=0 wf=1 in=6 p=338 l=10 col=13 i=1 n=4
+> CALL 68 len=5
+< CALL 68 rc=0 err=0 wf=1 in=6 p=338 l=10 col=13 i=1 n=4
+> CALL 69 len=5
+< CALL 69 rc=0 err=0 wf=1 in=6 p=338 l=10 col=13 i=1 n=4
+> CALL 70 len=5
+< CALL 70 rc=0 err=0 wf=1 in=6 p=338 l=10 col=13 i=1 n=4
+> CALL 71 len=5
+startElementNs local=[e9] prefix= uri= ns=0 att=1 def=0 [a local=attr prefix= uri= value=default end=1]
+< CALL 71 rc=0 err=0 wf=1 in=9 p=357 l=10 col=32 i=1 n=5
+> CALL 72 len=5
+endElementNs local=[e9] prefix= uri=
+< CALL 72 rc=0 err=0 wf=1 in=7 p=362 l=10 col=37 i=1 n=4
+> CALL 73 len=5
+< CALL 73 rc=0 err=0 wf=1 in=7 p=362 l=10 col=37 i=1 n=4
+> CALL 74 len=5
+characters len=10 [\n         ]
+< CALL 74 rc=0 err=0 wf=1 in=9 p=372 l=11 col=10 i=1 n=4
+> CALL 75 len=5
+endElementNs local=[e8] prefix= uri=
+< CALL 75 rc=0 err=0 wf=1 in=7 p=377 l=11 col=15 i=1 n=3
+> CALL 76 len=5
+characters len=7 [\n      ]
+< CALL 76 rc=0 err=0 wf=1 in=7 p=384 l=12 col=7 i=1 n=3
+> CALL 77 len=5
+endElementNs local=[e7] prefix= uri=http://www.ietf.org
+< CALL 77 rc=0 err=0 wf=1 in=7 p=389 l=12 col=12 i=1 n=2
+> CALL 78 len=5
+characters len=4 [\n   ]
+< CALL 78 rc=0 err=0 wf=1 in=9 p=393 l=13 col=4 i=1 n=2
+> CALL 79 len=5
+endElementNs local=[e6] prefix= uri=
+characters len=1 [\n]
+< CALL 79 rc=0 err=0 wf=1 in=7 p=399 l=14 col=1 i=1 n=1
+> CALL 80 len=5
+endElementNs local=[doc] prefix= uri=
+< CALL 80 rc=0 err=0 wf=1 in=14 p=405 l=14 col=7 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=405 l=14 col=7 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=14 i1=0 i2=7 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=405 l=14 col=7 i=1 n=0

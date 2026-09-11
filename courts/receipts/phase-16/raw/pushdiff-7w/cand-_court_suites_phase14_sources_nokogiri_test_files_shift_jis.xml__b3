@@ -1,0 +1,105 @@
+== /court/suites/phase14/sources/nokogiri/test/files/shift_jis.xml bytes=128 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=3
+< CALL 7 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=3
+< CALL 8 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=3
+< CALL 9 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=3
+< CALL 10 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=3
+< CALL 11 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=3
+< CALL 12 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=3
+startDocument
+< CALL 13 rc=0 err=0 wf=1 in=1 p=2 l=1 col=43 i=1 n=0
+> CALL 14 len=3
+< CALL 14 rc=0 err=0 wf=1 in=6 p=3 l=2 col=1 i=1 n=0
+> CALL 15 len=3
+< CALL 15 rc=0 err=0 wf=1 in=6 p=3 l=2 col=1 i=1 n=0
+> CALL 16 len=3
+startElementNs local=[root] prefix= uri= ns=0 att=0 def=0
+< CALL 16 rc=0 err=0 wf=1 in=7 p=9 l=2 col=7 i=1 n=1
+> CALL 17 len=3
+characters len=3 [\n  ]
+< CALL 17 rc=0 err=0 wf=1 in=6 p=12 l=3 col=3 i=1 n=1
+> CALL 18 len=3
+startElementNs local=[hi] prefix= uri= ns=0 att=0 def=0
+< CALL 18 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 19 len=3
+< CALL 19 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 20 len=3
+< CALL 20 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 21 len=3
+< CALL 21 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 22 len=3
+< CALL 22 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 23 len=3
+< CALL 23 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 24 len=3
+< CALL 24 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 25 len=3
+< CALL 25 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 26 len=3
+characters len=24 [This is a Shift_JIS File]
+< CALL 26 rc=0 err=0 wf=1 in=7 p=40 l=3 col=31 i=1 n=2
+> CALL 27 len=3
+< CALL 27 rc=0 err=0 wf=1 in=9 p=40 l=3 col=31 i=1 n=2
+> CALL 28 len=3
+endElementNs local=[hi] prefix= uri=
+< CALL 28 rc=0 err=0 wf=1 in=7 p=45 l=3 col=36 i=1 n=1
+> CALL 29 len=3
+characters len=3 [\n  ]
+< CALL 29 rc=0 err=0 wf=1 in=6 p=48 l=4 col=3 i=1 n=1
+> CALL 30 len=3
+< CALL 30 rc=0 err=0 wf=1 in=6 p=48 l=4 col=3 i=1 n=1
+> CALL 31 len=3
+< CALL 31 rc=0 err=0 wf=1 in=6 p=48 l=4 col=3 i=1 n=1
+> CALL 32 len=3
+startElementNs local=[hi_again] prefix= uri= ns=0 att=0 def=0
+< CALL 32 rc=0 err=0 wf=1 in=7 p=58 l=4 col=13 i=1 n=2
+> CALL 33 len=3
+< CALL 33 rc=0 err=0 wf=1 in=7 p=58 l=4 col=13 i=1 n=2
+> CALL 34 len=3
+< CALL 34 rc=0 err=0 wf=1 in=7 p=58 l=4 col=13 i=1 n=2
+> CALL 35 len=3
+< CALL 35 rc=0 err=0 wf=1 in=7 p=58 l=4 col=13 i=1 n=2
+> CALL 36 len=3
+characters len=15 [\xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf]
+< CALL 36 rc=0 err=0 wf=1 in=9 p=73 l=4 col=18 i=1 n=2
+> CALL 37 len=3
+< CALL 37 rc=0 err=0 wf=1 in=9 p=73 l=4 col=18 i=1 n=2
+> CALL 38 len=3
+< CALL 38 rc=0 err=0 wf=1 in=9 p=73 l=4 col=18 i=1 n=2
+> CALL 39 len=3
+endElementNs local=[hi_again] prefix= uri=
+< CALL 39 rc=0 err=0 wf=1 in=7 p=84 l=4 col=29 i=1 n=1
+> CALL 40 len=3
+characters len=1 [\n]
+< CALL 40 rc=0 err=0 wf=1 in=9 p=85 l=5 col=1 i=1 n=1
+> CALL 41 len=3
+< CALL 41 rc=0 err=0 wf=1 in=9 p=85 l=5 col=1 i=1 n=1
+> CALL 42 len=2
+endElementNs local=[root] prefix= uri=
+< CALL 42 rc=0 err=0 wf=1 in=14 p=93 l=6 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=93 l=6 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=6 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=93 l=6 col=1 i=1 n=0

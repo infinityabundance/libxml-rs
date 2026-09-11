@@ -1,0 +1,99 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inC14N2.xml bytes=170 mode=Cb5
+> CTOR len=5
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=5
+startDocument
+startElementNs local=[doc] prefix= uri= ns=0 att=0 def=0
+characters len=4 [\n   ]
+< CALL 0 rc=0 err=0 wf=1 in=7 p=9 l=2 col=4 i=1 n=1
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=6 p=9 l=2 col=4 i=1 n=1
+> CALL 2 len=5
+startElementNs local=[clean] prefix= uri= ns=0 att=0 def=0
+characters len=3 [   ]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=19 l=2 col=14 i=1 n=2
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=9 p=19 l=2 col=14 i=1 n=2
+> CALL 4 len=5
+endElementNs local=[clean] prefix= uri=
+< CALL 4 rc=0 err=0 wf=1 in=7 p=27 l=2 col=22 i=1 n=1
+> CALL 5 len=5
+characters len=4 [\n   ]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=31 l=3 col=4 i=1 n=1
+> CALL 6 len=5
+startElementNs local=[dirty] prefix= uri= ns=0 att=0 def=0
+< CALL 6 rc=0 err=0 wf=1 in=7 p=38 l=3 col=11 i=1 n=2
+> CALL 7 len=5
+< CALL 7 rc=0 err=0 wf=1 in=7 p=38 l=3 col=11 i=1 n=2
+> CALL 8 len=5
+characters len=11 [   A   B   ]
+< CALL 8 rc=0 err=0 wf=1 in=7 p=49 l=3 col=22 i=1 n=2
+> CALL 9 len=5
+< CALL 9 rc=0 err=0 wf=1 in=9 p=49 l=3 col=22 i=1 n=2
+> CALL 10 len=5
+endElementNs local=[dirty] prefix= uri=
+< CALL 10 rc=0 err=0 wf=1 in=7 p=57 l=3 col=30 i=1 n=1
+> CALL 11 len=5
+characters len=4 [\n   ]
+< CALL 11 rc=0 err=0 wf=1 in=6 p=61 l=4 col=4 i=1 n=1
+> CALL 12 len=5
+startElementNs local=[mixed] prefix= uri= ns=0 att=0 def=0
+< CALL 12 rc=0 err=0 wf=1 in=7 p=68 l=4 col=11 i=1 n=2
+> CALL 13 len=5
+< CALL 13 rc=0 err=0 wf=1 in=7 p=68 l=4 col=11 i=1 n=2
+> CALL 14 len=5
+< CALL 14 rc=0 err=0 wf=1 in=7 p=68 l=4 col=11 i=1 n=2
+> CALL 15 len=5
+characters len=15 [\n      A\n      ]
+< CALL 15 rc=0 err=0 wf=1 in=6 p=83 l=6 col=7 i=1 n=2
+> CALL 16 len=5
+startElementNs local=[clean] prefix= uri= ns=0 att=0 def=0
+< CALL 16 rc=0 err=0 wf=1 in=7 p=90 l=6 col=14 i=1 n=3
+> CALL 17 len=5
+characters len=3 [   ]
+< CALL 17 rc=0 err=0 wf=1 in=9 p=93 l=6 col=17 i=1 n=3
+> CALL 18 len=5
+< CALL 18 rc=0 err=0 wf=1 in=9 p=93 l=6 col=17 i=1 n=3
+> CALL 19 len=5
+endElementNs local=[clean] prefix= uri=
+< CALL 19 rc=0 err=0 wf=1 in=7 p=101 l=6 col=25 i=1 n=2
+> CALL 20 len=5
+< CALL 20 rc=0 err=0 wf=1 in=7 p=101 l=6 col=25 i=1 n=2
+> CALL 21 len=5
+< CALL 21 rc=0 err=0 wf=1 in=7 p=101 l=6 col=25 i=1 n=2
+> CALL 22 len=5
+characters len=15 [\n      B\n      ]
+< CALL 22 rc=0 err=0 wf=1 in=6 p=116 l=8 col=7 i=1 n=2
+> CALL 23 len=5
+startElementNs local=[dirty] prefix= uri= ns=0 att=0 def=0
+< CALL 23 rc=0 err=0 wf=1 in=7 p=123 l=8 col=14 i=1 n=3
+> CALL 24 len=5
+< CALL 24 rc=0 err=0 wf=1 in=7 p=123 l=8 col=14 i=1 n=3
+> CALL 25 len=5
+characters len=11 [   A   B   ]
+< CALL 25 rc=0 err=0 wf=1 in=7 p=134 l=8 col=25 i=1 n=3
+> CALL 26 len=5
+< CALL 26 rc=0 err=0 wf=1 in=9 p=134 l=8 col=25 i=1 n=3
+> CALL 27 len=5
+endElementNs local=[dirty] prefix= uri=
+< CALL 27 rc=0 err=0 wf=1 in=7 p=142 l=8 col=33 i=1 n=2
+> CALL 28 len=5
+< CALL 28 rc=0 err=0 wf=1 in=7 p=142 l=8 col=33 i=1 n=2
+> CALL 29 len=5
+characters len=12 [\n      C\n   ]
+< CALL 29 rc=0 err=0 wf=1 in=7 p=154 l=10 col=4 i=1 n=2
+> CALL 30 len=5
+< CALL 30 rc=0 err=0 wf=1 in=9 p=154 l=10 col=4 i=1 n=2
+> CALL 31 len=5
+endElementNs local=[mixed] prefix= uri=
+characters len=1 [\n]
+< CALL 31 rc=0 err=0 wf=1 in=9 p=163 l=11 col=1 i=1 n=1
+> CALL 32 len=5
+endElementNs local=[doc] prefix= uri=
+< CALL 32 rc=0 err=0 wf=1 in=14 p=170 l=12 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=170 l=12 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=12 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=170 l=12 col=1 i=1 n=0

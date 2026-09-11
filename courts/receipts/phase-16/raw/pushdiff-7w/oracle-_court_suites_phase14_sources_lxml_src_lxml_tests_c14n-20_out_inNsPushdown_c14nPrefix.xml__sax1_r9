@@ -1,0 +1,37 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inNsPushdown_c14nPrefix.xml bytes=208 mode=r9
+> CALL 0 len=12
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+startElement [n0:foo] [xmlns:n0]=http://a
+characters len=2 [\n ]
+< CALL 1 rc=0 err=0 wf=1 in=6 p=30 l=2 col=2 i=1 n=1
+> CALL 2 len=41
+startElement [n1:bar] [xmlns:n1]=http://b
+endElement [n1:bar]
+characters len=2 [\n ]
+< CALL 2 rc=0 err=0 wf=1 in=6 p=69 l=3 col=2 i=1 n=1
+> CALL 3 len=53
+startElement [n1:bar] [xmlns:n1]=http://b
+endElement [n1:bar]
+characters len=2 [\n ]
+startElement [n1:bar] [xmlns:n1]=http://b
+< CALL 3 rc=0 err=0 wf=1 in=9 p=136 l=4 col=30 i=1 n=2
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=9 p=136 l=4 col=30 i=1 n=2
+> CALL 5 len=52
+endElement [n1:bar]
+characters len=2 [\n ]
+startElement [n0:bar] [xmlns:n1]=http://b [n1:att1]=val
+< CALL 5 rc=0 err=0 wf=1 in=9 p=189 l=5 col=44 i=1 n=2
+> CALL 6 len=12
+endElement [n0:bar]
+characters len=1 [\n]
+endElement [n0:foo]
+< CALL 6 rc=0 err=0 wf=1 in=14 p=208 l=6 col=10 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=208 l=6 col=10 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=6 i1=0 i2=10 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=208 l=6 col=10 i=1 n=0

@@ -1,0 +1,163 @@
+== /court/suites/phase14/sources/nokogiri/test/files/address_book.xml bytes=192 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=3
+startElementNs local=[addressBook] prefix= uri= ns=0 att=0 def=0
+< CALL 4 rc=0 err=0 wf=1 in=7 p=13 l=1 col=14 i=1 n=1
+> CALL 5 len=3
+characters len=3 [\n  ]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=16 l=2 col=3 i=1 n=1
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=6 p=16 l=2 col=3 i=1 n=1
+> CALL 7 len=3
+startElementNs local=[card] prefix= uri= ns=0 att=0 def=0
+< CALL 7 rc=0 err=0 wf=1 in=7 p=22 l=2 col=9 i=1 n=2
+> CALL 8 len=3
+< CALL 8 rc=0 err=0 wf=1 in=7 p=22 l=2 col=9 i=1 n=2
+> CALL 9 len=3
+characters len=5 [\n    ]
+< CALL 9 rc=0 err=0 wf=1 in=6 p=27 l=3 col=5 i=1 n=2
+> CALL 10 len=3
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 10 rc=0 err=0 wf=1 in=7 p=33 l=3 col=11 i=1 n=3
+> CALL 11 len=3
+< CALL 11 rc=0 err=0 wf=1 in=7 p=33 l=3 col=11 i=1 n=3
+> CALL 12 len=3
+< CALL 12 rc=0 err=0 wf=1 in=7 p=33 l=3 col=11 i=1 n=3
+> CALL 13 len=3
+< CALL 13 rc=0 err=0 wf=1 in=7 p=33 l=3 col=11 i=1 n=3
+> CALL 14 len=3
+characters len=10 [John Smith]
+< CALL 14 rc=0 err=0 wf=1 in=9 p=43 l=3 col=21 i=1 n=3
+> CALL 15 len=3
+< CALL 15 rc=0 err=0 wf=1 in=9 p=43 l=3 col=21 i=1 n=3
+> CALL 16 len=3
+endElementNs local=[name] prefix= uri=
+< CALL 16 rc=0 err=0 wf=1 in=7 p=50 l=3 col=28 i=1 n=2
+> CALL 17 len=3
+< CALL 17 rc=0 err=0 wf=1 in=7 p=50 l=3 col=28 i=1 n=2
+> CALL 18 len=3
+characters len=5 [\n    ]
+< CALL 18 rc=0 err=0 wf=1 in=6 p=55 l=4 col=5 i=1 n=2
+> CALL 19 len=3
+< CALL 19 rc=0 err=0 wf=1 in=6 p=55 l=4 col=5 i=1 n=2
+> CALL 20 len=3
+startElementNs local=[email] prefix= uri= ns=0 att=0 def=0
+< CALL 20 rc=0 err=0 wf=1 in=7 p=62 l=4 col=12 i=1 n=3
+> CALL 21 len=3
+< CALL 21 rc=0 err=0 wf=1 in=7 p=62 l=4 col=12 i=1 n=3
+> CALL 22 len=3
+< CALL 22 rc=0 err=0 wf=1 in=7 p=62 l=4 col=12 i=1 n=3
+> CALL 23 len=3
+< CALL 23 rc=0 err=0 wf=1 in=7 p=62 l=4 col=12 i=1 n=3
+> CALL 24 len=3
+< CALL 24 rc=0 err=0 wf=1 in=7 p=62 l=4 col=12 i=1 n=3
+> CALL 25 len=3
+characters len=14 [js@example.com]
+< CALL 25 rc=0 err=0 wf=1 in=9 p=76 l=4 col=26 i=1 n=3
+> CALL 26 len=3
+< CALL 26 rc=0 err=0 wf=1 in=9 p=76 l=4 col=26 i=1 n=3
+> CALL 27 len=3
+endElementNs local=[email] prefix= uri=
+< CALL 27 rc=0 err=0 wf=1 in=7 p=84 l=4 col=34 i=1 n=2
+> CALL 28 len=3
+< CALL 28 rc=0 err=0 wf=1 in=7 p=84 l=4 col=34 i=1 n=2
+> CALL 29 len=3
+characters len=3 [\n  ]
+< CALL 29 rc=0 err=0 wf=1 in=9 p=87 l=5 col=3 i=1 n=2
+> CALL 30 len=3
+< CALL 30 rc=0 err=0 wf=1 in=9 p=87 l=5 col=3 i=1 n=2
+> CALL 31 len=3
+endElementNs local=[card] prefix= uri=
+< CALL 31 rc=0 err=0 wf=1 in=7 p=94 l=5 col=10 i=1 n=1
+> CALL 32 len=3
+characters len=3 [\n  ]
+< CALL 32 rc=0 err=0 wf=1 in=6 p=97 l=6 col=3 i=1 n=1
+> CALL 33 len=3
+< CALL 33 rc=0 err=0 wf=1 in=6 p=97 l=6 col=3 i=1 n=1
+> CALL 34 len=3
+startElementNs local=[card] prefix= uri= ns=0 att=0 def=0
+< CALL 34 rc=0 err=0 wf=1 in=7 p=103 l=6 col=9 i=1 n=2
+> CALL 35 len=3
+< CALL 35 rc=0 err=0 wf=1 in=7 p=103 l=6 col=9 i=1 n=2
+> CALL 36 len=3
+characters len=5 [\n    ]
+< CALL 36 rc=0 err=0 wf=1 in=6 p=108 l=7 col=5 i=1 n=2
+> CALL 37 len=3
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 37 rc=0 err=0 wf=1 in=7 p=114 l=7 col=11 i=1 n=3
+> CALL 38 len=3
+< CALL 38 rc=0 err=0 wf=1 in=7 p=114 l=7 col=11 i=1 n=3
+> CALL 39 len=3
+< CALL 39 rc=0 err=0 wf=1 in=7 p=114 l=7 col=11 i=1 n=3
+> CALL 40 len=3
+< CALL 40 rc=0 err=0 wf=1 in=7 p=114 l=7 col=11 i=1 n=3
+> CALL 41 len=3
+characters len=11 [Fred Bloggs]
+< CALL 41 rc=0 err=0 wf=1 in=7 p=125 l=7 col=22 i=1 n=3
+> CALL 42 len=3
+< CALL 42 rc=0 err=0 wf=1 in=9 p=125 l=7 col=22 i=1 n=3
+> CALL 43 len=3
+endElementNs local=[name] prefix= uri=
+< CALL 43 rc=0 err=0 wf=1 in=7 p=132 l=7 col=29 i=1 n=2
+> CALL 44 len=3
+< CALL 44 rc=0 err=0 wf=1 in=7 p=132 l=7 col=29 i=1 n=2
+> CALL 45 len=3
+characters len=5 [\n    ]
+< CALL 45 rc=0 err=0 wf=1 in=7 p=137 l=8 col=5 i=1 n=2
+> CALL 46 len=3
+< CALL 46 rc=0 err=0 wf=1 in=6 p=137 l=8 col=5 i=1 n=2
+> CALL 47 len=3
+startElementNs local=[email] prefix= uri= ns=0 att=0 def=0
+< CALL 47 rc=0 err=0 wf=1 in=7 p=144 l=8 col=12 i=1 n=3
+> CALL 48 len=3
+< CALL 48 rc=0 err=0 wf=1 in=7 p=144 l=8 col=12 i=1 n=3
+> CALL 49 len=3
+< CALL 49 rc=0 err=0 wf=1 in=7 p=144 l=8 col=12 i=1 n=3
+> CALL 50 len=3
+< CALL 50 rc=0 err=0 wf=1 in=7 p=144 l=8 col=12 i=1 n=3
+> CALL 51 len=3
+< CALL 51 rc=0 err=0 wf=1 in=7 p=144 l=8 col=12 i=1 n=3
+> CALL 52 len=3
+characters len=14 [fb@example.net]
+< CALL 52 rc=0 err=0 wf=1 in=7 p=158 l=8 col=26 i=1 n=3
+> CALL 53 len=3
+< CALL 53 rc=0 err=0 wf=1 in=9 p=158 l=8 col=26 i=1 n=3
+> CALL 54 len=3
+< CALL 54 rc=0 err=0 wf=1 in=9 p=158 l=8 col=26 i=1 n=3
+> CALL 55 len=3
+endElementNs local=[email] prefix= uri=
+< CALL 55 rc=0 err=0 wf=1 in=7 p=166 l=8 col=34 i=1 n=2
+> CALL 56 len=3
+characters len=3 [\n  ]
+< CALL 56 rc=0 err=0 wf=1 in=9 p=169 l=9 col=3 i=1 n=2
+> CALL 57 len=3
+< CALL 57 rc=0 err=0 wf=1 in=9 p=169 l=9 col=3 i=1 n=2
+> CALL 58 len=3
+endElementNs local=[card] prefix= uri=
+< CALL 58 rc=0 err=0 wf=1 in=7 p=176 l=9 col=10 i=1 n=1
+> CALL 59 len=3
+characters len=1 [\n]
+< CALL 59 rc=0 err=0 wf=1 in=9 p=177 l=10 col=1 i=1 n=1
+> CALL 60 len=3
+< CALL 60 rc=0 err=0 wf=1 in=9 p=177 l=10 col=1 i=1 n=1
+> CALL 61 len=3
+< CALL 61 rc=0 err=0 wf=1 in=9 p=177 l=10 col=1 i=1 n=1
+> CALL 62 len=3
+< CALL 62 rc=0 err=0 wf=1 in=9 p=177 l=10 col=1 i=1 n=1
+> CALL 63 len=3
+endElementNs local=[addressBook] prefix= uri=
+< CALL 63 rc=0 err=0 wf=1 in=14 p=192 l=11 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=192 l=11 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=11 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=192 l=11 col=1 i=1 n=0

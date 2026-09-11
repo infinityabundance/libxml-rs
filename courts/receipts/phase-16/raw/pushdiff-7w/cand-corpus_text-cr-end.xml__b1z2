@@ -1,0 +1,59 @@
+== /scanout/corpus/text-cr-end.xml bytes=8 mode=b1z2
+> CALL 0 len=1
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=1
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=1
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 4 ZERO
+< CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 4 ZERO
+< CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 4 len=1
+< CALL 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 5 ZERO
+< CALL 5 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 5 ZERO
+< CALL 5 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 5 len=1
+< CALL 5 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 6 ZERO
+< CALL 6 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 6 ZERO
+< CALL 6 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 6 len=1
+< CALL 6 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 7 ZERO
+< CALL 7 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 7 ZERO
+< CALL 7 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 7 len=1
+< CALL 7 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 8 ZERO
+< CALL 8 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 8 ZERO
+< CALL 8 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> FINAL
+characters len=4 [text]
+characters len=1 [\n]
+error dom=1 code=77 level=3 file= line=1 i1=1 i2=9 str1=a str2= str3= msg=Premature end of data in tag a line 1\n
+endDocument
+< FINAL 0 rc=77 err=77 wf=0 in=-1 p=8 l=1 col=9 i=1 n=1
+> REFEED
+< REFEED 0 rc=77 err=77 wf=0 in=-1 p=8 l=1 col=9 i=1 n=1

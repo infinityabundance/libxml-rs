@@ -1,0 +1,20 @@
+== /scanout/corpus/empty-elements.xml bytes=22 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [a]
+startElement [b]
+endElement [b]
+startElement [c]
+< CALL 0 rc=0 err=0 wf=1 in=9 p=10 l=1 col=11 i=1 n=2
+> CALL 1 len=10
+endElement [c]
+startElement [d]
+endElement [d]
+endElement [a]
+< CALL 1 rc=0 err=0 wf=1 in=14 p=22 l=1 col=23 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=22 l=1 col=23 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=23 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=22 l=1 col=23 i=1 n=0

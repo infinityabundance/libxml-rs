@@ -1,0 +1,481 @@
+== /court/suites/phase14/sources/nokogiri/test/files/po.xml bytes=931 mode=b5
+> CALL 0 len=5
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+startDocument
+< CALL 4 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 7 len=5
+< CALL 7 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 8 len=5
+< CALL 8 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 9 len=5
+< CALL 9 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 10 len=5
+< CALL 10 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 11 len=5
+startElementNs local=[purchaseOrder] prefix= uri= ns=0 att=1 def=0 [a local=orderDate prefix= uri= value=1999-10-20 end=1]
+< CALL 11 rc=0 err=0 wf=1 in=7 p=60 l=2 col=39 i=1 n=1
+> CALL 12 len=5
+characters len=4 [\n   ]
+< CALL 12 rc=0 err=0 wf=1 in=7 p=64 l=3 col=4 i=1 n=1
+> CALL 13 len=5
+< CALL 13 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 14 len=5
+< CALL 14 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 15 len=5
+< CALL 15 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 16 len=5
+startElementNs local=[shipTo] prefix= uri= ns=0 att=1 def=0 [a local=country prefix= uri= value=US end=1]
+< CALL 16 rc=0 err=0 wf=1 in=7 p=85 l=3 col=25 i=1 n=2
+> CALL 17 len=5
+< CALL 17 rc=0 err=0 wf=1 in=7 p=85 l=3 col=25 i=1 n=2
+> CALL 18 len=5
+characters len=7 [\n      ]
+< CALL 18 rc=0 err=0 wf=1 in=6 p=92 l=4 col=7 i=1 n=2
+> CALL 19 len=5
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 19 rc=0 err=0 wf=1 in=7 p=98 l=4 col=13 i=1 n=3
+> CALL 20 len=5
+< CALL 20 rc=0 err=0 wf=1 in=7 p=98 l=4 col=13 i=1 n=3
+> CALL 21 len=5
+characters len=11 [Alice Smith]
+< CALL 21 rc=0 err=0 wf=1 in=7 p=109 l=4 col=24 i=1 n=3
+> CALL 22 len=5
+< CALL 22 rc=0 err=0 wf=1 in=9 p=109 l=4 col=24 i=1 n=3
+> CALL 23 len=5
+endElementNs local=[name] prefix= uri=
+< CALL 23 rc=0 err=0 wf=1 in=7 p=116 l=4 col=31 i=1 n=2
+> CALL 24 len=5
+characters len=7 [\n      ]
+< CALL 24 rc=0 err=0 wf=1 in=6 p=123 l=5 col=7 i=1 n=2
+> CALL 25 len=5
+< CALL 25 rc=0 err=0 wf=1 in=6 p=123 l=5 col=7 i=1 n=2
+> CALL 26 len=5
+startElementNs local=[street] prefix= uri= ns=0 att=0 def=0
+< CALL 26 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 27 len=5
+< CALL 27 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 28 len=5
+< CALL 28 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 29 len=5
+characters len=16 [123 Maple Street]
+< CALL 29 rc=0 err=0 wf=1 in=9 p=147 l=5 col=31 i=1 n=3
+> CALL 30 len=5
+< CALL 30 rc=0 err=0 wf=1 in=9 p=147 l=5 col=31 i=1 n=3
+> CALL 31 len=5
+endElementNs local=[street] prefix= uri=
+< CALL 31 rc=0 err=0 wf=1 in=7 p=156 l=5 col=40 i=1 n=2
+> CALL 32 len=5
+characters len=7 [\n      ]
+< CALL 32 rc=0 err=0 wf=1 in=6 p=163 l=6 col=7 i=1 n=2
+> CALL 33 len=5
+startElementNs local=[city] prefix= uri= ns=0 att=0 def=0
+< CALL 33 rc=0 err=0 wf=1 in=7 p=169 l=6 col=13 i=1 n=3
+> CALL 34 len=5
+< CALL 34 rc=0 err=0 wf=1 in=7 p=169 l=6 col=13 i=1 n=3
+> CALL 35 len=5
+< CALL 35 rc=0 err=0 wf=1 in=7 p=169 l=6 col=13 i=1 n=3
+> CALL 36 len=5
+characters len=11 [Mill Valley]
+< CALL 36 rc=0 err=0 wf=1 in=9 p=180 l=6 col=24 i=1 n=3
+> CALL 37 len=5
+endElementNs local=[city] prefix= uri=
+< CALL 37 rc=0 err=0 wf=1 in=7 p=187 l=6 col=31 i=1 n=2
+> CALL 38 len=5
+characters len=7 [\n      ]
+< CALL 38 rc=0 err=0 wf=1 in=7 p=194 l=7 col=7 i=1 n=2
+> CALL 39 len=5
+< CALL 39 rc=0 err=0 wf=1 in=6 p=194 l=7 col=7 i=1 n=2
+> CALL 40 len=5
+startElementNs local=[state] prefix= uri= ns=0 att=0 def=0
+characters len=2 [CA]
+< CALL 40 rc=0 err=0 wf=1 in=9 p=203 l=7 col=16 i=1 n=3
+> CALL 41 len=5
+< CALL 41 rc=0 err=0 wf=1 in=9 p=203 l=7 col=16 i=1 n=3
+> CALL 42 len=5
+endElementNs local=[state] prefix= uri=
+< CALL 42 rc=0 err=0 wf=1 in=7 p=211 l=7 col=24 i=1 n=2
+> CALL 43 len=5
+characters len=7 [\n      ]
+< CALL 43 rc=0 err=0 wf=1 in=6 p=218 l=8 col=7 i=1 n=2
+> CALL 44 len=5
+startElementNs local=[zip] prefix= uri= ns=0 att=0 def=0
+< CALL 44 rc=0 err=0 wf=1 in=7 p=223 l=8 col=12 i=1 n=3
+> CALL 45 len=5
+characters len=5 [90952]
+< CALL 45 rc=0 err=0 wf=1 in=9 p=228 l=8 col=17 i=1 n=3
+> CALL 46 len=5
+endElementNs local=[zip] prefix= uri=
+< CALL 46 rc=0 err=0 wf=1 in=7 p=234 l=8 col=23 i=1 n=2
+> CALL 47 len=5
+characters len=4 [\n   ]
+< CALL 47 rc=0 err=0 wf=1 in=9 p=238 l=9 col=4 i=1 n=2
+> CALL 48 len=5
+< CALL 48 rc=0 err=0 wf=1 in=9 p=238 l=9 col=4 i=1 n=2
+> CALL 49 len=5
+endElementNs local=[shipTo] prefix= uri=
+< CALL 49 rc=0 err=0 wf=1 in=7 p=247 l=9 col=13 i=1 n=1
+> CALL 50 len=5
+characters len=4 [\n   ]
+< CALL 50 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 51 len=5
+< CALL 51 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 52 len=5
+< CALL 52 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 53 len=5
+< CALL 53 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 54 len=5
+startElementNs local=[billTo] prefix= uri= ns=0 att=1 def=0 [a local=country prefix= uri= value=US end=1]
+< CALL 54 rc=0 err=0 wf=1 in=7 p=272 l=10 col=25 i=1 n=2
+> CALL 55 len=5
+characters len=7 [\n      ]
+< CALL 55 rc=0 err=0 wf=1 in=7 p=279 l=11 col=7 i=1 n=2
+> CALL 56 len=5
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 56 rc=0 err=0 wf=1 in=7 p=285 l=11 col=13 i=1 n=3
+> CALL 57 len=5
+< CALL 57 rc=0 err=0 wf=1 in=7 p=285 l=11 col=13 i=1 n=3
+> CALL 58 len=5
+< CALL 58 rc=0 err=0 wf=1 in=7 p=285 l=11 col=13 i=1 n=3
+> CALL 59 len=5
+characters len=12 [Robert Smith]
+< CALL 59 rc=0 err=0 wf=1 in=9 p=297 l=11 col=25 i=1 n=3
+> CALL 60 len=5
+endElementNs local=[name] prefix= uri=
+< CALL 60 rc=0 err=0 wf=1 in=7 p=304 l=11 col=32 i=1 n=2
+> CALL 61 len=5
+< CALL 61 rc=0 err=0 wf=1 in=7 p=304 l=11 col=32 i=1 n=2
+> CALL 62 len=5
+characters len=7 [\n      ]
+< CALL 62 rc=0 err=0 wf=1 in=6 p=311 l=12 col=7 i=1 n=2
+> CALL 63 len=5
+startElementNs local=[street] prefix= uri= ns=0 att=0 def=0
+< CALL 63 rc=0 err=0 wf=1 in=7 p=319 l=12 col=15 i=1 n=3
+> CALL 64 len=5
+< CALL 64 rc=0 err=0 wf=1 in=7 p=319 l=12 col=15 i=1 n=3
+> CALL 65 len=5
+< CALL 65 rc=0 err=0 wf=1 in=7 p=319 l=12 col=15 i=1 n=3
+> CALL 66 len=5
+characters len=12 [8 Oak Avenue]
+< CALL 66 rc=0 err=0 wf=1 in=9 p=331 l=12 col=27 i=1 n=3
+> CALL 67 len=5
+endElementNs local=[street] prefix= uri=
+< CALL 67 rc=0 err=0 wf=1 in=7 p=340 l=12 col=36 i=1 n=2
+> CALL 68 len=5
+< CALL 68 rc=0 err=0 wf=1 in=7 p=340 l=12 col=36 i=1 n=2
+> CALL 69 len=5
+characters len=7 [\n      ]
+< CALL 69 rc=0 err=0 wf=1 in=6 p=347 l=13 col=7 i=1 n=2
+> CALL 70 len=5
+startElementNs local=[city] prefix= uri= ns=0 att=0 def=0
+< CALL 70 rc=0 err=0 wf=1 in=7 p=353 l=13 col=13 i=1 n=3
+> CALL 71 len=5
+< CALL 71 rc=0 err=0 wf=1 in=7 p=353 l=13 col=13 i=1 n=3
+> CALL 72 len=5
+characters len=8 [Old Town]
+< CALL 72 rc=0 err=0 wf=1 in=9 p=361 l=13 col=21 i=1 n=3
+> CALL 73 len=5
+endElementNs local=[city] prefix= uri=
+< CALL 73 rc=0 err=0 wf=1 in=7 p=368 l=13 col=28 i=1 n=2
+> CALL 74 len=5
+< CALL 74 rc=0 err=0 wf=1 in=7 p=368 l=13 col=28 i=1 n=2
+> CALL 75 len=5
+characters len=7 [\n      ]
+< CALL 75 rc=0 err=0 wf=1 in=6 p=375 l=14 col=7 i=1 n=2
+> CALL 76 len=5
+startElementNs local=[state] prefix= uri= ns=0 att=0 def=0
+characters len=2 [PA]
+< CALL 76 rc=0 err=0 wf=1 in=7 p=384 l=14 col=16 i=1 n=3
+> CALL 77 len=5
+< CALL 77 rc=0 err=0 wf=1 in=9 p=384 l=14 col=16 i=1 n=3
+> CALL 78 len=5
+endElementNs local=[state] prefix= uri=
+< CALL 78 rc=0 err=0 wf=1 in=7 p=392 l=14 col=24 i=1 n=2
+> CALL 79 len=5
+characters len=7 [\n      ]
+< CALL 79 rc=0 err=0 wf=1 in=7 p=399 l=15 col=7 i=1 n=2
+> CALL 80 len=5
+startElementNs local=[zip] prefix= uri= ns=0 att=0 def=0
+< CALL 80 rc=0 err=0 wf=1 in=7 p=404 l=15 col=12 i=1 n=3
+> CALL 81 len=5
+characters len=5 [95819]
+< CALL 81 rc=0 err=0 wf=1 in=7 p=409 l=15 col=17 i=1 n=3
+> CALL 82 len=5
+endElementNs local=[zip] prefix= uri=
+< CALL 82 rc=0 err=0 wf=1 in=7 p=415 l=15 col=23 i=1 n=2
+> CALL 83 len=5
+characters len=4 [\n   ]
+< CALL 83 rc=0 err=0 wf=1 in=7 p=419 l=16 col=4 i=1 n=2
+> CALL 84 len=5
+< CALL 84 rc=0 err=0 wf=1 in=9 p=419 l=16 col=4 i=1 n=2
+> CALL 85 len=5
+endElementNs local=[billTo] prefix= uri=
+< CALL 85 rc=0 err=0 wf=1 in=7 p=428 l=16 col=13 i=1 n=1
+> CALL 86 len=5
+characters len=4 [\n   ]
+< CALL 86 rc=0 err=0 wf=1 in=6 p=432 l=17 col=4 i=1 n=1
+> CALL 87 len=5
+< CALL 87 rc=0 err=0 wf=1 in=6 p=432 l=17 col=4 i=1 n=1
+> CALL 88 len=5
+startElementNs local=[comment] prefix= uri= ns=0 att=0 def=0
+< CALL 88 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 89 len=5
+< CALL 89 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 90 len=5
+< CALL 90 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 91 len=5
+< CALL 91 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 92 len=5
+< CALL 92 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 93 len=5
+< CALL 93 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 94 len=5
+characters len=29 [Hurry, my lawn is going wild!]
+< CALL 94 rc=0 err=0 wf=1 in=9 p=470 l=17 col=42 i=1 n=2
+> CALL 95 len=5
+endElementNs local=[comment] prefix= uri=
+< CALL 95 rc=0 err=0 wf=1 in=7 p=480 l=17 col=52 i=1 n=1
+> CALL 96 len=5
+characters len=4 [\n   ]
+< CALL 96 rc=0 err=0 wf=1 in=7 p=484 l=18 col=4 i=1 n=1
+> CALL 97 len=5
+< CALL 97 rc=0 err=0 wf=1 in=6 p=484 l=18 col=4 i=1 n=1
+> CALL 98 len=5
+startElementNs local=[items] prefix= uri= ns=0 att=0 def=0
+< CALL 98 rc=0 err=0 wf=1 in=7 p=491 l=18 col=11 i=1 n=2
+> CALL 99 len=5
+characters len=7 [\n      ]
+< CALL 99 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 100 len=5
+< CALL 100 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 101 len=5
+< CALL 101 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 102 len=5
+< CALL 102 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 103 len=5
+< CALL 103 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 104 len=5
+startElementNs local=[item] prefix= uri= ns=0 att=1 def=0 [a local=partNum prefix= uri= value=872-AA end=1]
+< CALL 104 rc=0 err=0 wf=1 in=7 p=521 l=19 col=30 i=1 n=3
+> CALL 105 len=5
+< CALL 105 rc=0 err=0 wf=1 in=7 p=521 l=19 col=30 i=1 n=3
+> CALL 106 len=5
+characters len=10 [\n         ]
+< CALL 106 rc=0 err=0 wf=1 in=6 p=531 l=20 col=10 i=1 n=3
+> CALL 107 len=5
+< CALL 107 rc=0 err=0 wf=1 in=6 p=531 l=20 col=10 i=1 n=3
+> CALL 108 len=5
+startElementNs local=[productName] prefix= uri= ns=0 att=0 def=0
+< CALL 108 rc=0 err=0 wf=1 in=7 p=544 l=20 col=23 i=1 n=4
+> CALL 109 len=5
+< CALL 109 rc=0 err=0 wf=1 in=7 p=544 l=20 col=23 i=1 n=4
+> CALL 110 len=5
+characters len=9 [Lawnmower]
+< CALL 110 rc=0 err=0 wf=1 in=9 p=553 l=20 col=32 i=1 n=4
+> CALL 111 len=5
+< CALL 111 rc=0 err=0 wf=1 in=9 p=553 l=20 col=32 i=1 n=4
+> CALL 112 len=5
+< CALL 112 rc=0 err=0 wf=1 in=9 p=553 l=20 col=32 i=1 n=4
+> CALL 113 len=5
+endElementNs local=[productName] prefix= uri=
+< CALL 113 rc=0 err=0 wf=1 in=7 p=567 l=20 col=46 i=1 n=3
+> CALL 114 len=5
+< CALL 114 rc=0 err=0 wf=1 in=7 p=567 l=20 col=46 i=1 n=3
+> CALL 115 len=5
+characters len=10 [\n         ]
+< CALL 115 rc=0 err=0 wf=1 in=6 p=577 l=21 col=10 i=1 n=3
+> CALL 116 len=5
+< CALL 116 rc=0 err=0 wf=1 in=6 p=577 l=21 col=10 i=1 n=3
+> CALL 117 len=5
+startElementNs local=[quantity] prefix= uri= ns=0 att=0 def=0
+characters len=1 [1]
+< CALL 117 rc=0 err=0 wf=1 in=9 p=588 l=21 col=21 i=1 n=4
+> CALL 118 len=5
+< CALL 118 rc=0 err=0 wf=1 in=9 p=588 l=21 col=21 i=1 n=4
+> CALL 119 len=5
+endElementNs local=[quantity] prefix= uri=
+< CALL 119 rc=0 err=0 wf=1 in=7 p=599 l=21 col=32 i=1 n=3
+> CALL 120 len=5
+< CALL 120 rc=0 err=0 wf=1 in=7 p=599 l=21 col=32 i=1 n=3
+> CALL 121 len=5
+characters len=10 [\n         ]
+< CALL 121 rc=0 err=0 wf=1 in=7 p=609 l=22 col=10 i=1 n=3
+> CALL 122 len=5
+< CALL 122 rc=0 err=0 wf=1 in=6 p=609 l=22 col=10 i=1 n=3
+> CALL 123 len=5
+startElementNs local=[USPrice] prefix= uri= ns=0 att=0 def=0
+< CALL 123 rc=0 err=0 wf=1 in=7 p=618 l=22 col=19 i=1 n=4
+> CALL 124 len=5
+characters len=6 [148.95]
+< CALL 124 rc=0 err=0 wf=1 in=7 p=624 l=22 col=25 i=1 n=4
+> CALL 125 len=5
+< CALL 125 rc=0 err=0 wf=1 in=9 p=624 l=22 col=25 i=1 n=4
+> CALL 126 len=5
+endElementNs local=[USPrice] prefix= uri=
+< CALL 126 rc=0 err=0 wf=1 in=7 p=634 l=22 col=35 i=1 n=3
+> CALL 127 len=5
+< CALL 127 rc=0 err=0 wf=1 in=7 p=634 l=22 col=35 i=1 n=3
+> CALL 128 len=5
+characters len=10 [\n         ]
+< CALL 128 rc=0 err=0 wf=1 in=7 p=644 l=23 col=10 i=1 n=3
+> CALL 129 len=5
+< CALL 129 rc=0 err=0 wf=1 in=6 p=644 l=23 col=10 i=1 n=3
+> CALL 130 len=5
+startElementNs local=[comment] prefix= uri= ns=0 att=0 def=0
+< CALL 130 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 131 len=5
+< CALL 131 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 132 len=5
+< CALL 132 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 133 len=5
+< CALL 133 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 134 len=5
+< CALL 134 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 135 len=5
+characters len=24 [Confirm this is electric]
+< CALL 135 rc=0 err=0 wf=1 in=9 p=677 l=23 col=43 i=1 n=4
+> CALL 136 len=5
+< CALL 136 rc=0 err=0 wf=1 in=9 p=677 l=23 col=43 i=1 n=4
+> CALL 137 len=5
+endElementNs local=[comment] prefix= uri=
+< CALL 137 rc=0 err=0 wf=1 in=7 p=687 l=23 col=53 i=1 n=3
+> CALL 138 len=5
+characters len=7 [\n      ]
+< CALL 138 rc=0 err=0 wf=1 in=7 p=694 l=24 col=7 i=1 n=3
+> CALL 139 len=5
+< CALL 139 rc=0 err=0 wf=1 in=9 p=694 l=24 col=7 i=1 n=3
+> CALL 140 len=5
+endElementNs local=[item] prefix= uri=
+< CALL 140 rc=0 err=0 wf=1 in=7 p=701 l=24 col=14 i=1 n=2
+> CALL 141 len=5
+characters len=7 [\n      ]
+< CALL 141 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 142 len=5
+< CALL 142 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 143 len=5
+< CALL 143 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 144 len=5
+< CALL 144 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 145 len=5
+< CALL 145 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 146 len=5
+startElementNs local=[item] prefix= uri= ns=0 att=1 def=0 [a local=partNum prefix= uri= value=926-AA end=1]
+< CALL 146 rc=0 err=0 wf=1 in=7 p=731 l=25 col=30 i=1 n=3
+> CALL 147 len=5
+< CALL 147 rc=0 err=0 wf=1 in=7 p=731 l=25 col=30 i=1 n=3
+> CALL 148 len=5
+characters len=10 [\n         ]
+< CALL 148 rc=0 err=0 wf=1 in=6 p=741 l=26 col=10 i=1 n=3
+> CALL 149 len=5
+< CALL 149 rc=0 err=0 wf=1 in=6 p=741 l=26 col=10 i=1 n=3
+> CALL 150 len=5
+startElementNs local=[productName] prefix= uri= ns=0 att=0 def=0
+< CALL 150 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 151 len=5
+< CALL 151 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 152 len=5
+< CALL 152 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 153 len=5
+characters len=12 [Baby Monitor]
+< CALL 153 rc=0 err=0 wf=1 in=9 p=766 l=26 col=35 i=1 n=4
+> CALL 154 len=5
+< CALL 154 rc=0 err=0 wf=1 in=9 p=766 l=26 col=35 i=1 n=4
+> CALL 155 len=5
+endElementNs local=[productName] prefix= uri=
+< CALL 155 rc=0 err=0 wf=1 in=7 p=780 l=26 col=49 i=1 n=3
+> CALL 156 len=5
+< CALL 156 rc=0 err=0 wf=1 in=7 p=780 l=26 col=49 i=1 n=3
+> CALL 157 len=5
+< CALL 157 rc=0 err=0 wf=1 in=7 p=780 l=26 col=49 i=1 n=3
+> CALL 158 len=5
+characters len=10 [\n         ]
+< CALL 158 rc=0 err=0 wf=1 in=6 p=790 l=27 col=10 i=1 n=3
+> CALL 159 len=5
+startElementNs local=[quantity] prefix= uri= ns=0 att=0 def=0
+< CALL 159 rc=0 err=0 wf=1 in=7 p=800 l=27 col=20 i=1 n=4
+> CALL 160 len=5
+characters len=1 [1]
+< CALL 160 rc=0 err=0 wf=1 in=9 p=801 l=27 col=21 i=1 n=4
+> CALL 161 len=5
+< CALL 161 rc=0 err=0 wf=1 in=9 p=801 l=27 col=21 i=1 n=4
+> CALL 162 len=5
+endElementNs local=[quantity] prefix= uri=
+< CALL 162 rc=0 err=0 wf=1 in=7 p=812 l=27 col=32 i=1 n=3
+> CALL 163 len=5
+< CALL 163 rc=0 err=0 wf=1 in=7 p=812 l=27 col=32 i=1 n=3
+> CALL 164 len=5
+characters len=10 [\n         ]
+< CALL 164 rc=0 err=0 wf=1 in=6 p=822 l=28 col=10 i=1 n=3
+> CALL 165 len=5
+< CALL 165 rc=0 err=0 wf=1 in=6 p=822 l=28 col=10 i=1 n=3
+> CALL 166 len=5
+startElementNs local=[USPrice] prefix= uri= ns=0 att=0 def=0
+< CALL 166 rc=0 err=0 wf=1 in=7 p=831 l=28 col=19 i=1 n=4
+> CALL 167 len=5
+characters len=5 [39.98]
+< CALL 167 rc=0 err=0 wf=1 in=9 p=836 l=28 col=24 i=1 n=4
+> CALL 168 len=5
+< CALL 168 rc=0 err=0 wf=1 in=9 p=836 l=28 col=24 i=1 n=4
+> CALL 169 len=5
+endElementNs local=[USPrice] prefix= uri=
+< CALL 169 rc=0 err=0 wf=1 in=7 p=846 l=28 col=34 i=1 n=3
+> CALL 170 len=5
+< CALL 170 rc=0 err=0 wf=1 in=7 p=846 l=28 col=34 i=1 n=3
+> CALL 171 len=5
+characters len=10 [\n         ]
+< CALL 171 rc=0 err=0 wf=1 in=6 p=856 l=29 col=10 i=1 n=3
+> CALL 172 len=5
+< CALL 172 rc=0 err=0 wf=1 in=6 p=856 l=29 col=10 i=1 n=3
+> CALL 173 len=5
+startElementNs local=[shipDate] prefix= uri= ns=0 att=0 def=0
+< CALL 173 rc=0 err=0 wf=1 in=7 p=866 l=29 col=20 i=1 n=4
+> CALL 174 len=5
+< CALL 174 rc=0 err=0 wf=1 in=7 p=866 l=29 col=20 i=1 n=4
+> CALL 175 len=5
+characters len=10 [1999-05-21]
+< CALL 175 rc=0 err=0 wf=1 in=9 p=876 l=29 col=30 i=1 n=4
+> CALL 176 len=5
+< CALL 176 rc=0 err=0 wf=1 in=9 p=876 l=29 col=30 i=1 n=4
+> CALL 177 len=5
+endElementNs local=[shipDate] prefix= uri=
+< CALL 177 rc=0 err=0 wf=1 in=7 p=887 l=29 col=41 i=1 n=3
+> CALL 178 len=5
+characters len=7 [\n      ]
+< CALL 178 rc=0 err=0 wf=1 in=7 p=894 l=30 col=7 i=1 n=3
+> CALL 179 len=5
+< CALL 179 rc=0 err=0 wf=1 in=9 p=894 l=30 col=7 i=1 n=3
+> CALL 180 len=5
+endElementNs local=[item] prefix= uri=
+< CALL 180 rc=0 err=0 wf=1 in=7 p=901 l=30 col=14 i=1 n=2
+> CALL 181 len=5
+characters len=4 [\n   ]
+< CALL 181 rc=0 err=0 wf=1 in=9 p=905 l=31 col=4 i=1 n=2
+> CALL 182 len=5
+endElementNs local=[items] prefix= uri=
+characters len=1 [\n]
+< CALL 182 rc=0 err=0 wf=1 in=7 p=914 l=32 col=1 i=1 n=1
+> CALL 183 len=5
+< CALL 183 rc=0 err=0 wf=1 in=9 p=914 l=32 col=1 i=1 n=1
+> CALL 184 len=5
+< CALL 184 rc=0 err=0 wf=1 in=9 p=914 l=32 col=1 i=1 n=1
+> CALL 185 len=5
+endElementNs local=[purchaseOrder] prefix= uri=
+< CALL 185 rc=0 err=0 wf=1 in=14 p=930 l=32 col=17 i=1 n=0
+> CALL 186 len=1
+< CALL 186 rc=0 err=0 wf=1 in=14 p=931 l=33 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=931 l=33 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=33 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=931 l=33 col=1 i=1 n=0

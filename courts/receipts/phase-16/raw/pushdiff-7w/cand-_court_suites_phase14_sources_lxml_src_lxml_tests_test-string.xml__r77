@@ -1,0 +1,16 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/test-string.xml bytes=45 mode=r77
+> CALL 0 len=16
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=29
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+characters len=1 [S]
+characters len=14 [\xc3\xb8k p\xc3\xa5 nettet]
+endElementNs local=[a] prefix= uri=
+< CALL 1 rc=0 err=0 wf=1 in=14 p=45 l=3 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=45 l=3 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=3 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=45 l=3 col=1 i=1 n=0

@@ -1,0 +1,49 @@
+== /scanout/corpus/doctype-attr-fixed.xml bytes=52 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=3
+< CALL 7 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=3
+< CALL 8 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=3
+< CALL 9 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=3
+< CALL 10 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=3
+< CALL 11 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=3
+< CALL 12 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=3
+< CALL 13 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 14 len=3
+internalSubset name=a ext= sys=
+< CALL 14 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0
+> CALL 15 len=3
+attributeDecl elem=a name=f type=1 def=4 val=fx enum=
+externalSubset name=a ext= sys=
+< CALL 15 rc=0 err=0 wf=1 in=4 p=48 l=2 col=1 i=1 n=0
+> CALL 16 len=3
+< CALL 16 rc=0 err=0 wf=1 in=6 p=48 l=2 col=1 i=1 n=0
+> CALL 17 len=1
+startElementNs local=[a] prefix= uri= ns=0 att=1 def=1 [a local=f prefix= uri= value=fx end=1]
+endElementNs local=[a] prefix= uri=
+< CALL 17 rc=0 err=0 wf=1 in=14 p=52 l=2 col=5 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=52 l=2 col=5 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=52 l=2 col=5 i=1 n=0

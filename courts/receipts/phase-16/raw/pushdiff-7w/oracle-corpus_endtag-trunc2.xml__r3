@@ -1,0 +1,13 @@
+== /scanout/corpus/endtag-trunc2.xml bytes=5 mode=r3
+> CALL 0 len=4
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=9 p=3 l=1 col=4 i=1 n=1
+> FINAL
+error dom=1 code=73 level=3 file= line=1 i1=0 i2=6 str1= str2= str3= msg=expected '>'\n
+error dom=1 code=76 level=3 file= line=1 i1=1 i2=6 str1=a str2=unparsable str3= msg=Opening and ending tag mismatch: a line 1 and unparsable\n
+< FINAL 0 rc=76 err=76 wf=0 in=14 p=5 l=1 col=6 i=1 n=0
+> REFEED
+< REFEED 0 rc=76 err=76 wf=0 in=14 p=5 l=1 col=6 i=1 n=0

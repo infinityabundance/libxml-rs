@@ -1,0 +1,307 @@
+== /court/suites/phase14/sources/nokogiri/test/files/staff.xml bytes=2055 mode=r2
+> CALL 0 len=45
+startDocument
+pi target=TEST-STYLE data=PIDATA
+< CALL 0 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 1 len=43
+< CALL 1 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 2 len=9
+< CALL 2 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 3 len=25
+internalSubset name=staff ext= sys=staff.dtd
+< CALL 3 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 4 len=8
+< CALL 4 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 5 len=12
+< CALL 5 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 6 len=61
+< CALL 6 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 7 len=39
+< CALL 7 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 8 len=50
+< CALL 8 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 9 len=27
+< CALL 9 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 10 len=40
+< CALL 10 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 11 len=19
+< CALL 11 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 12 len=51
+< CALL 12 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 13 len=3
+< CALL 13 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 14 len=1
+< CALL 14 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 15 len=59
+< CALL 15 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 16 len=43
+entityDecl name=ent1 type=1 pub= sys= content=es
+entityDecl name=ent2 type=1 pub= sys= content=1900 Dallas Road
+entityDecl name=ent3 type=1 pub= sys= content=Texas
+entityDecl name=ent4 type=1 pub= sys= content=<entElement domestic='Yes'>Element data</entElement><?PItarget PIdata?>
+unparsedEntityDecl name=ent5 pub=entityURI sys=entityFile nota=notation1
+entityDecl name=ent1 type=1 pub= sys= content=This entity should be discarded
+elementDecl name=br type=1 content=nil
+attributeDecl elem=br name=width type=1 def=1 val=0 enum=
+notationDecl name=notation1 pub=notation1File sys=
+notationDecl name=notation2 pub= sys=notation2File
+externalSubset name=staff ext= sys=staff.dtd
+< CALL 16 rc=0 err=0 wf=1 in=4 p=531 l=14 col=1 i=1 n=0
+> CALL 17 len=46
+comment [ This is comment number 1.]
+startElementNs local=[staff] prefix= uri= ns=0 att=0 def=0
+characters len=2 [\n ]
+< CALL 17 rc=0 err=0 wf=1 in=6 p=574 l=16 col=2 i=1 n=1
+> CALL 18 len=15
+startElementNs local=[employee] prefix= uri= ns=0 att=0 def=0
+characters len=3 [\n  ]
+< CALL 18 rc=0 err=0 wf=1 in=6 p=587 l=17 col=3 i=1 n=2
+> CALL 19 len=8
+startElementNs local=[employeeId] prefix= uri= ns=0 att=0 def=0
+< CALL 19 rc=0 err=0 wf=1 in=7 p=599 l=17 col=15 i=1 n=3
+> CALL 20 len=41
+characters len=7 [EMP0001]
+endElementNs local=[employeeId] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+characters len=15 [Margaret Martin]
+< CALL 20 rc=0 err=0 wf=1 in=9 p=643 l=18 col=24 i=1 n=3
+> CALL 21 len=39
+endElementNs local=[name] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[position] prefix= uri= ns=0 att=0 def=0
+characters len=10 [Accountant]
+endElementNs local=[position] prefix= uri=
+< CALL 21 rc=0 err=0 wf=1 in=7 p=684 l=19 col=34 i=1 n=2
+> CALL 22 len=45
+characters len=14 [           \n  ]
+startElementNs local=[salary] prefix= uri= ns=0 att=0 def=0
+characters len=6 [56,000]
+endElementNs local=[salary] prefix= uri=
+characters len=3 [\n  ]
+< CALL 22 rc=0 err=0 wf=1 in=6 p=724 l=21 col=3 i=1 n=2
+> CALL 23 len=27
+startElementNs local=[gender] prefix= uri= ns=0 att=0 def=0
+characters len=6 [Female]
+endElementNs local=[gender] prefix= uri=
+characters len=3 [\n  ]
+< CALL 23 rc=0 err=0 wf=1 in=6 p=750 l=22 col=3 i=1 n=2
+> CALL 24 len=46
+startElementNs local=[address] prefix= uri= ns=0 att=1 def=0 [a local=domestic prefix= uri= value=Yes end=1]
+< CALL 24 rc=0 err=0 wf=1 in=7 p=774 l=22 col=27 i=1 n=3
+> CALL 25 len=39
+characters len=35 [1230 North Ave. Dallas, Texas 98551]
+endElementNs local=[address] prefix= uri=
+characters len=2 [\n ]
+endElementNs local=[employee] prefix= uri=
+characters len=2 [\n ]
+< CALL 25 rc=0 err=0 wf=1 in=6 p=834 l=24 col=2 i=1 n=1
+> CALL 26 len=24
+startElementNs local=[employee] prefix= uri= ns=0 att=0 def=0
+characters len=3 [\n  ]
+startElementNs local=[employeeId] prefix= uri= ns=0 att=0 def=0
+< CALL 26 rc=0 err=0 wf=1 in=7 p=859 l=25 col=15 i=1 n=3
+> CALL 27 len=43
+characters len=7 [EMP0002]
+endElementNs local=[employeeId] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+characters len=15 [Martha Raynolds]
+< CALL 27 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 28 len=16
+< CALL 28 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 29 len=4
+< CALL 29 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 30 len=23
+< CALL 30 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 31 len=21
+< CALL 31 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 32 len=30
+cdata len=59 [This is a CDATASection with EntityReference number 2 &ent2;]
+characters len=1 [\n]
+< CALL 32 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 33 len=39
+< CALL 33 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 34 len=60
+cdata len=64 [This is an adjacent CDATASection with a reference to a tab &tab;]
+endElementNs local=[name] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[position] prefix= uri= ns=0 att=0 def=0
+characters len=9 [Secretary]
+endElementNs local=[position] prefix= uri=
+characters len=3 [\n  ]
+< CALL 34 rc=0 err=0 wf=1 in=6 p=1094 l=29 col=3 i=1 n=2
+> CALL 35 len=58
+startElementNs local=[salary] prefix= uri= ns=0 att=0 def=0
+characters len=6 [35,000]
+endElementNs local=[salary] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[gender] prefix= uri= ns=0 att=0 def=0
+characters len=6 [Female]
+endElementNs local=[gender] prefix= uri=
+characters len=3 [\n  ]
+< CALL 35 rc=0 err=0 wf=1 in=6 p=1146 l=31 col=3 i=1 n=2
+> CALL 36 len=2
+< CALL 36 rc=0 err=0 wf=1 in=6 p=1146 l=31 col=3 i=1 n=2
+> CALL 37 len=61
+startElementNs local=[address] prefix= uri= ns=0 att=2 def=0 [a local=domestic prefix= uri= value=Yes end=1] [a local=street prefix= uri= value=Yes end=1]
+characters len=16 [1900 Dallas Road]
+reference [ent2]
+characters len=9 [ Dallas, ]
+characters len=5 [Texas]
+reference [ent3]
+characters len=7 [\n 98554]
+endElementNs local=[address] prefix= uri=
+< CALL 37 rc=0 err=0 wf=1 in=7 p=1221 l=32 col=17 i=1 n=2
+> CALL 38 len=9
+characters len=2 [\n ]
+< CALL 38 rc=0 err=0 wf=1 in=9 p=1223 l=33 col=2 i=1 n=2
+> CALL 39 len=21
+endElementNs local=[employee] prefix= uri=
+characters len=2 [\n ]
+startElementNs local=[employee] prefix= uri= ns=0 att=0 def=0
+characters len=3 [\n  ]
+< CALL 39 rc=0 err=0 wf=1 in=6 p=1249 l=35 col=3 i=1 n=2
+> CALL 40 len=64
+startElementNs local=[employeeId] prefix= uri= ns=0 att=0 def=0
+characters len=7 [EMP0003]
+endElementNs local=[employeeId] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+characters len=12 [Roger\n Jones]
+endElementNs local=[name] prefix= uri=
+characters len=3 [\n  ]
+< CALL 40 rc=0 err=0 wf=1 in=6 p=1312 l=38 col=3 i=1 n=2
+> CALL 41 len=45
+startElementNs local=[position] prefix= uri= ns=0 att=1 def=0 [a local=id prefix= uri= value=partial_collision_id end=1]
+< CALL 41 rc=0 err=0 wf=1 in=7 p=1348 l=38 col=39 i=1 n=3
+> CALL 42 len=36
+characters len=18 [Department Manager]
+endElementNs local=[position] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[salary] prefix= uri= ns=0 att=0 def=0
+characters len=7 [100,000]
+< CALL 42 rc=0 err=0 wf=1 in=9 p=1395 l=39 col=18 i=1 n=3
+> CALL 43 len=32
+endElementNs local=[salary] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[gender] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[entElement] prefix= uri= ns=0 att=1 def=0 [a local=domestic prefix= uri= value=Yes end=1]
+characters len=12 [Element data]
+endElementNs local=[entElement] prefix= uri=
+pi target=PItarget data=PIdata
+reference [ent4]
+< CALL 43 rc=0 err=0 wf=1 in=9 p=1421 l=40 col=17 i=1 n=3
+> CALL 44 len=29
+endElementNs local=[gender] prefix= uri=
+characters len=3 [\n  ]
+< CALL 44 rc=0 err=0 wf=1 in=6 p=1433 l=41 col=3 i=1 n=2
+> CALL 45 len=37
+startElementNs local=[address] prefix= uri= ns=0 att=2 def=0 [a local=domestic prefix= uri= value=Yes end=1] [a local=street prefix= uri= value=No end=1]
+< CALL 45 rc=0 err=0 wf=1 in=7 p=1469 l=41 col=39 i=1 n=3
+> CALL 46 len=49
+characters len=29 [PO Box 27 Irving, texas 98553]
+endElementNs local=[address] prefix= uri=
+characters len=2 [\n ]
+endElementNs local=[employee] prefix= uri=
+characters len=2 [\n ]
+startElementNs local=[employee] prefix= uri= ns=0 att=0 def=0
+characters len=3 [\n  ]
+< CALL 46 rc=0 err=0 wf=1 in=6 p=1536 l=44 col=3 i=1 n=2
+> CALL 47 len=32
+startElementNs local=[employeeId] prefix= uri= ns=0 att=0 def=0
+characters len=7 [EMP0004]
+endElementNs local=[employeeId] prefix= uri=
+characters len=3 [\n  ]
+< CALL 47 rc=0 err=0 wf=1 in=6 p=1571 l=45 col=3 i=1 n=2
+> CALL 48 len=11
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 48 rc=0 err=0 wf=1 in=7 p=1577 l=45 col=9 i=1 n=3
+> CALL 49 len=63
+characters len=12 [Jeny Oconnor]
+endElementNs local=[name] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[position] prefix= uri= ns=0 att=0 def=0
+characters len=18 [Personnel Director]
+endElementNs local=[position] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[salary] prefix= uri= ns=0 att=0 def=0
+< CALL 49 rc=0 err=0 wf=1 in=7 p=1649 l=47 col=11 i=1 n=3
+> CALL 50 len=12
+characters len=6 [95,000]
+< CALL 50 rc=0 err=0 wf=1 in=9 p=1655 l=47 col=17 i=1 n=3
+> CALL 51 len=18
+endElementNs local=[salary] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[gender] prefix= uri= ns=0 att=0 def=0
+< CALL 51 rc=0 err=0 wf=1 in=7 p=1675 l=48 col=11 i=1 n=3
+> CALL 52 len=63
+characters len=6 [Female]
+endElementNs local=[gender] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[address] prefix= uri= ns=0 att=2 def=0 [a local=domestic prefix= uri= value=Yes end=1] [a local=street prefix= uri= value=Y&ent1; end=1]
+< CALL 52 rc=0 err=0 wf=1 in=7 p=1734 l=49 col=44 i=1 n=3
+> CALL 53 len=61
+characters len=34 [27 South Road. Dallas, Texas 98556]
+endElementNs local=[address] prefix= uri=
+characters len=2 [\n ]
+endElementNs local=[employee] prefix= uri=
+characters len=2 [\n ]
+startElementNs local=[employee] prefix= uri= ns=0 att=0 def=0
+< CALL 53 rc=0 err=0 wf=1 in=7 p=1803 l=51 col=12 i=1 n=2
+> CALL 54 len=41
+characters len=3 [\n  ]
+startElementNs local=[employeeId] prefix= uri= ns=0 att=0 def=0
+characters len=7 [EMP0005]
+endElementNs local=[employeeId] prefix= uri=
+characters len=3 [\n  ]
+< CALL 54 rc=0 err=0 wf=1 in=6 p=1841 l=53 col=3 i=1 n=2
+> CALL 55 len=26
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+characters len=12 [Robert Myers]
+endElementNs local=[name] prefix= uri=
+characters len=3 [\n  ]
+< CALL 55 rc=0 err=0 wf=1 in=6 p=1869 l=54 col=3 i=1 n=2
+> CALL 56 len=19
+startElementNs local=[position] prefix= uri= ns=0 att=0 def=0
+< CALL 56 rc=0 err=0 wf=1 in=7 p=1879 l=54 col=13 i=1 n=3
+> CALL 57 len=28
+characters len=19 [Computer Specialist]
+endElementNs local=[position] prefix= uri=
+characters len=3 [\n  ]
+< CALL 57 rc=0 err=0 wf=1 in=6 p=1912 l=55 col=3 i=1 n=2
+> CALL 58 len=44
+startElementNs local=[salary] prefix= uri= ns=0 att=0 def=0
+characters len=6 [90,000]
+endElementNs local=[salary] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[gender] prefix= uri= ns=0 att=0 def=0
+characters len=4 [male]
+endElementNs local=[gender] prefix= uri=
+< CALL 58 rc=0 err=0 wf=1 in=7 p=1959 l=56 col=24 i=1 n=2
+> CALL 59 len=3
+characters len=3 [\n  ]
+< CALL 59 rc=0 err=0 wf=1 in=6 p=1962 l=57 col=3 i=1 n=2
+> CALL 60 len=3
+< CALL 60 rc=0 err=0 wf=1 in=6 p=1962 l=57 col=3 i=1 n=2
+> CALL 61 len=15
+< CALL 61 rc=0 err=0 wf=1 in=6 p=1962 l=57 col=3 i=1 n=2
+> CALL 62 len=35
+startElementNs local=[address] prefix= uri= ns=0 att=1 def=0 [a local=street prefix= uri= value=Yes end=1]
+< CALL 62 rc=0 err=0 wf=1 in=7 p=1984 l=57 col=25 i=1 n=3
+> CALL 63 len=22
+characters len=37 [1821 Nordic. Road, Irving Texas 98558]
+endElementNs local=[address] prefix= uri=
+characters len=2 [\n ]
+< CALL 63 rc=0 err=0 wf=1 in=9 p=2033 l=58 col=2 i=1 n=2
+> CALL 64 len=15
+endElementNs local=[employee] prefix= uri=
+characters len=2 [\n ]
+endElementNs local=[staff] prefix= uri=
+< CALL 64 rc=0 err=0 wf=1 in=14 p=2055 l=60 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=2055 l=60 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=60 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=2055 l=60 col=1 i=1 n=0

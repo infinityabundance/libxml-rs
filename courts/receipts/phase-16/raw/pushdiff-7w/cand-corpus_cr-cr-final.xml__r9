@@ -1,0 +1,13 @@
+== /scanout/corpus/cr-cr-final.xml bytes=6 mode=r9
+> CALL 0 len=6
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> FINAL
+characters len=1 [x]
+characters len=2 [\n\n]
+error dom=1 code=77 level=3 file= line=1 i1=1 i2=7 str1=a str2= str3= msg=Premature end of data in tag a line 1\n
+endDocument
+< FINAL 0 rc=77 err=77 wf=0 in=-1 p=6 l=1 col=7 i=1 n=1
+> REFEED
+< REFEED 0 rc=77 err=77 wf=0 in=-1 p=6 l=1 col=7 i=1 n=1

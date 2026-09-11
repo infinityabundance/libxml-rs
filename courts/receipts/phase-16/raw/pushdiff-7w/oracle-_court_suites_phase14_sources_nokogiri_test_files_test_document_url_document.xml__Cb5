@@ -1,0 +1,70 @@
+== /court/suites/phase14/sources/nokogiri/test/files/test_document_url/document.xml bytes=127 mode=Cb5
+> CTOR len=5
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=5
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=5
+startDocument
+< CALL 6 rc=0 err=0 wf=1 in=1 p=40 l=2 col=1 i=1 n=0
+> CALL 7 len=5
+< CALL 7 rc=0 err=0 wf=1 in=1 p=40 l=2 col=1 i=1 n=0
+> CALL 8 len=5
+< CALL 8 rc=0 err=0 wf=1 in=1 p=40 l=2 col=1 i=1 n=0
+> CALL 9 len=5
+< CALL 9 rc=0 err=0 wf=1 in=1 p=40 l=2 col=1 i=1 n=0
+> CALL 10 len=5
+< CALL 10 rc=0 err=0 wf=1 in=1 p=40 l=2 col=1 i=1 n=0
+> CALL 11 len=5
+< CALL 11 rc=0 err=0 wf=1 in=1 p=40 l=2 col=1 i=1 n=0
+> CALL 12 len=5
+< CALL 12 rc=0 err=0 wf=1 in=1 p=40 l=2 col=1 i=1 n=0
+> CALL 13 len=5
+< CALL 13 rc=0 err=0 wf=1 in=1 p=40 l=2 col=1 i=1 n=0
+> CALL 14 len=5
+< CALL 14 rc=0 err=0 wf=1 in=1 p=40 l=2 col=1 i=1 n=0
+> CALL 15 len=5
+internalSubset name=document ext= sys=document.dtd
+externalSubset name=document ext= sys=document.dtd
+< CALL 15 rc=0 err=0 wf=1 in=6 p=83 l=4 col=1 i=1 n=0
+> CALL 16 len=5
+< CALL 16 rc=0 err=0 wf=1 in=6 p=83 l=4 col=1 i=1 n=0
+> CALL 17 len=5
+startElementNs local=[document] prefix= uri= ns=0 att=0 def=0
+< CALL 17 rc=0 err=0 wf=1 in=7 p=93 l=4 col=11 i=1 n=1
+> CALL 18 len=5
+characters len=3 [\n  ]
+< CALL 18 rc=0 err=0 wf=1 in=6 p=96 l=5 col=3 i=1 n=1
+> CALL 19 len=5
+startElementNs local=[body] prefix= uri= ns=0 att=0 def=0
+< CALL 19 rc=0 err=0 wf=1 in=7 p=102 l=5 col=9 i=1 n=2
+> CALL 20 len=5
+error dom=1 code=27 level=1 file= line=5 i1=0 i2=14 str1=bar str2= str3= msg=Entity 'bar' not defined\n
+reference [bar]
+< CALL 20 rc=0 err=0 wf=1 in=9 p=107 l=5 col=14 i=1 n=2
+> CALL 21 len=5
+endElementNs local=[body] prefix= uri=
+< CALL 21 rc=0 err=0 wf=1 in=7 p=114 l=5 col=21 i=1 n=1
+> CALL 22 len=5
+characters len=1 [\n]
+< CALL 22 rc=0 err=0 wf=1 in=9 p=115 l=6 col=1 i=1 n=1
+> CALL 23 len=5
+< CALL 23 rc=0 err=0 wf=1 in=9 p=115 l=6 col=1 i=1 n=1
+> CALL 24 len=2
+endElementNs local=[document] prefix= uri=
+< CALL 24 rc=0 err=0 wf=1 in=14 p=127 l=7 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=127 l=7 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=7 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=127 l=7 col=1 i=1 n=0

@@ -1,0 +1,85 @@
+== /court/suites/phase14/sources/lxml/doc/s5/ep2008/atom-example.xml bytes=570 mode=r9
+> CALL 0 len=12
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 2 len=41
+startElement [feed] [xmlns]=http://www.w3.org/2005/Atom
+characters len=4 [\n\n  ]
+< CALL 2 rc=0 err=0 wf=1 in=6 p=85 l=4 col=3 i=1 n=1
+> CALL 3 len=53
+startElement [title]
+characters len=12 [Example Feed]
+endElement [title]
+characters len=3 [\n  ]
+< CALL 3 rc=0 err=0 wf=1 in=6 p=115 l=5 col=3 i=1 n=1
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=6 p=115 l=5 col=3 i=1 n=1
+> CALL 5 len=52
+startElement [link] [href]=http://example.org/
+endElement [link]
+characters len=3 [\n  ]
+startElement [updated]
+characters len=20 [2003-12-13T18:30:02Z]
+endElement [updated]
+characters len=3 [\n  ]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=194 l=7 col=3 i=1 n=1
+> CALL 6 len=45
+startElement [author]
+characters len=5 [\n    ]
+startElement [name]
+characters len=8 [John Doe]
+endElement [name]
+characters len=3 [\n  ]
+endElement [author]
+< CALL 6 rc=0 err=0 wf=1 in=7 p=240 l=9 col=12 i=1 n=1
+> CALL 7 len=52
+characters len=3 [\n  ]
+startElement [id]
+characters len=45 [urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6]
+< CALL 7 rc=0 err=0 wf=1 in=7 p=292 l=10 col=52 i=1 n=2
+> CALL 8 len=44
+endElement [id]
+characters len=4 [\n\n  ]
+startElement [entry]
+characters len=5 [\n    ]
+startElement [title]
+< CALL 8 rc=0 err=0 wf=1 in=7 p=320 l=13 col=12 i=1 n=3
+> CALL 9 len=54
+characters len=28 [Atom-Powered Robots Run Amok]
+endElement [title]
+characters len=5 [\n    ]
+< CALL 9 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 10 len=28
+startElement [link] [href]=http://example.org/2003/12/13/atom03
+endElement [link]
+characters len=5 [\n    ]
+< CALL 10 rc=0 err=0 wf=1 in=6 p=417 l=15 col=5 i=1 n=2
+> CALL 11 len=52
+startElement [id]
+characters len=45 [urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a]
+endElement [id]
+< CALL 11 rc=0 err=0 wf=1 in=7 p=471 l=15 col=59 i=1 n=2
+> CALL 12 len=45
+characters len=5 [\n    ]
+startElement [updated]
+characters len=20 [2003-12-13T18:30:02Z]
+endElement [updated]
+< CALL 12 rc=0 err=0 wf=1 in=7 p=515 l=16 col=44 i=1 n=2
+> CALL 13 len=54
+characters len=5 [\n    ]
+startElement [summary]
+characters len=10 [Some text.]
+endElement [summary]
+characters len=3 [\n  ]
+endElement [entry]
+characters len=2 [\n\n]
+endElement [feed]
+< CALL 13 rc=0 err=0 wf=1 in=14 p=570 l=21 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=570 l=21 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=21 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=570 l=21 col=1 i=1 n=0

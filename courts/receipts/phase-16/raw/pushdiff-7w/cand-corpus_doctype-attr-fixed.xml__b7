@@ -1,0 +1,29 @@
+== /scanout/corpus/doctype-attr-fixed.xml bytes=52 mode=b7
+> CALL 0 len=7
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=7
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=7
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=7
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=7
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=7
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=7
+internalSubset name=a ext= sys=
+attributeDecl elem=a name=f type=1 def=4 val=fx enum=
+externalSubset name=a ext= sys=
+< CALL 6 rc=0 err=0 wf=1 in=4 p=48 l=2 col=1 i=1 n=0
+> CALL 7 len=3
+startElementNs local=[a] prefix= uri= ns=0 att=1 def=1 [a local=f prefix= uri= value=fx end=1]
+endElementNs local=[a] prefix= uri=
+< CALL 7 rc=0 err=0 wf=1 in=14 p=52 l=2 col=5 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=52 l=2 col=5 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=52 l=2 col=5 i=1 n=0

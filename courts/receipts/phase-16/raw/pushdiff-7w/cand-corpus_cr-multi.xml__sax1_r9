@@ -1,0 +1,87 @@
+== /scanout/corpus/cr-multi.xml bytes=261 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [a]
+characters len=1 [\n]
+< CALL 0 rc=0 err=0 wf=1 in=6 p=5 l=2 col=1 i=1 n=1
+> CALL 1 len=34
+startElement [b] [k]=0
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=1
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=2
+endElement [b]
+characters len=1 [\n]
+< CALL 1 rc=0 err=0 wf=1 in=6 p=41 l=5 col=1 i=1 n=1
+> CALL 2 len=41
+startElement [b] [k]=3
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=4
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=5
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=6
+endElement [b]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=87 l=8 col=11 i=1 n=1
+> CALL 3 len=53
+characters len=1 [\n]
+startElement [b] [k]=7
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=8
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=9
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=10
+endElement [b]
+characters len=1 [\n]
+< CALL 3 rc=0 err=0 wf=1 in=6 p=138 l=13 col=1 i=1 n=1
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=6 p=138 l=13 col=1 i=1 n=1
+> CALL 5 len=52
+startElement [b] [k]=11
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=12
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=13
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=14
+endElement [b]
+characters len=1 [\n]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=190 l=17 col=1 i=1 n=1
+> CALL 6 len=45
+startElement [b] [k]=15
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=16
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=17
+endElement [b]
+characters len=1 [\n]
+startElement [b] [k]=18
+endElement [b]
+< CALL 6 rc=0 err=0 wf=1 in=7 p=240 l=20 col=12 i=1 n=1
+> CALL 7 len=20
+characters len=1 [\n]
+startElement [b] [k]=19
+endElement [b]
+characters len=1 [\n]
+endElement [a]
+< CALL 7 rc=0 err=0 wf=1 in=14 p=261 l=23 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=261 l=23 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=23 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=261 l=23 col=1 i=1 n=0

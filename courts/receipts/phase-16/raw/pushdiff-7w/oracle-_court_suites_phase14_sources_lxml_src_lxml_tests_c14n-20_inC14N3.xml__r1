@@ -1,0 +1,74 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inC14N3.xml bytes=572 mode=r1
+> CALL 0 len=23
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=26
+internalSubset name=doc ext= sys=
+< CALL 1 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 2 len=13
+attributeDecl elem=e9 name=attr type=1 def=1 val=default enum=
+externalSubset name=doc ext= sys=
+startElementNs local=[doc] prefix= uri= ns=0 att=0 def=0
+characters len=4 [\n   ]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=61 l=3 col=4 i=1 n=1
+> CALL 3 len=39
+startElementNs local=[e1] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[e1] prefix= uri=
+characters len=4 [\n   ]
+startElementNs local=[e2] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[e2] prefix= uri=
+characters len=4 [\n   ]
+< CALL 3 rc=0 err=0 wf=1 in=6 p=89 l=5 col=4 i=1 n=1
+> CALL 4 len=27
+startElementNs local=[e3] prefix= uri= ns=0 att=2 def=0 [a local=name prefix= uri= value=elem3 end=1] [a local=id prefix= uri= value=elem3 end=1]
+endElementNs local=[e3] prefix= uri=
+< CALL 4 rc=0 err=0 wf=1 in=7 p=127 l=5 col=42 i=1 n=1
+> CALL 5 len=52
+characters len=4 [\n   ]
+startElementNs local=[e4] prefix= uri= ns=0 att=2 def=0 [a local=name prefix= uri= value=elem4 end=1] [a local=id prefix= uri= value=elem4 end=1]
+endElementNs local=[e4] prefix= uri=
+characters len=4 [\n   ]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=175 l=7 col=4 i=1 n=1
+> CALL 6 len=27
+< CALL 6 rc=0 err=0 wf=1 in=6 p=175 l=7 col=4 i=1 n=1
+> CALL 7 len=55
+< CALL 7 rc=0 err=0 wf=1 in=6 p=175 l=7 col=4 i=1 n=1
+> CALL 8 len=42
+< CALL 8 rc=0 err=0 wf=1 in=6 p=175 l=7 col=4 i=1 n=1
+> CALL 9 len=59
+startElementNs local=[e5] prefix= uri=http://example.org ns=3 att=4 def=0 {b=http://www.ietf.org} {a=http://www.w3.org} {=http://example.org} [a local=attr prefix=a uri=http://www.w3.org value=out end=1] [a local=attr prefix=b uri=http://www.ietf.org value=sorted end=1] [a local=attr2 prefix= uri= value=all end=1] [a local=attr prefix= uri= value=I'm end=1]
+endElementNs local=[e5] prefix= uri=http://example.org
+characters len=4 [\n   ]
+< CALL 9 rc=0 err=0 wf=1 in=6 p=339 l=11 col=4 i=1 n=1
+> CALL 10 len=60
+startElementNs local=[e6] prefix= uri= ns=2 att=0 def=0 {=} {a=http://www.w3.org}
+characters len=7 [\n      ]
+startElementNs local=[e7] prefix= uri=http://www.ietf.org ns=1 att=0 def=0 {=http://www.ietf.org}
+< CALL 10 rc=0 err=0 wf=1 in=7 p=419 l=12 col=39 i=1 n=3
+> CALL 11 len=51
+characters len=10 [\n         ]
+startElementNs local=[e8] prefix= uri= ns=2 att=0 def=0 {=} {a=http://www.w3.org}
+< CALL 11 rc=0 err=0 wf=1 in=7 p=470 l=13 col=51 i=1 n=4
+> CALL 12 len=61
+characters len=13 [\n            ]
+startElementNs local=[e9] prefix= uri= ns=2 att=1 def=1 {=} {a=http://www.ietf.org} [a local=attr prefix= uri= value=default end=1]
+endElementNs local=[e9] prefix= uri=
+< CALL 12 rc=0 err=0 wf=1 in=7 p=527 l=14 col=57 i=1 n=4
+> CALL 13 len=33
+characters len=10 [\n         ]
+endElementNs local=[e8] prefix= uri=
+characters len=7 [\n      ]
+endElementNs local=[e7] prefix= uri=http://www.ietf.org
+characters len=4 [\n   ]
+endElementNs local=[e6] prefix= uri=
+characters len=1 [\n]
+< CALL 13 rc=0 err=0 wf=1 in=9 p=564 l=18 col=1 i=1 n=1
+> CALL 14 len=4
+endElementNs local=[doc] prefix= uri=
+< CALL 14 rc=0 err=0 wf=1 in=14 p=572 l=19 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=572 l=19 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=19 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=572 l=19 col=1 i=1 n=0

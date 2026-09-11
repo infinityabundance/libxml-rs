@@ -1,0 +1,9 @@
+== /scanout/corpus/misc-trunc-pi.xml bytes=4 mode=b16
+> CALL 0 len=4
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+error dom=1 code=47 level=3 file= line=1 i1=0 i2=5 str1=p str2= str3= msg=ParsePI: PI p never end ...\n
+< FINAL 0 rc=47 err=47 wf=0 in=1 p=4 l=1 col=5 i=1 n=0
+> REFEED
+< REFEED 0 rc=47 err=47 wf=0 in=1 p=4 l=1 col=5 i=1 n=0

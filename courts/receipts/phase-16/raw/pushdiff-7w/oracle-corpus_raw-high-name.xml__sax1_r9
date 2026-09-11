@@ -1,0 +1,11 @@
+== /scanout/corpus/raw-high-name.xml bytes=8 mode=r9
+> CALL 0 len=8
+startDocument
+error dom=8 code=81 level=3 file= line=1 i1=0 i2=2 str1= str2= str3= msg=Invalid bytes in character encoding\n
+error dom=1 code=68 level=3 file= line=1 i1=0 i2=2 str1= str2= str3= msg=xmlParseStartTag: invalid element name\n
+endDocument
+< CALL 0 rc=68 err=68 wf=0 in=-1 p=1 l=1 col=2 i=1 n=0
+> FINAL
+< FINAL 0 rc=68 err=68 wf=0 in=-1 p=1 l=1 col=2 i=1 n=0
+> REFEED
+< REFEED 0 rc=68 err=68 wf=0 in=-1 p=1 l=1 col=2 i=1 n=0

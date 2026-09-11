@@ -1,0 +1,23 @@
+== /scanout/corpus/doctype-subset-mixed.xml bytes=54 mode=r9
+> CALL 0 len=12
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+internalSubset name=a ext= sys=
+elementDecl name=a type=3 content={t=4 o=3 a={t=1 o=1 #PCDATA} b={t=2 o=1 name=b prefix=}}
+externalSubset name=a ext= sys=
+startElement [a]
+characters len=1 [x]
+< CALL 1 rc=0 err=0 wf=1 in=7 p=45 l=2 col=5 i=1 n=1
+> CALL 2 len=8
+startElement [b]
+endElement [b]
+characters len=1 [y]
+endElement [a]
+< CALL 2 rc=0 err=0 wf=1 in=14 p=54 l=2 col=14 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=54 l=2 col=14 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=14 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=54 l=2 col=14 i=1 n=0

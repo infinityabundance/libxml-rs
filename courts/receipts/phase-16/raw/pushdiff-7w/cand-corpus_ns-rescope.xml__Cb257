@@ -1,0 +1,20 @@
+== /scanout/corpus/ns-rescope.xml bytes=44 mode=Cb257
+> CTOR len=44
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+error dom=3 code=100 level=1 file= line=1 i1=0 i2=14 str1=u1 str2= str3= msg=xmlns: URI u1 is not absolute\n
+startElementNs local=[a] prefix= uri=u1 ns=1 att=0 def=0 {=u1}
+error dom=3 code=100 level=1 file= line=1 i1=0 i2=28 str1=u2 str2= str3= msg=xmlns: URI u2 is not absolute\n
+startElementNs local=[b] prefix= uri=u2 ns=1 att=0 def=0 {=u2}
+startElementNs local=[c] prefix= uri=u2 ns=0 att=0 def=0
+endElementNs local=[c] prefix= uri=u2
+endElementNs local=[b] prefix= uri=u2
+startElementNs local=[d] prefix= uri=u1 ns=0 att=0 def=0
+endElementNs local=[d] prefix= uri=u1
+endElementNs local=[a] prefix= uri=u1
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=44 l=1 col=45 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=45 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=44 l=1 col=45 i=1 n=0

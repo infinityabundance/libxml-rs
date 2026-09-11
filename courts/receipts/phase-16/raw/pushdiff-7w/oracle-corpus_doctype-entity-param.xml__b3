@@ -1,0 +1,44 @@
+== /scanout/corpus/doctype-entity-param.xml bytes=43 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=3
+< CALL 7 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=3
+< CALL 8 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=3
+< CALL 9 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=3
+internalSubset name=a ext= sys=
+< CALL 10 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0
+> CALL 11 len=3
+< CALL 11 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0
+> CALL 12 len=3
+entityDecl name=p type=4 pub= sys= content=<b/>
+error dom=1 code=27 level=1 file= line=1 i1=0 i2=36 str1=p str2= str3= msg=Entity 'p' not defined\n
+externalSubset name=a ext= sys=
+< CALL 12 rc=0 err=0 wf=1 in=4 p=39 l=2 col=1 i=1 n=0
+> CALL 13 len=3
+< CALL 13 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 14 len=1
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[a] prefix= uri=
+< CALL 14 rc=0 err=0 wf=1 in=14 p=43 l=2 col=5 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=43 l=2 col=5 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=43 l=2 col=5 i=1 n=0

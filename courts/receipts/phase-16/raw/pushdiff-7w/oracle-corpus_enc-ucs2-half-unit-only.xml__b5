@@ -1,0 +1,29 @@
+== /scanout/corpus/enc-ucs2-half-unit-only.xml bytes=55 mode=b5
+> CALL 0 len=5
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=5
+error dom=1 code=65 level=3 file= line=1 i1=0 i2=37 str1= str2= str3= msg=Blank needed here\n
+error dom=1 code=57 level=3 file= line=1 i1=0 i2=37 str1= str2= str3= msg=parsing XML declaration: '?>' expected\n
+< CALL 7 rc=57 err=57 wf=0 in=1 p=4 l=1 col=39 i=1 n=0
+> CALL 8 len=5
+< CALL 8 rc=57 err=57 wf=0 in=1 p=4 l=1 col=39 i=1 n=0
+> CALL 9 len=5
+< CALL 9 rc=57 err=57 wf=0 in=1 p=4 l=1 col=39 i=1 n=0
+> CALL 10 len=5
+< CALL 10 rc=57 err=57 wf=0 in=1 p=4 l=1 col=39 i=1 n=0
+> FINAL
+< FINAL 0 rc=57 err=57 wf=0 in=1 p=4 l=1 col=39 i=1 n=0
+> REFEED
+< REFEED 0 rc=57 err=57 wf=0 in=1 p=4 l=1 col=39 i=1 n=0

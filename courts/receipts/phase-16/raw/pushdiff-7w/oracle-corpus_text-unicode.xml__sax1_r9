@@ -1,0 +1,18 @@
+== /scanout/corpus/text-unicode.xml bytes=55 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [a]
+< CALL 0 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 1 len=34
+< CALL 1 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 2 len=9
+characters len=1 [h]
+characters len=47 [\xc3\xa9llo w\xc3\xb6rld \xe2\x80\x94 \xc3\xbcn\xc3\xafcode \xe2\x9c\x93 \xe4\xb8\xad\xe6\x96\x87 \xf0\x9f\x8e\x89 text]
+endElement [a]
+< CALL 2 rc=0 err=0 wf=1 in=14 p=55 l=1 col=41 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=55 l=1 col=41 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=41 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=55 l=1 col=41 i=1 n=0

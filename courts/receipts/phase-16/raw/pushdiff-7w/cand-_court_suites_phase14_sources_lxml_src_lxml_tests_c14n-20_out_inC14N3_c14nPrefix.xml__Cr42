@@ -1,0 +1,79 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N3_c14nPrefix.xml bytes=478 mode=Cr42
+> CTOR len=55
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=19
+startDocument
+error dom=3 code=200 level=2 file= line=1 i1=0 i2=20 str1=n0 str2= str3= msg=xmlns:n0: Empty XML namespace is not allowed\n
+error dom=3 code=201 level=2 file= line=1 i1=0 i2=20 str1=n0 str2=doc str3= msg=Namespace prefix n0 on doc is not defined\n
+startElementNs local=[doc] prefix=n0 uri= ns=0 att=0 def=0
+characters len=4 [\n   ]
+error dom=3 code=201 level=2 file= line=2 i1=0 i2=10 str1=n0 str2=e1 str3= msg=Namespace prefix n0 on e1 is not defined\n
+startElementNs local=[e1] prefix=n0 uri= ns=0 att=0 def=0
+endElementNs local=[e1] prefix=n0 uri=
+characters len=4 [\n   ]
+error dom=3 code=201 level=2 file= line=3 i1=0 i2=10 str1=n0 str2=e2 str3= msg=Namespace prefix n0 on e2 is not defined\n
+startElementNs local=[e2] prefix=n0 uri= ns=0 att=0 def=0
+endElementNs local=[e2] prefix=n0 uri=
+characters len=4 [\n   ]
+< CALL 0 rc=0 err=201 wf=1 in=6 p=62 l=4 col=4 i=1 n=1
+> CALL 1 len=19
+error dom=3 code=201 level=2 file= line=4 i1=0 i2=34 str1=n0 str2=e3 str3= msg=Namespace prefix n0 on e3 is not defined\n
+startElementNs local=[e3] prefix=n0 uri= ns=0 att=2 def=0 [a local=id prefix= uri= value=elem3 end=1] [a local=name prefix= uri= value=elem3 end=1]
+< CALL 1 rc=0 err=201 wf=1 in=7 p=93 l=4 col=35 i=1 n=2
+> CALL 2 len=32
+endElementNs local=[e3] prefix=n0 uri=
+characters len=4 [\n   ]
+< CALL 2 rc=0 err=201 wf=1 in=6 p=105 l=5 col=4 i=1 n=1
+> CALL 3 len=23
+error dom=3 code=201 level=2 file= line=5 i1=0 i2=34 str1=n0 str2=e4 str3= msg=Namespace prefix n0 on e4 is not defined\n
+startElementNs local=[e4] prefix=n0 uri= ns=0 att=2 def=0 [a local=id prefix= uri= value=elem4 end=1] [a local=name prefix= uri= value=elem4 end=1]
+endElementNs local=[e4] prefix=n0 uri=
+< CALL 3 rc=0 err=201 wf=1 in=7 p=144 l=5 col=43 i=1 n=1
+> CALL 4 len=13
+characters len=4 [\n   ]
+< CALL 4 rc=0 err=201 wf=1 in=6 p=148 l=6 col=4 i=1 n=1
+> CALL 5 len=26
+< CALL 5 rc=0 err=201 wf=1 in=6 p=148 l=6 col=4 i=1 n=1
+> CALL 6 len=23
+< CALL 6 rc=0 err=201 wf=1 in=6 p=148 l=6 col=4 i=1 n=1
+> CALL 7 len=63
+< CALL 7 rc=0 err=201 wf=1 in=6 p=148 l=6 col=4 i=1 n=1
+> CALL 8 len=62
+startElementNs local=[e5] prefix=n1 uri=http://example.org ns=3 att=4 def=0 {n1=http://example.org} {n2=http://www.ietf.org} {n3=http://www.w3.org} [a local=attr prefix= uri= value=I'm end=1] [a local=attr2 prefix= uri= value=all end=1] [a local=attr prefix=n2 uri=http://www.ietf.org value=sorted end=1] [a local=attr prefix=n3 uri=http://www.w3.org value=out end=1]
+endElementNs local=[e5] prefix=n1 uri=http://example.org
+characters len=4 [\n   ]
+error dom=3 code=201 level=2 file= line=7 i1=0 i2=10 str1=n0 str2=e6 str3= msg=Namespace prefix n0 on e6 is not defined\n
+startElementNs local=[e6] prefix=n0 uri= ns=0 att=0 def=0
+characters len=7 [\n      ]
+< CALL 8 rc=0 err=201 wf=1 in=6 p=325 l=8 col=7 i=1 n=2
+> CALL 9 len=9
+< CALL 9 rc=0 err=201 wf=1 in=6 p=325 l=8 col=7 i=1 n=2
+> CALL 10 len=23
+startElementNs local=[e7] prefix=n2 uri=http://www.ietf.org ns=1 att=0 def=0 {n2=http://www.ietf.org}
+< CALL 10 rc=0 err=201 wf=1 in=7 p=363 l=8 col=45 i=1 n=3
+> CALL 11 len=35
+characters len=10 [\n         ]
+error dom=3 code=201 level=2 file= line=9 i1=0 i2=16 str1=n0 str2=e8 str3= msg=Namespace prefix n0 on e8 is not defined\n
+startElementNs local=[e8] prefix=n0 uri= ns=0 att=0 def=0
+characters len=13 [\n            ]
+< CALL 11 rc=0 err=201 wf=1 in=6 p=393 l=10 col=13 i=1 n=4
+> CALL 12 len=51
+error dom=3 code=201 level=2 file= line=10 i1=0 i2=34 str1=n0 str2=e9 str3= msg=Namespace prefix n0 on e9 is not defined\n
+startElementNs local=[e9] prefix=n0 uri= ns=0 att=1 def=0 [a local=attr prefix= uri= value=default end=1]
+endElementNs local=[e9] prefix=n0 uri=
+characters len=10 [\n         ]
+endElementNs local=[e8] prefix=n0 uri=
+characters len=7 [\n      ]
+< CALL 12 rc=0 err=201 wf=1 in=9 p=448 l=12 col=7 i=1 n=3
+> CALL 13 len=25
+endElementNs local=[e7] prefix=n2 uri=http://www.ietf.org
+characters len=4 [\n   ]
+endElementNs local=[e6] prefix=n0 uri=
+characters len=1 [\n]
+endElementNs local=[doc] prefix=n0 uri=
+< CALL 13 rc=0 err=201 wf=1 in=14 p=478 l=14 col=10 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=201 wf=1 in=-1 p=478 l=14 col=10 i=1 n=0
+> REFEED
+< REFEED 0 rc=0 err=201 wf=1 in=-1 p=478 l=14 col=10 i=1 n=0

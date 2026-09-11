@@ -1,0 +1,23 @@
+== /scanout/corpus/doctype-trunc-elem-decl.xml bytes=33 mode=Cb5
+> CTOR len=5
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=5
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> FINAL
+internalSubset name=a ext= sys=
+error dom=1 code=52 level=3 file= line=1 i1=0 i2=34 str1= str2= str3= msg=MixedContentDecl : '|' or ')*' expected\n
+error dom=1 code=118 level=3 file= line=1 i1=0 i2=34 str1= str2= str3= msg=Content error in the internal subset\n
+< FINAL 0 rc=118 err=118 wf=0 in=4 p=33 l=1 col=34 i=1 n=0
+> REFEED
+< REFEED 0 rc=118 err=118 wf=0 in=4 p=33 l=1 col=34 i=1 n=0

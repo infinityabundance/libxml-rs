@@ -1,0 +1,12 @@
+== /scanout/corpus/attr-nospaces.xml bytes=15 mode=Cb12
+> CTOR len=12
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=3
+startDocument
+error dom=1 code=65 level=3 file= line=1 i1=0 i2=9 str1= str2= str3= msg=attributes construct error\n
+error dom=1 code=73 level=3 file= line=1 i1=0 i2=9 str1=a str2= str3= msg=Couldn't find end of Start Tag a\n
+< CALL 0 rc=73 err=73 wf=0 in=14 p=8 l=1 col=9 i=1 n=0
+> FINAL
+< FINAL 0 rc=73 err=73 wf=0 in=14 p=8 l=1 col=9 i=1 n=0
+> REFEED
+< REFEED 0 rc=73 err=73 wf=0 in=14 p=8 l=1 col=9 i=1 n=0

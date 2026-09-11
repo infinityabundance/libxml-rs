@@ -1,0 +1,30 @@
+== /scanout/corpus/ws-between.xml bytes=28 mode=b5
+> CALL 0 len=5
+startDocument
+startElement [a]
+< CALL 0 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 1 len=5
+characters len=3 [\n  ]
+startElement [b]
+endElement [b]
+< CALL 1 rc=0 err=0 wf=1 in=7 p=10 l=2 col=7 i=1 n=1
+> CALL 2 len=5
+characters len=3 [\n  ]
+< CALL 2 rc=0 err=0 wf=1 in=6 p=13 l=3 col=3 i=1 n=1
+> CALL 3 len=5
+startElement [c]
+characters len=3 [ \n ]
+< CALL 3 rc=0 err=0 wf=1 in=7 p=19 l=4 col=2 i=1 n=2
+> CALL 4 len=5
+endElement [c]
+characters len=1 [\n]
+< CALL 4 rc=0 err=0 wf=1 in=7 p=24 l=5 col=1 i=1 n=1
+> CALL 5 len=3
+endElement [a]
+< CALL 5 rc=0 err=0 wf=1 in=14 p=28 l=5 col=5 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=28 l=5 col=5 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=5 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=28 l=5 col=5 i=1 n=0

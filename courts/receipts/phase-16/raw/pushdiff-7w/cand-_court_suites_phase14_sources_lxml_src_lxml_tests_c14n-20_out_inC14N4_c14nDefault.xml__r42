@@ -1,0 +1,73 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N4_c14nDefault.xml bytes=431 mode=r42
+> CALL 0 len=55
+startDocument
+startElementNs local=[doc] prefix= uri= ns=0 att=0 def=0
+characters len=4 [\n   ]
+startElementNs local=[text] prefix= uri= ns=0 att=0 def=0
+characters len=10 [First line]
+characters len=1 [\r]
+characters len=12 [\nSecond line]
+endElementNs local=[text] prefix= uri=
+characters len=4 [\n   ]
+< CALL 0 rc=0 err=0 wf=1 in=6 p=53 l=4 col=4 i=1 n=1
+> CALL 1 len=19
+startElementNs local=[value] prefix= uri= ns=0 att=0 def=0
+characters len=1 [2]
+endElementNs local=[value] prefix= uri=
+characters len=4 [\n   ]
+< CALL 1 rc=0 err=0 wf=1 in=7 p=73 l=5 col=4 i=1 n=1
+> CALL 2 len=19
+startElementNs local=[compute] prefix= uri= ns=0 att=0 def=0
+characters len=5 [value]
+characters len=1 [>]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=91 l=5 col=22 i=1 n=2
+> CALL 3 len=32
+characters len=4 ["0" ]
+characters len=1 [&]
+characters len=1 [&]
+characters len=6 [ value]
+characters len=1 [<]
+< CALL 3 rc=0 err=0 wf=1 in=7 p=115 l=5 col=46 i=1 n=2
+> CALL 4 len=23
+characters len=21 ["10" ?"valid":"error"]
+endElementNs local=[compute] prefix= uri=
+< CALL 4 rc=0 err=0 wf=1 in=7 p=146 l=5 col=77 i=1 n=1
+> CALL 5 len=13
+characters len=4 [\n   ]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=150 l=6 col=4 i=1 n=1
+> CALL 6 len=26
+< CALL 6 rc=0 err=0 wf=1 in=6 p=150 l=6 col=4 i=1 n=1
+> CALL 7 len=23
+< CALL 7 rc=0 err=0 wf=1 in=6 p=150 l=6 col=4 i=1 n=1
+> CALL 8 len=63
+startElementNs local=[compute] prefix= uri= ns=0 att=1 def=0 [a local=expr prefix= uri= value=value>"0" &#38;&#38; value<"10" ?"valid":"error" end=1]
+characters len=5 [valid]
+endElementNs local=[compute] prefix= uri=
+< CALL 8 rc=0 err=0 wf=1 in=7 p=273 l=6 col=127 i=1 n=1
+> CALL 9 len=62
+characters len=4 [\n   ]
+startElementNs local=[norm] prefix= uri= ns=0 att=1 def=0 [a local=attr prefix= uri= value= '    \r\n\t   '  end=1]
+endElementNs local=[norm] prefix= uri=
+characters len=4 [\n   ]
+< CALL 9 rc=0 err=0 wf=1 in=6 p=328 l=8 col=4 i=1 n=1
+> CALL 10 len=9
+< CALL 10 rc=0 err=0 wf=1 in=6 p=328 l=8 col=4 i=1 n=1
+> CALL 11 len=23
+startElementNs local=[normNames] prefix= uri= ns=0 att=1 def=0 [a local=attr prefix= uri= value=A \r\n\t B end=1]
+< CALL 11 rc=0 err=0 wf=1 in=7 p=366 l=8 col=42 i=1 n=2
+> CALL 12 len=35
+endElementNs local=[normNames] prefix= uri=
+characters len=4 [\n   ]
+< CALL 12 rc=0 err=0 wf=1 in=6 p=382 l=9 col=4 i=1 n=1
+> CALL 13 len=29
+startElementNs local=[normId] prefix= uri= ns=0 att=1 def=0 [a local=id prefix= uri= value=' \r\n\t ' end=1]
+endElementNs local=[normId] prefix= uri=
+characters len=1 [\n]
+endElementNs local=[doc] prefix= uri=
+< CALL 13 rc=0 err=0 wf=1 in=14 p=431 l=10 col=7 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=431 l=10 col=7 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=10 i1=0 i2=7 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=431 l=10 col=7 i=1 n=0

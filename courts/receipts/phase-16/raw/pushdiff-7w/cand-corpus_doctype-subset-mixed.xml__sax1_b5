@@ -1,0 +1,39 @@
+== /scanout/corpus/doctype-subset-mixed.xml bytes=54 mode=b5
+> CALL 0 len=5
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=5
+internalSubset name=a ext= sys=
+elementDecl name=a type=3 content={t=4 o=3 a={t=1 o=1 #PCDATA} b={t=2 o=1 name=b prefix=}}
+externalSubset name=a ext= sys=
+< CALL 7 rc=0 err=0 wf=1 in=4 p=40 l=1 col=41 i=1 n=0
+> CALL 8 len=5
+startElement [a]
+< CALL 8 rc=0 err=0 wf=1 in=7 p=44 l=2 col=4 i=1 n=1
+> CALL 9 len=5
+characters len=1 [x]
+startElement [b]
+endElement [b]
+< CALL 9 rc=0 err=0 wf=1 in=7 p=49 l=2 col=9 i=1 n=1
+> CALL 10 len=4
+characters len=1 [y]
+endElement [a]
+< CALL 10 rc=0 err=0 wf=1 in=14 p=54 l=2 col=14 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=54 l=2 col=14 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=14 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=54 l=2 col=14 i=1 n=0

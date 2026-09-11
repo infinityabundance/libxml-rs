@@ -1,0 +1,30 @@
+== /court/suites/phase14/sources/lxml/samples/simple.xml bytes=105 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [root]
+characters len=4 [\n   ]
+< CALL 0 rc=0 err=0 wf=1 in=6 p=10 l=2 col=4 i=1 n=1
+> CALL 1 len=34
+startElement [element] [key]=value
+characters len=4 [text]
+endElement [element]
+< CALL 1 rc=0 err=0 wf=1 in=7 p=45 l=2 col=39 i=1 n=1
+> CALL 2 len=41
+characters len=4 [\n   ]
+startElement [element]
+characters len=4 [text]
+endElement [element]
+characters len=8 [tail\n   ]
+< CALL 2 rc=0 err=0 wf=1 in=6 p=80 l=4 col=4 i=1 n=1
+> CALL 3 len=18
+startElement [empty-element]
+endElement [empty-element]
+characters len=1 [\n]
+endElement [root]
+< CALL 3 rc=0 err=0 wf=1 in=14 p=105 l=6 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=105 l=6 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=6 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=105 l=6 col=1 i=1 n=0

@@ -1,0 +1,36 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inC14N1.xml bytes=224 mode=r42
+> CALL 0 len=55
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=23 l=3 col=1 i=1 n=0
+> CALL 1 len=19
+< CALL 1 rc=0 err=0 wf=1 in=1 p=23 l=3 col=1 i=1 n=0
+> CALL 2 len=19
+pi target=xml-stylesheet data=href="doc.xsl"\n   type="text/xsl"   
+< CALL 2 rc=0 err=0 wf=1 in=1 p=82 l=6 col=1 i=1 n=0
+> CALL 3 len=32
+internalSubset name=doc ext= sys=doc.dtd
+externalSubset name=doc ext= sys=doc.dtd
+startElementNs local=[doc] prefix= uri= ns=0 att=0 def=0
+< CALL 3 rc=0 err=0 wf=1 in=7 p=120 l=8 col=6 i=1 n=1
+> CALL 4 len=23
+characters len=13 [Hello, world!]
+< CALL 4 rc=0 err=0 wf=1 in=7 p=133 l=8 col=19 i=1 n=1
+> CALL 5 len=13
+comment [ Comment 1 ]
+endElementNs local=[doc] prefix= uri=
+< CALL 5 rc=0 err=0 wf=1 in=14 p=159 l=10 col=1 i=1 n=0
+> CALL 6 len=26
+pi target=pi-without-data data=
+< CALL 6 rc=0 err=0 wf=1 in=14 p=185 l=12 col=1 i=1 n=0
+> CALL 7 len=23
+comment [ Comment 2 ]
+< CALL 7 rc=0 err=0 wf=1 in=14 p=205 l=14 col=1 i=1 n=0
+> CALL 8 len=14
+comment [ Comment 3 ]
+< CALL 8 rc=0 err=0 wf=1 in=14 p=224 l=15 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=224 l=15 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=15 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=224 l=15 col=1 i=1 n=0

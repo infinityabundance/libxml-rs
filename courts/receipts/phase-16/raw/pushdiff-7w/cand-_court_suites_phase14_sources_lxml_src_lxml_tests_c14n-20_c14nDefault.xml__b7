@@ -1,0 +1,57 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/c14nDefault.xml bytes=155 mode=b7
+> CALL 0 len=7
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=7
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=7
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=7
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=7
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=7
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=7
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=7
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=7
+< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=7
+< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=7
+< CALL 10 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=7
+< CALL 11 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=7
+< CALL 12 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=7
+< CALL 13 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 14 len=7
+< CALL 14 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 15 len=7
+< CALL 15 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 16 len=7
+< CALL 16 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 17 len=7
+startElementNs local=[CanonicalizationMethod] prefix=dsig uri=http://www.w3.org/2000/09/xmldsig# ns=1 att=1 def=0 {dsig=http://www.w3.org/2000/09/xmldsig#} [a local=Algorithm prefix= uri= value=http://www.w3.org/2010/xml-c14n2 end=1]
+characters len=1 [\n]
+< CALL 17 rc=0 err=0 wf=1 in=9 p=123 l=2 col=1 i=1 n=1
+> CALL 18 len=7
+< CALL 18 rc=0 err=0 wf=1 in=9 p=123 l=2 col=1 i=1 n=1
+> CALL 19 len=7
+< CALL 19 rc=0 err=0 wf=1 in=9 p=123 l=2 col=1 i=1 n=1
+> CALL 20 len=7
+< CALL 20 rc=0 err=0 wf=1 in=9 p=123 l=2 col=1 i=1 n=1
+> CALL 21 len=7
+endElementNs local=[CanonicalizationMethod] prefix=dsig uri=http://www.w3.org/2000/09/xmldsig#
+< CALL 21 rc=0 err=0 wf=1 in=14 p=154 l=3 col=1 i=1 n=0
+> CALL 22 len=1
+< CALL 22 rc=0 err=0 wf=1 in=14 p=155 l=4 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=155 l=4 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=4 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=155 l=4 col=1 i=1 n=0

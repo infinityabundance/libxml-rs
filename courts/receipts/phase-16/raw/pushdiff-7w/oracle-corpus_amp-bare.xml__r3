@@ -1,0 +1,12 @@
+== /scanout/corpus/amp-bare.xml bytes=9 mode=r3
+> CALL 0 len=4
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> FINAL
+error dom=1 code=68 level=3 file= line=1 i1=0 i2=5 str1= str2= str3= msg=xmlParseEntityRef: no name\n
+< FINAL 0 rc=68 err=68 wf=0 in=7 p=4 l=1 col=5 i=1 n=1
+> REFEED
+< REFEED 0 rc=68 err=68 wf=0 in=7 p=4 l=1 col=5 i=1 n=1

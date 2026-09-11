@@ -1,0 +1,101 @@
+== /scanout/corpus/cr-multi.xml bytes=261 mode=b64z2
+> CALL 0 len=64
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=0 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=1 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=2 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=3 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=4 end=1]
+endElementNs local=[b] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=7 p=63 l=6 col=11 i=1 n=1
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=7 p=63 l=6 col=11 i=1 n=1
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=7 p=63 l=6 col=11 i=1 n=1
+> CALL 1 len=64
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=5 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=6 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=7 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=8 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=9 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+< CALL 1 rc=0 err=0 wf=1 in=6 p=125 l=12 col=1 i=1 n=1
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=6 p=125 l=12 col=1 i=1 n=1
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=6 p=125 l=12 col=1 i=1 n=1
+> CALL 2 len=64
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=10 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=11 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=12 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=13 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=14 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+< CALL 2 rc=0 err=0 wf=1 in=6 p=190 l=17 col=1 i=1 n=1
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=6 p=190 l=17 col=1 i=1 n=1
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=6 p=190 l=17 col=1 i=1 n=1
+> CALL 3 len=64
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=15 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=16 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=17 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=18 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+startElementNs local=[b] prefix= uri= ns=0 att=1 def=0 [a local=k prefix= uri= value=19 end=1]
+endElementNs local=[b] prefix= uri=
+characters len=1 [\n]
+< CALL 3 rc=0 err=0 wf=1 in=7 p=255 l=22 col=1 i=1 n=1
+> CALL 4 ZERO
+< CALL 4 rc=0 err=0 wf=1 in=7 p=255 l=22 col=1 i=1 n=1
+> CALL 4 ZERO
+< CALL 4 rc=0 err=0 wf=1 in=7 p=255 l=22 col=1 i=1 n=1
+> CALL 4 len=5
+endElementNs local=[a] prefix= uri=
+< CALL 4 rc=0 err=0 wf=1 in=14 p=261 l=23 col=1 i=1 n=0
+> CALL 5 ZERO
+< CALL 5 rc=0 err=0 wf=1 in=14 p=261 l=23 col=1 i=1 n=0
+> CALL 5 ZERO
+< CALL 5 rc=0 err=0 wf=1 in=14 p=261 l=23 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=261 l=23 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=23 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=261 l=23 col=1 i=1 n=0

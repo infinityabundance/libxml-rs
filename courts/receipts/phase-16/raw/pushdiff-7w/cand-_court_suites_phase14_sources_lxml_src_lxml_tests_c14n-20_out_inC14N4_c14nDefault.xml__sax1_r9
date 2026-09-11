@@ -1,0 +1,69 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N4_c14nDefault.xml bytes=431 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [doc]
+characters len=4 [\n   ]
+< CALL 0 rc=0 err=0 wf=1 in=6 p=9 l=2 col=4 i=1 n=1
+> CALL 1 len=34
+startElement [text]
+characters len=10 [First line]
+characters len=1 [\r]
+characters len=12 [\nSecond line]
+< CALL 1 rc=0 err=0 wf=1 in=9 p=42 l=3 col=12 i=1 n=2
+> CALL 2 len=41
+endElement [text]
+characters len=4 [\n   ]
+startElement [value]
+characters len=1 [2]
+endElement [value]
+characters len=4 [\n   ]
+startElement [compute]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=82 l=5 col=13 i=1 n=2
+> CALL 3 len=53
+characters len=5 [value]
+characters len=1 [>]
+characters len=4 ["0" ]
+characters len=1 [&]
+characters len=1 [&]
+characters len=6 [ value]
+characters len=1 [<]
+characters len=21 ["10" ?"valid":"error"]
+< CALL 3 rc=0 err=0 wf=1 in=9 p=136 l=5 col=67 i=1 n=2
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=9 p=136 l=5 col=67 i=1 n=2
+> CALL 5 len=52
+endElement [compute]
+characters len=4 [\n   ]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=150 l=6 col=4 i=1 n=1
+> CALL 6 len=45
+< CALL 6 rc=0 err=0 wf=1 in=6 p=150 l=6 col=4 i=1 n=1
+> CALL 7 len=52
+startElement [compute] [expr]=value>"0" &#38;&#38; value<"10" ?"valid":"error"
+characters len=5 [valid]
+endElement [compute]
+characters len=4 [\n   ]
+< CALL 7 rc=0 err=0 wf=1 in=6 p=277 l=7 col=4 i=1 n=1
+> CALL 8 len=44
+startElement [norm] [attr]= '    \r\n\t   ' 
+endElement [norm]
+characters len=4 [\n   ]
+< CALL 8 rc=0 err=0 wf=1 in=6 p=328 l=8 col=4 i=1 n=1
+> CALL 9 len=54
+startElement [normNames] [attr]=A \r\n\t B
+endElement [normNames]
+characters len=4 [\n   ]
+< CALL 9 rc=0 err=0 wf=1 in=6 p=382 l=9 col=4 i=1 n=1
+> CALL 10 len=28
+startElement [normId] [id]=' \r\n\t '
+< CALL 10 rc=0 err=0 wf=1 in=9 p=415 l=9 col=37 i=1 n=2
+> CALL 11 len=12
+endElement [normId]
+characters len=1 [\n]
+endElement [doc]
+< CALL 11 rc=0 err=0 wf=1 in=14 p=431 l=10 col=7 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=431 l=10 col=7 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=10 i1=0 i2=7 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=431 l=10 col=7 i=1 n=0

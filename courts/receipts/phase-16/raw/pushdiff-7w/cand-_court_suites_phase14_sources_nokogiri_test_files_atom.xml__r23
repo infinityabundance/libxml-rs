@@ -1,0 +1,1978 @@
+== /court/suites/phase14/sources/nokogiri/test/files/atom.xml bytes=18158 mode=r23
+> CALL 0 len=9
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=16
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=41
+startDocument
+< CALL 2 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 3 len=46
+< CALL 3 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 4 len=61
+startElementNs local=[feed] prefix= uri=http://www.w3.org/2005/Atom ns=2 att=1 def=0 {=http://www.w3.org/2005/Atom} {media=http://search.yahoo.com/mrss/} [a local=lang prefix=xml uri=http://www.w3.org/XML/1998/namespace value=en-US end=1]
+characters len=3 [\n  ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 4 rc=0 err=0 wf=1 in=7 p=149 l=3 col=7 i=1 n=2
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=7 p=149 l=3 col=7 i=1 n=2
+> CALL 6 len=14
+< CALL 6 rc=0 err=0 wf=1 in=7 p=149 l=3 col=7 i=1 n=2
+> CALL 7 len=15
+< CALL 7 rc=0 err=0 wf=1 in=7 p=149 l=3 col=7 i=1 n=2
+> CALL 8 len=33
+characters len=58 [tag:github.com,2008:/sparklemotion/nokogiri/commits/master]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+< CALL 8 rc=0 err=0 wf=1 in=6 p=215 l=4 col=3 i=1 n=1
+> CALL 9 len=44
+< CALL 9 rc=0 err=0 wf=1 in=6 p=215 l=4 col=3 i=1 n=1
+> CALL 10 len=5
+< CALL 10 rc=0 err=0 wf=1 in=6 p=215 l=4 col=3 i=1 n=1
+> CALL 11 len=53
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commits/master end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+< CALL 11 rc=0 err=0 wf=1 in=6 p=322 l=5 col=3 i=1 n=1
+> CALL 12 len=33
+< CALL 12 rc=0 err=0 wf=1 in=6 p=322 l=5 col=3 i=1 n=1
+> CALL 13 len=30
+< CALL 13 rc=0 err=0 wf=1 in=6 p=322 l=5 col=3 i=1 n=1
+> CALL 14 len=61
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=application/atom+xml end=1] [a local=rel prefix= uri= value=self end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commits/master.atom end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 14 rc=0 err=0 wf=1 in=7 p=447 l=6 col=10 i=1 n=2
+> CALL 15 len=7
+< CALL 15 rc=0 err=0 wf=1 in=7 p=447 l=6 col=10 i=1 n=2
+> CALL 16 len=8
+characters len=33 [Recent Commits to nokogiri:master]
+< CALL 16 rc=0 err=0 wf=1 in=7 p=480 l=6 col=43 i=1 n=2
+> CALL 17 len=19
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 17 rc=0 err=0 wf=1 in=7 p=500 l=7 col=12 i=1 n=2
+> CALL 18 len=2
+< CALL 18 rc=0 err=0 wf=1 in=7 p=500 l=7 col=12 i=1 n=2
+> CALL 19 len=58
+characters len=25 [2013-07-02T08:17:16-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 19 rc=0 err=0 wf=1 in=7 p=554 l=9 col=9 i=1 n=3
+> CALL 20 len=39
+< CALL 20 rc=0 err=0 wf=1 in=7 p=554 l=9 col=9 i=1 n=3
+> CALL 21 len=42
+characters len=73 [tag:github.com,2008:Grit::Commit/233489ddfe4698b24dfcdc1daf3ca15bc880e4b1]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 21 rc=0 err=0 wf=1 in=6 p=637 l=10 col=5 i=1 n=2
+> CALL 22 len=33
+< CALL 22 rc=0 err=0 wf=1 in=6 p=637 l=10 col=5 i=1 n=2
+> CALL 23 len=50
+< CALL 23 rc=0 err=0 wf=1 in=6 p=637 l=10 col=5 i=1 n=2
+> CALL 24 len=31
+< CALL 24 rc=0 err=0 wf=1 in=6 p=637 l=10 col=5 i=1 n=2
+> CALL 25 len=7
+< CALL 25 rc=0 err=0 wf=1 in=6 p=637 l=10 col=5 i=1 n=2
+> CALL 26 len=15
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/233489ddfe4698b24dfcdc1daf3ca15bc880e4b1 end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 26 rc=0 err=0 wf=1 in=7 p=774 l=10 col=142 i=1 n=2
+> CALL 27 len=50
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 27 rc=0 err=0 wf=1 in=7 p=786 l=11 col=12 i=1 n=3
+> CALL 28 len=36
+characters len=71 [\n        Updated changelog with merged pull requests #887 and #931\n    ]
+< CALL 28 rc=0 err=0 wf=1 in=9 p=857 l=13 col=5 i=1 n=3
+> CALL 29 len=27
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 29 rc=0 err=0 wf=1 in=7 p=879 l=14 col=14 i=1 n=3
+> CALL 30 len=20
+characters len=25 [2013-07-02T08:17:16-07:00]
+< CALL 30 rc=0 err=0 wf=1 in=9 p=904 l=14 col=39 i=1 n=3
+> CALL 31 len=62
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 31 rc=0 err=0 wf=1 in=6 p=919 l=15 col=5 i=1 n=2
+> CALL 32 len=3
+< CALL 32 rc=0 err=0 wf=1 in=6 p=919 l=15 col=5 i=1 n=2
+> CALL 33 len=29
+< CALL 33 rc=0 err=0 wf=1 in=6 p=919 l=15 col=5 i=1 n=2
+> CALL 34 len=49
+< CALL 34 rc=0 err=0 wf=1 in=6 p=919 l=15 col=5 i=1 n=2
+> CALL 35 len=64
+< CALL 35 rc=0 err=0 wf=1 in=6 p=919 l=15 col=5 i=1 n=2
+> CALL 36 len=24
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/9077af710bdadc972a7898e457bf6ec1?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+< CALL 36 rc=0 err=0 wf=1 in=6 p=1139 l=16 col=5 i=1 n=2
+> CALL 37 len=9
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 37 rc=0 err=0 wf=1 in=7 p=1147 l=16 col=13 i=1 n=3
+> CALL 38 len=38
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=6 [injekt]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 38 rc=0 err=0 wf=1 in=7 p=1185 l=18 col=12 i=1 n=4
+> CALL 39 len=27
+characters len=25 [https://github.com/injekt]
+< CALL 39 rc=0 err=0 wf=1 in=9 p=1210 l=18 col=37 i=1 n=4
+> CALL 40 len=57
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 40 rc=0 err=0 wf=1 in=7 p=1267 l=21 col=11 i=1 n=3
+> CALL 41 len=33
+< CALL 41 rc=0 err=0 wf=1 in=7 p=1267 l=21 col=11 i=1 n=3
+> CALL 42 len=48
+< CALL 42 rc=0 err=0 wf=1 in=7 p=1267 l=21 col=11 i=1 n=3
+> CALL 43 len=19
+characters len=101 [pre style='white-space:pre-wrap;width:81ex'>Updated changelog with merged pull requests #887 and #931]
+characters len=1 [<]
+< CALL 43 rc=0 err=0 wf=1 in=7 p=1372 l=21 col=116 i=1 n=3
+> CALL 44 len=42
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 44 rc=0 err=0 wf=1 in=7 p=1413 l=24 col=10 i=1 n=2
+> CALL 45 len=3
+< CALL 45 rc=0 err=0 wf=1 in=7 p=1413 l=24 col=10 i=1 n=2
+> CALL 46 len=44
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 46 rc=0 err=0 wf=1 in=7 p=1422 l=25 col=9 i=1 n=3
+> CALL 47 len=64
+characters len=73 [tag:github.com,2008:Grit::Commit/15eff8be4539a3461cfc1e3c8a257e7eed134e01]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 47 rc=0 err=0 wf=1 in=6 p=1505 l=26 col=5 i=1 n=2
+> CALL 48 len=4
+< CALL 48 rc=0 err=0 wf=1 in=6 p=1505 l=26 col=5 i=1 n=2
+> CALL 49 len=11
+< CALL 49 rc=0 err=0 wf=1 in=6 p=1505 l=26 col=5 i=1 n=2
+> CALL 50 len=15
+< CALL 50 rc=0 err=0 wf=1 in=6 p=1505 l=26 col=5 i=1 n=2
+> CALL 51 len=46
+< CALL 51 rc=0 err=0 wf=1 in=6 p=1505 l=26 col=5 i=1 n=2
+> CALL 52 len=60
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/15eff8be4539a3461cfc1e3c8a257e7eed134e01 end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 52 rc=0 err=0 wf=1 in=7 p=1654 l=27 col=12 i=1 n=3
+> CALL 53 len=54
+characters len=59 [\n        Merge pull request #887 from Mange/double-not\n    ]
+< CALL 53 rc=0 err=0 wf=1 in=9 p=1713 l=29 col=5 i=1 n=3
+> CALL 54 len=61
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [2013-07-02T08:13:36-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 54 rc=0 err=0 wf=1 in=7 p=1775 l=31 col=5 i=1 n=2
+> CALL 55 len=22
+< CALL 55 rc=0 err=0 wf=1 in=6 p=1775 l=31 col=5 i=1 n=2
+> CALL 56 len=5
+< CALL 56 rc=0 err=0 wf=1 in=6 p=1775 l=31 col=5 i=1 n=2
+> CALL 57 len=26
+< CALL 57 rc=0 err=0 wf=1 in=6 p=1775 l=31 col=5 i=1 n=2
+> CALL 58 len=61
+< CALL 58 rc=0 err=0 wf=1 in=6 p=1775 l=31 col=5 i=1 n=2
+> CALL 59 len=36
+< CALL 59 rc=0 err=0 wf=1 in=6 p=1775 l=31 col=5 i=1 n=2
+> CALL 60 len=48
+< CALL 60 rc=0 err=0 wf=1 in=6 p=1775 l=31 col=5 i=1 n=2
+> CALL 61 len=35
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/9077af710bdadc972a7898e457bf6ec1?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 61 rc=0 err=0 wf=1 in=7 p=2003 l=32 col=13 i=1 n=3
+> CALL 62 len=27
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=6 [injekt]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 62 rc=0 err=0 wf=1 in=7 p=2029 l=33 col=26 i=1 n=3
+> CALL 63 len=48
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [https://github.com/injekt]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 63 rc=0 err=0 wf=1 in=9 p=2077 l=35 col=5 i=1 n=3
+> CALL 64 len=60
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 64 rc=0 err=0 wf=1 in=7 p=2123 l=37 col=11 i=1 n=3
+> CALL 65 len=36
+< CALL 65 rc=0 err=0 wf=1 in=7 p=2123 l=37 col=11 i=1 n=3
+> CALL 66 len=24
+< CALL 66 rc=0 err=0 wf=1 in=7 p=2123 l=37 col=11 i=1 n=3
+> CALL 67 len=60
+< CALL 67 rc=0 err=0 wf=1 in=7 p=2123 l=37 col=11 i=1 n=3
+> CALL 68 len=30
+characters len=154 [pre style='white-space:pre-wrap;width:81ex'>Merge pull request #887 from Mange/double-not\n\nAdd support for bare and multiple :not() functions in selectors]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+< CALL 68 rc=0 err=0 wf=1 in=9 p=2291 l=40 col=5 i=1 n=3
+> CALL 69 len=64
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 69 rc=0 err=0 wf=1 in=7 p=2331 l=43 col=9 i=1 n=3
+> CALL 70 len=61
+characters len=73 [tag:github.com,2008:Grit::Commit/7a54b1fd1ba1dbcd50d3566bcc62d554eb0fd30e]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 70 rc=0 err=0 wf=1 in=6 p=2414 l=44 col=5 i=1 n=2
+> CALL 71 len=19
+< CALL 71 rc=0 err=0 wf=1 in=6 p=2414 l=44 col=5 i=1 n=2
+> CALL 72 len=19
+< CALL 72 rc=0 err=0 wf=1 in=6 p=2414 l=44 col=5 i=1 n=2
+> CALL 73 len=23
+< CALL 73 rc=0 err=0 wf=1 in=6 p=2414 l=44 col=5 i=1 n=2
+> CALL 74 len=55
+< CALL 74 rc=0 err=0 wf=1 in=6 p=2414 l=44 col=5 i=1 n=2
+> CALL 75 len=15
+< CALL 75 rc=0 err=0 wf=1 in=6 p=2414 l=44 col=5 i=1 n=2
+> CALL 76 len=21
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/7a54b1fd1ba1dbcd50d3566bcc62d554eb0fd30e end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 76 rc=0 err=0 wf=1 in=7 p=2563 l=45 col=12 i=1 n=3
+> CALL 77 len=51
+< CALL 77 rc=0 err=0 wf=1 in=7 p=2563 l=45 col=12 i=1 n=3
+> CALL 78 len=49
+characters len=97 [\n        Merge pull request #931 from sorah/dont_call_pkgconfig_when_using_bundled_libraries\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 78 rc=0 err=0 wf=1 in=7 p=2668 l=47 col=13 i=1 n=2
+> CALL 79 len=35
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 79 rc=0 err=0 wf=1 in=7 p=2682 l=48 col=14 i=1 n=3
+> CALL 80 len=60
+characters len=25 [2013-07-02T08:11:37-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 80 rc=0 err=0 wf=1 in=6 p=2722 l=49 col=5 i=1 n=2
+> CALL 81 len=16
+< CALL 81 rc=0 err=0 wf=1 in=6 p=2722 l=49 col=5 i=1 n=2
+> CALL 82 len=14
+< CALL 82 rc=0 err=0 wf=1 in=6 p=2722 l=49 col=5 i=1 n=2
+> CALL 83 len=13
+< CALL 83 rc=0 err=0 wf=1 in=6 p=2722 l=49 col=5 i=1 n=2
+> CALL 84 len=38
+< CALL 84 rc=0 err=0 wf=1 in=6 p=2722 l=49 col=5 i=1 n=2
+> CALL 85 len=18
+< CALL 85 rc=0 err=0 wf=1 in=6 p=2722 l=49 col=5 i=1 n=2
+> CALL 86 len=62
+< CALL 86 rc=0 err=0 wf=1 in=6 p=2722 l=49 col=5 i=1 n=2
+> CALL 87 len=1
+< CALL 87 rc=0 err=0 wf=1 in=6 p=2722 l=49 col=5 i=1 n=2
+> CALL 88 len=26
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/74f896b312b786ee75a18073941e2457?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 88 rc=0 err=0 wf=1 in=7 p=2950 l=50 col=13 i=1 n=3
+> CALL 89 len=18
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=3 [knu]
+< CALL 89 rc=0 err=0 wf=1 in=9 p=2966 l=51 col=16 i=1 n=4
+> CALL 90 len=39
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=22 [https://github.com/knu]
+< CALL 90 rc=0 err=0 wf=1 in=9 p=3007 l=52 col=34 i=1 n=4
+> CALL 91 len=58
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 91 rc=0 err=0 wf=1 in=7 p=3064 l=55 col=11 i=1 n=3
+> CALL 92 len=26
+< CALL 92 rc=0 err=0 wf=1 in=7 p=3064 l=55 col=11 i=1 n=3
+> CALL 93 len=15
+< CALL 93 rc=0 err=0 wf=1 in=7 p=3064 l=55 col=11 i=1 n=3
+> CALL 94 len=21
+< CALL 94 rc=0 err=0 wf=1 in=7 p=3064 l=55 col=11 i=1 n=3
+> CALL 95 len=60
+< CALL 95 rc=0 err=0 wf=1 in=7 p=3064 l=55 col=11 i=1 n=3
+> CALL 96 len=51
+characters len=144 [pre style='white-space:pre-wrap;width:81ex'>Merge pull request #931 from sorah/dont_call_pkgconfig_when_using_bundled_libraries\n\nextconf.rb: Don]
+characters len=1 [']
+< CALL 96 rc=0 err=0 wf=1 in=7 p=3213 l=57 col=21 i=1 n=3
+> CALL 97 len=23
+characters len=46 [t call pkg_config when using bundled libraries]
+characters len=1 [<]
+< CALL 97 rc=0 err=0 wf=1 in=7 p=3263 l=57 col=71 i=1 n=3
+> CALL 98 len=56
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 98 rc=0 err=0 wf=1 in=7 p=3313 l=61 col=9 i=1 n=3
+> CALL 99 len=29
+< CALL 99 rc=0 err=0 wf=1 in=7 p=3313 l=61 col=9 i=1 n=3
+> CALL 100 len=64
+characters len=73 [tag:github.com,2008:Grit::Commit/e5b93617ba810a34a4fc70dac76a83f9bebd2ea1]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 100 rc=0 err=0 wf=1 in=6 p=3396 l=62 col=5 i=1 n=2
+> CALL 101 len=51
+< CALL 101 rc=0 err=0 wf=1 in=6 p=3396 l=62 col=5 i=1 n=2
+> CALL 102 len=36
+< CALL 102 rc=0 err=0 wf=1 in=6 p=3396 l=62 col=5 i=1 n=2
+> CALL 103 len=12
+< CALL 103 rc=0 err=0 wf=1 in=6 p=3396 l=62 col=5 i=1 n=2
+> CALL 104 len=41
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/e5b93617ba810a34a4fc70dac76a83f9bebd2ea1 end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 104 rc=0 err=0 wf=1 in=7 p=3545 l=63 col=12 i=1 n=3
+> CALL 105 len=33
+characters len=24 [\n        extconf.rb: Don]
+characters len=1 [']
+< CALL 105 rc=0 err=0 wf=1 in=7 p=3574 l=64 col=29 i=1 n=3
+> CALL 106 len=28
+< CALL 106 rc=0 err=0 wf=1 in=7 p=3574 l=64 col=29 i=1 n=3
+> CALL 107 len=38
+characters len=51 [t call pkg_config when using bundled libraries\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 107 rc=0 err=0 wf=1 in=7 p=3647 l=66 col=14 i=1 n=3
+> CALL 108 len=13
+< CALL 108 rc=0 err=0 wf=1 in=7 p=3647 l=66 col=14 i=1 n=3
+> CALL 109 len=31
+characters len=25 [2013-07-02T06:30:00-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 109 rc=0 err=0 wf=1 in=6 p=3687 l=67 col=5 i=1 n=2
+> CALL 110 len=30
+< CALL 110 rc=0 err=0 wf=1 in=6 p=3687 l=67 col=5 i=1 n=2
+> CALL 111 len=1
+< CALL 111 rc=0 err=0 wf=1 in=6 p=3687 l=67 col=5 i=1 n=2
+> CALL 112 len=55
+< CALL 112 rc=0 err=0 wf=1 in=6 p=3687 l=67 col=5 i=1 n=2
+> CALL 113 len=32
+< CALL 113 rc=0 err=0 wf=1 in=6 p=3687 l=67 col=5 i=1 n=2
+> CALL 114 len=55
+< CALL 114 rc=0 err=0 wf=1 in=6 p=3687 l=67 col=5 i=1 n=2
+> CALL 115 len=1
+< CALL 115 rc=0 err=0 wf=1 in=6 p=3687 l=67 col=5 i=1 n=2
+> CALL 116 len=40
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/c4f076f658dd3464f1d8785ad53a0d99?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+< CALL 116 rc=0 err=0 wf=1 in=6 p=3907 l=68 col=5 i=1 n=2
+> CALL 117 len=43
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [sorah]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 117 rc=0 err=0 wf=1 in=7 p=3952 l=70 col=12 i=1 n=4
+> CALL 118 len=29
+characters len=24 [https://github.com/sorah]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 118 rc=0 err=0 wf=1 in=7 p=3982 l=70 col=42 i=1 n=3
+> CALL 119 len=31
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 119 rc=0 err=0 wf=1 in=6 p=4001 l=72 col=5 i=1 n=2
+> CALL 120 len=41
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 120 rc=0 err=0 wf=1 in=7 p=4033 l=73 col=11 i=1 n=3
+> CALL 121 len=9
+< CALL 121 rc=0 err=0 wf=1 in=7 p=4033 l=73 col=11 i=1 n=3
+> CALL 122 len=63
+characters len=59 [pre style='white-space:pre-wrap;width:81ex'>extconf.rb: Don]
+characters len=1 [']
+< CALL 122 rc=0 err=0 wf=1 in=7 p=4097 l=73 col=75 i=1 n=3
+> CALL 123 len=45
+characters len=46 [t call pkg_config when using bundled libraries]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+< CALL 123 rc=0 err=0 wf=1 in=9 p=153 l=75 col=3 i=1 n=2
+> CALL 124 len=32
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 124 rc=0 err=0 wf=1 in=7 p=180 l=77 col=9 i=1 n=3
+> CALL 125 len=27
+< CALL 125 rc=0 err=0 wf=1 in=7 p=180 l=77 col=9 i=1 n=3
+> CALL 126 len=27
+< CALL 126 rc=0 err=0 wf=1 in=7 p=180 l=77 col=9 i=1 n=3
+> CALL 127 len=24
+characters len=73 [tag:github.com,2008:Grit::Commit/64cd3c8f506394b558bda9376844a51db971bd60]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 127 rc=0 err=0 wf=1 in=6 p=263 l=78 col=5 i=1 n=2
+> CALL 128 len=26
+< CALL 128 rc=0 err=0 wf=1 in=6 p=263 l=78 col=5 i=1 n=2
+> CALL 129 len=51
+< CALL 129 rc=0 err=0 wf=1 in=6 p=263 l=78 col=5 i=1 n=2
+> CALL 130 len=61
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/64cd3c8f506394b558bda9376844a51db971bd60 end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 130 rc=0 err=0 wf=1 in=7 p=400 l=78 col=142 i=1 n=2
+> CALL 131 len=58
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 131 rc=0 err=0 wf=1 in=7 p=412 l=79 col=12 i=1 n=3
+> CALL 132 len=41
+characters len=77 [\n        Add support for bare and multiple :not() functions in selectors\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 132 rc=0 err=0 wf=1 in=7 p=497 l=81 col=13 i=1 n=2
+> CALL 133 len=8
+characters len=5 [\n    ]
+< CALL 133 rc=0 err=0 wf=1 in=6 p=502 l=82 col=5 i=1 n=2
+> CALL 134 len=37
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [2013-06-28T10:19:36-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 134 rc=0 err=0 wf=1 in=7 p=546 l=82 col=49 i=1 n=2
+> CALL 135 len=9
+characters len=5 [\n    ]
+< CALL 135 rc=0 err=0 wf=1 in=6 p=551 l=83 col=5 i=1 n=2
+> CALL 136 len=34
+< CALL 136 rc=0 err=0 wf=1 in=6 p=551 l=83 col=5 i=1 n=2
+> CALL 137 len=21
+< CALL 137 rc=0 err=0 wf=1 in=6 p=551 l=83 col=5 i=1 n=2
+> CALL 138 len=1
+< CALL 138 rc=0 err=0 wf=1 in=6 p=551 l=83 col=5 i=1 n=2
+> CALL 139 len=13
+< CALL 139 rc=0 err=0 wf=1 in=6 p=551 l=83 col=5 i=1 n=2
+> CALL 140 len=35
+< CALL 140 rc=0 err=0 wf=1 in=6 p=551 l=83 col=5 i=1 n=2
+> CALL 141 len=48
+< CALL 141 rc=0 err=0 wf=1 in=6 p=551 l=83 col=5 i=1 n=2
+> CALL 142 len=34
+< CALL 142 rc=0 err=0 wf=1 in=6 p=551 l=83 col=5 i=1 n=2
+> CALL 143 len=62
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/1b2792536d87aa21bc739c14980fa103?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [Mange]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 143 rc=0 err=0 wf=1 in=7 p=804 l=85 col=25 i=1 n=3
+> CALL 144 len=4
+< CALL 144 rc=0 err=0 wf=1 in=7 p=804 l=85 col=25 i=1 n=3
+> CALL 145 len=62
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=24 [https://github.com/Mange]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 145 rc=0 err=0 wf=1 in=6 p=865 l=88 col=5 i=1 n=2
+> CALL 146 len=19
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+< CALL 146 rc=0 err=0 wf=1 in=7 p=886 l=88 col=26 i=1 n=3
+> CALL 147 len=23
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 147 rc=0 err=0 wf=1 in=7 p=897 l=89 col=11 i=1 n=3
+> CALL 148 len=60
+< CALL 148 rc=0 err=0 wf=1 in=7 p=897 l=89 col=11 i=1 n=3
+> CALL 149 len=7
+< CALL 149 rc=0 err=0 wf=1 in=7 p=897 l=89 col=11 i=1 n=3
+> CALL 150 len=52
+characters len=133 [pre style='white-space:pre-wrap;width:81ex'>Add support for bare and multiple :not() functions in selectors\n\nThis enables parsing of ]
+< CALL 150 rc=0 err=0 wf=1 in=7 p=1030 l=91 col=25 i=1 n=3
+> CALL 151 len=28
+characters len=1 ["]
+< CALL 151 rc=0 err=0 wf=1 in=7 p=1036 l=91 col=31 i=1 n=3
+> CALL 152 len=13
+characters len=32 [.flash:not(.error):not(.warning)]
+< CALL 152 rc=0 err=0 wf=1 in=7 p=1068 l=91 col=63 i=1 n=3
+> CALL 153 len=35
+characters len=1 ["]
+characters len=5 [ and\n]
+characters len=1 ["]
+characters len=7 [:not(p)]
+characters len=1 ["]
+< CALL 153 rc=0 err=0 wf=1 in=7 p=1098 l=92 col=20 i=1 n=3
+> CALL 154 len=35
+< CALL 154 rc=0 err=0 wf=1 in=7 p=1098 l=92 col=20 i=1 n=3
+> CALL 155 len=5
+< CALL 155 rc=0 err=0 wf=1 in=7 p=1098 l=92 col=20 i=1 n=3
+> CALL 156 len=51
+< CALL 156 rc=0 err=0 wf=1 in=7 p=1098 l=92 col=20 i=1 n=3
+> CALL 157 len=8
+< CALL 157 rc=0 err=0 wf=1 in=7 p=1098 l=92 col=20 i=1 n=3
+> CALL 158 len=17
+< CALL 158 rc=0 err=0 wf=1 in=7 p=1098 l=92 col=20 i=1 n=3
+> CALL 159 len=45
+characters len=138 [.\n\nThis entailed a huge change to the parser, but I think the parser should\nbe a bit more robust now by not declaring :not a special case.]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+< CALL 159 rc=0 err=0 wf=1 in=9 p=1263 l=97 col=3 i=1 n=2
+> CALL 160 len=32
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 160 rc=0 err=0 wf=1 in=7 p=1290 l=99 col=9 i=1 n=3
+> CALL 161 len=20
+< CALL 161 rc=0 err=0 wf=1 in=7 p=1290 l=99 col=9 i=1 n=3
+> CALL 162 len=1
+< CALL 162 rc=0 err=0 wf=1 in=7 p=1290 l=99 col=9 i=1 n=3
+> CALL 163 len=47
+characters len=73 [tag:github.com,2008:Grit::Commit/37828ec784faf29d713225fa78585854912356cd]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 163 rc=0 err=0 wf=1 in=7 p=1368 l=99 col=87 i=1 n=2
+> CALL 164 len=25
+characters len=5 [\n    ]
+< CALL 164 rc=0 err=0 wf=1 in=6 p=1373 l=100 col=5 i=1 n=2
+> CALL 165 len=26
+< CALL 165 rc=0 err=0 wf=1 in=6 p=1373 l=100 col=5 i=1 n=2
+> CALL 166 len=49
+< CALL 166 rc=0 err=0 wf=1 in=6 p=1373 l=100 col=5 i=1 n=2
+> CALL 167 len=60
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/37828ec784faf29d713225fa78585854912356cd end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 167 rc=0 err=0 wf=1 in=7 p=1522 l=101 col=12 i=1 n=3
+> CALL 168 len=54
+< CALL 168 rc=0 err=0 wf=1 in=7 p=1522 l=101 col=12 i=1 n=3
+> CALL 169 len=62
+characters len=76 [\n        Report error and stop parsing instead of silently ignoring it.\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 169 rc=0 err=0 wf=1 in=7 p=1620 l=104 col=14 i=1 n=3
+> CALL 170 len=27
+characters len=25 [2013-06-27T18:46:12-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 170 rc=0 err=0 wf=1 in=6 p=1660 l=105 col=5 i=1 n=2
+> CALL 171 len=3
+< CALL 171 rc=0 err=0 wf=1 in=6 p=1660 l=105 col=5 i=1 n=2
+> CALL 172 len=8
+< CALL 172 rc=0 err=0 wf=1 in=6 p=1660 l=105 col=5 i=1 n=2
+> CALL 173 len=58
+< CALL 173 rc=0 err=0 wf=1 in=6 p=1660 l=105 col=5 i=1 n=2
+> CALL 174 len=12
+< CALL 174 rc=0 err=0 wf=1 in=6 p=1660 l=105 col=5 i=1 n=2
+> CALL 175 len=50
+< CALL 175 rc=0 err=0 wf=1 in=6 p=1660 l=105 col=5 i=1 n=2
+> CALL 176 len=8
+< CALL 176 rc=0 err=0 wf=1 in=6 p=1660 l=105 col=5 i=1 n=2
+> CALL 177 len=61
+< CALL 177 rc=0 err=0 wf=1 in=6 p=1660 l=105 col=5 i=1 n=2
+> CALL 178 len=15
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/2736d9750eb13425e9bf70f112753c49?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+< CALL 178 rc=0 err=0 wf=1 in=6 p=1880 l=106 col=5 i=1 n=2
+> CALL 179 len=41
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=8 [jvshahid]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+< CALL 179 rc=0 err=0 wf=1 in=6 p=1923 l=108 col=7 i=1 n=3
+> CALL 180 len=46
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=27 [https://github.com/jvshahid]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 180 rc=0 err=0 wf=1 in=9 p=1966 l=109 col=5 i=1 n=3
+> CALL 181 len=25
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 181 rc=0 err=0 wf=1 in=6 p=1980 l=110 col=5 i=1 n=2
+> CALL 182 len=31
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 182 rc=0 err=0 wf=1 in=7 p=2012 l=111 col=11 i=1 n=3
+> CALL 183 len=34
+< CALL 183 rc=0 err=0 wf=1 in=7 p=2012 l=111 col=11 i=1 n=3
+> CALL 184 len=28
+< CALL 184 rc=0 err=0 wf=1 in=7 p=2012 l=111 col=11 i=1 n=3
+> CALL 185 len=54
+characters len=106 [pre style='white-space:pre-wrap;width:81ex'>Report error and stop parsing instead of silently ignoring it.]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 185 rc=0 err=0 wf=1 in=7 p=2142 l=112 col=15 i=1 n=2
+> CALL 186 len=14
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+< CALL 186 rc=0 err=0 wf=1 in=6 p=2156 l=114 col=3 i=1 n=1
+> CALL 187 len=42
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 187 rc=0 err=0 wf=1 in=7 p=2172 l=115 col=9 i=1 n=3
+> CALL 188 len=51
+characters len=73 [tag:github.com,2008:Grit::Commit/42da60e8ca58a5acc9e8c94ae5ad490589f146c6]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 188 rc=0 err=0 wf=1 in=7 p=2250 l=115 col=87 i=1 n=2
+> CALL 189 len=16
+characters len=5 [\n    ]
+< CALL 189 rc=0 err=0 wf=1 in=6 p=2255 l=116 col=5 i=1 n=2
+> CALL 190 len=49
+< CALL 190 rc=0 err=0 wf=1 in=6 p=2255 l=116 col=5 i=1 n=2
+> CALL 191 len=58
+< CALL 191 rc=0 err=0 wf=1 in=6 p=2255 l=116 col=5 i=1 n=2
+> CALL 192 len=2
+< CALL 192 rc=0 err=0 wf=1 in=6 p=2255 l=116 col=5 i=1 n=2
+> CALL 193 len=54
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/42da60e8ca58a5acc9e8c94ae5ad490589f146c6 end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 193 rc=0 err=0 wf=1 in=7 p=2404 l=117 col=12 i=1 n=3
+> CALL 194 len=29
+< CALL 194 rc=0 err=0 wf=1 in=7 p=2404 l=117 col=12 i=1 n=3
+> CALL 195 len=20
+characters len=56 [\n        Merge pull request #930 from ctborg/master\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 195 rc=0 err=0 wf=1 in=6 p=2473 l=120 col=5 i=1 n=2
+> CALL 196 len=2
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 196 rc=0 err=0 wf=1 in=7 p=2482 l=120 col=14 i=1 n=3
+> CALL 197 len=13
+< CALL 197 rc=0 err=0 wf=1 in=7 p=2482 l=120 col=14 i=1 n=3
+> CALL 198 len=61
+characters len=25 [2013-06-27T04:23:33-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 198 rc=0 err=0 wf=1 in=6 p=2522 l=121 col=5 i=1 n=2
+> CALL 199 len=10
+< CALL 199 rc=0 err=0 wf=1 in=6 p=2522 l=121 col=5 i=1 n=2
+> CALL 200 len=37
+< CALL 200 rc=0 err=0 wf=1 in=6 p=2522 l=121 col=5 i=1 n=2
+> CALL 201 len=60
+< CALL 201 rc=0 err=0 wf=1 in=6 p=2522 l=121 col=5 i=1 n=2
+> CALL 202 len=41
+< CALL 202 rc=0 err=0 wf=1 in=6 p=2522 l=121 col=5 i=1 n=2
+> CALL 203 len=32
+< CALL 203 rc=0 err=0 wf=1 in=6 p=2522 l=121 col=5 i=1 n=2
+> CALL 204 len=8
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/9077af710bdadc972a7898e457bf6ec1?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+< CALL 204 rc=0 err=0 wf=1 in=6 p=2742 l=122 col=5 i=1 n=2
+> CALL 205 len=58
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=6 [injekt]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 205 rc=0 err=0 wf=1 in=7 p=2788 l=124 col=12 i=1 n=4
+> CALL 206 len=14
+characters len=25 [https://github.com/injekt]
+< CALL 206 rc=0 err=0 wf=1 in=9 p=2813 l=124 col=37 i=1 n=4
+> CALL 207 len=11
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 207 rc=0 err=0 wf=1 in=9 p=2824 l=125 col=5 i=1 n=3
+> CALL 208 len=8
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 208 rc=0 err=0 wf=1 in=7 p=2833 l=125 col=14 i=1 n=2
+> CALL 209 len=6
+characters len=5 [\n    ]
+< CALL 209 rc=0 err=0 wf=1 in=6 p=2838 l=126 col=5 i=1 n=2
+> CALL 210 len=20
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+< CALL 210 rc=0 err=0 wf=1 in=7 p=2859 l=126 col=26 i=1 n=3
+> CALL 211 len=22
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 211 rc=0 err=0 wf=1 in=7 p=2870 l=127 col=11 i=1 n=3
+> CALL 212 len=61
+< CALL 212 rc=0 err=0 wf=1 in=7 p=2870 l=127 col=11 i=1 n=3
+> CALL 213 len=33
+< CALL 213 rc=0 err=0 wf=1 in=7 p=2870 l=127 col=11 i=1 n=3
+> CALL 214 len=39
+characters len=138 [pre style='white-space:pre-wrap;width:81ex'>Merge pull request #930 from ctborg/master\n\nAdds support for Solaris, OpenSolaris, or illumos.]
+characters len=1 [<]
+< CALL 214 rc=0 err=0 wf=1 in=7 p=3012 l=129 col=55 i=1 n=3
+> CALL 215 len=30
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 215 rc=0 err=0 wf=1 in=7 p=3043 l=131 col=11 i=1 n=1
+> CALL 216 len=23
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 216 rc=0 err=0 wf=1 in=7 p=3062 l=133 col=9 i=1 n=3
+> CALL 217 len=58
+< CALL 217 rc=0 err=0 wf=1 in=7 p=3062 l=133 col=9 i=1 n=3
+> CALL 218 len=16
+characters len=73 [tag:github.com,2008:Grit::Commit/7382a6e6a66d3f80da955ebbcd82250f99321900]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 218 rc=0 err=0 wf=1 in=7 p=3140 l=133 col=87 i=1 n=2
+> CALL 219 len=57
+characters len=5 [\n    ]
+< CALL 219 rc=0 err=0 wf=1 in=6 p=3145 l=134 col=5 i=1 n=2
+> CALL 220 len=44
+< CALL 220 rc=0 err=0 wf=1 in=6 p=3145 l=134 col=5 i=1 n=2
+> CALL 221 len=31
+< CALL 221 rc=0 err=0 wf=1 in=6 p=3145 l=134 col=5 i=1 n=2
+> CALL 222 len=8
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/7382a6e6a66d3f80da955ebbcd82250f99321900 end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 222 rc=0 err=0 wf=1 in=7 p=3282 l=134 col=142 i=1 n=2
+> CALL 223 len=51
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 223 rc=0 err=0 wf=1 in=7 p=3294 l=135 col=12 i=1 n=3
+> CALL 224 len=20
+characters len=56 [\n        Updated CHANGELOG with latest merged pulls\n    ]
+< CALL 224 rc=0 err=0 wf=1 in=9 p=3350 l=137 col=5 i=1 n=3
+> CALL 225 len=2
+< CALL 225 rc=0 err=0 wf=1 in=9 p=3350 l=137 col=5 i=1 n=3
+> CALL 226 len=60
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [2013-06-27T04:04:17-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 226 rc=0 err=0 wf=1 in=6 p=3412 l=139 col=5 i=1 n=2
+> CALL 227 len=43
+< CALL 227 rc=0 err=0 wf=1 in=6 p=3412 l=139 col=5 i=1 n=2
+> CALL 228 len=36
+< CALL 228 rc=0 err=0 wf=1 in=6 p=3412 l=139 col=5 i=1 n=2
+> CALL 229 len=48
+< CALL 229 rc=0 err=0 wf=1 in=6 p=3412 l=139 col=5 i=1 n=2
+> CALL 230 len=44
+< CALL 230 rc=0 err=0 wf=1 in=6 p=3412 l=139 col=5 i=1 n=2
+> CALL 231 len=8
+< CALL 231 rc=0 err=0 wf=1 in=6 p=3412 l=139 col=5 i=1 n=2
+> CALL 232 len=28
+< CALL 232 rc=0 err=0 wf=1 in=6 p=3412 l=139 col=5 i=1 n=2
+> CALL 233 len=53
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/9077af710bdadc972a7898e457bf6ec1?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=6 [injekt]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+< CALL 233 rc=0 err=0 wf=1 in=6 p=3673 l=142 col=7 i=1 n=3
+> CALL 234 len=40
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [https://github.com/injekt]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 234 rc=0 err=0 wf=1 in=9 p=3714 l=143 col=5 i=1 n=3
+> CALL 235 len=40
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+< CALL 235 rc=0 err=0 wf=1 in=7 p=3749 l=144 col=26 i=1 n=3
+> CALL 236 len=14
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 236 rc=0 err=0 wf=1 in=7 p=3760 l=145 col=11 i=1 n=3
+> CALL 237 len=13
+< CALL 237 rc=0 err=0 wf=1 in=7 p=3760 l=145 col=11 i=1 n=3
+> CALL 238 len=4
+< CALL 238 rc=0 err=0 wf=1 in=7 p=3760 l=145 col=11 i=1 n=3
+> CALL 239 len=42
+< CALL 239 rc=0 err=0 wf=1 in=7 p=3760 l=145 col=11 i=1 n=3
+> CALL 240 len=59
+characters len=86 [pre style='white-space:pre-wrap;width:81ex'>Updated CHANGELOG with latest merged pulls]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+< CALL 240 rc=0 err=0 wf=1 in=6 p=3884 l=148 col=3 i=1 n=1
+> CALL 241 len=35
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 241 rc=0 err=0 wf=1 in=7 p=3900 l=149 col=9 i=1 n=3
+> CALL 242 len=25
+< CALL 242 rc=0 err=0 wf=1 in=7 p=3900 l=149 col=9 i=1 n=3
+> CALL 243 len=49
+characters len=73 [tag:github.com,2008:Grit::Commit/3382ebc90e17f2503f4acbbdf53a931d38f3322a]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 243 rc=0 err=0 wf=1 in=6 p=3983 l=150 col=5 i=1 n=2
+> CALL 244 len=53
+< CALL 244 rc=0 err=0 wf=1 in=6 p=3983 l=150 col=5 i=1 n=2
+> CALL 245 len=63
+< CALL 245 rc=0 err=0 wf=1 in=6 p=3983 l=150 col=5 i=1 n=2
+> CALL 246 len=34
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/3382ebc90e17f2503f4acbbdf53a931d38f3322a end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 246 rc=0 err=0 wf=1 in=7 p=4132 l=151 col=12 i=1 n=3
+> CALL 247 len=62
+characters len=30 [\n        Remove REE also.\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 247 rc=0 err=0 wf=1 in=7 p=132 l=154 col=14 i=1 n=3
+> CALL 248 len=19
+characters len=25 [2013-06-19T20:57:48-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 248 rc=0 err=0 wf=1 in=6 p=172 l=155 col=5 i=1 n=2
+> CALL 249 len=42
+< CALL 249 rc=0 err=0 wf=1 in=6 p=172 l=155 col=5 i=1 n=2
+> CALL 250 len=63
+< CALL 250 rc=0 err=0 wf=1 in=6 p=172 l=155 col=5 i=1 n=2
+> CALL 251 len=15
+< CALL 251 rc=0 err=0 wf=1 in=6 p=172 l=155 col=5 i=1 n=2
+> CALL 252 len=18
+< CALL 252 rc=0 err=0 wf=1 in=6 p=172 l=155 col=5 i=1 n=2
+> CALL 253 len=17
+< CALL 253 rc=0 err=0 wf=1 in=6 p=172 l=155 col=5 i=1 n=2
+> CALL 254 len=3
+< CALL 254 rc=0 err=0 wf=1 in=6 p=172 l=155 col=5 i=1 n=2
+> CALL 255 len=35
+< CALL 255 rc=0 err=0 wf=1 in=6 p=172 l=155 col=5 i=1 n=2
+> CALL 256 len=16
+< CALL 256 rc=0 err=0 wf=1 in=6 p=172 l=155 col=5 i=1 n=2
+> CALL 257 len=21
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/74f896b312b786ee75a18073941e2457?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 257 rc=0 err=0 wf=1 in=7 p=400 l=156 col=13 i=1 n=3
+> CALL 258 len=54
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=3 [knu]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=22 [https://github.com/knu]
+< CALL 258 rc=0 err=0 wf=1 in=9 p=457 l=158 col=34 i=1 n=4
+> CALL 259 len=17
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 259 rc=0 err=0 wf=1 in=7 p=477 l=159 col=14 i=1 n=2
+> CALL 260 len=47
+characters len=5 [\n    ]
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 260 rc=0 err=0 wf=1 in=7 p=514 l=161 col=11 i=1 n=3
+> CALL 261 len=13
+< CALL 261 rc=0 err=0 wf=1 in=7 p=514 l=161 col=11 i=1 n=3
+> CALL 262 len=49
+characters len=60 [pre style='white-space:pre-wrap;width:81ex'>Remove REE also.]
+characters len=1 [<]
+< CALL 262 rc=0 err=0 wf=1 in=7 p=578 l=161 col=75 i=1 n=3
+> CALL 263 len=62
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 263 rc=0 err=0 wf=1 in=7 p=628 l=165 col=9 i=1 n=3
+> CALL 264 len=37
+< CALL 264 rc=0 err=0 wf=1 in=7 p=628 l=165 col=9 i=1 n=3
+> CALL 265 len=54
+characters len=73 [tag:github.com,2008:Grit::Commit/0c83f4027e295435680cda89a44b5e039e0e6cbb]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 265 rc=0 err=0 wf=1 in=6 p=711 l=166 col=5 i=1 n=2
+> CALL 266 len=7
+< CALL 266 rc=0 err=0 wf=1 in=6 p=711 l=166 col=5 i=1 n=2
+> CALL 267 len=25
+< CALL 267 rc=0 err=0 wf=1 in=6 p=711 l=166 col=5 i=1 n=2
+> CALL 268 len=25
+< CALL 268 rc=0 err=0 wf=1 in=6 p=711 l=166 col=5 i=1 n=2
+> CALL 269 len=42
+< CALL 269 rc=0 err=0 wf=1 in=6 p=711 l=166 col=5 i=1 n=2
+> CALL 270 len=59
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/0c83f4027e295435680cda89a44b5e039e0e6cbb end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 270 rc=0 err=0 wf=1 in=7 p=860 l=167 col=12 i=1 n=3
+> CALL 271 len=12
+< CALL 271 rc=0 err=0 wf=1 in=7 p=860 l=167 col=12 i=1 n=3
+> CALL 272 len=18
+characters len=64 [\n        Added support for Solaris, OpenSolaris, or illumos\n    ]
+< CALL 272 rc=0 err=0 wf=1 in=9 p=924 l=169 col=5 i=1 n=3
+> CALL 273 len=8
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 273 rc=0 err=0 wf=1 in=7 p=932 l=169 col=13 i=1 n=2
+> CALL 274 len=58
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [2013-06-19T07:12:50-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 274 rc=0 err=0 wf=1 in=6 p=986 l=171 col=5 i=1 n=2
+> CALL 275 len=47
+< CALL 275 rc=0 err=0 wf=1 in=6 p=986 l=171 col=5 i=1 n=2
+> CALL 276 len=11
+< CALL 276 rc=0 err=0 wf=1 in=6 p=986 l=171 col=5 i=1 n=2
+> CALL 277 len=16
+< CALL 277 rc=0 err=0 wf=1 in=6 p=986 l=171 col=5 i=1 n=2
+> CALL 278 len=27
+< CALL 278 rc=0 err=0 wf=1 in=6 p=986 l=171 col=5 i=1 n=2
+> CALL 279 len=54
+< CALL 279 rc=0 err=0 wf=1 in=6 p=986 l=171 col=5 i=1 n=2
+> CALL 280 len=42
+< CALL 280 rc=0 err=0 wf=1 in=6 p=986 l=171 col=5 i=1 n=2
+> CALL 281 len=51
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/aff9165c0ea741d027799d5694d0ceb8?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 281 rc=0 err=0 wf=1 in=7 p=1234 l=173 col=20 i=1 n=3
+> CALL 282 len=49
+characters len=7 [\n      ]
+startElementNs local=[email] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=15 [cborg@oanda.com]
+endElementNs local=[email] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 282 rc=0 err=0 wf=1 in=7 p=1285 l=175 col=14 i=1 n=2
+> CALL 283 len=34
+characters len=5 [\n    ]
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 283 rc=0 err=0 wf=1 in=7 p=1322 l=177 col=11 i=1 n=3
+> CALL 284 len=64
+< CALL 284 rc=0 err=0 wf=1 in=7 p=1322 l=177 col=11 i=1 n=3
+> CALL 285 len=38
+characters len=94 [pre style='white-space:pre-wrap;width:81ex'>Added support for Solaris, OpenSolaris, or illumos]
+characters len=1 [<]
+< CALL 285 rc=0 err=0 wf=1 in=7 p=1420 l=177 col=109 i=1 n=3
+> CALL 286 len=44
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 286 rc=0 err=0 wf=1 in=7 p=1470 l=181 col=9 i=1 n=3
+> CALL 287 len=11
+< CALL 287 rc=0 err=0 wf=1 in=7 p=1470 l=181 col=9 i=1 n=3
+> CALL 288 len=34
+< CALL 288 rc=0 err=0 wf=1 in=7 p=1470 l=181 col=9 i=1 n=3
+> CALL 289 len=10
+< CALL 289 rc=0 err=0 wf=1 in=7 p=1470 l=181 col=9 i=1 n=3
+> CALL 290 len=33
+characters len=73 [tag:github.com,2008:Grit::Commit/fb000c51e3ba4e8730a535d38d617d34111c21ef]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 290 rc=0 err=0 wf=1 in=6 p=1553 l=182 col=5 i=1 n=2
+> CALL 291 len=49
+< CALL 291 rc=0 err=0 wf=1 in=6 p=1553 l=182 col=5 i=1 n=2
+> CALL 292 len=23
+< CALL 292 rc=0 err=0 wf=1 in=6 p=1553 l=182 col=5 i=1 n=2
+> CALL 293 len=9
+< CALL 293 rc=0 err=0 wf=1 in=6 p=1553 l=182 col=5 i=1 n=2
+> CALL 294 len=56
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/fb000c51e3ba4e8730a535d38d617d34111c21ef end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 294 rc=0 err=0 wf=1 in=7 p=1690 l=182 col=142 i=1 n=2
+> CALL 295 len=40
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 295 rc=0 err=0 wf=1 in=7 p=1702 l=183 col=12 i=1 n=3
+> CALL 296 len=21
+< CALL 296 rc=0 err=0 wf=1 in=7 p=1702 l=183 col=12 i=1 n=3
+> CALL 297 len=36
+characters len=72 [\n        Ensure meta_encoding checks meta charset tag (closes #919)\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 297 rc=0 err=0 wf=1 in=6 p=1787 l=186 col=5 i=1 n=2
+> CALL 298 len=30
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [2013-06-14T06:06:26-07:00]
+< CALL 298 rc=0 err=0 wf=1 in=7 p=1821 l=186 col=39 i=1 n=3
+> CALL 299 len=63
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 299 rc=0 err=0 wf=1 in=6 p=1836 l=187 col=5 i=1 n=2
+> CALL 300 len=62
+< CALL 300 rc=0 err=0 wf=1 in=6 p=1836 l=187 col=5 i=1 n=2
+> CALL 301 len=25
+< CALL 301 rc=0 err=0 wf=1 in=6 p=1836 l=187 col=5 i=1 n=2
+> CALL 302 len=47
+< CALL 302 rc=0 err=0 wf=1 in=6 p=1836 l=187 col=5 i=1 n=2
+> CALL 303 len=34
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/9077af710bdadc972a7898e457bf6ec1?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+< CALL 303 rc=0 err=0 wf=1 in=7 p=2051 l=187 col=220 i=1 n=2
+> CALL 304 len=8
+characters len=5 [\n    ]
+< CALL 304 rc=0 err=0 wf=1 in=6 p=2056 l=188 col=5 i=1 n=2
+> CALL 305 len=26
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=6 [injekt]
+< CALL 305 rc=0 err=0 wf=1 in=9 p=2083 l=189 col=19 i=1 n=4
+> CALL 306 len=11
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+< CALL 306 rc=0 err=0 wf=1 in=7 p=2097 l=190 col=7 i=1 n=3
+> CALL 307 len=26
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 307 rc=0 err=0 wf=1 in=7 p=2102 l=190 col=12 i=1 n=4
+> CALL 308 len=63
+characters len=25 [https://github.com/injekt]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 308 rc=0 err=0 wf=1 in=7 p=2184 l=193 col=11 i=1 n=3
+> CALL 309 len=5
+< CALL 309 rc=0 err=0 wf=1 in=7 p=2184 l=193 col=11 i=1 n=3
+> CALL 310 len=53
+< CALL 310 rc=0 err=0 wf=1 in=7 p=2184 l=193 col=11 i=1 n=3
+> CALL 311 len=59
+characters len=102 [pre style='white-space:pre-wrap;width:81ex'>Ensure meta_encoding checks meta charset tag (closes #919)]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+< CALL 311 rc=0 err=0 wf=1 in=9 p=2300 l=194 col=5 i=1 n=3
+> CALL 312 len=40
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 312 rc=0 err=0 wf=1 in=7 p=2340 l=197 col=9 i=1 n=3
+> CALL 313 len=25
+< CALL 313 rc=0 err=0 wf=1 in=7 p=2340 l=197 col=9 i=1 n=3
+> CALL 314 len=45
+characters len=73 [tag:github.com,2008:Grit::Commit/14b7dc21bbeddec1990726760e6f6cc11e71542e]
+< CALL 314 rc=0 err=0 wf=1 in=7 p=2413 l=197 col=82 i=1 n=3
+> CALL 315 len=10
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 315 rc=0 err=0 wf=1 in=7 p=2423 l=198 col=5 i=1 n=2
+> CALL 316 len=52
+< CALL 316 rc=0 err=0 wf=1 in=6 p=2423 l=198 col=5 i=1 n=2
+> CALL 317 len=61
+< CALL 317 rc=0 err=0 wf=1 in=6 p=2423 l=198 col=5 i=1 n=2
+> CALL 318 len=56
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/14b7dc21bbeddec1990726760e6f6cc11e71542e end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 318 rc=0 err=0 wf=1 in=7 p=2572 l=199 col=12 i=1 n=3
+> CALL 319 len=7
+< CALL 319 rc=0 err=0 wf=1 in=7 p=2572 l=199 col=12 i=1 n=3
+> CALL 320 len=56
+characters len=29 [\n        Updated ROADMAP\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [2013-06-14T06:00:57-07:00]
+< CALL 320 rc=0 err=0 wf=1 in=9 p=2648 l=202 col=39 i=1 n=3
+> CALL 321 len=4
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 321 rc=0 err=0 wf=1 in=7 p=2658 l=202 col=49 i=1 n=2
+> CALL 322 len=38
+characters len=5 [\n    ]
+< CALL 322 rc=0 err=0 wf=1 in=6 p=2663 l=203 col=5 i=1 n=2
+> CALL 323 len=50
+< CALL 323 rc=0 err=0 wf=1 in=6 p=2663 l=203 col=5 i=1 n=2
+> CALL 324 len=60
+< CALL 324 rc=0 err=0 wf=1 in=6 p=2663 l=203 col=5 i=1 n=2
+> CALL 325 len=55
+< CALL 325 rc=0 err=0 wf=1 in=6 p=2663 l=203 col=5 i=1 n=2
+> CALL 326 len=5
+< CALL 326 rc=0 err=0 wf=1 in=6 p=2663 l=203 col=5 i=1 n=2
+> CALL 327 len=56
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/9077af710bdadc972a7898e457bf6ec1?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=6 [injekt]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 327 rc=0 err=0 wf=1 in=7 p=2917 l=205 col=26 i=1 n=3
+> CALL 328 len=55
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [https://github.com/injekt]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 328 rc=0 err=0 wf=1 in=7 p=2974 l=207 col=14 i=1 n=2
+> CALL 329 len=30
+characters len=5 [\n    ]
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+< CALL 329 rc=0 err=0 wf=1 in=7 p=3007 l=209 col=7 i=1 n=3
+> CALL 330 len=32
+characters len=1 [<]
+< CALL 330 rc=0 err=0 wf=1 in=7 p=3011 l=209 col=11 i=1 n=3
+> CALL 331 len=6
+< CALL 331 rc=0 err=0 wf=1 in=7 p=3011 l=209 col=11 i=1 n=3
+> CALL 332 len=35
+characters len=59 [pre style='white-space:pre-wrap;width:81ex'>Updated ROADMAP]
+characters len=1 [<]
+< CALL 332 rc=0 err=0 wf=1 in=7 p=3074 l=209 col=74 i=1 n=3
+> CALL 333 len=46
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 333 rc=0 err=0 wf=1 in=7 p=3124 l=213 col=9 i=1 n=3
+> CALL 334 len=25
+< CALL 334 rc=0 err=0 wf=1 in=7 p=3124 l=213 col=9 i=1 n=3
+> CALL 335 len=55
+characters len=73 [tag:github.com,2008:Grit::Commit/d1b0afd02f8a2b783380bdfde3acfabf021a0c5a]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 335 rc=0 err=0 wf=1 in=7 p=3207 l=214 col=5 i=1 n=2
+> CALL 336 len=46
+< CALL 336 rc=0 err=0 wf=1 in=6 p=3207 l=214 col=5 i=1 n=2
+> CALL 337 len=58
+< CALL 337 rc=0 err=0 wf=1 in=6 p=3207 l=214 col=5 i=1 n=2
+> CALL 338 len=47
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/d1b0afd02f8a2b783380bdfde3acfabf021a0c5a end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 338 rc=0 err=0 wf=1 in=7 p=3356 l=215 col=12 i=1 n=3
+> CALL 339 len=4
+< CALL 339 rc=0 err=0 wf=1 in=7 p=3356 l=215 col=12 i=1 n=3
+> CALL 340 len=51
+< CALL 340 rc=0 err=0 wf=1 in=7 p=3356 l=215 col=12 i=1 n=3
+> CALL 341 len=60
+characters len=71 [\n        Merge pull request #858 from ykzts/feature/not-only-child\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 341 rc=0 err=0 wf=1 in=7 p=3449 l=218 col=14 i=1 n=3
+> CALL 342 len=17
+characters len=25 [2013-06-14T05:53:28-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 342 rc=0 err=0 wf=1 in=6 p=3489 l=219 col=5 i=1 n=2
+> CALL 343 len=9
+< CALL 343 rc=0 err=0 wf=1 in=6 p=3489 l=219 col=5 i=1 n=2
+> CALL 344 len=50
+< CALL 344 rc=0 err=0 wf=1 in=6 p=3489 l=219 col=5 i=1 n=2
+> CALL 345 len=34
+< CALL 345 rc=0 err=0 wf=1 in=6 p=3489 l=219 col=5 i=1 n=2
+> CALL 346 len=33
+< CALL 346 rc=0 err=0 wf=1 in=6 p=3489 l=219 col=5 i=1 n=2
+> CALL 347 len=22
+< CALL 347 rc=0 err=0 wf=1 in=6 p=3489 l=219 col=5 i=1 n=2
+> CALL 348 len=13
+< CALL 348 rc=0 err=0 wf=1 in=6 p=3489 l=219 col=5 i=1 n=2
+> CALL 349 len=13
+< CALL 349 rc=0 err=0 wf=1 in=6 p=3489 l=219 col=5 i=1 n=2
+> CALL 350 len=2
+< CALL 350 rc=0 err=0 wf=1 in=6 p=3489 l=219 col=5 i=1 n=2
+> CALL 351 len=43
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/9077af710bdadc972a7898e457bf6ec1?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+< CALL 351 rc=0 err=0 wf=1 in=7 p=3709 l=220 col=5 i=1 n=2
+> CALL 352 len=10
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 352 rc=0 err=0 wf=1 in=7 p=3717 l=220 col=13 i=1 n=3
+> CALL 353 len=53
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=6 [injekt]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 353 rc=0 err=0 wf=1 in=7 p=3755 l=222 col=12 i=1 n=4
+> CALL 354 len=22
+characters len=25 [https://github.com/injekt]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 354 rc=0 err=0 wf=1 in=9 p=3791 l=223 col=5 i=1 n=3
+> CALL 355 len=44
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 355 rc=0 err=0 wf=1 in=7 p=3837 l=225 col=11 i=1 n=3
+> CALL 356 len=60
+< CALL 356 rc=0 err=0 wf=1 in=7 p=3837 l=225 col=11 i=1 n=3
+> CALL 357 len=55
+< CALL 357 rc=0 err=0 wf=1 in=7 p=3837 l=225 col=11 i=1 n=3
+> CALL 358 len=31
+characters len=124 [pre style='white-space:pre-wrap;width:81ex'>Merge pull request #858 from ykzts/feature/not-only-child\n\nAdd feature that the ]
+characters len=1 [']
+characters len=11 [:only-child]
+characters len=1 [']
+< CALL 358 rc=0 err=0 wf=1 in=7 p=3982 l=227 col=43 i=1 n=3
+> CALL 359 len=21
+< CALL 359 rc=0 err=0 wf=1 in=7 p=3982 l=227 col=43 i=1 n=3
+> CALL 360 len=58
+characters len=40 [ pseudo class should work even though it]
+characters len=1 [']
+characters len=5 [s in ]
+characters len=1 [']
+characters len=4 [:not]
+characters len=1 [']
+characters len=14 [ pseudo class.]
+characters len=1 [<]
+< CALL 360 rc=0 err=0 wf=1 in=7 p=4064 l=227 col=125 i=1 n=3
+> CALL 361 len=43
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 361 rc=0 err=0 wf=1 in=7 p=4105 l=230 col=10 i=1 n=2
+> CALL 362 len=22
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 362 rc=0 err=0 wf=1 in=7 p=89 l=231 col=9 i=1 n=3
+> CALL 363 len=5
+< CALL 363 rc=0 err=0 wf=1 in=7 p=89 l=231 col=9 i=1 n=3
+> CALL 364 len=62
+characters len=73 [tag:github.com,2008:Grit::Commit/d24eb8508c69f2cf336f1ff1b6887fcc3b317fbc]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 364 rc=0 err=0 wf=1 in=7 p=167 l=231 col=87 i=1 n=2
+> CALL 365 len=1
+< CALL 365 rc=0 err=0 wf=1 in=7 p=167 l=231 col=87 i=1 n=2
+> CALL 366 len=46
+characters len=5 [\n    ]
+< CALL 366 rc=0 err=0 wf=1 in=6 p=172 l=232 col=5 i=1 n=2
+> CALL 367 len=16
+< CALL 367 rc=0 err=0 wf=1 in=6 p=172 l=232 col=5 i=1 n=2
+> CALL 368 len=57
+< CALL 368 rc=0 err=0 wf=1 in=6 p=172 l=232 col=5 i=1 n=2
+> CALL 369 len=14
+< CALL 369 rc=0 err=0 wf=1 in=6 p=172 l=232 col=5 i=1 n=2
+> CALL 370 len=46
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/d24eb8508c69f2cf336f1ff1b6887fcc3b317fbc end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 370 rc=0 err=0 wf=1 in=7 p=321 l=233 col=12 i=1 n=3
+> CALL 371 len=54
+characters len=61 [\n        Merge pull request #886 from Mange/negative-nth\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 371 rc=0 err=0 wf=1 in=7 p=404 l=236 col=14 i=1 n=3
+> CALL 372 len=14
+< CALL 372 rc=0 err=0 wf=1 in=7 p=404 l=236 col=14 i=1 n=3
+> CALL 373 len=27
+characters len=25 [2013-06-14T05:50:13-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 373 rc=0 err=0 wf=1 in=6 p=444 l=237 col=5 i=1 n=2
+> CALL 374 len=52
+< CALL 374 rc=0 err=0 wf=1 in=6 p=444 l=237 col=5 i=1 n=2
+> CALL 375 len=34
+< CALL 375 rc=0 err=0 wf=1 in=6 p=444 l=237 col=5 i=1 n=2
+> CALL 376 len=61
+< CALL 376 rc=0 err=0 wf=1 in=6 p=444 l=237 col=5 i=1 n=2
+> CALL 377 len=64
+< CALL 377 rc=0 err=0 wf=1 in=6 p=444 l=237 col=5 i=1 n=2
+> CALL 378 len=26
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/9077af710bdadc972a7898e457bf6ec1?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+< CALL 378 rc=0 err=0 wf=1 in=6 p=679 l=239 col=7 i=1 n=3
+> CALL 379 len=29
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=6 [injekt]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 379 rc=0 err=0 wf=1 in=7 p=710 l=240 col=12 i=1 n=4
+> CALL 380 len=4
+< CALL 380 rc=0 err=0 wf=1 in=7 p=710 l=240 col=12 i=1 n=4
+> CALL 381 len=29
+characters len=25 [https://github.com/injekt]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 381 rc=0 err=0 wf=1 in=7 p=741 l=240 col=43 i=1 n=3
+> CALL 382 len=25
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 382 rc=0 err=0 wf=1 in=6 p=760 l=242 col=5 i=1 n=2
+> CALL 383 len=38
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 383 rc=0 err=0 wf=1 in=7 p=792 l=243 col=11 i=1 n=3
+> CALL 384 len=43
+< CALL 384 rc=0 err=0 wf=1 in=7 p=792 l=243 col=11 i=1 n=3
+> CALL 385 len=39
+< CALL 385 rc=0 err=0 wf=1 in=7 p=792 l=243 col=11 i=1 n=3
+> CALL 386 len=2
+< CALL 386 rc=0 err=0 wf=1 in=7 p=792 l=243 col=11 i=1 n=3
+> CALL 387 len=21
+< CALL 387 rc=0 err=0 wf=1 in=7 p=792 l=243 col=11 i=1 n=3
+> CALL 388 len=26
+characters len=130 [pre style='white-space:pre-wrap;width:81ex'>Merge pull request #886 from Mange/negative-nth\n\nAdd support for an-b in nth selectors]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+< CALL 388 rc=0 err=0 wf=1 in=9 p=936 l=246 col=5 i=1 n=3
+> CALL 389 len=11
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+< CALL 389 rc=0 err=0 wf=1 in=7 p=949 l=247 col=3 i=1 n=2
+> CALL 390 len=48
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 390 rc=0 err=0 wf=1 in=7 p=976 l=249 col=9 i=1 n=3
+> CALL 391 len=28
+< CALL 391 rc=0 err=0 wf=1 in=7 p=976 l=249 col=9 i=1 n=3
+> CALL 392 len=32
+characters len=73 [tag:github.com,2008:Grit::Commit/11eaf3d3f1b84adf5225b6686119dbc6714b4009]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 392 rc=0 err=0 wf=1 in=7 p=1054 l=249 col=87 i=1 n=2
+> CALL 393 len=33
+characters len=5 [\n    ]
+< CALL 393 rc=0 err=0 wf=1 in=6 p=1059 l=250 col=5 i=1 n=2
+> CALL 394 len=11
+< CALL 394 rc=0 err=0 wf=1 in=6 p=1059 l=250 col=5 i=1 n=2
+> CALL 395 len=22
+< CALL 395 rc=0 err=0 wf=1 in=6 p=1059 l=250 col=5 i=1 n=2
+> CALL 396 len=13
+< CALL 396 rc=0 err=0 wf=1 in=6 p=1059 l=250 col=5 i=1 n=2
+> CALL 397 len=39
+< CALL 397 rc=0 err=0 wf=1 in=6 p=1059 l=250 col=5 i=1 n=2
+> CALL 398 len=36
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/11eaf3d3f1b84adf5225b6686119dbc6714b4009 end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 398 rc=0 err=0 wf=1 in=7 p=1208 l=251 col=12 i=1 n=3
+> CALL 399 len=16
+< CALL 399 rc=0 err=0 wf=1 in=7 p=1208 l=251 col=12 i=1 n=3
+> CALL 400 len=14
+< CALL 400 rc=0 err=0 wf=1 in=7 p=1208 l=251 col=12 i=1 n=3
+> CALL 401 len=9
+< CALL 401 rc=0 err=0 wf=1 in=7 p=1208 l=251 col=12 i=1 n=3
+> CALL 402 len=4
+characters len=44 [\n        Note 1.8 deprecation in README\n    ]
+< CALL 402 rc=0 err=0 wf=1 in=9 p=1252 l=253 col=5 i=1 n=3
+> CALL 403 len=33
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 403 rc=0 err=0 wf=1 in=7 p=1274 l=254 col=14 i=1 n=3
+> CALL 404 len=17
+characters len=25 [2013-06-11T06:48:53-07:00]
+< CALL 404 rc=0 err=0 wf=1 in=9 p=1299 l=254 col=39 i=1 n=3
+> CALL 405 len=37
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 405 rc=0 err=0 wf=1 in=6 p=1314 l=255 col=5 i=1 n=2
+> CALL 406 len=40
+< CALL 406 rc=0 err=0 wf=1 in=6 p=1314 l=255 col=5 i=1 n=2
+> CALL 407 len=16
+< CALL 407 rc=0 err=0 wf=1 in=6 p=1314 l=255 col=5 i=1 n=2
+> CALL 408 len=49
+< CALL 408 rc=0 err=0 wf=1 in=6 p=1314 l=255 col=5 i=1 n=2
+> CALL 409 len=56
+< CALL 409 rc=0 err=0 wf=1 in=6 p=1314 l=255 col=5 i=1 n=2
+> CALL 410 len=51
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/bd6e7860b5a891bff077aeaeb5434e60?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+< CALL 410 rc=0 err=0 wf=1 in=6 p=1549 l=257 col=7 i=1 n=3
+> CALL 411 len=15
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=11 [flavorjones]
+< CALL 411 rc=0 err=0 wf=1 in=9 p=1566 l=257 col=24 i=1 n=4
+> CALL 412 len=47
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=30 [https://github.com/flavorjones]
+< CALL 412 rc=0 err=0 wf=1 in=7 p=1615 l=258 col=42 i=1 n=4
+> CALL 413 len=62
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 413 rc=0 err=0 wf=1 in=7 p=1672 l=261 col=11 i=1 n=3
+> CALL 414 len=62
+< CALL 414 rc=0 err=0 wf=1 in=7 p=1672 l=261 col=11 i=1 n=3
+> CALL 415 len=33
+characters len=74 [pre style='white-space:pre-wrap;width:81ex'>Note 1.8 deprecation in README]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 415 rc=0 err=0 wf=1 in=7 p=1770 l=262 col=15 i=1 n=2
+> CALL 416 len=21
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 416 rc=0 err=0 wf=1 in=7 p=1791 l=264 col=10 i=1 n=2
+> CALL 417 len=9
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 417 rc=0 err=0 wf=1 in=7 p=1800 l=265 col=9 i=1 n=3
+> CALL 418 len=12
+< CALL 418 rc=0 err=0 wf=1 in=7 p=1800 l=265 col=9 i=1 n=3
+> CALL 419 len=51
+< CALL 419 rc=0 err=0 wf=1 in=7 p=1800 l=265 col=9 i=1 n=3
+> CALL 420 len=18
+characters len=73 [tag:github.com,2008:Grit::Commit/82a936a0ceba0508d29cc9f6da84c5a98ae7bede]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 420 rc=0 err=0 wf=1 in=7 p=1883 l=266 col=5 i=1 n=2
+> CALL 421 len=47
+< CALL 421 rc=0 err=0 wf=1 in=6 p=1883 l=266 col=5 i=1 n=2
+> CALL 422 len=47
+< CALL 422 rc=0 err=0 wf=1 in=6 p=1883 l=266 col=5 i=1 n=2
+> CALL 423 len=34
+< CALL 423 rc=0 err=0 wf=1 in=6 p=1883 l=266 col=5 i=1 n=2
+> CALL 424 len=37
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/82a936a0ceba0508d29cc9f6da84c5a98ae7bede end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 424 rc=0 err=0 wf=1 in=7 p=2032 l=267 col=12 i=1 n=3
+> CALL 425 len=14
+< CALL 425 rc=0 err=0 wf=1 in=7 p=2032 l=267 col=12 i=1 n=3
+> CALL 426 len=10
+< CALL 426 rc=0 err=0 wf=1 in=7 p=2032 l=267 col=12 i=1 n=3
+> CALL 427 len=34
+characters len=57 [\n        Fix a typo and DRY with dir_config() calls.\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 427 rc=0 err=0 wf=1 in=6 p=2102 l=270 col=5 i=1 n=2
+> CALL 428 len=27
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 428 rc=0 err=0 wf=1 in=7 p=2111 l=270 col=14 i=1 n=3
+> CALL 429 len=43
+characters len=25 [2013-06-10T21:01:03-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 429 rc=0 err=0 wf=1 in=6 p=2151 l=271 col=5 i=1 n=2
+> CALL 430 len=59
+< CALL 430 rc=0 err=0 wf=1 in=6 p=2151 l=271 col=5 i=1 n=2
+> CALL 431 len=17
+< CALL 431 rc=0 err=0 wf=1 in=6 p=2151 l=271 col=5 i=1 n=2
+> CALL 432 len=12
+< CALL 432 rc=0 err=0 wf=1 in=6 p=2151 l=271 col=5 i=1 n=2
+> CALL 433 len=51
+< CALL 433 rc=0 err=0 wf=1 in=6 p=2151 l=271 col=5 i=1 n=2
+> CALL 434 len=62
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/74f896b312b786ee75a18073941e2457?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+< CALL 434 rc=0 err=0 wf=1 in=6 p=2371 l=272 col=5 i=1 n=2
+> CALL 435 len=13
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+< CALL 435 rc=0 err=0 wf=1 in=6 p=2386 l=273 col=7 i=1 n=3
+> CALL 436 len=61
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=3 [knu]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=22 [https://github.com/knu]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 436 rc=0 err=0 wf=1 in=9 p=2447 l=275 col=5 i=1 n=3
+> CALL 437 len=25
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 437 rc=0 err=0 wf=1 in=6 p=2461 l=276 col=5 i=1 n=2
+> CALL 438 len=39
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 438 rc=0 err=0 wf=1 in=7 p=2493 l=277 col=11 i=1 n=3
+> CALL 439 len=37
+< CALL 439 rc=0 err=0 wf=1 in=7 p=2493 l=277 col=11 i=1 n=3
+> CALL 440 len=28
+characters len=87 [pre style='white-space:pre-wrap;width:81ex'>Fix a typo and DRY with dir_config() calls.]
+< CALL 440 rc=0 err=0 wf=1 in=7 p=2580 l=277 col=98 i=1 n=3
+> CALL 441 len=9
+characters len=1 [<]
+< CALL 441 rc=0 err=0 wf=1 in=7 p=2584 l=277 col=102 i=1 n=3
+> CALL 442 len=17
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 442 rc=0 err=0 wf=1 in=7 p=2604 l=278 col=15 i=1 n=2
+> CALL 443 len=4
+characters len=3 [\n  ]
+< CALL 443 rc=0 err=0 wf=1 in=9 p=2607 l=279 col=3 i=1 n=2
+> CALL 444 len=59
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 444 rc=0 err=0 wf=1 in=7 p=2634 l=281 col=9 i=1 n=3
+> CALL 445 len=6
+< CALL 445 rc=0 err=0 wf=1 in=7 p=2634 l=281 col=9 i=1 n=3
+> CALL 446 len=48
+characters len=73 [tag:github.com,2008:Grit::Commit/c7ef9b339054f8502e7f526b1b8054e3412cf7ba]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 446 rc=0 err=0 wf=1 in=6 p=2717 l=282 col=5 i=1 n=2
+> CALL 447 len=37
+< CALL 447 rc=0 err=0 wf=1 in=6 p=2717 l=282 col=5 i=1 n=2
+> CALL 448 len=52
+< CALL 448 rc=0 err=0 wf=1 in=6 p=2717 l=282 col=5 i=1 n=2
+> CALL 449 len=49
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/c7ef9b339054f8502e7f526b1b8054e3412cf7ba end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 449 rc=0 err=0 wf=1 in=6 p=2859 l=283 col=5 i=1 n=2
+> CALL 450 len=62
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 450 rc=0 err=0 wf=1 in=7 p=2866 l=283 col=12 i=1 n=3
+> CALL 451 len=16
+characters len=73 [\n        Iconv was for building libxml2 and not for nokogiri itself.\n    ]
+< CALL 451 rc=0 err=0 wf=1 in=7 p=2939 l=285 col=5 i=1 n=3
+> CALL 452 len=61
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [2013-06-10T17:55:20-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 452 rc=0 err=0 wf=1 in=7 p=2996 l=286 col=49 i=1 n=2
+> CALL 453 len=54
+characters len=5 [\n    ]
+< CALL 453 rc=0 err=0 wf=1 in=6 p=3001 l=287 col=5 i=1 n=2
+> CALL 454 len=1
+< CALL 454 rc=0 err=0 wf=1 in=6 p=3001 l=287 col=5 i=1 n=2
+> CALL 455 len=54
+< CALL 455 rc=0 err=0 wf=1 in=6 p=3001 l=287 col=5 i=1 n=2
+> CALL 456 len=50
+< CALL 456 rc=0 err=0 wf=1 in=6 p=3001 l=287 col=5 i=1 n=2
+> CALL 457 len=32
+< CALL 457 rc=0 err=0 wf=1 in=6 p=3001 l=287 col=5 i=1 n=2
+> CALL 458 len=12
+< CALL 458 rc=0 err=0 wf=1 in=6 p=3001 l=287 col=5 i=1 n=2
+> CALL 459 len=54
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/74f896b312b786ee75a18073941e2457?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=3 [knu]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 459 rc=0 err=0 wf=1 in=7 p=3252 l=289 col=23 i=1 n=3
+> CALL 460 len=54
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=22 [https://github.com/knu]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 460 rc=0 err=0 wf=1 in=7 p=3311 l=292 col=5 i=1 n=2
+> CALL 461 len=9
+< CALL 461 rc=0 err=0 wf=1 in=6 p=3311 l=292 col=5 i=1 n=2
+> CALL 462 len=63
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 462 rc=0 err=0 wf=1 in=7 p=3343 l=293 col=11 i=1 n=3
+> CALL 463 len=14
+< CALL 463 rc=0 err=0 wf=1 in=7 p=3343 l=293 col=11 i=1 n=3
+> CALL 464 len=34
+< CALL 464 rc=0 err=0 wf=1 in=7 p=3343 l=293 col=11 i=1 n=3
+> CALL 465 len=54
+characters len=103 [pre style='white-space:pre-wrap;width:81ex'>Iconv was for building libxml2 and not for nokogiri itself.]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+< CALL 465 rc=0 err=0 wf=1 in=6 p=3484 l=296 col=3 i=1 n=1
+> CALL 466 len=10
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 466 rc=0 err=0 wf=1 in=7 p=3491 l=296 col=10 i=1 n=2
+> CALL 467 len=15
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 467 rc=0 err=0 wf=1 in=7 p=3500 l=297 col=9 i=1 n=3
+> CALL 468 len=43
+< CALL 468 rc=0 err=0 wf=1 in=7 p=3500 l=297 col=9 i=1 n=3
+> CALL 469 len=4
+< CALL 469 rc=0 err=0 wf=1 in=7 p=3500 l=297 col=9 i=1 n=3
+> CALL 470 len=60
+characters len=73 [tag:github.com,2008:Grit::Commit/4c1c225b9409571156430aeb5bcf89c4f9dd4812]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 470 rc=0 err=0 wf=1 in=6 p=3583 l=298 col=5 i=1 n=2
+> CALL 471 len=60
+< CALL 471 rc=0 err=0 wf=1 in=6 p=3583 l=298 col=5 i=1 n=2
+> CALL 472 len=29
+< CALL 472 rc=0 err=0 wf=1 in=6 p=3583 l=298 col=5 i=1 n=2
+> CALL 473 len=28
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/4c1c225b9409571156430aeb5bcf89c4f9dd4812 end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 473 rc=0 err=0 wf=1 in=7 p=3732 l=299 col=12 i=1 n=3
+> CALL 474 len=17
+< CALL 474 rc=0 err=0 wf=1 in=7 p=3732 l=299 col=12 i=1 n=3
+> CALL 475 len=15
+< CALL 475 rc=0 err=0 wf=1 in=7 p=3732 l=299 col=12 i=1 n=3
+> CALL 476 len=38
+characters len=55 [\n        Make sure the MRI gem is built correctly.\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 476 rc=0 err=0 wf=1 in=6 p=3800 l=302 col=5 i=1 n=2
+> CALL 477 len=2
+< CALL 477 rc=0 err=0 wf=1 in=6 p=3800 l=302 col=5 i=1 n=2
+> CALL 478 len=40
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [2013-06-10T07:40:39-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 478 rc=0 err=0 wf=1 in=7 p=3844 l=302 col=49 i=1 n=2
+> CALL 479 len=54
+characters len=5 [\n    ]
+< CALL 479 rc=0 err=0 wf=1 in=6 p=3849 l=303 col=5 i=1 n=2
+> CALL 480 len=54
+< CALL 480 rc=0 err=0 wf=1 in=6 p=3849 l=303 col=5 i=1 n=2
+> CALL 481 len=44
+< CALL 481 rc=0 err=0 wf=1 in=6 p=3849 l=303 col=5 i=1 n=2
+> CALL 482 len=32
+< CALL 482 rc=0 err=0 wf=1 in=6 p=3849 l=303 col=5 i=1 n=2
+> CALL 483 len=40
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/bd6e7860b5a891bff077aeaeb5434e60?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+< CALL 483 rc=0 err=0 wf=1 in=6 p=4069 l=304 col=5 i=1 n=2
+> CALL 484 len=43
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=11 [flavorjones]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 484 rc=0 err=0 wf=1 in=7 p=4108 l=305 col=31 i=1 n=3
+> CALL 485 len=34
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 485 rc=0 err=0 wf=1 in=7 p=92 l=306 col=12 i=1 n=4
+> CALL 486 len=30
+characters len=30 [https://github.com/flavorjones]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 486 rc=0 err=0 wf=1 in=6 p=147 l=308 col=5 i=1 n=2
+> CALL 487 len=33
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 487 rc=0 err=0 wf=1 in=7 p=179 l=309 col=11 i=1 n=3
+> CALL 488 len=10
+< CALL 488 rc=0 err=0 wf=1 in=7 p=179 l=309 col=11 i=1 n=3
+> CALL 489 len=17
+< CALL 489 rc=0 err=0 wf=1 in=7 p=179 l=309 col=11 i=1 n=3
+> CALL 490 len=51
+< CALL 490 rc=0 err=0 wf=1 in=7 p=179 l=309 col=11 i=1 n=3
+> CALL 491 len=17
+characters len=85 [pre style='white-space:pre-wrap;width:81ex'>Make sure the MRI gem is built correctly.]
+characters len=1 [<]
+< CALL 491 rc=0 err=0 wf=1 in=7 p=268 l=309 col=100 i=1 n=3
+> CALL 492 len=46
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 492 rc=0 err=0 wf=1 in=7 p=318 l=313 col=9 i=1 n=3
+> CALL 493 len=36
+< CALL 493 rc=0 err=0 wf=1 in=7 p=318 l=313 col=9 i=1 n=3
+> CALL 494 len=12
+< CALL 494 rc=0 err=0 wf=1 in=7 p=318 l=313 col=9 i=1 n=3
+> CALL 495 len=62
+characters len=73 [tag:github.com,2008:Grit::Commit/b6100afd7a0ce17097fb3ca58ae8fe5e63522f6d]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 495 rc=0 err=0 wf=1 in=6 p=401 l=314 col=5 i=1 n=2
+> CALL 496 len=16
+< CALL 496 rc=0 err=0 wf=1 in=6 p=401 l=314 col=5 i=1 n=2
+> CALL 497 len=34
+< CALL 497 rc=0 err=0 wf=1 in=6 p=401 l=314 col=5 i=1 n=2
+> CALL 498 len=12
+< CALL 498 rc=0 err=0 wf=1 in=6 p=401 l=314 col=5 i=1 n=2
+> CALL 499 len=54
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/b6100afd7a0ce17097fb3ca58ae8fe5e63522f6d end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 499 rc=0 err=0 wf=1 in=7 p=550 l=315 col=12 i=1 n=3
+> CALL 500 len=40
+< CALL 500 rc=0 err=0 wf=1 in=7 p=550 l=315 col=12 i=1 n=3
+> CALL 501 len=32
+characters len=64 [\n        Fiddling with the windows cross-compile gem logic.\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 501 rc=0 err=0 wf=1 in=7 p=622 l=317 col=13 i=1 n=2
+> CALL 502 len=39
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 502 rc=0 err=0 wf=1 in=7 p=636 l=318 col=14 i=1 n=3
+> CALL 503 len=58
+characters len=25 [2013-06-10T07:33:59-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 503 rc=0 err=0 wf=1 in=6 p=676 l=319 col=5 i=1 n=2
+> CALL 504 len=18
+< CALL 504 rc=0 err=0 wf=1 in=6 p=676 l=319 col=5 i=1 n=2
+> CALL 505 len=37
+< CALL 505 rc=0 err=0 wf=1 in=6 p=676 l=319 col=5 i=1 n=2
+> CALL 506 len=4
+< CALL 506 rc=0 err=0 wf=1 in=6 p=676 l=319 col=5 i=1 n=2
+> CALL 507 len=16
+< CALL 507 rc=0 err=0 wf=1 in=6 p=676 l=319 col=5 i=1 n=2
+> CALL 508 len=3
+< CALL 508 rc=0 err=0 wf=1 in=6 p=676 l=319 col=5 i=1 n=2
+> CALL 509 len=57
+< CALL 509 rc=0 err=0 wf=1 in=6 p=676 l=319 col=5 i=1 n=2
+> CALL 510 len=41
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/bd6e7860b5a891bff077aeaeb5434e60?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+< CALL 510 rc=0 err=0 wf=1 in=7 p=891 l=319 col=220 i=1 n=2
+> CALL 511 len=54
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=11 [flavorjones]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 511 rc=0 err=0 wf=1 in=7 p=947 l=322 col=12 i=1 n=4
+> CALL 512 len=23
+< CALL 512 rc=0 err=0 wf=1 in=7 p=947 l=322 col=12 i=1 n=4
+> CALL 513 len=1
+< CALL 513 rc=0 err=0 wf=1 in=7 p=947 l=322 col=12 i=1 n=4
+> CALL 514 len=9
+characters len=30 [https://github.com/flavorjones]
+< CALL 514 rc=0 err=0 wf=1 in=9 p=977 l=322 col=42 i=1 n=4
+> CALL 515 len=24
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 515 rc=0 err=0 wf=1 in=6 p=1002 l=324 col=5 i=1 n=2
+> CALL 516 len=64
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 516 rc=0 err=0 wf=1 in=7 p=1034 l=325 col=11 i=1 n=3
+> CALL 517 len=57
+< CALL 517 rc=0 err=0 wf=1 in=7 p=1034 l=325 col=11 i=1 n=3
+> CALL 518 len=58
+characters len=94 [pre style='white-space:pre-wrap;width:81ex'>Fiddling with the windows cross-compile gem logic.]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 518 rc=0 err=0 wf=1 in=7 p=1182 l=329 col=9 i=1 n=3
+> CALL 519 len=36
+< CALL 519 rc=0 err=0 wf=1 in=7 p=1182 l=329 col=9 i=1 n=3
+> CALL 520 len=49
+characters len=73 [tag:github.com,2008:Grit::Commit/b1483de363524c882b5e682a3d3a6e6ab5d7511b]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 520 rc=0 err=0 wf=1 in=6 p=1265 l=330 col=5 i=1 n=2
+> CALL 521 len=13
+< CALL 521 rc=0 err=0 wf=1 in=6 p=1265 l=330 col=5 i=1 n=2
+> CALL 522 len=57
+< CALL 522 rc=0 err=0 wf=1 in=6 p=1265 l=330 col=5 i=1 n=2
+> CALL 523 len=52
+< CALL 523 rc=0 err=0 wf=1 in=6 p=1265 l=330 col=5 i=1 n=2
+> CALL 524 len=21
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=3 def=0 [a local=type prefix= uri= value=text/html end=1] [a local=rel prefix= uri= value=alternate end=1] [a local=href prefix= uri= value=https://github.com/sparklemotion/nokogiri/commit/b1483de363524c882b5e682a3d3a6e6ab5d7511b end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 524 rc=0 err=0 wf=1 in=6 p=1407 l=331 col=5 i=1 n=2
+> CALL 525 len=63
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 525 rc=0 err=0 wf=1 in=7 p=1414 l=331 col=12 i=1 n=3
+> CALL 526 len=23
+characters len=64 [\n        build_all now uses ruby 1.9.3 to build everything.\n    ]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 526 rc=0 err=0 wf=1 in=6 p=1491 l=334 col=5 i=1 n=2
+> CALL 527 len=57
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=25 [2013-06-10T07:33:56-07:00]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 527 rc=0 err=0 wf=1 in=6 p=1540 l=335 col=5 i=1 n=2
+> CALL 528 len=64
+< CALL 528 rc=0 err=0 wf=1 in=6 p=1540 l=335 col=5 i=1 n=2
+> CALL 529 len=58
+< CALL 529 rc=0 err=0 wf=1 in=6 p=1540 l=335 col=5 i=1 n=2
+> CALL 530 len=55
+< CALL 530 rc=0 err=0 wf=1 in=6 p=1540 l=335 col=5 i=1 n=2
+> CALL 531 len=62
+startElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/ ns=0 att=3 def=0 [a local=height prefix= uri= value=30 end=1] [a local=width prefix= uri= value=30 end=1] [a local=url prefix= uri= value=https://secure.gravatar.com/avatar/bd6e7860b5a891bff077aeaeb5434e60?s=30&#38;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png end=1]
+endElementNs local=[thumbnail] prefix=media uri=http://search.yahoo.com/mrss/
+characters len=5 [\n    ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=7 [\n      ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=11 [flavorjones]
+< CALL 531 rc=0 err=0 wf=1 in=9 p=1792 l=337 col=24 i=1 n=4
+> CALL 532 len=21
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=7 [\n      ]
+startElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 532 rc=0 err=0 wf=1 in=7 p=1811 l=338 col=12 i=1 n=4
+> CALL 533 len=41
+characters len=30 [https://github.com/flavorjones]
+endElementNs local=[uri] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 533 rc=0 err=0 wf=1 in=9 p=1852 l=339 col=5 i=1 n=3
+> CALL 534 len=6
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 534 rc=0 err=0 wf=1 in=7 p=1861 l=339 col=14 i=1 n=2
+> CALL 535 len=15
+characters len=5 [\n    ]
+< CALL 535 rc=0 err=0 wf=1 in=6 p=1866 l=340 col=5 i=1 n=2
+> CALL 536 len=5
+< CALL 536 rc=0 err=0 wf=1 in=6 p=1866 l=340 col=5 i=1 n=2
+> CALL 537 len=18
+startElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=type prefix= uri= value=html end=1]
+characters len=7 [\n      ]
+characters len=1 [<]
+< CALL 537 rc=0 err=0 wf=1 in=7 p=1898 l=341 col=11 i=1 n=3
+> CALL 538 len=30
+< CALL 538 rc=0 err=0 wf=1 in=7 p=1898 l=341 col=11 i=1 n=3
+> CALL 539 len=1
+< CALL 539 rc=0 err=0 wf=1 in=7 p=1898 l=341 col=11 i=1 n=3
+> CALL 540 len=47
+< CALL 540 rc=0 err=0 wf=1 in=7 p=1898 l=341 col=11 i=1 n=3
+> CALL 541 len=28
+characters len=94 [pre style='white-space:pre-wrap;width:81ex'>build_all now uses ruby 1.9.3 to build everything.]
+characters len=1 [<]
+characters len=10 [/pre>\n    ]
+< CALL 541 rc=0 err=0 wf=1 in=7 p=2006 l=342 col=5 i=1 n=3
+> CALL 542 len=29
+endElementNs local=[content] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=1 [\n]
+endElementNs local=[feed] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 542 rc=0 err=0 wf=1 in=14 p=2036 l=345 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=2036 l=345 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=345 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=2036 l=345 col=1 i=1 n=0

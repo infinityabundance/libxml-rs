@@ -1,0 +1,30 @@
+== /scanout/corpus/ns-default-undeclare.xml bytes=31 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=3
+error dom=3 code=100 level=1 file= line=1 i1=0 i2=14 str1=u1 str2= str3= msg=xmlns: URI u1 is not absolute\n
+error dom=1 code=42 level=3 file= line=1 i1=0 i2=23 str1=xmlns str2= str3= msg=Attribute xmlns redefined\n
+< CALL 7 rc=42 err=42 wf=0 in=7 p=23 l=1 col=24 i=1 n=1
+> CALL 8 len=3
+< CALL 8 rc=42 err=42 wf=0 in=7 p=23 l=1 col=24 i=1 n=1
+> CALL 9 len=3
+< CALL 9 rc=42 err=42 wf=0 in=7 p=23 l=1 col=24 i=1 n=1
+> CALL 10 len=1
+< CALL 10 rc=42 err=42 wf=0 in=7 p=23 l=1 col=24 i=1 n=1
+> FINAL
+< FINAL 0 rc=42 err=42 wf=0 in=7 p=23 l=1 col=24 i=1 n=1
+> REFEED
+< REFEED 0 rc=42 err=42 wf=0 in=7 p=23 l=1 col=24 i=1 n=1

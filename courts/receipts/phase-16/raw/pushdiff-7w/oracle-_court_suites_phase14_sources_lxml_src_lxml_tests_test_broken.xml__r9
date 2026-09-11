@@ -1,0 +1,13 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/test_broken.xml bytes=18 mode=r9
+> CALL 0 len=12
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[b] prefix= uri= ns=0 att=0 def=0
+error dom=1 code=76 level=3 file= line=1 i1=1 i2=11 str1=b str2=c str3= msg=Opening and ending tag mismatch: b line 1 and c\n
+< CALL 0 rc=76 err=76 wf=0 in=7 p=10 l=1 col=11 i=1 n=1
+> CALL 1 len=6
+< CALL 1 rc=76 err=76 wf=0 in=7 p=10 l=1 col=11 i=1 n=1
+> FINAL
+< FINAL 0 rc=76 err=76 wf=0 in=7 p=10 l=1 col=11 i=1 n=1
+> REFEED
+< REFEED 0 rc=76 err=76 wf=0 in=7 p=10 l=1 col=11 i=1 n=1

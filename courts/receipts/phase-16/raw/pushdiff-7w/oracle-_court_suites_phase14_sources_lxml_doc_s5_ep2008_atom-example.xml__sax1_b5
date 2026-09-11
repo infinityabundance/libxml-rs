@@ -1,0 +1,285 @@
+== /court/suites/phase14/sources/lxml/doc/s5/ep2008/atom-example.xml bytes=570 mode=b5
+> CALL 0 len=5
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=5
+startDocument
+< CALL 7 rc=0 err=0 wf=1 in=1 p=39 l=2 col=1 i=1 n=0
+> CALL 8 len=5
+< CALL 8 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 9 len=5
+< CALL 9 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 10 len=5
+< CALL 10 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 11 len=5
+< CALL 11 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 12 len=5
+< CALL 12 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 13 len=5
+< CALL 13 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 14 len=5
+< CALL 14 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 15 len=5
+< CALL 15 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 16 len=5
+startElement [feed] [xmlns]=http://www.w3.org/2005/Atom
+< CALL 16 rc=0 err=0 wf=1 in=7 p=81 l=2 col=43 i=1 n=1
+> CALL 17 len=5
+characters len=4 [\n\n  ]
+< CALL 17 rc=0 err=0 wf=1 in=6 p=85 l=4 col=3 i=1 n=1
+> CALL 18 len=5
+startElement [title]
+< CALL 18 rc=0 err=0 wf=1 in=7 p=92 l=4 col=10 i=1 n=2
+> CALL 19 len=5
+< CALL 19 rc=0 err=0 wf=1 in=7 p=92 l=4 col=10 i=1 n=2
+> CALL 20 len=5
+characters len=12 [Example Feed]
+< CALL 20 rc=0 err=0 wf=1 in=7 p=104 l=4 col=22 i=1 n=2
+> CALL 21 len=5
+< CALL 21 rc=0 err=0 wf=1 in=9 p=104 l=4 col=22 i=1 n=2
+> CALL 22 len=5
+endElement [title]
+< CALL 22 rc=0 err=0 wf=1 in=7 p=112 l=4 col=30 i=1 n=1
+> CALL 23 len=5
+characters len=3 [\n  ]
+< CALL 23 rc=0 err=0 wf=1 in=6 p=115 l=5 col=3 i=1 n=1
+> CALL 24 len=5
+< CALL 24 rc=0 err=0 wf=1 in=6 p=115 l=5 col=3 i=1 n=1
+> CALL 25 len=5
+< CALL 25 rc=0 err=0 wf=1 in=6 p=115 l=5 col=3 i=1 n=1
+> CALL 26 len=5
+< CALL 26 rc=0 err=0 wf=1 in=6 p=115 l=5 col=3 i=1 n=1
+> CALL 27 len=5
+< CALL 27 rc=0 err=0 wf=1 in=6 p=115 l=5 col=3 i=1 n=1
+> CALL 28 len=5
+< CALL 28 rc=0 err=0 wf=1 in=6 p=115 l=5 col=3 i=1 n=1
+> CALL 29 len=5
+startElement [link] [href]=http://example.org/
+endElement [link]
+< CALL 29 rc=0 err=0 wf=1 in=7 p=149 l=5 col=37 i=1 n=1
+> CALL 30 len=5
+characters len=3 [\n  ]
+< CALL 30 rc=0 err=0 wf=1 in=6 p=152 l=6 col=3 i=1 n=1
+> CALL 31 len=5
+< CALL 31 rc=0 err=0 wf=1 in=6 p=152 l=6 col=3 i=1 n=1
+> CALL 32 len=5
+startElement [updated]
+< CALL 32 rc=0 err=0 wf=1 in=7 p=161 l=6 col=12 i=1 n=2
+> CALL 33 len=5
+< CALL 33 rc=0 err=0 wf=1 in=7 p=161 l=6 col=12 i=1 n=2
+> CALL 34 len=5
+< CALL 34 rc=0 err=0 wf=1 in=7 p=161 l=6 col=12 i=1 n=2
+> CALL 35 len=5
+< CALL 35 rc=0 err=0 wf=1 in=7 p=161 l=6 col=12 i=1 n=2
+> CALL 36 len=5
+characters len=20 [2003-12-13T18:30:02Z]
+< CALL 36 rc=0 err=0 wf=1 in=9 p=181 l=6 col=32 i=1 n=2
+> CALL 37 len=5
+< CALL 37 rc=0 err=0 wf=1 in=9 p=181 l=6 col=32 i=1 n=2
+> CALL 38 len=5
+endElement [updated]
+characters len=3 [\n  ]
+< CALL 38 rc=0 err=0 wf=1 in=7 p=194 l=7 col=3 i=1 n=1
+> CALL 39 len=5
+< CALL 39 rc=0 err=0 wf=1 in=6 p=194 l=7 col=3 i=1 n=1
+> CALL 40 len=5
+startElement [author]
+< CALL 40 rc=0 err=0 wf=1 in=7 p=202 l=7 col=11 i=1 n=2
+> CALL 41 len=5
+characters len=5 [\n    ]
+< CALL 41 rc=0 err=0 wf=1 in=6 p=207 l=8 col=5 i=1 n=2
+> CALL 42 len=5
+startElement [name]
+< CALL 42 rc=0 err=0 wf=1 in=7 p=213 l=8 col=11 i=1 n=3
+> CALL 43 len=5
+< CALL 43 rc=0 err=0 wf=1 in=7 p=213 l=8 col=11 i=1 n=3
+> CALL 44 len=5
+characters len=8 [John Doe]
+< CALL 44 rc=0 err=0 wf=1 in=9 p=221 l=8 col=19 i=1 n=3
+> CALL 45 len=5
+endElement [name]
+< CALL 45 rc=0 err=0 wf=1 in=7 p=228 l=8 col=26 i=1 n=2
+> CALL 46 len=5
+characters len=3 [\n  ]
+< CALL 46 rc=0 err=0 wf=1 in=9 p=231 l=9 col=3 i=1 n=2
+> CALL 47 len=5
+endElement [author]
+< CALL 47 rc=0 err=0 wf=1 in=7 p=240 l=9 col=12 i=1 n=1
+> CALL 48 len=5
+characters len=3 [\n  ]
+< CALL 48 rc=0 err=0 wf=1 in=6 p=243 l=10 col=3 i=1 n=1
+> CALL 49 len=5
+startElement [id]
+< CALL 49 rc=0 err=0 wf=1 in=7 p=247 l=10 col=7 i=1 n=2
+> CALL 50 len=5
+< CALL 50 rc=0 err=0 wf=1 in=7 p=247 l=10 col=7 i=1 n=2
+> CALL 51 len=5
+< CALL 51 rc=0 err=0 wf=1 in=7 p=247 l=10 col=7 i=1 n=2
+> CALL 52 len=5
+< CALL 52 rc=0 err=0 wf=1 in=7 p=247 l=10 col=7 i=1 n=2
+> CALL 53 len=5
+< CALL 53 rc=0 err=0 wf=1 in=7 p=247 l=10 col=7 i=1 n=2
+> CALL 54 len=5
+< CALL 54 rc=0 err=0 wf=1 in=7 p=247 l=10 col=7 i=1 n=2
+> CALL 55 len=5
+< CALL 55 rc=0 err=0 wf=1 in=7 p=247 l=10 col=7 i=1 n=2
+> CALL 56 len=5
+< CALL 56 rc=0 err=0 wf=1 in=7 p=247 l=10 col=7 i=1 n=2
+> CALL 57 len=5
+< CALL 57 rc=0 err=0 wf=1 in=7 p=247 l=10 col=7 i=1 n=2
+> CALL 58 len=5
+characters len=45 [urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6]
+< CALL 58 rc=0 err=0 wf=1 in=9 p=292 l=10 col=52 i=1 n=2
+> CALL 59 len=5
+endElement [id]
+< CALL 59 rc=0 err=0 wf=1 in=7 p=297 l=10 col=57 i=1 n=1
+> CALL 60 len=5
+characters len=4 [\n\n  ]
+< CALL 60 rc=0 err=0 wf=1 in=6 p=301 l=12 col=3 i=1 n=1
+> CALL 61 len=5
+startElement [entry]
+< CALL 61 rc=0 err=0 wf=1 in=7 p=308 l=12 col=10 i=1 n=2
+> CALL 62 len=5
+characters len=5 [\n    ]
+< CALL 62 rc=0 err=0 wf=1 in=6 p=313 l=13 col=5 i=1 n=2
+> CALL 63 len=5
+startElement [title]
+< CALL 63 rc=0 err=0 wf=1 in=7 p=320 l=13 col=12 i=1 n=3
+> CALL 64 len=5
+< CALL 64 rc=0 err=0 wf=1 in=7 p=320 l=13 col=12 i=1 n=3
+> CALL 65 len=5
+< CALL 65 rc=0 err=0 wf=1 in=7 p=320 l=13 col=12 i=1 n=3
+> CALL 66 len=5
+< CALL 66 rc=0 err=0 wf=1 in=7 p=320 l=13 col=12 i=1 n=3
+> CALL 67 len=5
+< CALL 67 rc=0 err=0 wf=1 in=7 p=320 l=13 col=12 i=1 n=3
+> CALL 68 len=5
+< CALL 68 rc=0 err=0 wf=1 in=7 p=320 l=13 col=12 i=1 n=3
+> CALL 69 len=5
+characters len=28 [Atom-Powered Robots Run Amok]
+< CALL 69 rc=0 err=0 wf=1 in=9 p=348 l=13 col=40 i=1 n=3
+> CALL 70 len=5
+< CALL 70 rc=0 err=0 wf=1 in=9 p=348 l=13 col=40 i=1 n=3
+> CALL 71 len=5
+endElement [title]
+< CALL 71 rc=0 err=0 wf=1 in=7 p=356 l=13 col=48 i=1 n=2
+> CALL 72 len=5
+characters len=5 [\n    ]
+< CALL 72 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 73 len=5
+< CALL 73 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 74 len=5
+< CALL 74 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 75 len=5
+< CALL 75 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 76 len=5
+< CALL 76 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 77 len=5
+< CALL 77 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 78 len=5
+< CALL 78 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 79 len=5
+< CALL 79 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 80 len=5
+< CALL 80 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 81 len=5
+< CALL 81 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 82 len=5
+startElement [link] [href]=http://example.org/2003/12/13/atom03
+endElement [link]
+< CALL 82 rc=0 err=0 wf=1 in=7 p=412 l=14 col=56 i=1 n=2
+> CALL 83 len=5
+characters len=5 [\n    ]
+< CALL 83 rc=0 err=0 wf=1 in=6 p=417 l=15 col=5 i=1 n=2
+> CALL 84 len=5
+startElement [id]
+< CALL 84 rc=0 err=0 wf=1 in=7 p=421 l=15 col=9 i=1 n=3
+> CALL 85 len=5
+< CALL 85 rc=0 err=0 wf=1 in=7 p=421 l=15 col=9 i=1 n=3
+> CALL 86 len=5
+< CALL 86 rc=0 err=0 wf=1 in=7 p=421 l=15 col=9 i=1 n=3
+> CALL 87 len=5
+< CALL 87 rc=0 err=0 wf=1 in=7 p=421 l=15 col=9 i=1 n=3
+> CALL 88 len=5
+< CALL 88 rc=0 err=0 wf=1 in=7 p=421 l=15 col=9 i=1 n=3
+> CALL 89 len=5
+< CALL 89 rc=0 err=0 wf=1 in=7 p=421 l=15 col=9 i=1 n=3
+> CALL 90 len=5
+< CALL 90 rc=0 err=0 wf=1 in=7 p=421 l=15 col=9 i=1 n=3
+> CALL 91 len=5
+< CALL 91 rc=0 err=0 wf=1 in=7 p=421 l=15 col=9 i=1 n=3
+> CALL 92 len=5
+< CALL 92 rc=0 err=0 wf=1 in=7 p=421 l=15 col=9 i=1 n=3
+> CALL 93 len=5
+characters len=45 [urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a]
+< CALL 93 rc=0 err=0 wf=1 in=9 p=466 l=15 col=54 i=1 n=3
+> CALL 94 len=5
+endElement [id]
+< CALL 94 rc=0 err=0 wf=1 in=7 p=471 l=15 col=59 i=1 n=2
+> CALL 95 len=5
+characters len=5 [\n    ]
+< CALL 95 rc=0 err=0 wf=1 in=6 p=476 l=16 col=5 i=1 n=2
+> CALL 96 len=5
+startElement [updated]
+< CALL 96 rc=0 err=0 wf=1 in=7 p=485 l=16 col=14 i=1 n=3
+> CALL 97 len=5
+< CALL 97 rc=0 err=0 wf=1 in=7 p=485 l=16 col=14 i=1 n=3
+> CALL 98 len=5
+< CALL 98 rc=0 err=0 wf=1 in=7 p=485 l=16 col=14 i=1 n=3
+> CALL 99 len=5
+< CALL 99 rc=0 err=0 wf=1 in=7 p=485 l=16 col=14 i=1 n=3
+> CALL 100 len=5
+< CALL 100 rc=0 err=0 wf=1 in=7 p=485 l=16 col=14 i=1 n=3
+> CALL 101 len=5
+characters len=20 [2003-12-13T18:30:02Z]
+< CALL 101 rc=0 err=0 wf=1 in=9 p=505 l=16 col=34 i=1 n=3
+> CALL 102 len=5
+endElement [updated]
+< CALL 102 rc=0 err=0 wf=1 in=7 p=515 l=16 col=44 i=1 n=2
+> CALL 103 len=5
+< CALL 103 rc=0 err=0 wf=1 in=7 p=515 l=16 col=44 i=1 n=2
+> CALL 104 len=5
+characters len=5 [\n    ]
+< CALL 104 rc=0 err=0 wf=1 in=6 p=520 l=17 col=5 i=1 n=2
+> CALL 105 len=5
+startElement [summary]
+< CALL 105 rc=0 err=0 wf=1 in=7 p=529 l=17 col=14 i=1 n=3
+> CALL 106 len=5
+< CALL 106 rc=0 err=0 wf=1 in=7 p=529 l=17 col=14 i=1 n=3
+> CALL 107 len=5
+characters len=10 [Some text.]
+< CALL 107 rc=0 err=0 wf=1 in=7 p=539 l=17 col=24 i=1 n=3
+> CALL 108 len=5
+< CALL 108 rc=0 err=0 wf=1 in=9 p=539 l=17 col=24 i=1 n=3
+> CALL 109 len=5
+endElement [summary]
+< CALL 109 rc=0 err=0 wf=1 in=7 p=549 l=17 col=34 i=1 n=2
+> CALL 110 len=5
+characters len=3 [\n  ]
+< CALL 110 rc=0 err=0 wf=1 in=9 p=552 l=18 col=3 i=1 n=2
+> CALL 111 len=5
+endElement [entry]
+< CALL 111 rc=0 err=0 wf=1 in=7 p=560 l=18 col=11 i=1 n=1
+> CALL 112 len=5
+characters len=2 [\n\n]
+< CALL 112 rc=0 err=0 wf=1 in=9 p=562 l=20 col=1 i=1 n=1
+> CALL 113 len=5
+endElement [feed]
+< CALL 113 rc=0 err=0 wf=1 in=14 p=570 l=21 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=570 l=21 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=21 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=570 l=21 col=1 i=1 n=0

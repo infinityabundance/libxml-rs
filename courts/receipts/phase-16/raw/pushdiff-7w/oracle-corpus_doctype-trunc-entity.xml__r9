@@ -1,0 +1,14 @@
+== /scanout/corpus/doctype-trunc-entity.xml bytes=27 mode=r9
+> CALL 0 len=12
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=15
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> FINAL
+internalSubset name=a ext= sys=
+error dom=1 code=37 level=3 file= line=1 i1=0 i2=27 str1= str2= str3= msg=(null)
+error dom=1 code=37 level=3 file= line=1 i1=0 i2=27 str1=e str2= str3= msg=xmlParseEntityDecl: entity e not terminated\n
+error dom=1 code=118 level=3 file= line=1 i1=0 i2=27 str1= str2= str3= msg=Content error in the internal subset\n
+< FINAL 0 rc=118 err=118 wf=0 in=4 p=27 l=1 col=27 i=1 n=0
+> REFEED
+< REFEED 0 rc=118 err=118 wf=0 in=4 p=27 l=1 col=27 i=1 n=0

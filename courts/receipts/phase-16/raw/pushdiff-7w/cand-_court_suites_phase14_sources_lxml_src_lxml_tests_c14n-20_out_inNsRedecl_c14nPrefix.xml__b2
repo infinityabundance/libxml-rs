@@ -1,0 +1,189 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inNsRedecl_c14nPrefix.xml bytes=173 mode=b2
+> CALL 0 len=2
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=2
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=2
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=2
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=2
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=2
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=2
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=2
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=2
+< CALL 8 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=2
+< CALL 9 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=2
+< CALL 10 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=2
+< CALL 11 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=2
+< CALL 12 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=2
+< CALL 13 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 14 len=2
+< CALL 14 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 15 len=2
+< CALL 15 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 16 len=2
+< CALL 16 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 17 len=2
+< CALL 17 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 18 len=2
+< CALL 18 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 19 len=2
+< CALL 19 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 20 len=2
+< CALL 20 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 21 len=2
+< CALL 21 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 22 len=2
+< CALL 22 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 23 len=2
+< CALL 23 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 24 len=2
+< CALL 24 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 25 len=2
+< CALL 25 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 26 len=2
+< CALL 26 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 27 len=2
+< CALL 27 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 28 len=2
+< CALL 28 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 29 len=2
+< CALL 29 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 30 len=2
+< CALL 30 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 31 len=2
+< CALL 31 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 32 len=2
+< CALL 32 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 33 len=2
+< CALL 33 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 34 len=2
+< CALL 34 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 35 len=2
+< CALL 35 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 36 len=2
+< CALL 36 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 37 len=2
+< CALL 37 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 38 len=2
+< CALL 38 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 39 len=2
+< CALL 39 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 40 len=2
+< CALL 40 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 41 len=2
+< CALL 41 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 42 len=2
+< CALL 42 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 43 len=2
+< CALL 43 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 44 len=2
+< CALL 44 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 45 len=2
+error dom=3 code=200 level=2 file= line=1 i1=0 i2=20 str1=n0 str2= str3= msg=xmlns:n0: Empty XML namespace is not allowed\n
+error dom=3 code=201 level=2 file= line=1 i1=0 i2=92 str1=n0 str2=foo str3= msg=Namespace prefix n0 on foo is not defined\n
+startElementNs local=[foo] prefix=n0 uri= ns=2 att=2 def=0 {n1=http://z2} {n2=http://z3} [a local=att2 prefix=n1 uri=http://z2 value=val2 end=1] [a local=att1 prefix=n2 uri=http://z3 value=val1 end=1]
+< CALL 45 rc=0 err=201 wf=1 in=7 p=92 l=1 col=93 i=1 n=1
+> CALL 46 len=2
+< CALL 46 rc=0 err=201 wf=1 in=7 p=92 l=1 col=93 i=1 n=1
+> CALL 47 len=2
+characters len=3 [ \n ]
+< CALL 47 rc=0 err=201 wf=1 in=7 p=95 l=2 col=2 i=1 n=1
+> CALL 48 len=2
+< CALL 48 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 49 len=2
+< CALL 49 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 50 len=2
+< CALL 50 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 51 len=2
+< CALL 51 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 52 len=2
+< CALL 52 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 53 len=2
+< CALL 53 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 54 len=2
+< CALL 54 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 55 len=2
+< CALL 55 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 56 len=2
+< CALL 56 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 57 len=2
+< CALL 57 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 58 len=2
+< CALL 58 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 59 len=2
+< CALL 59 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 60 len=2
+< CALL 60 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 61 len=2
+< CALL 61 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 62 len=2
+< CALL 62 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 63 len=2
+< CALL 63 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 64 len=2
+< CALL 64 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 65 len=2
+< CALL 65 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 66 len=2
+< CALL 66 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 67 len=2
+< CALL 67 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 68 len=2
+< CALL 68 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 69 len=2
+< CALL 69 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 70 len=2
+< CALL 70 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 71 len=2
+< CALL 71 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 72 len=2
+< CALL 72 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 73 len=2
+< CALL 73 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 74 len=2
+< CALL 74 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 75 len=2
+< CALL 75 rc=0 err=201 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 76 len=2
+startElementNs local=[bar] prefix=n3 uri=http://z0 ns=1 att=2 def=0 {n3=http://z0} [a local=att1 prefix=n1 uri=http://z2 value=val1 end=1] [a local=att2 prefix=n2 uri=http://z3 value=val2 end=1]
+< CALL 76 rc=0 err=201 wf=1 in=7 p=154 l=2 col=61 i=1 n=2
+> CALL 77 len=2
+< CALL 77 rc=0 err=201 wf=1 in=9 p=154 l=2 col=61 i=1 n=2
+> CALL 78 len=2
+< CALL 78 rc=0 err=201 wf=1 in=9 p=154 l=2 col=61 i=1 n=2
+> CALL 79 len=2
+< CALL 79 rc=0 err=201 wf=1 in=9 p=154 l=2 col=61 i=1 n=2
+> CALL 80 len=2
+< CALL 80 rc=0 err=201 wf=1 in=9 p=154 l=2 col=61 i=1 n=2
+> CALL 81 len=2
+endElementNs local=[bar] prefix=n3 uri=http://z0
+< CALL 81 rc=0 err=201 wf=1 in=7 p=163 l=2 col=70 i=1 n=1
+> CALL 82 len=2
+characters len=1 [\n]
+< CALL 82 rc=0 err=201 wf=1 in=9 p=164 l=3 col=1 i=1 n=1
+> CALL 83 len=2
+< CALL 83 rc=0 err=201 wf=1 in=9 p=164 l=3 col=1 i=1 n=1
+> CALL 84 len=2
+< CALL 84 rc=0 err=201 wf=1 in=9 p=164 l=3 col=1 i=1 n=1
+> CALL 85 len=2
+< CALL 85 rc=0 err=201 wf=1 in=9 p=164 l=3 col=1 i=1 n=1
+> CALL 86 len=1
+endElementNs local=[foo] prefix=n0 uri=
+< CALL 86 rc=0 err=201 wf=1 in=14 p=173 l=3 col=10 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=201 wf=1 in=-1 p=173 l=3 col=10 i=1 n=0
+> REFEED
+< REFEED 0 rc=0 err=201 wf=1 in=-1 p=173 l=3 col=10 i=1 n=0

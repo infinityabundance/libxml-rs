@@ -1,0 +1,17 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inNsDefault_c14nPrefix.xml bytes=94 mode=Cb257
+> CTOR len=94
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+error dom=3 code=200 level=2 file= line=1 i1=0 i2=20 str1=n0 str2= str3= msg=xmlns:n0: Empty XML namespace is not allowed\n
+error dom=3 code=201 level=2 file= line=1 i1=0 i2=20 str1=n0 str2=foo str3= msg=Namespace prefix n0 on foo is not defined\n
+startElementNs local=[foo] prefix=n0 uri= ns=0 att=0 def=0
+characters len=2 [\n ]
+startElementNs local=[bar] prefix=n1 uri=http://b ns=1 att=2 def=0 {n1=http://b} [a local=att2 prefix= uri= value=val end=1] [a local=att1 prefix=n1 uri=http://b value=val end=1]
+endElementNs local=[bar] prefix=n1 uri=http://b
+characters len=1 [\n]
+endElementNs local=[foo] prefix=n0 uri=
+endDocument
+< FINAL 0 rc=0 err=201 wf=1 in=-1 p=94 l=3 col=10 i=1 n=0
+> REFEED
+< REFEED 0 rc=0 err=201 wf=1 in=-1 p=94 l=3 col=10 i=1 n=0

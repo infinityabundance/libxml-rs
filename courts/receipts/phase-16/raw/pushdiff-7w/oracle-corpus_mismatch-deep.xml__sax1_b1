@@ -1,0 +1,44 @@
+== /scanout/corpus/mismatch-deep.xml bytes=17 mode=b1
+> CALL 0 len=1
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=1
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=1
+startDocument
+startElement [a]
+< CALL 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 4 len=1
+< CALL 4 rc=0 err=0 wf=1 in=6 p=3 l=1 col=4 i=1 n=1
+> CALL 5 len=1
+startElement [b]
+< CALL 5 rc=0 err=0 wf=1 in=7 p=6 l=1 col=7 i=1 n=2
+> CALL 6 len=1
+< CALL 6 rc=0 err=0 wf=1 in=7 p=6 l=1 col=7 i=1 n=2
+> CALL 7 len=1
+< CALL 7 rc=0 err=0 wf=1 in=6 p=6 l=1 col=7 i=1 n=2
+> CALL 8 len=1
+startElement [c]
+< CALL 8 rc=0 err=0 wf=1 in=7 p=9 l=1 col=10 i=1 n=3
+> CALL 9 len=1
+< CALL 9 rc=0 err=0 wf=1 in=7 p=9 l=1 col=10 i=1 n=3
+> CALL 10 len=1
+< CALL 10 rc=0 err=0 wf=1 in=9 p=9 l=1 col=10 i=1 n=3
+> CALL 11 len=1
+< CALL 11 rc=0 err=0 wf=1 in=9 p=9 l=1 col=10 i=1 n=3
+> CALL 12 len=1
+error dom=1 code=76 level=3 file= line=1 i1=0 i2=14 str1=c str2=b str3= msg=Opening and ending tag mismatch: c line 0 and b\n
+< CALL 12 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2
+> CALL 13 len=1
+< CALL 13 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2
+> CALL 14 len=1
+< CALL 14 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2
+> CALL 15 len=1
+< CALL 15 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2
+> CALL 16 len=1
+< CALL 16 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2
+> FINAL
+< FINAL 0 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2
+> REFEED
+< REFEED 0 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2

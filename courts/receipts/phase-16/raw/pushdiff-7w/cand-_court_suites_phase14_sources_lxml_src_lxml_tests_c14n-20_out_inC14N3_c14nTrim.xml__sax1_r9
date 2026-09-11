@@ -1,0 +1,46 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N3_c14nTrim.xml bytes=329 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [doc]
+startElement [e1]
+< CALL 0 rc=0 err=0 wf=1 in=9 p=9 l=1 col=10 i=1 n=2
+> CALL 1 len=34
+endElement [e1]
+startElement [e2]
+endElement [e2]
+< CALL 1 rc=0 err=0 wf=1 in=6 p=23 l=1 col=24 i=1 n=1
+> CALL 2 len=41
+startElement [e3] [id]=elem3 [name]=elem3
+endElement [e3]
+startElement [e4] [id]=elem4 [name]=elem4
+< CALL 2 rc=0 err=0 wf=1 in=9 p=84 l=1 col=85 i=1 n=2
+> CALL 3 len=53
+endElement [e4]
+< CALL 3 rc=0 err=0 wf=1 in=6 p=89 l=1 col=90 i=1 n=1
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=6 p=89 l=1 col=90 i=1 n=1
+> CALL 5 len=52
+< CALL 5 rc=0 err=0 wf=1 in=6 p=89 l=1 col=90 i=1 n=1
+> CALL 6 len=45
+startElement [e5] [xmlns]=http://example.org [xmlns:a]=http://www.w3.org [xmlns:b]=http://www.ietf.org [attr]=I'm [attr2]=all [b:attr]=sorted [a:attr]=out
+endElement [e5]
+startElement [e6]
+< CALL 6 rc=0 err=0 wf=1 in=6 p=239 l=1 col=240 i=1 n=2
+> CALL 7 len=52
+startElement [e7] [xmlns]=http://www.ietf.org
+startElement [e8] [xmlns]=
+< CALL 7 rc=0 err=0 wf=1 in=6 p=284 l=1 col=285 i=1 n=4
+> CALL 8 len=36
+startElement [e9] [attr]=default
+endElement [e9]
+endElement [e8]
+endElement [e7]
+endElement [e6]
+endElement [doc]
+< CALL 8 rc=0 err=0 wf=1 in=14 p=329 l=1 col=330 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=329 l=1 col=330 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=330 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=329 l=1 col=330 i=1 n=0

@@ -1,0 +1,69 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inC14N4.xml bytes=516 mode=r9
+> CALL 0 len=12
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=41
+internalSubset name=doc ext= sys=
+< CALL 2 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 3 len=53
+attributeDecl elem=normId name=id type=2 def=3 val= enum=
+attributeDecl elem=normNames name=attr type=8 def=3 val= enum=
+externalSubset name=doc ext= sys=
+startElement [doc]
+characters len=4 [\n   ]
+startElement [text]
+characters len=10 [First line]
+characters len=1 [\r]
+characters len=1 [\n]
+< CALL 3 rc=0 err=0 wf=1 in=7 p=132 l=6 col=31 i=1 n=2
+> CALL 4 len=4
+characters len=11 [Second line]
+< CALL 4 rc=0 err=0 wf=1 in=7 p=143 l=6 col=42 i=1 n=2
+> CALL 5 len=52
+endElement [text]
+characters len=4 [\n   ]
+startElement [value]
+characters len=1 [2]
+endElement [value]
+characters len=4 [\n   ]
+startElement [compute]
+< CALL 5 rc=0 err=0 wf=1 in=7 p=188 l=8 col=13 i=1 n=2
+> CALL 6 len=45
+cdata len=40 [value>"0" && value<"10" ?"valid":"error"]
+< CALL 6 rc=0 err=0 wf=1 in=7 p=240 l=8 col=65 i=1 n=2
+> CALL 7 len=52
+endElement [compute]
+characters len=4 [\n   ]
+< CALL 7 rc=0 err=0 wf=1 in=6 p=254 l=9 col=4 i=1 n=1
+> CALL 8 len=44
+startElement [compute] [expr]=value>"0" &#38;&#38; value<"10" ?"valid":"error"
+characters len=5 [valid]
+endElement [compute]
+< CALL 8 rc=0 err=0 wf=1 in=7 p=337 l=9 col=87 i=1 n=1
+> CALL 9 len=54
+characters len=4 [\n   ]
+< CALL 9 rc=0 err=0 wf=1 in=6 p=341 l=10 col=4 i=1 n=1
+> CALL 10 len=28
+startElement [norm] [attr]= '    \r\n\t   ' 
+endElement [norm]
+characters len=4 [\n   ]
+< CALL 10 rc=0 err=0 wf=1 in=6 p=400 l=11 col=4 i=1 n=1
+> CALL 11 len=52
+startElement [normNames] [attr]=   A    \r\n\t   B   
+endElement [normNames]
+characters len=4 [\n   ]
+< CALL 11 rc=0 err=0 wf=1 in=6 p=458 l=12 col=4 i=1 n=1
+> CALL 12 len=45
+startElement [normId] [id]= ' \r\n\t ' 
+endElement [normId]
+characters len=1 [\n]
+endElement [doc]
+< CALL 12 rc=0 err=0 wf=1 in=14 p=516 l=14 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=516 l=14 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=14 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=516 l=14 col=1 i=1 n=0

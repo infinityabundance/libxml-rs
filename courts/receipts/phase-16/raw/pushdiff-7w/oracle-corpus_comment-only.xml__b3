@@ -1,0 +1,15 @@
+== /scanout/corpus/comment-only.xml bytes=9 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=3
+comment [k]
+< CALL 2 rc=0 err=0 wf=1 in=1 p=9 l=2 col=1 i=1 n=0
+> FINAL
+error dom=1 code=4 level=3 file= line=2 i1=0 i2=1 str1= str2= str3= msg=Start tag expected, '<' not found\n
+endDocument
+< FINAL 0 rc=4 err=4 wf=0 in=-1 p=9 l=2 col=1 i=1 n=0
+> REFEED
+< REFEED 0 rc=4 err=4 wf=0 in=-1 p=9 l=2 col=1 i=1 n=0

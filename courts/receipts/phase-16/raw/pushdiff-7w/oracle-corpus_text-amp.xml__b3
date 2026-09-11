@@ -1,0 +1,57 @@
+== /scanout/corpus/text-amp.xml bytes=56 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 1 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 2 len=3
+characters len=1 [&]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=8 l=1 col=9 i=1 n=1
+> CALL 3 len=3
+characters len=1 [<]
+< CALL 3 rc=0 err=0 wf=1 in=7 p=12 l=1 col=13 i=1 n=1
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=7 p=12 l=1 col=13 i=1 n=1
+> CALL 5 len=3
+characters len=1 [>]
+< CALL 5 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=7 p=16 l=1 col=17 i=1 n=1
+> CALL 7 len=3
+characters len=1 ["]
+< CALL 7 rc=0 err=0 wf=1 in=7 p=22 l=1 col=23 i=1 n=1
+> CALL 8 len=3
+< CALL 8 rc=0 err=0 wf=1 in=7 p=22 l=1 col=23 i=1 n=1
+> CALL 9 len=3
+characters len=1 [']
+characters len=1 [ ]
+< CALL 9 rc=0 err=0 wf=1 in=7 p=29 l=1 col=30 i=1 n=1
+> CALL 10 len=3
+< CALL 10 rc=0 err=0 wf=1 in=7 p=29 l=1 col=30 i=1 n=1
+> CALL 11 len=3
+characters len=1 [A]
+characters len=1 [ ]
+< CALL 11 rc=0 err=0 wf=1 in=7 p=35 l=1 col=36 i=1 n=1
+> CALL 12 len=3
+< CALL 12 rc=0 err=0 wf=1 in=7 p=35 l=1 col=36 i=1 n=1
+> CALL 13 len=3
+characters len=1 [B]
+< CALL 13 rc=0 err=0 wf=1 in=7 p=41 l=1 col=42 i=1 n=1
+> CALL 14 len=3
+characters len=1 [ ]
+< CALL 14 rc=0 err=0 wf=1 in=7 p=42 l=1 col=43 i=1 n=1
+> CALL 15 len=3
+error dom=1 code=7 level=3 file= line=1 i1=0 i2=45 str1= str2= str3= msg=CharRef: invalid decimal value\n
+error dom=1 code=9 level=3 file= line=1 i1=0 i2=45 str1= str2= str3= msg=xmlParseCharRef: invalid xmlChar value 0\n
+< CALL 15 rc=9 err=9 wf=0 in=7 p=44 l=1 col=45 i=1 n=1
+> CALL 16 len=3
+< CALL 16 rc=9 err=9 wf=0 in=7 p=44 l=1 col=45 i=1 n=1
+> CALL 17 len=3
+< CALL 17 rc=9 err=9 wf=0 in=7 p=44 l=1 col=45 i=1 n=1
+> CALL 18 len=2
+< CALL 18 rc=9 err=9 wf=0 in=7 p=44 l=1 col=45 i=1 n=1
+> FINAL
+< FINAL 0 rc=9 err=9 wf=0 in=7 p=44 l=1 col=45 i=1 n=1
+> REFEED
+< REFEED 0 rc=9 err=9 wf=0 in=7 p=44 l=1 col=45 i=1 n=1

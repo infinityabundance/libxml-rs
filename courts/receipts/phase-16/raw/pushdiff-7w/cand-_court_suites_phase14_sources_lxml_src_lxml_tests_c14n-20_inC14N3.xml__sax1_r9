@@ -1,0 +1,74 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inC14N3.xml bytes=572 mode=r9
+> CALL 0 len=12
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=41
+internalSubset name=doc ext= sys=
+attributeDecl elem=e9 name=attr type=1 def=1 val=default enum=
+externalSubset name=doc ext= sys=
+startElement [doc]
+characters len=4 [\n   ]
+startElement [e1]
+endElement [e1]
+characters len=4 [\n   ]
+startElement [e2]
+endElement [e2]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=85 l=4 col=16 i=1 n=1
+> CALL 3 len=53
+characters len=4 [\n   ]
+startElement [e3] [name]=elem3 [id]=elem3
+endElement [e3]
+characters len=4 [\n   ]
+< CALL 3 rc=0 err=0 wf=1 in=6 p=131 l=6 col=4 i=1 n=1
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=6 p=131 l=6 col=4 i=1 n=1
+> CALL 5 len=52
+startElement [e4] [name]=elem4 [id]=elem4
+endElement [e4]
+characters len=4 [\n   ]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=175 l=7 col=4 i=1 n=1
+> CALL 6 len=45
+< CALL 6 rc=0 err=0 wf=1 in=6 p=175 l=7 col=4 i=1 n=1
+> CALL 7 len=52
+< CALL 7 rc=0 err=0 wf=1 in=6 p=175 l=7 col=4 i=1 n=1
+> CALL 8 len=44
+startElement [e5] [a:attr]=out [b:attr]=sorted [attr2]=all [attr]=I'm [xmlns:b]=http://www.ietf.org [xmlns:a]=http://www.w3.org [xmlns]=http://example.org
+endElement [e5]
+< CALL 8 rc=0 err=0 wf=1 in=7 p=335 l=10 col=35 i=1 n=1
+> CALL 9 len=54
+characters len=4 [\n   ]
+startElement [e6] [xmlns]= [xmlns:a]=http://www.w3.org
+characters len=7 [\n      ]
+< CALL 9 rc=0 err=0 wf=1 in=6 p=387 l=12 col=7 i=1 n=2
+> CALL 10 len=28
+startElement [e7] [xmlns]=http://www.ietf.org
+< CALL 10 rc=0 err=0 wf=1 in=7 p=419 l=12 col=39 i=1 n=3
+> CALL 11 len=52
+characters len=10 [\n         ]
+startElement [e8] [xmlns]= [xmlns:a]=http://www.w3.org
+< CALL 11 rc=0 err=0 wf=1 in=7 p=470 l=13 col=51 i=1 n=4
+> CALL 12 len=45
+characters len=13 [\n            ]
+< CALL 12 rc=0 err=0 wf=1 in=6 p=483 l=14 col=13 i=1 n=4
+> CALL 13 len=55
+startElement [e9] [xmlns]= [xmlns:a]=http://www.ietf.org
+endElement [e9]
+characters len=10 [\n         ]
+endElement [e8]
+characters len=7 [\n      ]
+endElement [e7]
+characters len=4 [\n   ]
+endElement [e6]
+characters len=1 [\n]
+endElement [doc]
+< CALL 13 rc=0 err=0 wf=1 in=14 p=571 l=18 col=8 i=1 n=0
+> CALL 14 len=1
+< CALL 14 rc=0 err=0 wf=1 in=14 p=572 l=19 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=572 l=19 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=19 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=572 l=19 col=1 i=1 n=0

@@ -1,0 +1,14 @@
+== /scanout/corpus/mismatch-deep.xml bytes=17 mode=r77
+> CALL 0 len=16
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[b] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[c] prefix= uri= ns=0 att=0 def=0
+error dom=1 code=76 level=3 file= line=1 i1=1 i2=14 str1=c str2=b str3= msg=Opening and ending tag mismatch: c line 1 and b\n
+< CALL 0 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2
+> CALL 1 len=1
+< CALL 1 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2
+> FINAL
+< FINAL 0 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2
+> REFEED
+< REFEED 0 rc=76 err=76 wf=0 in=7 p=13 l=1 col=14 i=1 n=2

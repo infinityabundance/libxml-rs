@@ -1,0 +1,23 @@
+== /scanout/corpus/enc-shift_jis-half.xml bytes=46 mode=b7
+> CALL 0 len=7
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=7
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=7
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=7
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=7
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=7
+startDocument
+< CALL 5 rc=0 err=0 wf=1 in=1 p=2 l=1 col=43 i=1 n=0
+> CALL 6 len=4
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 6 rc=0 err=0 wf=1 in=7 p=5 l=1 col=46 i=1 n=1
+> FINAL
+error dom=1 code=77 level=3 file= line=1 i1=1 i2=46 str1=a str2= str3= msg=Premature end of data in tag a line 1\n
+endDocument
+< FINAL 0 rc=77 err=77 wf=0 in=-1 p=5 l=1 col=46 i=1 n=1
+> REFEED
+< REFEED 0 rc=77 err=77 wf=0 in=-1 p=5 l=1 col=46 i=1 n=1

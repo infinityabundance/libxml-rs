@@ -1,0 +1,49 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inC14N5.xml bytes=315 mode=b64z2
+> CALL 0 len=64
+startDocument
+internalSubset name=doc ext= sys=
+< CALL 0 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 1 len=64
+< CALL 1 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 2 len=64
+< CALL 2 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=3 p=14 l=1 col=15 i=1 n=0
+> CALL 3 len=64
+attributeDecl elem=doc name=attrExtEnt type=1 def=3 val= enum=
+entityDecl name=ent1 type=1 pub= sys= content=Hello
+entityDecl name=ent2 type=2 pub= sys=world.txt content=
+unparsedEntityDecl name=entExt pub= sys=earth.gif nota=gif
+notationDecl name=gif pub= sys=viewgif.exe
+externalSubset name=doc ext= sys=
+startElementNs local=[doc] prefix= uri= ns=0 att=1 def=0 [a local=attrExtEnt prefix= uri= value=entExt end=1]
+characters len=4 [\n   ]
+characters len=5 [Hello]
+reference [ent1]
+characters len=2 [, ]
+error dom=1 code=26 level=3 file= line=9 i1=0 i2=18 str1=ent2 str2= str3= msg=Entity 'ent2' not defined\n
+< CALL 3 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 4 ZERO
+< CALL 4 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 4 ZERO
+< CALL 4 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 4 len=59
+< CALL 4 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 5 ZERO
+< CALL 5 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> CALL 5 ZERO
+< CALL 5 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> FINAL
+< FINAL 0 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1
+> REFEED
+< REFEED 0 rc=26 err=26 wf=0 in=7 p=243 l=9 col=18 i=1 n=1

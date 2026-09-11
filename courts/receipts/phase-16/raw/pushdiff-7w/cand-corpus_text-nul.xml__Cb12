@@ -1,0 +1,12 @@
+== /scanout/corpus/text-nul.xml bytes=10 mode=Cb12
+> CTOR len=10
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+characters len=1 [x]
+error dom=1 code=9 level=3 file= line=1 i1=0 i2=5 str1=Char 0x0 out of allowed range\n str2= str3= msg=Invalid character: Char 0x0 out of allowed range\n\n
+error dom=1 code=9 level=3 file= line=1 i1=0 i2=5 str1= str2= str3= msg=PCDATA invalid Char value 0\n
+< FINAL 0 rc=9 err=9 wf=0 in=7 p=5 l=1 col=6 i=1 n=1
+> REFEED
+< REFEED 0 rc=9 err=9 wf=0 in=7 p=5 l=1 col=6 i=1 n=1

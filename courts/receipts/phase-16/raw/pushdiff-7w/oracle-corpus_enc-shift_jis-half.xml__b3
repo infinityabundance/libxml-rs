@@ -1,0 +1,41 @@
+== /scanout/corpus/enc-shift_jis-half.xml bytes=46 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=3
+< CALL 7 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=3
+< CALL 8 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=3
+< CALL 9 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=3
+< CALL 10 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=3
+< CALL 11 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=3
+< CALL 12 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=3
+startDocument
+< CALL 13 rc=0 err=0 wf=1 in=1 p=2 l=1 col=43 i=1 n=0
+> CALL 14 len=3
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 14 rc=0 err=0 wf=1 in=7 p=5 l=1 col=46 i=1 n=1
+> CALL 15 len=1
+< CALL 15 rc=0 err=0 wf=1 in=7 p=5 l=1 col=46 i=1 n=1
+> FINAL
+error dom=1 code=77 level=3 file= line=1 i1=1 i2=46 str1=a str2= str3= msg=Premature end of data in tag a line 1\n
+endDocument
+< FINAL 0 rc=77 err=77 wf=0 in=-1 p=5 l=1 col=46 i=1 n=1
+> REFEED
+< REFEED 0 rc=77 err=77 wf=0 in=-1 p=5 l=1 col=46 i=1 n=1

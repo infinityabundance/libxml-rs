@@ -1,0 +1,10 @@
+== /scanout/corpus/amp-trunc.xml bytes=9 mode=Cb12
+> CTOR len=9
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+error dom=1 code=23 level=3 file= line=1 i1=0 i2=6 str1= str2= str3= msg=EntityRef: expecting ';'\n
+< FINAL 0 rc=23 err=23 wf=0 in=7 p=5 l=1 col=6 i=1 n=1
+> REFEED
+< REFEED 0 rc=23 err=23 wf=0 in=7 p=5 l=1 col=6 i=1 n=1

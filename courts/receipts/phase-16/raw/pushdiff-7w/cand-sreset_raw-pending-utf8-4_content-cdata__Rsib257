@@ -1,0 +1,20 @@
+== RESET /scanout/corpus/raw-pending-utf8-4.xml(6) -> /scanout/corpus/content-cdata.xml(36) mode=Rsib257
+> A 0 len=6
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< A 0 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> A-SUSPENDED
+> RESET(whole-B)
+< RESET 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> B-FINAL
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+characters len=1 [x]
+cdata len=15 [ raw < > & " ' ]
+characters len=1 [y]
+endElementNs local=[a] prefix= uri=
+endDocument
+< B-FINAL 0 rc=0 err=0 wf=1 in=-1 p=36 l=1 col=37 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=37 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=36 l=1 col=37 i=1 n=0

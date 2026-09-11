@@ -1,0 +1,21 @@
+== /court/suites/phase14/sources/nokogiri/test/files/shift_jis.xml bytes=128 mode=Cb257
+> CTOR len=128
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+startElementNs local=[root] prefix= uri= ns=0 att=0 def=0
+characters len=3 [\n  ]
+startElementNs local=[hi] prefix= uri= ns=0 att=0 def=0
+characters len=24 [This is a Shift_JIS File]
+endElementNs local=[hi] prefix= uri=
+characters len=3 [\n  ]
+startElementNs local=[hi_again] prefix= uri= ns=0 att=0 def=0
+characters len=15 [\xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf]
+endElementNs local=[hi_again] prefix= uri=
+characters len=1 [\n]
+endElementNs local=[root] prefix= uri=
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=93 l=6 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=6 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=93 l=6 col=1 i=1 n=0

@@ -1,0 +1,20 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inNsDefault.xml bytes=85 mode=r9
+> CALL 0 len=12
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+startElement [foo] [xmlns:a]=http://a [xmlns:b]=http://b
+characters len=2 [\n ]
+< CALL 1 rc=0 err=0 wf=1 in=7 p=45 l=2 col=2 i=1 n=1
+> CALL 2 len=39
+startElement [b:bar] [b:att1]=val [att2]=val
+endElement [b:bar]
+characters len=1 [\n]
+endElement [foo]
+< CALL 2 rc=0 err=0 wf=1 in=14 p=85 l=4 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=85 l=4 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=4 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=85 l=4 col=1 i=1 n=0

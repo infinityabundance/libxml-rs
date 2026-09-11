@@ -1,0 +1,139 @@
+== RESET /scanout/corpus/raw-pending-entity.xml(6) -> /scanout/corpus/text-unicode.xml(55) mode=Rsb1
+> A 0 len=1
+< A 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> A 1 len=1
+< A 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> A 2 len=1
+< A 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> A 3 len=1
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< A 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> A 4 len=1
+< A 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> A 5 len=1
+< A 5 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> A-SUSPENDED
+> RESET(empty)
+< RESET 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> B 0 len=1
+< B 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> B 1 len=1
+< B 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> B 2 len=1
+< B 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> B 3 len=1
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< B 3 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 4 len=1
+< B 4 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 5 len=1
+< B 5 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 6 len=1
+< B 6 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 7 len=1
+< B 7 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 8 len=1
+< B 8 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 9 len=1
+< B 9 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 10 len=1
+< B 10 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 11 len=1
+< B 11 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 12 len=1
+< B 12 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 13 len=1
+< B 13 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 14 len=1
+< B 14 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 15 len=1
+< B 15 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 16 len=1
+< B 16 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 17 len=1
+< B 17 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 18 len=1
+< B 18 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 19 len=1
+< B 19 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 20 len=1
+< B 20 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 21 len=1
+< B 21 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 22 len=1
+< B 22 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 23 len=1
+< B 23 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 24 len=1
+< B 24 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 25 len=1
+< B 25 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 26 len=1
+< B 26 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 27 len=1
+< B 27 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 28 len=1
+< B 28 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 29 len=1
+< B 29 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 30 len=1
+< B 30 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 31 len=1
+< B 31 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 32 len=1
+< B 32 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 33 len=1
+< B 33 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 34 len=1
+< B 34 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 35 len=1
+< B 35 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 36 len=1
+< B 36 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 37 len=1
+< B 37 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 38 len=1
+< B 38 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 39 len=1
+< B 39 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 40 len=1
+< B 40 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 41 len=1
+< B 41 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 42 len=1
+< B 42 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 43 len=1
+< B 43 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 44 len=1
+< B 44 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 45 len=1
+< B 45 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 46 len=1
+< B 46 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 47 len=1
+< B 47 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 48 len=1
+< B 48 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 49 len=1
+< B 49 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 50 len=1
+< B 50 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> B 51 len=1
+characters len=1 [h]
+characters len=47 [\xc3\xa9llo w\xc3\xb6rld \xe2\x80\x94 \xc3\xbcn\xc3\xafcode \xe2\x9c\x93 \xe4\xb8\xad\xe6\x96\x87 \xf0\x9f\x8e\x89 text]
+< B 51 rc=0 err=0 wf=1 in=7 p=51 l=1 col=37 i=1 n=1
+> B 52 len=1
+< B 52 rc=0 err=0 wf=1 in=9 p=51 l=1 col=37 i=1 n=1
+> B 53 len=1
+< B 53 rc=0 err=0 wf=1 in=9 p=51 l=1 col=37 i=1 n=1
+> B 54 len=1
+endElementNs local=[a] prefix= uri=
+< B 54 rc=0 err=0 wf=1 in=14 p=55 l=1 col=41 i=1 n=0
+> B-FINAL
+endDocument
+< B-FINAL 0 rc=0 err=0 wf=1 in=-1 p=55 l=1 col=41 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=41 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=55 l=1 col=41 i=1 n=0

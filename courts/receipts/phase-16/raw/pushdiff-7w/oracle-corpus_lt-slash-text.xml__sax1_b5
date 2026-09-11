@@ -1,0 +1,16 @@
+== /scanout/corpus/lt-slash-text.xml bytes=12 mode=b5
+> CALL 0 len=5
+startDocument
+startElement [a]
+characters len=1 [x]
+< CALL 0 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=9 p=4 l=1 col=5 i=1 n=1
+> CALL 2 len=2
+error dom=1 code=73 level=3 file= line=1 i1=0 i2=8 str1= str2= str3= msg=expected '>'\n
+error dom=1 code=76 level=3 file= line=1 i1=0 i2=8 str1=a str2=unparsable str3= msg=Opening and ending tag mismatch: a line 0 and unparsable\n
+< CALL 2 rc=76 err=76 wf=0 in=14 p=7 l=1 col=8 i=1 n=0
+> FINAL
+< FINAL 0 rc=76 err=76 wf=0 in=14 p=7 l=1 col=8 i=1 n=0
+> REFEED
+< REFEED 0 rc=76 err=76 wf=0 in=14 p=7 l=1 col=8 i=1 n=0

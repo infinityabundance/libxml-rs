@@ -1,0 +1,67 @@
+== /court/suites/phase14/sources/nokogiri/test/files/address_book.xml bytes=192 mode=Cb12
+> CTOR len=12
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=12
+startDocument
+startElementNs local=[addressBook] prefix= uri= ns=0 att=0 def=0
+characters len=3 [\n  ]
+startElementNs local=[card] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=7 p=22 l=2 col=9 i=1 n=2
+> CALL 1 len=12
+characters len=5 [\n    ]
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 1 rc=0 err=0 wf=1 in=7 p=33 l=3 col=11 i=1 n=3
+> CALL 2 len=12
+characters len=10 [John Smith]
+< CALL 2 rc=0 err=0 wf=1 in=9 p=43 l=3 col=21 i=1 n=3
+> CALL 3 len=12
+endElementNs local=[name] prefix= uri=
+characters len=5 [\n    ]
+< CALL 3 rc=0 err=0 wf=1 in=6 p=55 l=4 col=5 i=1 n=2
+> CALL 4 len=12
+startElementNs local=[email] prefix= uri= ns=0 att=0 def=0
+< CALL 4 rc=0 err=0 wf=1 in=7 p=62 l=4 col=12 i=1 n=3
+> CALL 5 len=12
+characters len=14 [js@example.com]
+endElementNs local=[email] prefix= uri=
+< CALL 5 rc=0 err=0 wf=1 in=7 p=84 l=4 col=34 i=1 n=2
+> CALL 6 len=12
+characters len=3 [\n  ]
+endElementNs local=[card] prefix= uri=
+< CALL 6 rc=0 err=0 wf=1 in=7 p=94 l=5 col=10 i=1 n=1
+> CALL 7 len=12
+characters len=3 [\n  ]
+startElementNs local=[card] prefix= uri= ns=0 att=0 def=0
+< CALL 7 rc=0 err=0 wf=1 in=7 p=103 l=6 col=9 i=1 n=2
+> CALL 8 len=12
+characters len=5 [\n    ]
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 8 rc=0 err=0 wf=1 in=7 p=114 l=7 col=11 i=1 n=3
+> CALL 9 len=12
+characters len=11 [Fred Bloggs]
+endElementNs local=[name] prefix= uri=
+< CALL 9 rc=0 err=0 wf=1 in=7 p=132 l=7 col=29 i=1 n=2
+> CALL 10 len=12
+characters len=5 [\n    ]
+startElementNs local=[email] prefix= uri= ns=0 att=0 def=0
+< CALL 10 rc=0 err=0 wf=1 in=7 p=144 l=8 col=12 i=1 n=3
+> CALL 11 len=12
+< CALL 11 rc=0 err=0 wf=1 in=7 p=144 l=8 col=12 i=1 n=3
+> CALL 12 len=12
+characters len=14 [fb@example.net]
+endElementNs local=[email] prefix= uri=
+< CALL 12 rc=0 err=0 wf=1 in=7 p=166 l=8 col=34 i=1 n=2
+> CALL 13 len=12
+characters len=3 [\n  ]
+endElementNs local=[card] prefix= uri=
+characters len=1 [\n]
+< CALL 13 rc=0 err=0 wf=1 in=9 p=177 l=10 col=1 i=1 n=1
+> CALL 14 len=12
+endElementNs local=[addressBook] prefix= uri=
+< CALL 14 rc=0 err=0 wf=1 in=14 p=192 l=11 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=192 l=11 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=11 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=192 l=11 col=1 i=1 n=0

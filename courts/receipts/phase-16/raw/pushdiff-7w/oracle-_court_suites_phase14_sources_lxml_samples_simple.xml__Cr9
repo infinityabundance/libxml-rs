@@ -1,0 +1,30 @@
+== /court/suites/phase14/sources/lxml/samples/simple.xml bytes=105 mode=Cr9
+> CTOR len=12
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=34
+startDocument
+startElementNs local=[root] prefix= uri= ns=0 att=0 def=0
+characters len=4 [\n   ]
+startElementNs local=[element] prefix= uri= ns=0 att=1 def=0 [a local=key prefix= uri= value=value end=1]
+characters len=4 [text]
+endElementNs local=[element] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=7 p=45 l=2 col=39 i=1 n=1
+> CALL 1 len=41
+characters len=4 [\n   ]
+startElementNs local=[element] prefix= uri= ns=0 att=0 def=0
+characters len=4 [text]
+endElementNs local=[element] prefix= uri=
+characters len=8 [tail\n   ]
+< CALL 1 rc=0 err=0 wf=1 in=6 p=80 l=4 col=4 i=1 n=1
+> CALL 2 len=18
+startElementNs local=[empty-element] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[empty-element] prefix= uri=
+characters len=1 [\n]
+endElementNs local=[root] prefix= uri=
+< CALL 2 rc=0 err=0 wf=1 in=14 p=105 l=6 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=105 l=6 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=6 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=105 l=6 col=1 i=1 n=0

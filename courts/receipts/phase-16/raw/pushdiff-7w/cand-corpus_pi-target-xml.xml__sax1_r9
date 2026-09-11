@@ -1,0 +1,15 @@
+== /scanout/corpus/pi-target-xml.xml bytes=32 mode=r9
+> CALL 0 len=12
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=20
+startDocument
+pi target=xml-stylesheet data=href="x"
+startElement [a]
+endElement [a]
+< CALL 1 rc=0 err=0 wf=1 in=14 p=32 l=2 col=5 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=32 l=2 col=5 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=32 l=2 col=5 i=1 n=0

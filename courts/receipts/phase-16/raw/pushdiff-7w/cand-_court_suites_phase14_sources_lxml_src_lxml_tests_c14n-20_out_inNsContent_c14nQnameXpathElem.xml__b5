@@ -1,0 +1,157 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inNsContent_c14nQnameXpathElem.xml bytes=344 mode=b5
+> CALL 0 len=5
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=5
+startElementNs local=[foo] prefix=a uri=http://a ns=1 att=0 def=0 {a=http://a}
+characters len=2 [\n ]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=28 l=2 col=2 i=1 n=1
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=6 p=28 l=2 col=2 i=1 n=1
+> CALL 7 len=5
+< CALL 7 rc=0 err=0 wf=1 in=6 p=28 l=2 col=2 i=1 n=1
+> CALL 8 len=5
+< CALL 8 rc=0 err=0 wf=1 in=6 p=28 l=2 col=2 i=1 n=1
+> CALL 9 len=5
+< CALL 9 rc=0 err=0 wf=1 in=6 p=28 l=2 col=2 i=1 n=1
+> CALL 10 len=5
+< CALL 10 rc=0 err=0 wf=1 in=6 p=28 l=2 col=2 i=1 n=1
+> CALL 11 len=5
+< CALL 11 rc=0 err=0 wf=1 in=6 p=28 l=2 col=2 i=1 n=1
+> CALL 12 len=5
+< CALL 12 rc=0 err=0 wf=1 in=6 p=28 l=2 col=2 i=1 n=1
+> CALL 13 len=5
+< CALL 13 rc=0 err=0 wf=1 in=6 p=28 l=2 col=2 i=1 n=1
+> CALL 14 len=5
+< CALL 14 rc=0 err=0 wf=1 in=6 p=28 l=2 col=2 i=1 n=1
+> CALL 15 len=5
+startElementNs local=[bar] prefix=a uri=http://a ns=1 att=0 def=0 {xsd=http://www.w3.org/2001/XMLSchema}
+< CALL 15 rc=0 err=0 wf=1 in=7 p=80 l=2 col=54 i=1 n=2
+> CALL 16 len=5
+< CALL 16 rc=0 err=0 wf=1 in=7 p=80 l=2 col=54 i=1 n=2
+> CALL 17 len=5
+< CALL 17 rc=0 err=0 wf=1 in=7 p=80 l=2 col=54 i=1 n=2
+> CALL 18 len=5
+characters len=10 [xsd:string]
+< CALL 18 rc=0 err=0 wf=1 in=9 p=90 l=2 col=64 i=1 n=2
+> CALL 19 len=5
+endElementNs local=[bar] prefix=a uri=http://a
+< CALL 19 rc=0 err=0 wf=1 in=7 p=98 l=2 col=72 i=1 n=1
+> CALL 20 len=5
+characters len=2 [\n ]
+< CALL 20 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 21 len=5
+< CALL 21 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 22 len=5
+< CALL 22 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 23 len=5
+< CALL 23 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 24 len=5
+< CALL 24 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 25 len=5
+< CALL 25 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 26 len=5
+< CALL 26 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 27 len=5
+< CALL 27 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 28 len=5
+< CALL 28 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 29 len=5
+< CALL 29 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 30 len=5
+< CALL 30 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 31 len=5
+< CALL 31 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 32 len=5
+< CALL 32 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 33 len=5
+< CALL 33 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 34 len=5
+< CALL 34 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 35 len=5
+< CALL 35 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 36 len=5
+< CALL 36 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 37 len=5
+< CALL 37 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 38 len=5
+< CALL 38 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 39 len=5
+< CALL 39 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 40 len=5
+< CALL 40 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 41 len=5
+< CALL 41 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 42 len=5
+< CALL 42 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 43 len=5
+< CALL 43 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 44 len=5
+< CALL 44 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 45 len=5
+< CALL 45 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 46 len=5
+< CALL 46 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 47 len=5
+< CALL 47 rc=0 err=0 wf=1 in=6 p=100 l=3 col=2 i=1 n=1
+> CALL 48 len=5
+startElementNs local=[IncludedXPath] prefix=dsig2 uri=http://www.w3.org/2010/xmldsig2# ns=3 att=0 def=0 {b=http://b} {dsig2=http://www.w3.org/2010/xmldsig2#} {soap-env=http://schemas.xmlsoap.org/wsdl/soap/}
+< CALL 48 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 49 len=5
+< CALL 49 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 50 len=5
+< CALL 50 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 51 len=5
+< CALL 51 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 52 len=5
+< CALL 52 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 53 len=5
+< CALL 53 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 54 len=5
+< CALL 54 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 55 len=5
+< CALL 55 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 56 len=5
+< CALL 56 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 57 len=5
+< CALL 57 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 58 len=5
+< CALL 58 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 59 len=5
+< CALL 59 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 60 len=5
+< CALL 60 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 61 len=5
+< CALL 61 rc=0 err=0 wf=1 in=7 p=242 l=3 col=144 i=1 n=2
+> CALL 62 len=5
+characters len=71 [/soap-env:body/child::b:foo[@att1 != "c:val" and @att2 != 'xsd:string']]
+< CALL 62 rc=0 err=0 wf=1 in=9 p=313 l=3 col=215 i=1 n=2
+> CALL 63 len=5
+< CALL 63 rc=0 err=0 wf=1 in=9 p=313 l=3 col=215 i=1 n=2
+> CALL 64 len=5
+< CALL 64 rc=0 err=0 wf=1 in=9 p=313 l=3 col=215 i=1 n=2
+> CALL 65 len=5
+< CALL 65 rc=0 err=0 wf=1 in=9 p=313 l=3 col=215 i=1 n=2
+> CALL 66 len=5
+endElementNs local=[IncludedXPath] prefix=dsig2 uri=http://www.w3.org/2010/xmldsig2#
+< CALL 66 rc=0 err=0 wf=1 in=7 p=335 l=3 col=237 i=1 n=1
+> CALL 67 len=5
+characters len=1 [\n]
+< CALL 67 rc=0 err=0 wf=1 in=9 p=336 l=4 col=1 i=1 n=1
+> CALL 68 len=4
+endElementNs local=[foo] prefix=a uri=http://a
+< CALL 68 rc=0 err=0 wf=1 in=14 p=344 l=4 col=9 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=344 l=4 col=9 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=4 i1=0 i2=9 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=344 l=4 col=9 i=1 n=0

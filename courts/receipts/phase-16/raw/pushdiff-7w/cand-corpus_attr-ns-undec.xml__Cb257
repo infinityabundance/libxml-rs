@@ -1,0 +1,12 @@
+== /scanout/corpus/attr-ns-undec.xml bytes=26 mode=Cb257
+> CTOR len=26
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+error dom=3 code=201 level=2 file= line=1 i1=0 i2=25 str1=x str2=b str3=a msg=Namespace prefix x for b on a is not defined\n
+startElementNs local=[a] prefix= uri=urn:d ns=1 att=1 def=0 {=urn:d} [a local=b prefix=x uri= value=1 end=1]
+endElementNs local=[a] prefix= uri=urn:d
+endDocument
+< FINAL 0 rc=0 err=201 wf=1 in=-1 p=26 l=1 col=27 i=1 n=0
+> REFEED
+< REFEED 0 rc=0 err=201 wf=1 in=-1 p=26 l=1 col=27 i=1 n=0

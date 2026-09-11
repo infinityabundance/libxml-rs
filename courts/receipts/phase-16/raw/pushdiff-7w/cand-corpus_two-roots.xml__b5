@@ -1,0 +1,14 @@
+== /scanout/corpus/two-roots.xml bytes=8 mode=b5
+> CALL 0 len=5
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[a] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=4 l=1 col=5 i=1 n=0
+> CALL 1 len=3
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
+endDocument
+< CALL 1 rc=5 err=5 wf=0 in=-1 p=4 l=1 col=5 i=1 n=0
+> FINAL
+< FINAL 0 rc=5 err=5 wf=0 in=-1 p=4 l=1 col=5 i=1 n=0
+> REFEED
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=4 l=1 col=5 i=1 n=0

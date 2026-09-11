@@ -1,0 +1,10 @@
+== /scanout/corpus/content-cdata-unterm.xml bytes=19 mode=Cb257
+> CTOR len=19
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+error dom=1 code=63 level=3 file= line=1 i1=0 i2=20 str1=raw</ str2= str3= msg=CData section not finished\nraw</\n
+< FINAL 0 rc=63 err=63 wf=0 in=7 p=19 l=1 col=20 i=1 n=1
+> REFEED
+< REFEED 0 rc=63 err=63 wf=0 in=7 p=19 l=1 col=20 i=1 n=1

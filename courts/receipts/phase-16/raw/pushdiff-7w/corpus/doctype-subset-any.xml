@@ -1,0 +1,2 @@
+<!DOCTYPE a [<!ELEMENT a ANY>]>
+<a><b/></a>

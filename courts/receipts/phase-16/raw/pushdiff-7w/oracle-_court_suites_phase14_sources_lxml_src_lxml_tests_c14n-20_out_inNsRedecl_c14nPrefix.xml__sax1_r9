@@ -1,0 +1,26 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inNsRedecl_c14nPrefix.xml bytes=173 mode=r9
+> CALL 0 len=12
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=41
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=53
+startElement [n0:foo] [xmlns:n0]= [xmlns:n1]=http://z2 [xmlns:n2]=http://z3 [n1:att2]=val2 [n2:att1]=val1
+characters len=3 [ \n ]
+< CALL 3 rc=0 err=0 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=6 p=95 l=2 col=2 i=1 n=1
+> CALL 5 len=29
+startElement [n3:bar] [xmlns:n3]=http://z0 [n1:att1]=val1 [n2:att2]=val2
+endElement [n3:bar]
+characters len=1 [\n]
+endElement [n0:foo]
+< CALL 5 rc=0 err=0 wf=1 in=14 p=173 l=3 col=10 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=173 l=3 col=10 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=3 i1=0 i2=10 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=173 l=3 col=10 i=1 n=0

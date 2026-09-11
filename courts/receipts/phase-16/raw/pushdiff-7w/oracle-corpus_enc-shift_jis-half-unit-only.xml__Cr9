@@ -1,0 +1,17 @@
+== /scanout/corpus/enc-shift_jis-half-unit-only.xml bytes=51 mode=Cr9
+> CTOR len=12
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=34
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=7 p=5 l=1 col=46 i=1 n=1
+> CALL 1 len=5
+characters len=1 [x]
+endElementNs local=[a] prefix= uri=
+< CALL 1 rc=0 err=0 wf=1 in=14 p=10 l=1 col=51 i=1 n=0
+> FINAL
+error dom=8 code=81 level=3 file= line=1 i1=0 i2=51 str1= str2= str3= msg=Invalid bytes in character encoding\n
+endDocument
+< FINAL 0 rc=81 err=81 wf=0 in=-1 p=10 l=1 col=51 i=1 n=0
+> REFEED
+< REFEED 0 rc=81 err=81 wf=0 in=-1 p=10 l=1 col=51 i=1 n=0

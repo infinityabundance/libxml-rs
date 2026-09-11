@@ -1,0 +1,29 @@
+== /scanout/corpus/content-cdata.xml bytes=36 mode=b5
+> CALL 0 len=5
+startDocument
+startElement [a]
+characters len=1 [x]
+< CALL 0 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=7 p=4 l=1 col=5 i=1 n=1
+> CALL 6 len=5
+cdata len=15 [ raw < > & " ' ]
+characters len=1 [y]
+< CALL 6 rc=0 err=0 wf=1 in=9 p=32 l=1 col=33 i=1 n=1
+> CALL 7 len=1
+endElement [a]
+< CALL 7 rc=0 err=0 wf=1 in=14 p=36 l=1 col=37 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=36 l=1 col=37 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=37 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=36 l=1 col=37 i=1 n=0

@@ -1,0 +1,23 @@
+== /court/suites/phase14/sources/nokogiri/test/files/snuggles.xml bytes=117 mode=r77
+> CALL 0 len=16
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=38
+startElementNs local=[x] prefix= uri= ns=1 att=0 def=0 {tenderlove=http://tenderlovemaking.com/}
+< CALL 1 rc=0 err=0 wf=1 in=7 p=51 l=1 col=52 i=1 n=1
+> CALL 2 len=53
+characters len=3 [\n  ]
+startElementNs local=[foo] prefix=tenderlove uri=http://tenderlovemaking.com/ ns=0 att=1 def=0 [a local=awesome prefix= uri= value=true end=1]
+characters len=9 [snuggles!]
+< CALL 2 rc=0 err=0 wf=1 in=9 p=94 l=2 col=43 i=1 n=2
+> CALL 3 len=10
+endElementNs local=[foo] prefix=tenderlove uri=http://tenderlovemaking.com/
+characters len=1 [\n]
+endElementNs local=[x] prefix= uri=
+< CALL 3 rc=0 err=0 wf=1 in=14 p=117 l=4 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=117 l=4 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=4 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=117 l=4 col=1 i=1 n=0

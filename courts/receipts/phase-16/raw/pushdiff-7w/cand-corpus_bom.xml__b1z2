@@ -1,0 +1,184 @@
+== /scanout/corpus/bom.xml bytes=29 mode=b1z2
+> CALL 0 len=1
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 ZERO
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=1
+< CALL 1 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 ZERO
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=1
+< CALL 2 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 ZERO
+< CALL 3 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=1
+< CALL 3 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 4 ZERO
+< CALL 4 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 4 ZERO
+< CALL 4 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 4 len=1
+< CALL 4 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 5 ZERO
+< CALL 5 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 5 ZERO
+< CALL 5 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 5 len=1
+< CALL 5 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 6 ZERO
+< CALL 6 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 6 ZERO
+< CALL 6 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 6 len=1
+< CALL 6 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 7 ZERO
+< CALL 7 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 7 ZERO
+< CALL 7 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 7 len=1
+< CALL 7 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 8 ZERO
+< CALL 8 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 8 ZERO
+< CALL 8 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 8 len=1
+< CALL 8 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 9 ZERO
+< CALL 9 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 9 ZERO
+< CALL 9 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 9 len=1
+< CALL 9 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 10 ZERO
+< CALL 10 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 10 ZERO
+< CALL 10 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 10 len=1
+< CALL 10 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 11 ZERO
+< CALL 11 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 11 ZERO
+< CALL 11 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 11 len=1
+< CALL 11 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 12 ZERO
+< CALL 12 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 12 ZERO
+< CALL 12 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 12 len=1
+< CALL 12 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 13 ZERO
+< CALL 13 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 13 ZERO
+< CALL 13 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 13 len=1
+< CALL 13 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 14 ZERO
+< CALL 14 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 14 ZERO
+< CALL 14 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 14 len=1
+< CALL 14 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 15 ZERO
+< CALL 15 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 15 ZERO
+< CALL 15 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 15 len=1
+< CALL 15 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 16 ZERO
+< CALL 16 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 16 ZERO
+< CALL 16 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 16 len=1
+< CALL 16 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 17 ZERO
+< CALL 17 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 17 ZERO
+< CALL 17 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 17 len=1
+< CALL 17 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 18 ZERO
+< CALL 18 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 18 ZERO
+< CALL 18 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 18 len=1
+< CALL 18 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 19 ZERO
+< CALL 19 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 19 ZERO
+< CALL 19 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 19 len=1
+< CALL 19 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 20 ZERO
+< CALL 20 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 20 ZERO
+< CALL 20 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 20 len=1
+< CALL 20 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 21 ZERO
+< CALL 21 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 21 ZERO
+< CALL 21 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 21 len=1
+< CALL 21 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 22 ZERO
+< CALL 22 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 22 ZERO
+< CALL 22 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 22 len=1
+< CALL 22 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 23 ZERO
+< CALL 23 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 23 ZERO
+< CALL 23 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 23 len=1
+startDocument
+< CALL 23 rc=0 err=0 wf=1 in=1 p=24 l=1 col=22 i=1 n=0
+> CALL 24 ZERO
+< CALL 24 rc=0 err=0 wf=1 in=1 p=24 l=1 col=22 i=1 n=0
+> CALL 24 ZERO
+< CALL 24 rc=0 err=0 wf=1 in=1 p=24 l=1 col=22 i=1 n=0
+> CALL 24 len=1
+< CALL 24 rc=0 err=0 wf=1 in=1 p=25 l=2 col=1 i=1 n=0
+> CALL 25 ZERO
+< CALL 25 rc=0 err=0 wf=1 in=1 p=25 l=2 col=1 i=1 n=0
+> CALL 25 ZERO
+< CALL 25 rc=0 err=0 wf=1 in=1 p=25 l=2 col=1 i=1 n=0
+> CALL 25 len=1
+< CALL 25 rc=0 err=0 wf=1 in=1 p=25 l=2 col=1 i=1 n=0
+> CALL 26 ZERO
+< CALL 26 rc=0 err=0 wf=1 in=1 p=25 l=2 col=1 i=1 n=0
+> CALL 26 ZERO
+< CALL 26 rc=0 err=0 wf=1 in=1 p=25 l=2 col=1 i=1 n=0
+> CALL 26 len=1
+< CALL 26 rc=0 err=0 wf=1 in=6 p=25 l=2 col=1 i=1 n=0
+> CALL 27 ZERO
+< CALL 27 rc=0 err=0 wf=1 in=6 p=25 l=2 col=1 i=1 n=0
+> CALL 27 ZERO
+< CALL 27 rc=0 err=0 wf=1 in=6 p=25 l=2 col=1 i=1 n=0
+> CALL 27 len=1
+< CALL 27 rc=0 err=0 wf=1 in=6 p=25 l=2 col=1 i=1 n=0
+> CALL 28 ZERO
+< CALL 28 rc=0 err=0 wf=1 in=6 p=25 l=2 col=1 i=1 n=0
+> CALL 28 ZERO
+< CALL 28 rc=0 err=0 wf=1 in=6 p=25 l=2 col=1 i=1 n=0
+> CALL 28 len=1
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[a] prefix= uri=
+< CALL 28 rc=0 err=0 wf=1 in=14 p=29 l=2 col=5 i=1 n=0
+> CALL 29 ZERO
+< CALL 29 rc=0 err=0 wf=1 in=14 p=29 l=2 col=5 i=1 n=0
+> CALL 29 ZERO
+< CALL 29 rc=0 err=0 wf=1 in=14 p=29 l=2 col=5 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=29 l=2 col=5 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=29 l=2 col=5 i=1 n=0

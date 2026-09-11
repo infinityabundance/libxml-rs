@@ -1,0 +1,71 @@
+== /court/suites/phase14/sources/nokogiri/test/files/shift_jis.xml bytes=128 mode=b5
+> CALL 0 len=5
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=5
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=5
+< CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=5
+< CALL 7 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=5
+startDocument
+< CALL 8 rc=0 err=0 wf=1 in=6 p=3 l=2 col=1 i=1 n=0
+> CALL 9 len=5
+startElement [root]
+< CALL 9 rc=0 err=0 wf=1 in=7 p=9 l=2 col=7 i=1 n=1
+> CALL 10 len=5
+characters len=3 [\n  ]
+< CALL 10 rc=0 err=0 wf=1 in=6 p=12 l=3 col=3 i=1 n=1
+> CALL 11 len=5
+startElement [hi]
+< CALL 11 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 12 len=5
+< CALL 12 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 13 len=5
+< CALL 13 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 14 len=5
+< CALL 14 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 15 len=5
+< CALL 15 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 16 len=5
+characters len=24 [This is a Shift_JIS File]
+endElement [hi]
+< CALL 16 rc=0 err=0 wf=1 in=7 p=45 l=3 col=36 i=1 n=1
+> CALL 17 len=5
+characters len=3 [\n  ]
+< CALL 17 rc=0 err=0 wf=1 in=6 p=48 l=4 col=3 i=1 n=1
+> CALL 18 len=5
+< CALL 18 rc=0 err=0 wf=1 in=6 p=48 l=4 col=3 i=1 n=1
+> CALL 19 len=5
+startElement [hi_again]
+< CALL 19 rc=0 err=0 wf=1 in=7 p=58 l=4 col=13 i=1 n=2
+> CALL 20 len=5
+< CALL 20 rc=0 err=0 wf=1 in=7 p=58 l=4 col=13 i=1 n=2
+> CALL 21 len=5
+characters len=15 [\xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf]
+< CALL 21 rc=0 err=0 wf=1 in=9 p=73 l=4 col=18 i=1 n=2
+> CALL 22 len=5
+< CALL 22 rc=0 err=0 wf=1 in=9 p=73 l=4 col=18 i=1 n=2
+> CALL 23 len=5
+endElement [hi_again]
+< CALL 23 rc=0 err=0 wf=1 in=7 p=84 l=4 col=29 i=1 n=1
+> CALL 24 len=5
+characters len=1 [\n]
+< CALL 24 rc=0 err=0 wf=1 in=9 p=85 l=5 col=1 i=1 n=1
+> CALL 25 len=3
+endElement [root]
+< CALL 25 rc=0 err=0 wf=1 in=14 p=93 l=6 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=93 l=6 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=6 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=93 l=6 col=1 i=1 n=0

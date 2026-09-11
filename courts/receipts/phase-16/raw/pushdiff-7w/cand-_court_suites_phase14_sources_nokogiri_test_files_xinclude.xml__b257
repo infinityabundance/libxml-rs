@@ -1,0 +1,16 @@
+== /court/suites/phase14/sources/nokogiri/test/files/xinclude.xml bytes=142 mode=b257
+> CALL 0 len=142
+startDocument
+startElementNs local=[test] prefix= uri= ns=1 att=0 def=0 {xi=http://www.w3.org/2001/XInclude}
+characters len=5 [\n    ]
+startElementNs local=[include] prefix=xi uri=http://www.w3.org/2001/XInclude ns=0 att=1 def=0 [a local=href prefix= uri= value=to_be_xincluded.xml end=1]
+endElementNs local=[include] prefix=xi uri=http://www.w3.org/2001/XInclude
+characters len=1 [\n]
+endElementNs local=[test] prefix= uri=
+< CALL 0 rc=0 err=0 wf=1 in=14 p=142 l=5 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=142 l=5 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=5 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=142 l=5 col=1 i=1 n=0

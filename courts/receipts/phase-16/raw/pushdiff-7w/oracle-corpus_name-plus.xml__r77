@@ -1,0 +1,10 @@
+== /scanout/corpus/name-plus.xml bytes=6 mode=r77
+> CALL 0 len=6
+startDocument
+error dom=1 code=68 level=3 file= line=1 i1=0 i2=3 str1= str2= str3= msg=error parsing attribute name\n
+error dom=1 code=73 level=3 file= line=1 i1=0 i2=3 str1=a str2= str3= msg=Couldn't find end of Start Tag a\n
+< CALL 0 rc=73 err=73 wf=0 in=14 p=2 l=1 col=3 i=1 n=0
+> FINAL
+< FINAL 0 rc=73 err=73 wf=0 in=14 p=2 l=1 col=3 i=1 n=0
+> REFEED
+< REFEED 0 rc=73 err=73 wf=0 in=14 p=2 l=1 col=3 i=1 n=0

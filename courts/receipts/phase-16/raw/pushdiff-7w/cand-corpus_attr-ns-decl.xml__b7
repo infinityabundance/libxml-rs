@@ -1,0 +1,22 @@
+== /scanout/corpus/attr-ns-decl.xml bytes=42 mode=b7
+> CALL 0 len=7
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=7
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=7
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=7
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=7
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=7
+startElementNs local=[a] prefix= uri=urn:d ns=2 att=1 def=0 {=urn:d} {x=urn:x} [a local=b prefix=x uri=urn:x value=1 end=1]
+endElementNs local=[a] prefix= uri=urn:d
+< CALL 5 rc=0 err=0 wf=1 in=14 p=42 l=1 col=43 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=42 l=1 col=43 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=43 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=42 l=1 col=43 i=1 n=0

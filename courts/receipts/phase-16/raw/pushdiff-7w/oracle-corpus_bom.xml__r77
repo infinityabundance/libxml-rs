@@ -1,0 +1,14 @@
+== /scanout/corpus/bom.xml bytes=29 mode=r77
+> CALL 0 len=16
+< CALL 0 rc=0 err=0 wf=1 in=17 p=3 l=1 col=1 i=1 n=0
+> CALL 1 len=13
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[a] prefix= uri=
+< CALL 1 rc=0 err=0 wf=1 in=14 p=29 l=2 col=5 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=29 l=2 col=5 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=29 l=2 col=5 i=1 n=0

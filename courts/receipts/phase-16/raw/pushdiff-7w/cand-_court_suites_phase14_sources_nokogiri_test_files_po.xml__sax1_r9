@@ -1,0 +1,159 @@
+== /court/suites/phase14/sources/nokogiri/test/files/po.xml bytes=931 mode=r9
+> CALL 0 len=12
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=34
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 2 len=41
+startElement [purchaseOrder] [orderDate]=1999-10-20
+characters len=4 [\n   ]
+startElement [shipTo] [country]=US
+< CALL 2 rc=0 err=0 wf=1 in=7 p=85 l=3 col=25 i=1 n=2
+> CALL 3 len=53
+characters len=7 [\n      ]
+startElement [name]
+characters len=11 [Alice Smith]
+endElement [name]
+characters len=7 [\n      ]
+startElement [street]
+< CALL 3 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 4 len=4
+< CALL 4 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 5 len=52
+characters len=16 [123 Maple Street]
+endElement [street]
+characters len=7 [\n      ]
+startElement [city]
+characters len=11 [Mill Valley]
+endElement [city]
+characters len=7 [\n      ]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=194 l=7 col=7 i=1 n=2
+> CALL 6 len=45
+startElement [state]
+characters len=2 [CA]
+endElement [state]
+characters len=7 [\n      ]
+startElement [zip]
+characters len=5 [90952]
+endElement [zip]
+characters len=4 [\n   ]
+< CALL 6 rc=0 err=0 wf=1 in=9 p=238 l=9 col=4 i=1 n=2
+> CALL 7 len=52
+endElement [shipTo]
+characters len=4 [\n   ]
+startElement [billTo] [country]=US
+characters len=7 [\n      ]
+startElement [name]
+< CALL 7 rc=0 err=0 wf=1 in=7 p=285 l=11 col=13 i=1 n=3
+> CALL 8 len=44
+characters len=12 [Robert Smith]
+endElement [name]
+characters len=7 [\n      ]
+startElement [street]
+characters len=12 [8 Oak Avenue]
+< CALL 8 rc=0 err=0 wf=1 in=9 p=331 l=12 col=27 i=1 n=3
+> CALL 9 len=54
+endElement [street]
+characters len=7 [\n      ]
+startElement [city]
+characters len=8 [Old Town]
+endElement [city]
+characters len=7 [\n      ]
+startElement [state]
+characters len=2 [PA]
+< CALL 9 rc=0 err=0 wf=1 in=9 p=384 l=14 col=16 i=1 n=3
+> CALL 10 len=28
+endElement [state]
+characters len=7 [\n      ]
+startElement [zip]
+characters len=5 [95819]
+endElement [zip]
+< CALL 10 rc=0 err=0 wf=1 in=7 p=415 l=15 col=23 i=1 n=2
+> CALL 11 len=52
+characters len=4 [\n   ]
+endElement [billTo]
+characters len=4 [\n   ]
+startElement [comment]
+characters len=29 [Hurry, my lawn is going wild!]
+< CALL 11 rc=0 err=0 wf=1 in=7 p=470 l=17 col=42 i=1 n=2
+> CALL 12 len=45
+endElement [comment]
+characters len=4 [\n   ]
+startElement [items]
+characters len=7 [\n      ]
+< CALL 12 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 13 len=55
+startElement [item] [partNum]=872-AA
+characters len=10 [\n         ]
+startElement [productName]
+characters len=9 [Lawnmower]
+endElement [productName]
+< CALL 13 rc=0 err=0 wf=1 in=7 p=567 l=20 col=46 i=1 n=3
+> CALL 14 len=42
+characters len=10 [\n         ]
+startElement [quantity]
+characters len=1 [1]
+endElement [quantity]
+characters len=10 [\n         ]
+< CALL 14 rc=0 err=0 wf=1 in=6 p=609 l=22 col=10 i=1 n=3
+> CALL 15 len=63
+startElement [USPrice]
+characters len=6 [148.95]
+endElement [USPrice]
+characters len=10 [\n         ]
+startElement [comment]
+< CALL 15 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 16 len=31
+characters len=24 [Confirm this is electric]
+endElement [comment]
+characters len=7 [\n      ]
+endElement [item]
+< CALL 16 rc=0 err=0 wf=1 in=7 p=701 l=24 col=14 i=1 n=2
+> CALL 17 len=16
+characters len=7 [\n      ]
+< CALL 17 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 18 len=32
+startElement [item] [partNum]=926-AA
+characters len=10 [\n         ]
+startElement [productName]
+< CALL 18 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 19 len=3
+< CALL 19 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 20 len=19
+characters len=12 [Baby Monitor]
+< CALL 20 rc=0 err=0 wf=1 in=9 p=766 l=26 col=35 i=1 n=4
+> CALL 21 len=19
+endElement [productName]
+characters len=10 [\n         ]
+< CALL 21 rc=0 err=0 wf=1 in=6 p=790 l=27 col=10 i=1 n=3
+> CALL 22 len=20
+startElement [quantity]
+characters len=1 [1]
+endElement [quantity]
+< CALL 22 rc=0 err=0 wf=1 in=7 p=812 l=27 col=32 i=1 n=3
+> CALL 23 len=35
+characters len=10 [\n         ]
+startElement [USPrice]
+characters len=5 [39.98]
+endElement [USPrice]
+< CALL 23 rc=0 err=0 wf=1 in=7 p=846 l=28 col=34 i=1 n=3
+> CALL 24 len=62
+characters len=10 [\n         ]
+startElement [shipDate]
+characters len=10 [1999-05-21]
+endElement [shipDate]
+characters len=7 [\n      ]
+endElement [item]
+characters len=4 [\n   ]
+endElement [items]
+< CALL 24 rc=0 err=0 wf=1 in=7 p=913 l=31 col=12 i=1 n=1
+> CALL 25 len=18
+characters len=1 [\n]
+endElement [purchaseOrder]
+< CALL 25 rc=0 err=0 wf=1 in=14 p=931 l=33 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=931 l=33 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=33 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=931 l=33 col=1 i=1 n=0

@@ -1,0 +1,23 @@
+== RESET /scanout/corpus/endtag-trunc.xml(9) -> /scanout/corpus/doctype-subset-choice.xml(46) mode=Rsib257
+> A 0 len=9
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[b] prefix= uri= ns=0 att=0 def=0
+< A 0 rc=0 err=0 wf=1 in=9 p=6 l=1 col=7 i=1 n=2
+> A-SUSPENDED
+> RESET(whole-B)
+< RESET 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> B-FINAL
+startDocument
+internalSubset name=a ext= sys=
+elementDecl name=a type=4 content={t=4 o=3 a={t=2 o=1 name=b prefix=} b={t=2 o=1 name=c prefix=}}
+externalSubset name=a ext= sys=
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[b] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[b] prefix= uri=
+endElementNs local=[a] prefix= uri=
+endDocument
+< B-FINAL 0 rc=0 err=0 wf=1 in=-1 p=46 l=2 col=12 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=12 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=46 l=2 col=12 i=1 n=0

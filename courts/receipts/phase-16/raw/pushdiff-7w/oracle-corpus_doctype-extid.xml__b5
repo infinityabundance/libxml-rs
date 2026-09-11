@@ -1,0 +1,26 @@
+== /scanout/corpus/doctype-extid.xml bytes=32 mode=b5
+> CALL 0 len=5
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=5
+< CALL 1 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=5
+< CALL 2 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=5
+< CALL 3 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=5
+< CALL 4 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=5
+internalSubset name=a ext= sys=urn:x
+externalSubset name=a ext= sys=urn:x
+< CALL 5 rc=0 err=0 wf=1 in=6 p=28 l=2 col=1 i=1 n=0
+> CALL 6 len=2
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+endElementNs local=[a] prefix= uri=
+< CALL 6 rc=0 err=0 wf=1 in=14 p=32 l=2 col=5 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=32 l=2 col=5 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=2 i1=0 i2=5 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=32 l=2 col=5 i=1 n=0

@@ -1,0 +1,9 @@
+== /scanout/corpus/attr-dup.xml bytes=16 mode=b16
+> CALL 0 len=16
+startDocument
+error dom=1 code=42 level=3 file= line=1 i1=0 i2=15 str1=b str2= str3= msg=Attribute b redefined\n
+< CALL 0 rc=42 err=42 wf=0 in=14 p=16 l=1 col=17 i=1 n=0
+> FINAL
+< FINAL 0 rc=42 err=42 wf=0 in=14 p=16 l=1 col=17 i=1 n=0
+> REFEED
+< REFEED 0 rc=42 err=42 wf=0 in=14 p=16 l=1 col=17 i=1 n=0

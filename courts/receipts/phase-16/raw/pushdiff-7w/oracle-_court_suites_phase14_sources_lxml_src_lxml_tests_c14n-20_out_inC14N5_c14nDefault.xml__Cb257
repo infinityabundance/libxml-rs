@@ -1,0 +1,13 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N5_c14nDefault.xml bytes=49 mode=Cb257
+> CTOR len=49
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+startElementNs local=[doc] prefix= uri= ns=0 att=1 def=0 [a local=attrExtEnt prefix= uri= value=entExt end=1]
+characters len=18 [\n   Hello, world!\n]
+endElementNs local=[doc] prefix= uri=
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=49 l=3 col=7 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=3 i1=0 i2=7 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=49 l=3 col=7 i=1 n=0

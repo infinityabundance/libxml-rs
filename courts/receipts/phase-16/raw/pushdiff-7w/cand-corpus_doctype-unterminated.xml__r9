@@ -1,0 +1,13 @@
+== /scanout/corpus/doctype-unterminated.xml bytes=35 mode=r9
+> CALL 0 len=12
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=1 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=23
+internalSubset name=a ext= sys=
+< CALL 1 rc=0 err=0 wf=1 in=3 p=12 l=1 col=13 i=1 n=0
+> FINAL
+elementDecl name=a type=3 content={t=1 o=1 #PCDATA}
+error dom=1 code=118 level=3 file= line=1 i1=0 i2=36 str1= str2= str3= msg=Content error in the internal subset\n
+< FINAL 0 rc=118 err=118 wf=0 in=4 p=35 l=1 col=36 i=1 n=0
+> REFEED
+< REFEED 0 rc=118 err=118 wf=0 in=4 p=35 l=1 col=36 i=1 n=0

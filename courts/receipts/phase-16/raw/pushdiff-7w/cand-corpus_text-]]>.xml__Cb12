@@ -1,0 +1,10 @@
+== /scanout/corpus/text-]]>.xml bytes=12 mode=Cb12
+> CTOR len=12
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+error dom=1 code=62 level=3 file= line=1 i1=0 i2=5 str1= str2= str3= msg=Sequence ']]>' not allowed in content\n
+< FINAL 0 rc=62 err=62 wf=0 in=7 p=8 l=1 col=9 i=1 n=1
+> REFEED
+< REFEED 0 rc=62 err=62 wf=0 in=7 p=8 l=1 col=9 i=1 n=1

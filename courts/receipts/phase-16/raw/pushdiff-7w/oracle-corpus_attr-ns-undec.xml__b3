@@ -1,0 +1,28 @@
+== /scanout/corpus/attr-ns-undec.xml bytes=26 mode=b3
+> CALL 0 len=3
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=3
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=3
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=3
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=3
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=3
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=3
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=3
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=2
+error dom=3 code=201 level=2 file= line=1 i1=0 i2=25 str1=x str2=b str3=a msg=Namespace prefix x for b on a is not defined\n
+startElementNs local=[a] prefix= uri=urn:d ns=1 att=1 def=0 {=urn:d} [a local=b prefix=x uri= value=1 end=1]
+endElementNs local=[a] prefix= uri=urn:d
+< CALL 8 rc=0 err=201 wf=1 in=14 p=26 l=1 col=27 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=201 wf=1 in=-1 p=26 l=1 col=27 i=1 n=0
+> REFEED
+< REFEED 0 rc=0 err=201 wf=1 in=-1 p=26 l=1 col=27 i=1 n=0

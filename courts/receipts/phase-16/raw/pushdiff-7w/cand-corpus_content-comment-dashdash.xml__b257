@@ -1,0 +1,10 @@
+== /scanout/corpus/content-comment-dashdash.xml bytes=22 mode=b257
+> CALL 0 len=22
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+error dom=1 code=80 level=3 file= line=1 i1=0 i2=11 str1= a  str2= str3= msg=Double hyphen within comment: <!-- a \n
+< CALL 0 rc=80 err=80 wf=0 in=7 p=18 l=1 col=19 i=1 n=1
+> FINAL
+< FINAL 0 rc=80 err=80 wf=0 in=7 p=18 l=1 col=19 i=1 n=1
+> REFEED
+< REFEED 0 rc=80 err=80 wf=0 in=7 p=18 l=1 col=19 i=1 n=1

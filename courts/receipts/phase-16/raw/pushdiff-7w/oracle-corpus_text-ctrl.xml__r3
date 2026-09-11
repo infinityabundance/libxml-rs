@@ -1,0 +1,13 @@
+== /scanout/corpus/text-ctrl.xml bytes=11 mode=r3
+> CALL 0 len=4
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> CALL 1 len=7
+characters len=1 [x]
+error dom=1 code=9 level=3 file= line=1 i1=1 i2=5 str1= str2= str3= msg=PCDATA invalid Char value 1\n
+< CALL 1 rc=9 err=9 wf=0 in=7 p=5 l=1 col=6 i=1 n=1
+> FINAL
+< FINAL 0 rc=9 err=9 wf=0 in=7 p=5 l=1 col=6 i=1 n=1
+> REFEED
+< REFEED 0 rc=9 err=9 wf=0 in=7 p=5 l=1 col=6 i=1 n=1

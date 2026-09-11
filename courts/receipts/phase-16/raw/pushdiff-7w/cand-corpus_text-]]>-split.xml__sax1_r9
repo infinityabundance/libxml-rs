@@ -1,0 +1,12 @@
+== /scanout/corpus/text-]]>-split.xml bytes=16 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [a]
+error dom=1 code=62 level=3 file= line=1 i1=0 i2=5 str1= str2= str3= msg=Sequence ']]>' not allowed in content\n
+< CALL 0 rc=62 err=62 wf=0 in=7 p=7 l=1 col=8 i=1 n=1
+> CALL 1 len=4
+< CALL 1 rc=62 err=62 wf=0 in=7 p=7 l=1 col=8 i=1 n=1
+> FINAL
+< FINAL 0 rc=62 err=62 wf=0 in=7 p=7 l=1 col=8 i=1 n=1
+> REFEED
+< REFEED 0 rc=62 err=62 wf=0 in=7 p=7 l=1 col=8 i=1 n=1

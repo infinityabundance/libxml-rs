@@ -1,0 +1,128 @@
+== /court/suites/phase14/sources/nokogiri/test/files/iso-8859-1.xml bytes=107 mode=b2
+> CALL 0 len=2
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=2
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=2
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=2
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=2
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=2
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=2
+< CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=2
+< CALL 7 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=2
+< CALL 8 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=2
+< CALL 9 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=2
+< CALL 10 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 11 len=2
+< CALL 11 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 12 len=2
+< CALL 12 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 13 len=2
+< CALL 13 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 14 len=2
+< CALL 14 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 15 len=2
+< CALL 15 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 16 len=2
+< CALL 16 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 17 len=2
+< CALL 17 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 18 len=2
+< CALL 18 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 19 len=2
+< CALL 19 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 20 len=2
+< CALL 20 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 21 len=2
+startDocument
+< CALL 21 rc=0 err=0 wf=1 in=1 p=3 l=2 col=1 i=1 n=0
+> CALL 22 len=2
+< CALL 22 rc=0 err=0 wf=1 in=6 p=3 l=2 col=1 i=1 n=0
+> CALL 23 len=2
+< CALL 23 rc=0 err=0 wf=1 in=6 p=3 l=2 col=1 i=1 n=0
+> CALL 24 len=2
+startElementNs local=[FEED] prefix= uri= ns=0 att=0 def=0
+< CALL 24 rc=0 err=0 wf=1 in=7 p=9 l=2 col=7 i=1 n=1
+> CALL 25 len=2
+< CALL 25 rc=0 err=0 wf=1 in=7 p=9 l=2 col=7 i=1 n=1
+> CALL 26 len=2
+characters len=3 [\n  ]
+< CALL 26 rc=0 err=0 wf=1 in=7 p=12 l=3 col=3 i=1 n=1
+> CALL 27 len=2
+< CALL 27 rc=0 err=0 wf=1 in=6 p=12 l=3 col=3 i=1 n=1
+> CALL 28 len=2
+< CALL 28 rc=0 err=0 wf=1 in=6 p=12 l=3 col=3 i=1 n=1
+> CALL 29 len=2
+startElementNs local=[DATA] prefix= uri= ns=0 att=0 def=0
+< CALL 29 rc=0 err=0 wf=1 in=7 p=18 l=3 col=9 i=1 n=2
+> CALL 30 len=2
+< CALL 30 rc=0 err=0 wf=1 in=7 p=18 l=3 col=9 i=1 n=2
+> CALL 31 len=2
+< CALL 31 rc=0 err=0 wf=1 in=7 p=18 l=3 col=9 i=1 n=2
+> CALL 32 len=2
+< CALL 32 rc=0 err=0 wf=1 in=7 p=18 l=3 col=9 i=1 n=2
+> CALL 33 len=2
+characters len=6 [Accept]
+characters len=2 [\xc3\xa9]
+< CALL 33 rc=0 err=0 wf=1 in=9 p=26 l=3 col=16 i=1 n=2
+> CALL 34 len=2
+< CALL 34 rc=0 err=0 wf=1 in=9 p=26 l=3 col=16 i=1 n=2
+> CALL 35 len=2
+< CALL 35 rc=0 err=0 wf=1 in=9 p=26 l=3 col=16 i=1 n=2
+> CALL 36 len=2
+endElementNs local=[DATA] prefix= uri=
+< CALL 36 rc=0 err=0 wf=1 in=7 p=33 l=3 col=23 i=1 n=1
+> CALL 37 len=2
+< CALL 37 rc=0 err=0 wf=1 in=7 p=33 l=3 col=23 i=1 n=1
+> CALL 38 len=2
+characters len=3 [\n  ]
+< CALL 38 rc=0 err=0 wf=1 in=6 p=36 l=4 col=3 i=1 n=1
+> CALL 39 len=2
+< CALL 39 rc=0 err=0 wf=1 in=6 p=36 l=4 col=3 i=1 n=1
+> CALL 40 len=2
+startElementNs local=[DATA] prefix= uri= ns=0 att=0 def=0
+< CALL 40 rc=0 err=0 wf=1 in=7 p=42 l=4 col=9 i=1 n=2
+> CALL 41 len=2
+< CALL 41 rc=0 err=0 wf=1 in=7 p=42 l=4 col=9 i=1 n=2
+> CALL 42 len=2
+< CALL 42 rc=0 err=0 wf=1 in=7 p=42 l=4 col=9 i=1 n=2
+> CALL 43 len=2
+< CALL 43 rc=0 err=0 wf=1 in=7 p=42 l=4 col=9 i=1 n=2
+> CALL 44 len=2
+< CALL 44 rc=0 err=0 wf=1 in=7 p=42 l=4 col=9 i=1 n=2
+> CALL 45 len=2
+characters len=9 [Something]
+< CALL 45 rc=0 err=0 wf=1 in=7 p=51 l=4 col=18 i=1 n=2
+> CALL 46 len=2
+< CALL 46 rc=0 err=0 wf=1 in=9 p=51 l=4 col=18 i=1 n=2
+> CALL 47 len=2
+< CALL 47 rc=0 err=0 wf=1 in=9 p=51 l=4 col=18 i=1 n=2
+> CALL 48 len=2
+endElementNs local=[DATA] prefix= uri=
+< CALL 48 rc=0 err=0 wf=1 in=7 p=58 l=4 col=25 i=1 n=1
+> CALL 49 len=2
+characters len=1 [\n]
+< CALL 49 rc=0 err=0 wf=1 in=7 p=59 l=5 col=1 i=1 n=1
+> CALL 50 len=2
+< CALL 50 rc=0 err=0 wf=1 in=9 p=59 l=5 col=1 i=1 n=1
+> CALL 51 len=2
+< CALL 51 rc=0 err=0 wf=1 in=9 p=59 l=5 col=1 i=1 n=1
+> CALL 52 len=2
+endElementNs local=[FEED] prefix= uri=
+< CALL 52 rc=0 err=0 wf=1 in=14 p=66 l=5 col=8 i=1 n=0
+> CALL 53 len=1
+< CALL 53 rc=0 err=0 wf=1 in=14 p=67 l=6 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=67 l=6 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=6 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=67 l=6 col=1 i=1 n=0

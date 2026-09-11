@@ -1,0 +1,84 @@
+== /scanout/corpus/deep-selfclose.xml bytes=214 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+< CALL 0 rc=0 err=0 wf=1 in=7 p=12 l=1 col=13 i=1 n=4
+> CALL 1 len=34
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+< CALL 1 rc=0 err=0 wf=1 in=7 p=45 l=1 col=46 i=1 n=15
+> CALL 2 len=41
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+startElement [a]
+< CALL 2 rc=0 err=0 wf=1 in=7 p=87 l=1 col=88 i=1 n=29
+> CALL 3 len=53
+startElement [a]
+startElement [b]
+endElement [b]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+< CALL 3 rc=0 err=0 wf=1 in=9 p=138 l=1 col=139 i=1 n=19
+> CALL 4 len=4
+endElement [a]
+< CALL 4 rc=0 err=0 wf=1 in=9 p=142 l=1 col=143 i=1 n=18
+> CALL 5 len=52
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+< CALL 5 rc=0 err=0 wf=1 in=9 p=194 l=1 col=195 i=1 n=5
+> CALL 6 len=18
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+endElement [a]
+< CALL 6 rc=0 err=0 wf=1 in=14 p=214 l=1 col=215 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=214 l=1 col=215 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=215 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=214 l=1 col=215 i=1 n=0

@@ -1,0 +1,35 @@
+== /court/suites/phase14/sources/nokogiri/test/files/shift_jis.xml bytes=128 mode=b16
+> CALL 0 len=16
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=16
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=16
+startDocument
+< CALL 2 rc=0 err=0 wf=1 in=6 p=3 l=2 col=1 i=1 n=0
+> CALL 3 len=16
+startElementNs local=[root] prefix= uri= ns=0 att=0 def=0
+characters len=3 [\n  ]
+startElementNs local=[hi] prefix= uri= ns=0 att=0 def=0
+< CALL 3 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 4 len=16
+< CALL 4 rc=0 err=0 wf=1 in=7 p=16 l=3 col=7 i=1 n=2
+> CALL 5 len=16
+characters len=24 [This is a Shift_JIS File]
+endElementNs local=[hi] prefix= uri=
+characters len=3 [\n  ]
+< CALL 5 rc=0 err=0 wf=1 in=6 p=48 l=4 col=3 i=1 n=1
+> CALL 6 len=16
+startElementNs local=[hi_again] prefix= uri= ns=0 att=0 def=0
+characters len=15 [\xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf]
+< CALL 6 rc=0 err=0 wf=1 in=9 p=73 l=4 col=18 i=1 n=2
+> CALL 7 len=16
+endElementNs local=[hi_again] prefix= uri=
+characters len=1 [\n]
+endElementNs local=[root] prefix= uri=
+< CALL 7 rc=0 err=0 wf=1 in=14 p=93 l=6 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=93 l=6 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=6 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=93 l=6 col=1 i=1 n=0

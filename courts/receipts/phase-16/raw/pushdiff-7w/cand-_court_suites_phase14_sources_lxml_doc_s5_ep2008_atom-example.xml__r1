@@ -1,0 +1,87 @@
+== /court/suites/phase14/sources/lxml/doc/s5/ep2008/atom-example.xml bytes=570 mode=r1
+> CALL 0 len=23
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=26
+startDocument
+< CALL 1 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 2 len=13
+< CALL 2 rc=0 err=0 wf=1 in=6 p=39 l=2 col=1 i=1 n=0
+> CALL 3 len=39
+startElementNs local=[feed] prefix= uri=http://www.w3.org/2005/Atom ns=1 att=0 def=0 {=http://www.w3.org/2005/Atom}
+characters len=4 [\n\n  ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 3 rc=0 err=0 wf=1 in=7 p=92 l=4 col=10 i=1 n=2
+> CALL 4 len=27
+characters len=12 [Example Feed]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+< CALL 4 rc=0 err=0 wf=1 in=6 p=115 l=5 col=3 i=1 n=1
+> CALL 5 len=52
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=href prefix= uri= value=http://example.org/ end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 5 rc=0 err=0 wf=1 in=7 p=161 l=6 col=12 i=1 n=2
+> CALL 6 len=27
+characters len=20 [2003-12-13T18:30:02Z]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 6 rc=0 err=0 wf=1 in=7 p=202 l=7 col=11 i=1 n=2
+> CALL 7 len=55
+characters len=5 [\n    ]
+startElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=8 [John Doe]
+endElementNs local=[name] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[author] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 7 rc=0 err=0 wf=1 in=7 p=247 l=10 col=7 i=1 n=2
+> CALL 8 len=42
+characters len=45 [urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+characters len=4 [\n\n  ]
+< CALL 8 rc=0 err=0 wf=1 in=6 p=301 l=12 col=3 i=1 n=1
+> CALL 9 len=59
+startElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=5 [\n    ]
+startElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=28 [Atom-Powered Robots Run Amok]
+endElementNs local=[title] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+< CALL 9 rc=0 err=0 wf=1 in=6 p=361 l=14 col=5 i=1 n=2
+> CALL 10 len=60
+startElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=1 def=0 [a local=href prefix= uri= value=http://example.org/2003/12/13/atom03 end=1]
+endElementNs local=[link] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 10 rc=0 err=0 wf=1 in=7 p=421 l=15 col=9 i=1 n=3
+> CALL 11 len=51
+characters len=45 [urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a]
+endElementNs local=[id] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 11 rc=0 err=0 wf=1 in=7 p=471 l=15 col=59 i=1 n=2
+> CALL 12 len=61
+characters len=5 [\n    ]
+startElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+characters len=20 [2003-12-13T18:30:02Z]
+endElementNs local=[updated] prefix= uri=http://www.w3.org/2005/Atom
+characters len=5 [\n    ]
+startElementNs local=[summary] prefix= uri=http://www.w3.org/2005/Atom ns=0 att=0 def=0
+< CALL 12 rc=0 err=0 wf=1 in=7 p=529 l=17 col=14 i=1 n=3
+> CALL 13 len=33
+characters len=10 [Some text.]
+endElementNs local=[summary] prefix= uri=http://www.w3.org/2005/Atom
+characters len=3 [\n  ]
+endElementNs local=[entry] prefix= uri=http://www.w3.org/2005/Atom
+characters len=2 [\n\n]
+< CALL 13 rc=0 err=0 wf=1 in=9 p=562 l=20 col=1 i=1 n=1
+> CALL 14 len=2
+endElementNs local=[feed] prefix= uri=http://www.w3.org/2005/Atom
+< CALL 14 rc=0 err=0 wf=1 in=14 p=570 l=21 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=570 l=21 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=21 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=570 l=21 col=1 i=1 n=0

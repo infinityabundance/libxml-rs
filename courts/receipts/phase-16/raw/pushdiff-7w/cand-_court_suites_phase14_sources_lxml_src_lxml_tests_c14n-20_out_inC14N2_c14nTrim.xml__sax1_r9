@@ -1,0 +1,33 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/out_inC14N2_c14nTrim.xml bytes=99 mode=r9
+> CALL 0 len=12
+startDocument
+startElement [doc]
+startElement [clean]
+< CALL 0 rc=0 err=0 wf=1 in=7 p=12 l=1 col=13 i=1 n=2
+> CALL 1 len=34
+endElement [clean]
+startElement [dirty]
+characters len=5 [A   B]
+endElement [dirty]
+< CALL 1 rc=0 err=0 wf=1 in=6 p=40 l=1 col=41 i=1 n=1
+> CALL 2 len=41
+startElement [mixed]
+characters len=1 [A]
+startElement [clean]
+endElement [clean]
+characters len=1 [B]
+startElement [dirty]
+characters len=5 [A   B]
+endElement [dirty]
+characters len=1 [C]
+< CALL 2 rc=0 err=0 wf=1 in=9 p=85 l=1 col=86 i=1 n=2
+> CALL 3 len=12
+endElement [mixed]
+endElement [doc]
+< CALL 3 rc=0 err=0 wf=1 in=14 p=99 l=1 col=100 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=99 l=1 col=100 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=100 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=99 l=1 col=100 i=1 n=0

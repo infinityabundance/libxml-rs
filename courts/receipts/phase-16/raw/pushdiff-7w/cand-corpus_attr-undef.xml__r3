@@ -1,0 +1,11 @@
+== /scanout/corpus/attr-undef.xml bytes=15 mode=r3
+> CALL 0 len=4
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=11
+error dom=1 code=26 level=3 file= line=1 i1=0 i2=13 str1=nope str2= str3= msg=Entity 'nope' not defined\n
+< CALL 1 rc=26 err=26 wf=0 in=14 p=15 l=1 col=16 i=1 n=0
+> FINAL
+< FINAL 0 rc=26 err=26 wf=0 in=14 p=15 l=1 col=16 i=1 n=0
+> REFEED
+< REFEED 0 rc=26 err=26 wf=0 in=14 p=15 l=1 col=16 i=1 n=0

@@ -1,0 +1,22 @@
+== RESET /scanout/corpus/text-cr-chunkend.xml(15) -> /scanout/corpus/attr-many.xml(384) mode=Rib257
+> A 0 len=15
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+characters len=4 [\nmid]
+characters len=1 [\n]
+endElementNs local=[a] prefix= uri=
+< A 0 rc=0 err=0 wf=1 in=14 p=14 l=3 col=5 i=1 n=0
+> A-FINAL
+endDocument
+< A-FINAL 0 rc=0 err=0 wf=1 in=-1 p=15 l=3 col=6 i=1 n=0
+> RESET(whole-B)
+< RESET 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> B-FINAL
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=40 def=0 [a local=a0 prefix= uri= value=v0 end=1] [a local=a1 prefix= uri= value=v1 end=1] [a local=a2 prefix= uri= value=v2 end=1] [a local=a3 prefix= uri= value=v3 end=1] [a local=a4 prefix= uri= value=v4 end=1] [a local=a5 prefix= uri= value=v5 end=1] [a local=a6 prefix= uri= value=v6 end=1] [a local=a7 prefix= uri= value=v7 end=1] [a local=a8 prefix= uri= value=v8 end=1] [a local=a9 prefix= uri= value=v9 end=1] [a local=a10 prefix= uri= value=v10 end=1] [a local=a11 prefix= uri= value=v11 end=1] [a local=a12 prefix= uri= value=v12 end=1] [a local=a13 prefix= uri= value=v13 end=1] [a local=a14 prefix= uri= value=v14 end=1] [a local=a15 prefix= uri= value=v15 end=1] [a local=a16 prefix= uri= value=v16 end=1] [a local=a17 prefix= uri= value=v17 end=1] [a local=a18 prefix= uri= value=v18 end=1] [a local=a19 prefix= uri= value=v19 end=1] [a local=a20 prefix= uri= value=v20 end=1] [a local=a21 prefix= uri= value=v21 end=1] [a local=a22 prefix= uri= value=v22 end=1] [a local=a23 prefix= uri= value=v23 end=1] [a local=a24 prefix= uri= value=v24 end=1] [a local=a25 prefix= uri= value=v25 end=1] [a local=a26 prefix= uri= value=v26 end=1] [a local=a27 prefix= uri= value=v27 end=1] [a local=a28 prefix= uri= value=v28 end=1] [a local=a29 prefix= uri= value=v29 end=1] [a local=a30 prefix= uri= value=v30 end=1] [a local=a31 prefix= uri= value=v31 end=1] [a local=a32 prefix= uri= value=v32 end=1] [a local=a33 prefix= uri= value=v33 end=1] [a local=a34 prefix= uri= value=v34 end=1] [a local=a35 prefix= uri= value=v35 end=1] [a local=a36 prefix= uri= value=v36 end=1] [a local=a37 prefix= uri= value=v37 end=1] [a local=a38 prefix= uri= value=v38 end=1] [a local=a39 prefix= uri= value=v39 end=1]
+endElementNs local=[a] prefix= uri=
+endDocument
+< B-FINAL 0 rc=0 err=0 wf=1 in=-1 p=384 l=1 col=385 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=1 i1=0 i2=385 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=384 l=1 col=385 i=1 n=0

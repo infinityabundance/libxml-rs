@@ -1,0 +1,26 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inNsRedecl.xml bytes=177 mode=Cr9
+> CTOR len=12
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 0 len=34
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=41
+startElementNs local=[foo] prefix= uri= ns=2 att=2 def=0 {a=http://z3} {b=http://z2} [a local=att1 prefix=a uri=http://z3 value=val1 end=1] [a local=att2 prefix=b uri=http://z2 value=val2 end=1]
+characters len=3 [ \n ]
+< CALL 1 rc=0 err=0 wf=1 in=6 p=76 l=2 col=2 i=1 n=1
+> CALL 2 len=53
+< CALL 2 rc=0 err=0 wf=1 in=6 p=76 l=2 col=2 i=1 n=1
+> CALL 3 len=4
+< CALL 3 rc=0 err=0 wf=1 in=6 p=76 l=2 col=2 i=1 n=1
+> CALL 4 len=33
+startElementNs local=[bar] prefix= uri=http://z0 ns=3 att=2 def=0 {=http://z0} {a=http://z2} {b=http://z3} [a local=att1 prefix=a uri=http://z2 value=val1 end=1] [a local=att2 prefix=b uri=http://z3 value=val2 end=1]
+endElementNs local=[bar] prefix= uri=http://z0
+characters len=1 [\n]
+endElementNs local=[foo] prefix= uri=
+< CALL 4 rc=0 err=0 wf=1 in=14 p=177 l=4 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=177 l=4 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=4 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=177 l=4 col=1 i=1 n=0

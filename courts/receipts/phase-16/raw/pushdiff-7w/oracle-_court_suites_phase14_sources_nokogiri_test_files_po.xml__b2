@@ -1,0 +1,1039 @@
+== /court/suites/phase14/sources/nokogiri/test/files/po.xml bytes=931 mode=b2
+> CALL 0 len=2
+< CALL 0 rc=0 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=2
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=2
+< CALL 2 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=2
+< CALL 3 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=2
+< CALL 4 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=2
+< CALL 5 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=2
+< CALL 6 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=2
+< CALL 7 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=2
+< CALL 8 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 9 len=2
+< CALL 9 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 10 len=2
+startDocument
+< CALL 10 rc=0 err=0 wf=1 in=1 p=22 l=2 col=1 i=1 n=0
+> CALL 11 len=2
+< CALL 11 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 12 len=2
+< CALL 12 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 13 len=2
+< CALL 13 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 14 len=2
+< CALL 14 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 15 len=2
+< CALL 15 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 16 len=2
+< CALL 16 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 17 len=2
+< CALL 17 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 18 len=2
+< CALL 18 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 19 len=2
+< CALL 19 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 20 len=2
+< CALL 20 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 21 len=2
+< CALL 21 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 22 len=2
+< CALL 22 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 23 len=2
+< CALL 23 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 24 len=2
+< CALL 24 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 25 len=2
+< CALL 25 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 26 len=2
+< CALL 26 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 27 len=2
+< CALL 27 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 28 len=2
+< CALL 28 rc=0 err=0 wf=1 in=6 p=22 l=2 col=1 i=1 n=0
+> CALL 29 len=2
+startElementNs local=[purchaseOrder] prefix= uri= ns=0 att=1 def=0 [a local=orderDate prefix= uri= value=1999-10-20 end=1]
+< CALL 29 rc=0 err=0 wf=1 in=7 p=60 l=2 col=39 i=1 n=1
+> CALL 30 len=2
+< CALL 30 rc=0 err=0 wf=1 in=7 p=60 l=2 col=39 i=1 n=1
+> CALL 31 len=2
+< CALL 31 rc=0 err=0 wf=1 in=7 p=60 l=2 col=39 i=1 n=1
+> CALL 32 len=2
+characters len=4 [\n   ]
+< CALL 32 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 33 len=2
+< CALL 33 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 34 len=2
+< CALL 34 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 35 len=2
+< CALL 35 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 36 len=2
+< CALL 36 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 37 len=2
+< CALL 37 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 38 len=2
+< CALL 38 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 39 len=2
+< CALL 39 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 40 len=2
+< CALL 40 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 41 len=2
+< CALL 41 rc=0 err=0 wf=1 in=6 p=64 l=3 col=4 i=1 n=1
+> CALL 42 len=2
+startElementNs local=[shipTo] prefix= uri= ns=0 att=1 def=0 [a local=country prefix= uri= value=US end=1]
+< CALL 42 rc=0 err=0 wf=1 in=7 p=85 l=3 col=25 i=1 n=2
+> CALL 43 len=2
+< CALL 43 rc=0 err=0 wf=1 in=7 p=85 l=3 col=25 i=1 n=2
+> CALL 44 len=2
+< CALL 44 rc=0 err=0 wf=1 in=7 p=85 l=3 col=25 i=1 n=2
+> CALL 45 len=2
+< CALL 45 rc=0 err=0 wf=1 in=7 p=85 l=3 col=25 i=1 n=2
+> CALL 46 len=2
+characters len=7 [\n      ]
+< CALL 46 rc=0 err=0 wf=1 in=6 p=92 l=4 col=7 i=1 n=2
+> CALL 47 len=2
+< CALL 47 rc=0 err=0 wf=1 in=6 p=92 l=4 col=7 i=1 n=2
+> CALL 48 len=2
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 48 rc=0 err=0 wf=1 in=7 p=98 l=4 col=13 i=1 n=3
+> CALL 49 len=2
+< CALL 49 rc=0 err=0 wf=1 in=7 p=98 l=4 col=13 i=1 n=3
+> CALL 50 len=2
+< CALL 50 rc=0 err=0 wf=1 in=7 p=98 l=4 col=13 i=1 n=3
+> CALL 51 len=2
+< CALL 51 rc=0 err=0 wf=1 in=7 p=98 l=4 col=13 i=1 n=3
+> CALL 52 len=2
+< CALL 52 rc=0 err=0 wf=1 in=7 p=98 l=4 col=13 i=1 n=3
+> CALL 53 len=2
+< CALL 53 rc=0 err=0 wf=1 in=7 p=98 l=4 col=13 i=1 n=3
+> CALL 54 len=2
+characters len=11 [Alice Smith]
+< CALL 54 rc=0 err=0 wf=1 in=7 p=109 l=4 col=24 i=1 n=3
+> CALL 55 len=2
+< CALL 55 rc=0 err=0 wf=1 in=9 p=109 l=4 col=24 i=1 n=3
+> CALL 56 len=2
+< CALL 56 rc=0 err=0 wf=1 in=9 p=109 l=4 col=24 i=1 n=3
+> CALL 57 len=2
+endElementNs local=[name] prefix= uri=
+< CALL 57 rc=0 err=0 wf=1 in=7 p=116 l=4 col=31 i=1 n=2
+> CALL 58 len=2
+< CALL 58 rc=0 err=0 wf=1 in=7 p=116 l=4 col=31 i=1 n=2
+> CALL 59 len=2
+< CALL 59 rc=0 err=0 wf=1 in=7 p=116 l=4 col=31 i=1 n=2
+> CALL 60 len=2
+< CALL 60 rc=0 err=0 wf=1 in=7 p=116 l=4 col=31 i=1 n=2
+> CALL 61 len=2
+characters len=7 [\n      ]
+< CALL 61 rc=0 err=0 wf=1 in=7 p=123 l=5 col=7 i=1 n=2
+> CALL 62 len=2
+< CALL 62 rc=0 err=0 wf=1 in=6 p=123 l=5 col=7 i=1 n=2
+> CALL 63 len=2
+< CALL 63 rc=0 err=0 wf=1 in=6 p=123 l=5 col=7 i=1 n=2
+> CALL 64 len=2
+< CALL 64 rc=0 err=0 wf=1 in=6 p=123 l=5 col=7 i=1 n=2
+> CALL 65 len=2
+startElementNs local=[street] prefix= uri= ns=0 att=0 def=0
+< CALL 65 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 66 len=2
+< CALL 66 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 67 len=2
+< CALL 67 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 68 len=2
+< CALL 68 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 69 len=2
+< CALL 69 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 70 len=2
+< CALL 70 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 71 len=2
+< CALL 71 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 72 len=2
+< CALL 72 rc=0 err=0 wf=1 in=7 p=131 l=5 col=15 i=1 n=3
+> CALL 73 len=2
+characters len=16 [123 Maple Street]
+< CALL 73 rc=0 err=0 wf=1 in=7 p=147 l=5 col=31 i=1 n=3
+> CALL 74 len=2
+< CALL 74 rc=0 err=0 wf=1 in=9 p=147 l=5 col=31 i=1 n=3
+> CALL 75 len=2
+< CALL 75 rc=0 err=0 wf=1 in=9 p=147 l=5 col=31 i=1 n=3
+> CALL 76 len=2
+< CALL 76 rc=0 err=0 wf=1 in=9 p=147 l=5 col=31 i=1 n=3
+> CALL 77 len=2
+endElementNs local=[street] prefix= uri=
+< CALL 77 rc=0 err=0 wf=1 in=7 p=156 l=5 col=40 i=1 n=2
+> CALL 78 len=2
+< CALL 78 rc=0 err=0 wf=1 in=7 p=156 l=5 col=40 i=1 n=2
+> CALL 79 len=2
+< CALL 79 rc=0 err=0 wf=1 in=7 p=156 l=5 col=40 i=1 n=2
+> CALL 80 len=2
+< CALL 80 rc=0 err=0 wf=1 in=7 p=156 l=5 col=40 i=1 n=2
+> CALL 81 len=2
+characters len=7 [\n      ]
+< CALL 81 rc=0 err=0 wf=1 in=7 p=163 l=6 col=7 i=1 n=2
+> CALL 82 len=2
+< CALL 82 rc=0 err=0 wf=1 in=6 p=163 l=6 col=7 i=1 n=2
+> CALL 83 len=2
+< CALL 83 rc=0 err=0 wf=1 in=6 p=163 l=6 col=7 i=1 n=2
+> CALL 84 len=2
+startElementNs local=[city] prefix= uri= ns=0 att=0 def=0
+< CALL 84 rc=0 err=0 wf=1 in=7 p=169 l=6 col=13 i=1 n=3
+> CALL 85 len=2
+< CALL 85 rc=0 err=0 wf=1 in=7 p=169 l=6 col=13 i=1 n=3
+> CALL 86 len=2
+< CALL 86 rc=0 err=0 wf=1 in=7 p=169 l=6 col=13 i=1 n=3
+> CALL 87 len=2
+< CALL 87 rc=0 err=0 wf=1 in=7 p=169 l=6 col=13 i=1 n=3
+> CALL 88 len=2
+< CALL 88 rc=0 err=0 wf=1 in=7 p=169 l=6 col=13 i=1 n=3
+> CALL 89 len=2
+< CALL 89 rc=0 err=0 wf=1 in=7 p=169 l=6 col=13 i=1 n=3
+> CALL 90 len=2
+characters len=11 [Mill Valley]
+< CALL 90 rc=0 err=0 wf=1 in=9 p=180 l=6 col=24 i=1 n=3
+> CALL 91 len=2
+< CALL 91 rc=0 err=0 wf=1 in=9 p=180 l=6 col=24 i=1 n=3
+> CALL 92 len=2
+< CALL 92 rc=0 err=0 wf=1 in=9 p=180 l=6 col=24 i=1 n=3
+> CALL 93 len=2
+endElementNs local=[city] prefix= uri=
+< CALL 93 rc=0 err=0 wf=1 in=7 p=187 l=6 col=31 i=1 n=2
+> CALL 94 len=2
+< CALL 94 rc=0 err=0 wf=1 in=7 p=187 l=6 col=31 i=1 n=2
+> CALL 95 len=2
+< CALL 95 rc=0 err=0 wf=1 in=7 p=187 l=6 col=31 i=1 n=2
+> CALL 96 len=2
+< CALL 96 rc=0 err=0 wf=1 in=7 p=187 l=6 col=31 i=1 n=2
+> CALL 97 len=2
+characters len=7 [\n      ]
+< CALL 97 rc=0 err=0 wf=1 in=6 p=194 l=7 col=7 i=1 n=2
+> CALL 98 len=2
+< CALL 98 rc=0 err=0 wf=1 in=6 p=194 l=7 col=7 i=1 n=2
+> CALL 99 len=2
+< CALL 99 rc=0 err=0 wf=1 in=6 p=194 l=7 col=7 i=1 n=2
+> CALL 100 len=2
+startElementNs local=[state] prefix= uri= ns=0 att=0 def=0
+< CALL 100 rc=0 err=0 wf=1 in=7 p=201 l=7 col=14 i=1 n=3
+> CALL 101 len=2
+characters len=2 [CA]
+< CALL 101 rc=0 err=0 wf=1 in=7 p=203 l=7 col=16 i=1 n=3
+> CALL 102 len=2
+< CALL 102 rc=0 err=0 wf=1 in=9 p=203 l=7 col=16 i=1 n=3
+> CALL 103 len=2
+< CALL 103 rc=0 err=0 wf=1 in=9 p=203 l=7 col=16 i=1 n=3
+> CALL 104 len=2
+< CALL 104 rc=0 err=0 wf=1 in=9 p=203 l=7 col=16 i=1 n=3
+> CALL 105 len=2
+endElementNs local=[state] prefix= uri=
+< CALL 105 rc=0 err=0 wf=1 in=7 p=211 l=7 col=24 i=1 n=2
+> CALL 106 len=2
+< CALL 106 rc=0 err=0 wf=1 in=7 p=211 l=7 col=24 i=1 n=2
+> CALL 107 len=2
+< CALL 107 rc=0 err=0 wf=1 in=7 p=211 l=7 col=24 i=1 n=2
+> CALL 108 len=2
+< CALL 108 rc=0 err=0 wf=1 in=7 p=211 l=7 col=24 i=1 n=2
+> CALL 109 len=2
+characters len=7 [\n      ]
+< CALL 109 rc=0 err=0 wf=1 in=6 p=218 l=8 col=7 i=1 n=2
+> CALL 110 len=2
+< CALL 110 rc=0 err=0 wf=1 in=6 p=218 l=8 col=7 i=1 n=2
+> CALL 111 len=2
+startElementNs local=[zip] prefix= uri= ns=0 att=0 def=0
+< CALL 111 rc=0 err=0 wf=1 in=7 p=223 l=8 col=12 i=1 n=3
+> CALL 112 len=2
+< CALL 112 rc=0 err=0 wf=1 in=7 p=223 l=8 col=12 i=1 n=3
+> CALL 113 len=2
+< CALL 113 rc=0 err=0 wf=1 in=7 p=223 l=8 col=12 i=1 n=3
+> CALL 114 len=2
+characters len=5 [90952]
+< CALL 114 rc=0 err=0 wf=1 in=9 p=228 l=8 col=17 i=1 n=3
+> CALL 115 len=2
+< CALL 115 rc=0 err=0 wf=1 in=9 p=228 l=8 col=17 i=1 n=3
+> CALL 116 len=2
+endElementNs local=[zip] prefix= uri=
+< CALL 116 rc=0 err=0 wf=1 in=7 p=234 l=8 col=23 i=1 n=2
+> CALL 117 len=2
+< CALL 117 rc=0 err=0 wf=1 in=7 p=234 l=8 col=23 i=1 n=2
+> CALL 118 len=2
+< CALL 118 rc=0 err=0 wf=1 in=7 p=234 l=8 col=23 i=1 n=2
+> CALL 119 len=2
+characters len=4 [\n   ]
+< CALL 119 rc=0 err=0 wf=1 in=9 p=238 l=9 col=4 i=1 n=2
+> CALL 120 len=2
+< CALL 120 rc=0 err=0 wf=1 in=9 p=238 l=9 col=4 i=1 n=2
+> CALL 121 len=2
+< CALL 121 rc=0 err=0 wf=1 in=9 p=238 l=9 col=4 i=1 n=2
+> CALL 122 len=2
+< CALL 122 rc=0 err=0 wf=1 in=9 p=238 l=9 col=4 i=1 n=2
+> CALL 123 len=2
+endElementNs local=[shipTo] prefix= uri=
+< CALL 123 rc=0 err=0 wf=1 in=7 p=247 l=9 col=13 i=1 n=1
+> CALL 124 len=2
+< CALL 124 rc=0 err=0 wf=1 in=7 p=247 l=9 col=13 i=1 n=1
+> CALL 125 len=2
+characters len=4 [\n   ]
+< CALL 125 rc=0 err=0 wf=1 in=7 p=251 l=10 col=4 i=1 n=1
+> CALL 126 len=2
+< CALL 126 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 127 len=2
+< CALL 127 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 128 len=2
+< CALL 128 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 129 len=2
+< CALL 129 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 130 len=2
+< CALL 130 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 131 len=2
+< CALL 131 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 132 len=2
+< CALL 132 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 133 len=2
+< CALL 133 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 134 len=2
+< CALL 134 rc=0 err=0 wf=1 in=6 p=251 l=10 col=4 i=1 n=1
+> CALL 135 len=2
+startElementNs local=[billTo] prefix= uri= ns=0 att=1 def=0 [a local=country prefix= uri= value=US end=1]
+< CALL 135 rc=0 err=0 wf=1 in=7 p=272 l=10 col=25 i=1 n=2
+> CALL 136 len=2
+< CALL 136 rc=0 err=0 wf=1 in=7 p=272 l=10 col=25 i=1 n=2
+> CALL 137 len=2
+< CALL 137 rc=0 err=0 wf=1 in=7 p=272 l=10 col=25 i=1 n=2
+> CALL 138 len=2
+< CALL 138 rc=0 err=0 wf=1 in=7 p=272 l=10 col=25 i=1 n=2
+> CALL 139 len=2
+characters len=7 [\n      ]
+< CALL 139 rc=0 err=0 wf=1 in=7 p=279 l=11 col=7 i=1 n=2
+> CALL 140 len=2
+< CALL 140 rc=0 err=0 wf=1 in=6 p=279 l=11 col=7 i=1 n=2
+> CALL 141 len=2
+< CALL 141 rc=0 err=0 wf=1 in=6 p=279 l=11 col=7 i=1 n=2
+> CALL 142 len=2
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 142 rc=0 err=0 wf=1 in=7 p=285 l=11 col=13 i=1 n=3
+> CALL 143 len=2
+< CALL 143 rc=0 err=0 wf=1 in=7 p=285 l=11 col=13 i=1 n=3
+> CALL 144 len=2
+< CALL 144 rc=0 err=0 wf=1 in=7 p=285 l=11 col=13 i=1 n=3
+> CALL 145 len=2
+< CALL 145 rc=0 err=0 wf=1 in=7 p=285 l=11 col=13 i=1 n=3
+> CALL 146 len=2
+< CALL 146 rc=0 err=0 wf=1 in=7 p=285 l=11 col=13 i=1 n=3
+> CALL 147 len=2
+< CALL 147 rc=0 err=0 wf=1 in=7 p=285 l=11 col=13 i=1 n=3
+> CALL 148 len=2
+characters len=12 [Robert Smith]
+< CALL 148 rc=0 err=0 wf=1 in=7 p=297 l=11 col=25 i=1 n=3
+> CALL 149 len=2
+< CALL 149 rc=0 err=0 wf=1 in=9 p=297 l=11 col=25 i=1 n=3
+> CALL 150 len=2
+< CALL 150 rc=0 err=0 wf=1 in=9 p=297 l=11 col=25 i=1 n=3
+> CALL 151 len=2
+endElementNs local=[name] prefix= uri=
+< CALL 151 rc=0 err=0 wf=1 in=7 p=304 l=11 col=32 i=1 n=2
+> CALL 152 len=2
+< CALL 152 rc=0 err=0 wf=1 in=7 p=304 l=11 col=32 i=1 n=2
+> CALL 153 len=2
+< CALL 153 rc=0 err=0 wf=1 in=7 p=304 l=11 col=32 i=1 n=2
+> CALL 154 len=2
+< CALL 154 rc=0 err=0 wf=1 in=7 p=304 l=11 col=32 i=1 n=2
+> CALL 155 len=2
+characters len=7 [\n      ]
+< CALL 155 rc=0 err=0 wf=1 in=7 p=311 l=12 col=7 i=1 n=2
+> CALL 156 len=2
+< CALL 156 rc=0 err=0 wf=1 in=6 p=311 l=12 col=7 i=1 n=2
+> CALL 157 len=2
+< CALL 157 rc=0 err=0 wf=1 in=6 p=311 l=12 col=7 i=1 n=2
+> CALL 158 len=2
+< CALL 158 rc=0 err=0 wf=1 in=6 p=311 l=12 col=7 i=1 n=2
+> CALL 159 len=2
+startElementNs local=[street] prefix= uri= ns=0 att=0 def=0
+< CALL 159 rc=0 err=0 wf=1 in=7 p=319 l=12 col=15 i=1 n=3
+> CALL 160 len=2
+< CALL 160 rc=0 err=0 wf=1 in=7 p=319 l=12 col=15 i=1 n=3
+> CALL 161 len=2
+< CALL 161 rc=0 err=0 wf=1 in=7 p=319 l=12 col=15 i=1 n=3
+> CALL 162 len=2
+< CALL 162 rc=0 err=0 wf=1 in=7 p=319 l=12 col=15 i=1 n=3
+> CALL 163 len=2
+< CALL 163 rc=0 err=0 wf=1 in=7 p=319 l=12 col=15 i=1 n=3
+> CALL 164 len=2
+< CALL 164 rc=0 err=0 wf=1 in=7 p=319 l=12 col=15 i=1 n=3
+> CALL 165 len=2
+characters len=12 [8 Oak Avenue]
+< CALL 165 rc=0 err=0 wf=1 in=7 p=331 l=12 col=27 i=1 n=3
+> CALL 166 len=2
+< CALL 166 rc=0 err=0 wf=1 in=9 p=331 l=12 col=27 i=1 n=3
+> CALL 167 len=2
+< CALL 167 rc=0 err=0 wf=1 in=9 p=331 l=12 col=27 i=1 n=3
+> CALL 168 len=2
+< CALL 168 rc=0 err=0 wf=1 in=9 p=331 l=12 col=27 i=1 n=3
+> CALL 169 len=2
+endElementNs local=[street] prefix= uri=
+< CALL 169 rc=0 err=0 wf=1 in=7 p=340 l=12 col=36 i=1 n=2
+> CALL 170 len=2
+< CALL 170 rc=0 err=0 wf=1 in=7 p=340 l=12 col=36 i=1 n=2
+> CALL 171 len=2
+< CALL 171 rc=0 err=0 wf=1 in=7 p=340 l=12 col=36 i=1 n=2
+> CALL 172 len=2
+< CALL 172 rc=0 err=0 wf=1 in=7 p=340 l=12 col=36 i=1 n=2
+> CALL 173 len=2
+characters len=7 [\n      ]
+< CALL 173 rc=0 err=0 wf=1 in=7 p=347 l=13 col=7 i=1 n=2
+> CALL 174 len=2
+< CALL 174 rc=0 err=0 wf=1 in=6 p=347 l=13 col=7 i=1 n=2
+> CALL 175 len=2
+< CALL 175 rc=0 err=0 wf=1 in=6 p=347 l=13 col=7 i=1 n=2
+> CALL 176 len=2
+startElementNs local=[city] prefix= uri= ns=0 att=0 def=0
+< CALL 176 rc=0 err=0 wf=1 in=7 p=353 l=13 col=13 i=1 n=3
+> CALL 177 len=2
+< CALL 177 rc=0 err=0 wf=1 in=7 p=353 l=13 col=13 i=1 n=3
+> CALL 178 len=2
+< CALL 178 rc=0 err=0 wf=1 in=7 p=353 l=13 col=13 i=1 n=3
+> CALL 179 len=2
+< CALL 179 rc=0 err=0 wf=1 in=7 p=353 l=13 col=13 i=1 n=3
+> CALL 180 len=2
+characters len=8 [Old Town]
+< CALL 180 rc=0 err=0 wf=1 in=7 p=361 l=13 col=21 i=1 n=3
+> CALL 181 len=2
+< CALL 181 rc=0 err=0 wf=1 in=9 p=361 l=13 col=21 i=1 n=3
+> CALL 182 len=2
+< CALL 182 rc=0 err=0 wf=1 in=9 p=361 l=13 col=21 i=1 n=3
+> CALL 183 len=2
+endElementNs local=[city] prefix= uri=
+< CALL 183 rc=0 err=0 wf=1 in=7 p=368 l=13 col=28 i=1 n=2
+> CALL 184 len=2
+< CALL 184 rc=0 err=0 wf=1 in=7 p=368 l=13 col=28 i=1 n=2
+> CALL 185 len=2
+< CALL 185 rc=0 err=0 wf=1 in=7 p=368 l=13 col=28 i=1 n=2
+> CALL 186 len=2
+< CALL 186 rc=0 err=0 wf=1 in=7 p=368 l=13 col=28 i=1 n=2
+> CALL 187 len=2
+characters len=7 [\n      ]
+< CALL 187 rc=0 err=0 wf=1 in=7 p=375 l=14 col=7 i=1 n=2
+> CALL 188 len=2
+< CALL 188 rc=0 err=0 wf=1 in=6 p=375 l=14 col=7 i=1 n=2
+> CALL 189 len=2
+< CALL 189 rc=0 err=0 wf=1 in=6 p=375 l=14 col=7 i=1 n=2
+> CALL 190 len=2
+startElementNs local=[state] prefix= uri= ns=0 att=0 def=0
+< CALL 190 rc=0 err=0 wf=1 in=7 p=382 l=14 col=14 i=1 n=3
+> CALL 191 len=2
+< CALL 191 rc=0 err=0 wf=1 in=7 p=382 l=14 col=14 i=1 n=3
+> CALL 192 len=2
+characters len=2 [PA]
+< CALL 192 rc=0 err=0 wf=1 in=9 p=384 l=14 col=16 i=1 n=3
+> CALL 193 len=2
+< CALL 193 rc=0 err=0 wf=1 in=9 p=384 l=14 col=16 i=1 n=3
+> CALL 194 len=2
+< CALL 194 rc=0 err=0 wf=1 in=9 p=384 l=14 col=16 i=1 n=3
+> CALL 195 len=2
+endElementNs local=[state] prefix= uri=
+< CALL 195 rc=0 err=0 wf=1 in=7 p=392 l=14 col=24 i=1 n=2
+> CALL 196 len=2
+< CALL 196 rc=0 err=0 wf=1 in=7 p=392 l=14 col=24 i=1 n=2
+> CALL 197 len=2
+< CALL 197 rc=0 err=0 wf=1 in=7 p=392 l=14 col=24 i=1 n=2
+> CALL 198 len=2
+< CALL 198 rc=0 err=0 wf=1 in=7 p=392 l=14 col=24 i=1 n=2
+> CALL 199 len=2
+characters len=7 [\n      ]
+< CALL 199 rc=0 err=0 wf=1 in=7 p=399 l=15 col=7 i=1 n=2
+> CALL 200 len=2
+< CALL 200 rc=0 err=0 wf=1 in=6 p=399 l=15 col=7 i=1 n=2
+> CALL 201 len=2
+startElementNs local=[zip] prefix= uri= ns=0 att=0 def=0
+< CALL 201 rc=0 err=0 wf=1 in=7 p=404 l=15 col=12 i=1 n=3
+> CALL 202 len=2
+< CALL 202 rc=0 err=0 wf=1 in=7 p=404 l=15 col=12 i=1 n=3
+> CALL 203 len=2
+< CALL 203 rc=0 err=0 wf=1 in=7 p=404 l=15 col=12 i=1 n=3
+> CALL 204 len=2
+characters len=5 [95819]
+< CALL 204 rc=0 err=0 wf=1 in=7 p=409 l=15 col=17 i=1 n=3
+> CALL 205 len=2
+< CALL 205 rc=0 err=0 wf=1 in=9 p=409 l=15 col=17 i=1 n=3
+> CALL 206 len=2
+< CALL 206 rc=0 err=0 wf=1 in=9 p=409 l=15 col=17 i=1 n=3
+> CALL 207 len=2
+endElementNs local=[zip] prefix= uri=
+< CALL 207 rc=0 err=0 wf=1 in=7 p=415 l=15 col=23 i=1 n=2
+> CALL 208 len=2
+< CALL 208 rc=0 err=0 wf=1 in=7 p=415 l=15 col=23 i=1 n=2
+> CALL 209 len=2
+characters len=4 [\n   ]
+< CALL 209 rc=0 err=0 wf=1 in=7 p=419 l=16 col=4 i=1 n=2
+> CALL 210 len=2
+< CALL 210 rc=0 err=0 wf=1 in=9 p=419 l=16 col=4 i=1 n=2
+> CALL 211 len=2
+< CALL 211 rc=0 err=0 wf=1 in=9 p=419 l=16 col=4 i=1 n=2
+> CALL 212 len=2
+< CALL 212 rc=0 err=0 wf=1 in=9 p=419 l=16 col=4 i=1 n=2
+> CALL 213 len=2
+endElementNs local=[billTo] prefix= uri=
+< CALL 213 rc=0 err=0 wf=1 in=7 p=428 l=16 col=13 i=1 n=1
+> CALL 214 len=2
+< CALL 214 rc=0 err=0 wf=1 in=7 p=428 l=16 col=13 i=1 n=1
+> CALL 215 len=2
+< CALL 215 rc=0 err=0 wf=1 in=7 p=428 l=16 col=13 i=1 n=1
+> CALL 216 len=2
+characters len=4 [\n   ]
+< CALL 216 rc=0 err=0 wf=1 in=6 p=432 l=17 col=4 i=1 n=1
+> CALL 217 len=2
+< CALL 217 rc=0 err=0 wf=1 in=6 p=432 l=17 col=4 i=1 n=1
+> CALL 218 len=2
+< CALL 218 rc=0 err=0 wf=1 in=6 p=432 l=17 col=4 i=1 n=1
+> CALL 219 len=2
+< CALL 219 rc=0 err=0 wf=1 in=6 p=432 l=17 col=4 i=1 n=1
+> CALL 220 len=2
+startElementNs local=[comment] prefix= uri= ns=0 att=0 def=0
+< CALL 220 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 221 len=2
+< CALL 221 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 222 len=2
+< CALL 222 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 223 len=2
+< CALL 223 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 224 len=2
+< CALL 224 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 225 len=2
+< CALL 225 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 226 len=2
+< CALL 226 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 227 len=2
+< CALL 227 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 228 len=2
+< CALL 228 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 229 len=2
+< CALL 229 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 230 len=2
+< CALL 230 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 231 len=2
+< CALL 231 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 232 len=2
+< CALL 232 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 233 len=2
+< CALL 233 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 234 len=2
+< CALL 234 rc=0 err=0 wf=1 in=7 p=441 l=17 col=13 i=1 n=2
+> CALL 235 len=2
+characters len=29 [Hurry, my lawn is going wild!]
+< CALL 235 rc=0 err=0 wf=1 in=9 p=470 l=17 col=42 i=1 n=2
+> CALL 236 len=2
+< CALL 236 rc=0 err=0 wf=1 in=9 p=470 l=17 col=42 i=1 n=2
+> CALL 237 len=2
+< CALL 237 rc=0 err=0 wf=1 in=9 p=470 l=17 col=42 i=1 n=2
+> CALL 238 len=2
+< CALL 238 rc=0 err=0 wf=1 in=9 p=470 l=17 col=42 i=1 n=2
+> CALL 239 len=2
+endElementNs local=[comment] prefix= uri=
+< CALL 239 rc=0 err=0 wf=1 in=7 p=480 l=17 col=52 i=1 n=1
+> CALL 240 len=2
+< CALL 240 rc=0 err=0 wf=1 in=7 p=480 l=17 col=52 i=1 n=1
+> CALL 241 len=2
+< CALL 241 rc=0 err=0 wf=1 in=7 p=480 l=17 col=52 i=1 n=1
+> CALL 242 len=2
+characters len=4 [\n   ]
+< CALL 242 rc=0 err=0 wf=1 in=6 p=484 l=18 col=4 i=1 n=1
+> CALL 243 len=2
+< CALL 243 rc=0 err=0 wf=1 in=6 p=484 l=18 col=4 i=1 n=1
+> CALL 244 len=2
+< CALL 244 rc=0 err=0 wf=1 in=6 p=484 l=18 col=4 i=1 n=1
+> CALL 245 len=2
+startElementNs local=[items] prefix= uri= ns=0 att=0 def=0
+< CALL 245 rc=0 err=0 wf=1 in=7 p=491 l=18 col=11 i=1 n=2
+> CALL 246 len=2
+< CALL 246 rc=0 err=0 wf=1 in=7 p=491 l=18 col=11 i=1 n=2
+> CALL 247 len=2
+< CALL 247 rc=0 err=0 wf=1 in=7 p=491 l=18 col=11 i=1 n=2
+> CALL 248 len=2
+< CALL 248 rc=0 err=0 wf=1 in=7 p=491 l=18 col=11 i=1 n=2
+> CALL 249 len=2
+characters len=7 [\n      ]
+< CALL 249 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 250 len=2
+< CALL 250 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 251 len=2
+< CALL 251 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 252 len=2
+< CALL 252 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 253 len=2
+< CALL 253 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 254 len=2
+< CALL 254 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 255 len=2
+< CALL 255 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 256 len=2
+< CALL 256 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 257 len=2
+< CALL 257 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 258 len=2
+< CALL 258 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 259 len=2
+< CALL 259 rc=0 err=0 wf=1 in=6 p=498 l=19 col=7 i=1 n=2
+> CALL 260 len=2
+startElementNs local=[item] prefix= uri= ns=0 att=1 def=0 [a local=partNum prefix= uri= value=872-AA end=1]
+< CALL 260 rc=0 err=0 wf=1 in=7 p=521 l=19 col=30 i=1 n=3
+> CALL 261 len=2
+< CALL 261 rc=0 err=0 wf=1 in=7 p=521 l=19 col=30 i=1 n=3
+> CALL 262 len=2
+< CALL 262 rc=0 err=0 wf=1 in=7 p=521 l=19 col=30 i=1 n=3
+> CALL 263 len=2
+< CALL 263 rc=0 err=0 wf=1 in=7 p=521 l=19 col=30 i=1 n=3
+> CALL 264 len=2
+< CALL 264 rc=0 err=0 wf=1 in=7 p=521 l=19 col=30 i=1 n=3
+> CALL 265 len=2
+characters len=10 [\n         ]
+< CALL 265 rc=0 err=0 wf=1 in=7 p=531 l=20 col=10 i=1 n=3
+> CALL 266 len=2
+< CALL 266 rc=0 err=0 wf=1 in=6 p=531 l=20 col=10 i=1 n=3
+> CALL 267 len=2
+< CALL 267 rc=0 err=0 wf=1 in=6 p=531 l=20 col=10 i=1 n=3
+> CALL 268 len=2
+< CALL 268 rc=0 err=0 wf=1 in=6 p=531 l=20 col=10 i=1 n=3
+> CALL 269 len=2
+< CALL 269 rc=0 err=0 wf=1 in=6 p=531 l=20 col=10 i=1 n=3
+> CALL 270 len=2
+< CALL 270 rc=0 err=0 wf=1 in=6 p=531 l=20 col=10 i=1 n=3
+> CALL 271 len=2
+startElementNs local=[productName] prefix= uri= ns=0 att=0 def=0
+< CALL 271 rc=0 err=0 wf=1 in=7 p=544 l=20 col=23 i=1 n=4
+> CALL 272 len=2
+< CALL 272 rc=0 err=0 wf=1 in=7 p=544 l=20 col=23 i=1 n=4
+> CALL 273 len=2
+< CALL 273 rc=0 err=0 wf=1 in=7 p=544 l=20 col=23 i=1 n=4
+> CALL 274 len=2
+< CALL 274 rc=0 err=0 wf=1 in=7 p=544 l=20 col=23 i=1 n=4
+> CALL 275 len=2
+< CALL 275 rc=0 err=0 wf=1 in=7 p=544 l=20 col=23 i=1 n=4
+> CALL 276 len=2
+characters len=9 [Lawnmower]
+< CALL 276 rc=0 err=0 wf=1 in=7 p=553 l=20 col=32 i=1 n=4
+> CALL 277 len=2
+< CALL 277 rc=0 err=0 wf=1 in=9 p=553 l=20 col=32 i=1 n=4
+> CALL 278 len=2
+< CALL 278 rc=0 err=0 wf=1 in=9 p=553 l=20 col=32 i=1 n=4
+> CALL 279 len=2
+< CALL 279 rc=0 err=0 wf=1 in=9 p=553 l=20 col=32 i=1 n=4
+> CALL 280 len=2
+< CALL 280 rc=0 err=0 wf=1 in=9 p=553 l=20 col=32 i=1 n=4
+> CALL 281 len=2
+< CALL 281 rc=0 err=0 wf=1 in=9 p=553 l=20 col=32 i=1 n=4
+> CALL 282 len=2
+< CALL 282 rc=0 err=0 wf=1 in=9 p=553 l=20 col=32 i=1 n=4
+> CALL 283 len=2
+endElementNs local=[productName] prefix= uri=
+< CALL 283 rc=0 err=0 wf=1 in=7 p=567 l=20 col=46 i=1 n=3
+> CALL 284 len=2
+< CALL 284 rc=0 err=0 wf=1 in=7 p=567 l=20 col=46 i=1 n=3
+> CALL 285 len=2
+< CALL 285 rc=0 err=0 wf=1 in=7 p=567 l=20 col=46 i=1 n=3
+> CALL 286 len=2
+< CALL 286 rc=0 err=0 wf=1 in=7 p=567 l=20 col=46 i=1 n=3
+> CALL 287 len=2
+< CALL 287 rc=0 err=0 wf=1 in=7 p=567 l=20 col=46 i=1 n=3
+> CALL 288 len=2
+characters len=10 [\n         ]
+< CALL 288 rc=0 err=0 wf=1 in=7 p=577 l=21 col=10 i=1 n=3
+> CALL 289 len=2
+< CALL 289 rc=0 err=0 wf=1 in=6 p=577 l=21 col=10 i=1 n=3
+> CALL 290 len=2
+< CALL 290 rc=0 err=0 wf=1 in=6 p=577 l=21 col=10 i=1 n=3
+> CALL 291 len=2
+< CALL 291 rc=0 err=0 wf=1 in=6 p=577 l=21 col=10 i=1 n=3
+> CALL 292 len=2
+< CALL 292 rc=0 err=0 wf=1 in=6 p=577 l=21 col=10 i=1 n=3
+> CALL 293 len=2
+startElementNs local=[quantity] prefix= uri= ns=0 att=0 def=0
+< CALL 293 rc=0 err=0 wf=1 in=7 p=587 l=21 col=20 i=1 n=4
+> CALL 294 len=2
+characters len=1 [1]
+< CALL 294 rc=0 err=0 wf=1 in=9 p=588 l=21 col=21 i=1 n=4
+> CALL 295 len=2
+< CALL 295 rc=0 err=0 wf=1 in=9 p=588 l=21 col=21 i=1 n=4
+> CALL 296 len=2
+< CALL 296 rc=0 err=0 wf=1 in=9 p=588 l=21 col=21 i=1 n=4
+> CALL 297 len=2
+< CALL 297 rc=0 err=0 wf=1 in=9 p=588 l=21 col=21 i=1 n=4
+> CALL 298 len=2
+< CALL 298 rc=0 err=0 wf=1 in=9 p=588 l=21 col=21 i=1 n=4
+> CALL 299 len=2
+endElementNs local=[quantity] prefix= uri=
+< CALL 299 rc=0 err=0 wf=1 in=7 p=599 l=21 col=32 i=1 n=3
+> CALL 300 len=2
+< CALL 300 rc=0 err=0 wf=1 in=7 p=599 l=21 col=32 i=1 n=3
+> CALL 301 len=2
+< CALL 301 rc=0 err=0 wf=1 in=7 p=599 l=21 col=32 i=1 n=3
+> CALL 302 len=2
+< CALL 302 rc=0 err=0 wf=1 in=7 p=599 l=21 col=32 i=1 n=3
+> CALL 303 len=2
+< CALL 303 rc=0 err=0 wf=1 in=7 p=599 l=21 col=32 i=1 n=3
+> CALL 304 len=2
+characters len=10 [\n         ]
+< CALL 304 rc=0 err=0 wf=1 in=7 p=609 l=22 col=10 i=1 n=3
+> CALL 305 len=2
+< CALL 305 rc=0 err=0 wf=1 in=6 p=609 l=22 col=10 i=1 n=3
+> CALL 306 len=2
+< CALL 306 rc=0 err=0 wf=1 in=6 p=609 l=22 col=10 i=1 n=3
+> CALL 307 len=2
+< CALL 307 rc=0 err=0 wf=1 in=6 p=609 l=22 col=10 i=1 n=3
+> CALL 308 len=2
+startElementNs local=[USPrice] prefix= uri= ns=0 att=0 def=0
+< CALL 308 rc=0 err=0 wf=1 in=7 p=618 l=22 col=19 i=1 n=4
+> CALL 309 len=2
+< CALL 309 rc=0 err=0 wf=1 in=7 p=618 l=22 col=19 i=1 n=4
+> CALL 310 len=2
+< CALL 310 rc=0 err=0 wf=1 in=7 p=618 l=22 col=19 i=1 n=4
+> CALL 311 len=2
+< CALL 311 rc=0 err=0 wf=1 in=7 p=618 l=22 col=19 i=1 n=4
+> CALL 312 len=2
+characters len=6 [148.95]
+< CALL 312 rc=0 err=0 wf=1 in=9 p=624 l=22 col=25 i=1 n=4
+> CALL 313 len=2
+< CALL 313 rc=0 err=0 wf=1 in=9 p=624 l=22 col=25 i=1 n=4
+> CALL 314 len=2
+< CALL 314 rc=0 err=0 wf=1 in=9 p=624 l=22 col=25 i=1 n=4
+> CALL 315 len=2
+< CALL 315 rc=0 err=0 wf=1 in=9 p=624 l=22 col=25 i=1 n=4
+> CALL 316 len=2
+endElementNs local=[USPrice] prefix= uri=
+< CALL 316 rc=0 err=0 wf=1 in=7 p=634 l=22 col=35 i=1 n=3
+> CALL 317 len=2
+< CALL 317 rc=0 err=0 wf=1 in=7 p=634 l=22 col=35 i=1 n=3
+> CALL 318 len=2
+< CALL 318 rc=0 err=0 wf=1 in=7 p=634 l=22 col=35 i=1 n=3
+> CALL 319 len=2
+< CALL 319 rc=0 err=0 wf=1 in=7 p=634 l=22 col=35 i=1 n=3
+> CALL 320 len=2
+< CALL 320 rc=0 err=0 wf=1 in=7 p=634 l=22 col=35 i=1 n=3
+> CALL 321 len=2
+< CALL 321 rc=0 err=0 wf=1 in=7 p=634 l=22 col=35 i=1 n=3
+> CALL 322 len=2
+characters len=10 [\n         ]
+< CALL 322 rc=0 err=0 wf=1 in=6 p=644 l=23 col=10 i=1 n=3
+> CALL 323 len=2
+< CALL 323 rc=0 err=0 wf=1 in=6 p=644 l=23 col=10 i=1 n=3
+> CALL 324 len=2
+< CALL 324 rc=0 err=0 wf=1 in=6 p=644 l=23 col=10 i=1 n=3
+> CALL 325 len=2
+< CALL 325 rc=0 err=0 wf=1 in=6 p=644 l=23 col=10 i=1 n=3
+> CALL 326 len=2
+startElementNs local=[comment] prefix= uri= ns=0 att=0 def=0
+< CALL 326 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 327 len=2
+< CALL 327 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 328 len=2
+< CALL 328 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 329 len=2
+< CALL 329 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 330 len=2
+< CALL 330 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 331 len=2
+< CALL 331 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 332 len=2
+< CALL 332 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 333 len=2
+< CALL 333 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 334 len=2
+< CALL 334 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 335 len=2
+< CALL 335 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 336 len=2
+< CALL 336 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 337 len=2
+< CALL 337 rc=0 err=0 wf=1 in=7 p=653 l=23 col=19 i=1 n=4
+> CALL 338 len=2
+characters len=24 [Confirm this is electric]
+< CALL 338 rc=0 err=0 wf=1 in=7 p=677 l=23 col=43 i=1 n=4
+> CALL 339 len=2
+< CALL 339 rc=0 err=0 wf=1 in=9 p=677 l=23 col=43 i=1 n=4
+> CALL 340 len=2
+< CALL 340 rc=0 err=0 wf=1 in=9 p=677 l=23 col=43 i=1 n=4
+> CALL 341 len=2
+< CALL 341 rc=0 err=0 wf=1 in=9 p=677 l=23 col=43 i=1 n=4
+> CALL 342 len=2
+< CALL 342 rc=0 err=0 wf=1 in=9 p=677 l=23 col=43 i=1 n=4
+> CALL 343 len=2
+endElementNs local=[comment] prefix= uri=
+< CALL 343 rc=0 err=0 wf=1 in=7 p=687 l=23 col=53 i=1 n=3
+> CALL 344 len=2
+< CALL 344 rc=0 err=0 wf=1 in=7 p=687 l=23 col=53 i=1 n=3
+> CALL 345 len=2
+< CALL 345 rc=0 err=0 wf=1 in=7 p=687 l=23 col=53 i=1 n=3
+> CALL 346 len=2
+< CALL 346 rc=0 err=0 wf=1 in=7 p=687 l=23 col=53 i=1 n=3
+> CALL 347 len=2
+characters len=7 [\n      ]
+< CALL 347 rc=0 err=0 wf=1 in=9 p=694 l=24 col=7 i=1 n=3
+> CALL 348 len=2
+< CALL 348 rc=0 err=0 wf=1 in=9 p=694 l=24 col=7 i=1 n=3
+> CALL 349 len=2
+< CALL 349 rc=0 err=0 wf=1 in=9 p=694 l=24 col=7 i=1 n=3
+> CALL 350 len=2
+endElementNs local=[item] prefix= uri=
+< CALL 350 rc=0 err=0 wf=1 in=7 p=701 l=24 col=14 i=1 n=2
+> CALL 351 len=2
+< CALL 351 rc=0 err=0 wf=1 in=7 p=701 l=24 col=14 i=1 n=2
+> CALL 352 len=2
+< CALL 352 rc=0 err=0 wf=1 in=7 p=701 l=24 col=14 i=1 n=2
+> CALL 353 len=2
+< CALL 353 rc=0 err=0 wf=1 in=7 p=701 l=24 col=14 i=1 n=2
+> CALL 354 len=2
+characters len=7 [\n      ]
+< CALL 354 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 355 len=2
+< CALL 355 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 356 len=2
+< CALL 356 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 357 len=2
+< CALL 357 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 358 len=2
+< CALL 358 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 359 len=2
+< CALL 359 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 360 len=2
+< CALL 360 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 361 len=2
+< CALL 361 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 362 len=2
+< CALL 362 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 363 len=2
+< CALL 363 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 364 len=2
+< CALL 364 rc=0 err=0 wf=1 in=6 p=708 l=25 col=7 i=1 n=2
+> CALL 365 len=2
+startElementNs local=[item] prefix= uri= ns=0 att=1 def=0 [a local=partNum prefix= uri= value=926-AA end=1]
+< CALL 365 rc=0 err=0 wf=1 in=7 p=731 l=25 col=30 i=1 n=3
+> CALL 366 len=2
+< CALL 366 rc=0 err=0 wf=1 in=7 p=731 l=25 col=30 i=1 n=3
+> CALL 367 len=2
+< CALL 367 rc=0 err=0 wf=1 in=7 p=731 l=25 col=30 i=1 n=3
+> CALL 368 len=2
+< CALL 368 rc=0 err=0 wf=1 in=7 p=731 l=25 col=30 i=1 n=3
+> CALL 369 len=2
+< CALL 369 rc=0 err=0 wf=1 in=7 p=731 l=25 col=30 i=1 n=3
+> CALL 370 len=2
+characters len=10 [\n         ]
+< CALL 370 rc=0 err=0 wf=1 in=7 p=741 l=26 col=10 i=1 n=3
+> CALL 371 len=2
+< CALL 371 rc=0 err=0 wf=1 in=6 p=741 l=26 col=10 i=1 n=3
+> CALL 372 len=2
+< CALL 372 rc=0 err=0 wf=1 in=6 p=741 l=26 col=10 i=1 n=3
+> CALL 373 len=2
+< CALL 373 rc=0 err=0 wf=1 in=6 p=741 l=26 col=10 i=1 n=3
+> CALL 374 len=2
+< CALL 374 rc=0 err=0 wf=1 in=6 p=741 l=26 col=10 i=1 n=3
+> CALL 375 len=2
+< CALL 375 rc=0 err=0 wf=1 in=6 p=741 l=26 col=10 i=1 n=3
+> CALL 376 len=2
+startElementNs local=[productName] prefix= uri= ns=0 att=0 def=0
+< CALL 376 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 377 len=2
+< CALL 377 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 378 len=2
+< CALL 378 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 379 len=2
+< CALL 379 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 380 len=2
+< CALL 380 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 381 len=2
+< CALL 381 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 382 len=2
+< CALL 382 rc=0 err=0 wf=1 in=7 p=754 l=26 col=23 i=1 n=4
+> CALL 383 len=2
+characters len=12 [Baby Monitor]
+< CALL 383 rc=0 err=0 wf=1 in=9 p=766 l=26 col=35 i=1 n=4
+> CALL 384 len=2
+< CALL 384 rc=0 err=0 wf=1 in=9 p=766 l=26 col=35 i=1 n=4
+> CALL 385 len=2
+< CALL 385 rc=0 err=0 wf=1 in=9 p=766 l=26 col=35 i=1 n=4
+> CALL 386 len=2
+< CALL 386 rc=0 err=0 wf=1 in=9 p=766 l=26 col=35 i=1 n=4
+> CALL 387 len=2
+< CALL 387 rc=0 err=0 wf=1 in=9 p=766 l=26 col=35 i=1 n=4
+> CALL 388 len=2
+< CALL 388 rc=0 err=0 wf=1 in=9 p=766 l=26 col=35 i=1 n=4
+> CALL 389 len=2
+endElementNs local=[productName] prefix= uri=
+< CALL 389 rc=0 err=0 wf=1 in=7 p=780 l=26 col=49 i=1 n=3
+> CALL 390 len=2
+< CALL 390 rc=0 err=0 wf=1 in=7 p=780 l=26 col=49 i=1 n=3
+> CALL 391 len=2
+< CALL 391 rc=0 err=0 wf=1 in=7 p=780 l=26 col=49 i=1 n=3
+> CALL 392 len=2
+< CALL 392 rc=0 err=0 wf=1 in=7 p=780 l=26 col=49 i=1 n=3
+> CALL 393 len=2
+< CALL 393 rc=0 err=0 wf=1 in=7 p=780 l=26 col=49 i=1 n=3
+> CALL 394 len=2
+< CALL 394 rc=0 err=0 wf=1 in=7 p=780 l=26 col=49 i=1 n=3
+> CALL 395 len=2
+characters len=10 [\n         ]
+< CALL 395 rc=0 err=0 wf=1 in=6 p=790 l=27 col=10 i=1 n=3
+> CALL 396 len=2
+< CALL 396 rc=0 err=0 wf=1 in=6 p=790 l=27 col=10 i=1 n=3
+> CALL 397 len=2
+< CALL 397 rc=0 err=0 wf=1 in=6 p=790 l=27 col=10 i=1 n=3
+> CALL 398 len=2
+< CALL 398 rc=0 err=0 wf=1 in=6 p=790 l=27 col=10 i=1 n=3
+> CALL 399 len=2
+startElementNs local=[quantity] prefix= uri= ns=0 att=0 def=0
+< CALL 399 rc=0 err=0 wf=1 in=7 p=800 l=27 col=20 i=1 n=4
+> CALL 400 len=2
+characters len=1 [1]
+< CALL 400 rc=0 err=0 wf=1 in=7 p=801 l=27 col=21 i=1 n=4
+> CALL 401 len=2
+< CALL 401 rc=0 err=0 wf=1 in=9 p=801 l=27 col=21 i=1 n=4
+> CALL 402 len=2
+< CALL 402 rc=0 err=0 wf=1 in=9 p=801 l=27 col=21 i=1 n=4
+> CALL 403 len=2
+< CALL 403 rc=0 err=0 wf=1 in=9 p=801 l=27 col=21 i=1 n=4
+> CALL 404 len=2
+< CALL 404 rc=0 err=0 wf=1 in=9 p=801 l=27 col=21 i=1 n=4
+> CALL 405 len=2
+endElementNs local=[quantity] prefix= uri=
+< CALL 405 rc=0 err=0 wf=1 in=7 p=812 l=27 col=32 i=1 n=3
+> CALL 406 len=2
+< CALL 406 rc=0 err=0 wf=1 in=7 p=812 l=27 col=32 i=1 n=3
+> CALL 407 len=2
+< CALL 407 rc=0 err=0 wf=1 in=7 p=812 l=27 col=32 i=1 n=3
+> CALL 408 len=2
+< CALL 408 rc=0 err=0 wf=1 in=7 p=812 l=27 col=32 i=1 n=3
+> CALL 409 len=2
+< CALL 409 rc=0 err=0 wf=1 in=7 p=812 l=27 col=32 i=1 n=3
+> CALL 410 len=2
+< CALL 410 rc=0 err=0 wf=1 in=7 p=812 l=27 col=32 i=1 n=3
+> CALL 411 len=2
+characters len=10 [\n         ]
+< CALL 411 rc=0 err=0 wf=1 in=6 p=822 l=28 col=10 i=1 n=3
+> CALL 412 len=2
+< CALL 412 rc=0 err=0 wf=1 in=6 p=822 l=28 col=10 i=1 n=3
+> CALL 413 len=2
+< CALL 413 rc=0 err=0 wf=1 in=6 p=822 l=28 col=10 i=1 n=3
+> CALL 414 len=2
+< CALL 414 rc=0 err=0 wf=1 in=6 p=822 l=28 col=10 i=1 n=3
+> CALL 415 len=2
+startElementNs local=[USPrice] prefix= uri= ns=0 att=0 def=0
+< CALL 415 rc=0 err=0 wf=1 in=7 p=831 l=28 col=19 i=1 n=4
+> CALL 416 len=2
+< CALL 416 rc=0 err=0 wf=1 in=7 p=831 l=28 col=19 i=1 n=4
+> CALL 417 len=2
+< CALL 417 rc=0 err=0 wf=1 in=7 p=831 l=28 col=19 i=1 n=4
+> CALL 418 len=2
+characters len=5 [39.98]
+< CALL 418 rc=0 err=0 wf=1 in=9 p=836 l=28 col=24 i=1 n=4
+> CALL 419 len=2
+< CALL 419 rc=0 err=0 wf=1 in=9 p=836 l=28 col=24 i=1 n=4
+> CALL 420 len=2
+< CALL 420 rc=0 err=0 wf=1 in=9 p=836 l=28 col=24 i=1 n=4
+> CALL 421 len=2
+< CALL 421 rc=0 err=0 wf=1 in=9 p=836 l=28 col=24 i=1 n=4
+> CALL 422 len=2
+endElementNs local=[USPrice] prefix= uri=
+< CALL 422 rc=0 err=0 wf=1 in=7 p=846 l=28 col=34 i=1 n=3
+> CALL 423 len=2
+< CALL 423 rc=0 err=0 wf=1 in=7 p=846 l=28 col=34 i=1 n=3
+> CALL 424 len=2
+< CALL 424 rc=0 err=0 wf=1 in=7 p=846 l=28 col=34 i=1 n=3
+> CALL 425 len=2
+< CALL 425 rc=0 err=0 wf=1 in=7 p=846 l=28 col=34 i=1 n=3
+> CALL 426 len=2
+< CALL 426 rc=0 err=0 wf=1 in=7 p=846 l=28 col=34 i=1 n=3
+> CALL 427 len=2
+< CALL 427 rc=0 err=0 wf=1 in=7 p=846 l=28 col=34 i=1 n=3
+> CALL 428 len=2
+characters len=10 [\n         ]
+< CALL 428 rc=0 err=0 wf=1 in=6 p=856 l=29 col=10 i=1 n=3
+> CALL 429 len=2
+< CALL 429 rc=0 err=0 wf=1 in=6 p=856 l=29 col=10 i=1 n=3
+> CALL 430 len=2
+< CALL 430 rc=0 err=0 wf=1 in=6 p=856 l=29 col=10 i=1 n=3
+> CALL 431 len=2
+< CALL 431 rc=0 err=0 wf=1 in=6 p=856 l=29 col=10 i=1 n=3
+> CALL 432 len=2
+startElementNs local=[shipDate] prefix= uri= ns=0 att=0 def=0
+< CALL 432 rc=0 err=0 wf=1 in=7 p=866 l=29 col=20 i=1 n=4
+> CALL 433 len=2
+< CALL 433 rc=0 err=0 wf=1 in=7 p=866 l=29 col=20 i=1 n=4
+> CALL 434 len=2
+< CALL 434 rc=0 err=0 wf=1 in=7 p=866 l=29 col=20 i=1 n=4
+> CALL 435 len=2
+< CALL 435 rc=0 err=0 wf=1 in=7 p=866 l=29 col=20 i=1 n=4
+> CALL 436 len=2
+< CALL 436 rc=0 err=0 wf=1 in=7 p=866 l=29 col=20 i=1 n=4
+> CALL 437 len=2
+< CALL 437 rc=0 err=0 wf=1 in=7 p=866 l=29 col=20 i=1 n=4
+> CALL 438 len=2
+characters len=10 [1999-05-21]
+< CALL 438 rc=0 err=0 wf=1 in=9 p=876 l=29 col=30 i=1 n=4
+> CALL 439 len=2
+< CALL 439 rc=0 err=0 wf=1 in=9 p=876 l=29 col=30 i=1 n=4
+> CALL 440 len=2
+< CALL 440 rc=0 err=0 wf=1 in=9 p=876 l=29 col=30 i=1 n=4
+> CALL 441 len=2
+< CALL 441 rc=0 err=0 wf=1 in=9 p=876 l=29 col=30 i=1 n=4
+> CALL 442 len=2
+< CALL 442 rc=0 err=0 wf=1 in=9 p=876 l=29 col=30 i=1 n=4
+> CALL 443 len=2
+endElementNs local=[shipDate] prefix= uri=
+< CALL 443 rc=0 err=0 wf=1 in=7 p=887 l=29 col=41 i=1 n=3
+> CALL 444 len=2
+< CALL 444 rc=0 err=0 wf=1 in=7 p=887 l=29 col=41 i=1 n=3
+> CALL 445 len=2
+< CALL 445 rc=0 err=0 wf=1 in=7 p=887 l=29 col=41 i=1 n=3
+> CALL 446 len=2
+< CALL 446 rc=0 err=0 wf=1 in=7 p=887 l=29 col=41 i=1 n=3
+> CALL 447 len=2
+characters len=7 [\n      ]
+< CALL 447 rc=0 err=0 wf=1 in=9 p=894 l=30 col=7 i=1 n=3
+> CALL 448 len=2
+< CALL 448 rc=0 err=0 wf=1 in=9 p=894 l=30 col=7 i=1 n=3
+> CALL 449 len=2
+< CALL 449 rc=0 err=0 wf=1 in=9 p=894 l=30 col=7 i=1 n=3
+> CALL 450 len=2
+endElementNs local=[item] prefix= uri=
+< CALL 450 rc=0 err=0 wf=1 in=7 p=901 l=30 col=14 i=1 n=2
+> CALL 451 len=2
+< CALL 451 rc=0 err=0 wf=1 in=7 p=901 l=30 col=14 i=1 n=2
+> CALL 452 len=2
+characters len=4 [\n   ]
+< CALL 452 rc=0 err=0 wf=1 in=7 p=905 l=31 col=4 i=1 n=2
+> CALL 453 len=2
+< CALL 453 rc=0 err=0 wf=1 in=9 p=905 l=31 col=4 i=1 n=2
+> CALL 454 len=2
+< CALL 454 rc=0 err=0 wf=1 in=9 p=905 l=31 col=4 i=1 n=2
+> CALL 455 len=2
+< CALL 455 rc=0 err=0 wf=1 in=9 p=905 l=31 col=4 i=1 n=2
+> CALL 456 len=2
+endElementNs local=[items] prefix= uri=
+< CALL 456 rc=0 err=0 wf=1 in=7 p=913 l=31 col=12 i=1 n=1
+> CALL 457 len=2
+characters len=1 [\n]
+< CALL 457 rc=0 err=0 wf=1 in=9 p=914 l=32 col=1 i=1 n=1
+> CALL 458 len=2
+< CALL 458 rc=0 err=0 wf=1 in=9 p=914 l=32 col=1 i=1 n=1
+> CALL 459 len=2
+< CALL 459 rc=0 err=0 wf=1 in=9 p=914 l=32 col=1 i=1 n=1
+> CALL 460 len=2
+< CALL 460 rc=0 err=0 wf=1 in=9 p=914 l=32 col=1 i=1 n=1
+> CALL 461 len=2
+< CALL 461 rc=0 err=0 wf=1 in=9 p=914 l=32 col=1 i=1 n=1
+> CALL 462 len=2
+< CALL 462 rc=0 err=0 wf=1 in=9 p=914 l=32 col=1 i=1 n=1
+> CALL 463 len=2
+< CALL 463 rc=0 err=0 wf=1 in=9 p=914 l=32 col=1 i=1 n=1
+> CALL 464 len=2
+endElementNs local=[purchaseOrder] prefix= uri=
+< CALL 464 rc=0 err=0 wf=1 in=14 p=930 l=32 col=17 i=1 n=0
+> CALL 465 len=1
+< CALL 465 rc=0 err=0 wf=1 in=14 p=931 l=33 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=931 l=33 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=33 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=931 l=33 col=1 i=1 n=0

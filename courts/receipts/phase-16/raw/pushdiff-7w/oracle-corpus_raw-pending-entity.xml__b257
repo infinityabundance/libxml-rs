@@ -1,0 +1,10 @@
+== /scanout/corpus/raw-pending-entity.xml bytes=6 mode=b257
+> CALL 0 len=6
+startDocument
+startElementNs local=[a] prefix= uri= ns=0 att=0 def=0
+< CALL 0 rc=0 err=0 wf=1 in=7 p=3 l=1 col=4 i=1 n=1
+> FINAL
+error dom=1 code=23 level=3 file= line=1 i1=0 i2=7 str1= str2= str3= msg=EntityRef: expecting ';'\n
+< FINAL 0 rc=23 err=23 wf=0 in=7 p=6 l=1 col=7 i=1 n=1
+> REFEED
+< REFEED 0 rc=23 err=23 wf=0 in=7 p=6 l=1 col=7 i=1 n=1

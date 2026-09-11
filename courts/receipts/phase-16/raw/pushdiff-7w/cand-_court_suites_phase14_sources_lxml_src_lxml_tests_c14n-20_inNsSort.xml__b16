@@ -1,0 +1,39 @@
+== /court/suites/phase14/sources/lxml/src/lxml/tests/c14n-20/inNsSort.xml bytes=173 mode=b16
+> CALL 0 len=16
+startDocument
+< CALL 0 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=16
+< CALL 1 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=16
+< CALL 2 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 3 len=16
+< CALL 3 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 4 len=16
+< CALL 4 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 5 len=16
+< CALL 5 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 6 len=16
+< CALL 6 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 7 len=16
+< CALL 7 rc=0 err=0 wf=1 in=6 p=0 l=1 col=1 i=1 n=0
+> CALL 8 len=16
+startElementNs local=[foo] prefix=a uri=http://z3 ns=4 att=3 def=0 {a=http://z3} {b=http://z2} {c=http://z1} {d=http://z0} [a local=att1 prefix=b uri=http://z2 value=val1 end=1] [a local=att3 prefix=c uri=http://z1 value=val3 end=1] [a local=att2 prefix=b uri=http://z2 value=val2 end=1]
+characters len=2 [\n ]
+startElementNs local=[bar] prefix=c uri=http://z1 ns=0 att=0 def=0
+endElementNs local=[bar] prefix=c uri=http://z1
+characters len=2 [\n ]
+< CALL 8 rc=0 err=0 wf=1 in=6 p=141 l=3 col=2 i=1 n=1
+> CALL 9 len=16
+< CALL 9 rc=0 err=0 wf=1 in=6 p=141 l=3 col=2 i=1 n=1
+> CALL 10 len=13
+startElementNs local=[bar] prefix=c uri=http://z1 ns=0 att=1 def=0 [a local=att3 prefix=d uri=http://z0 value=val3 end=1]
+endElementNs local=[bar] prefix=c uri=http://z1
+characters len=1 [\n]
+endElementNs local=[foo] prefix=a uri=http://z3
+< CALL 10 rc=0 err=0 wf=1 in=14 p=173 l=5 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=173 l=5 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=5 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=173 l=5 col=1 i=1 n=0

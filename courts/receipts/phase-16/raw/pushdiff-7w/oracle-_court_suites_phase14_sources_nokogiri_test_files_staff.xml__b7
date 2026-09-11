@@ -1,0 +1,765 @@
+== /court/suites/phase14/sources/nokogiri/test/files/staff.xml bytes=2055 mode=b7
+> CALL 0 len=7
+< CALL 0 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 1 len=7
+< CALL 1 rc=0 err=0 wf=1 in=17 p=0 l=1 col=1 i=1 n=0
+> CALL 2 len=7
+startDocument
+< CALL 2 rc=0 err=0 wf=1 in=1 p=21 l=1 col=22 i=1 n=0
+> CALL 3 len=7
+< CALL 3 rc=0 err=0 wf=1 in=1 p=21 l=1 col=22 i=1 n=0
+> CALL 4 len=7
+< CALL 4 rc=0 err=0 wf=1 in=1 p=21 l=1 col=22 i=1 n=0
+> CALL 5 len=7
+pi target=TEST-STYLE data=PIDATA
+< CALL 5 rc=0 err=0 wf=1 in=1 p=42 l=1 col=43 i=1 n=0
+> CALL 6 len=7
+< CALL 6 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 7 len=7
+< CALL 7 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 8 len=7
+< CALL 8 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 9 len=7
+< CALL 9 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 10 len=7
+< CALL 10 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 11 len=7
+< CALL 11 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 12 len=7
+< CALL 12 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 13 len=7
+< CALL 13 rc=0 err=0 wf=1 in=1 p=43 l=2 col=1 i=1 n=0
+> CALL 14 len=7
+internalSubset name=staff ext= sys=staff.dtd
+< CALL 14 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 15 len=7
+< CALL 15 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 16 len=7
+< CALL 16 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 17 len=7
+< CALL 17 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 18 len=7
+< CALL 18 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 19 len=7
+< CALL 19 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 20 len=7
+< CALL 20 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 21 len=7
+< CALL 21 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 22 len=7
+< CALL 22 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 23 len=7
+< CALL 23 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 24 len=7
+< CALL 24 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 25 len=7
+< CALL 25 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 26 len=7
+< CALL 26 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 27 len=7
+< CALL 27 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 28 len=7
+< CALL 28 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 29 len=7
+< CALL 29 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 30 len=7
+< CALL 30 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 31 len=7
+< CALL 31 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 32 len=7
+< CALL 32 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 33 len=7
+< CALL 33 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 34 len=7
+< CALL 34 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 35 len=7
+< CALL 35 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 36 len=7
+< CALL 36 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 37 len=7
+< CALL 37 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 38 len=7
+< CALL 38 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 39 len=7
+< CALL 39 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 40 len=7
+< CALL 40 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 41 len=7
+< CALL 41 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 42 len=7
+< CALL 42 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 43 len=7
+< CALL 43 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 44 len=7
+< CALL 44 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 45 len=7
+< CALL 45 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 46 len=7
+< CALL 46 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 47 len=7
+< CALL 47 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 48 len=7
+< CALL 48 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 49 len=7
+< CALL 49 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 50 len=7
+< CALL 50 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 51 len=7
+< CALL 51 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 52 len=7
+< CALL 52 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 53 len=7
+< CALL 53 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 54 len=7
+< CALL 54 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 55 len=7
+< CALL 55 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 56 len=7
+< CALL 56 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 57 len=7
+< CALL 57 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 58 len=7
+< CALL 58 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 59 len=7
+< CALL 59 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 60 len=7
+< CALL 60 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 61 len=7
+< CALL 61 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 62 len=7
+< CALL 62 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 63 len=7
+< CALL 63 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 64 len=7
+< CALL 64 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 65 len=7
+< CALL 65 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 66 len=7
+< CALL 66 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 67 len=7
+< CALL 67 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 68 len=7
+< CALL 68 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 69 len=7
+< CALL 69 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 70 len=7
+< CALL 70 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 71 len=7
+< CALL 71 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 72 len=7
+< CALL 72 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 73 len=7
+< CALL 73 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 74 len=7
+< CALL 74 rc=0 err=0 wf=1 in=3 p=78 l=2 col=36 i=1 n=0
+> CALL 75 len=7
+entityDecl name=ent1 type=1 pub= sys= content=es
+entityDecl name=ent2 type=1 pub= sys= content=1900 Dallas Road
+entityDecl name=ent3 type=1 pub= sys= content=Texas
+entityDecl name=ent4 type=1 pub= sys= content=<entElement domestic='Yes'>Element data</entElement><?PItarget PIdata?>
+unparsedEntityDecl name=ent5 pub=entityURI sys=entityFile nota=notation1
+entityDecl name=ent1 type=1 pub= sys= content=This entity should be discarded
+elementDecl name=br type=1 content=nil
+attributeDecl elem=br name=width type=1 def=1 val=0 enum=
+notationDecl name=notation1 pub=notation1File sys=
+notationDecl name=notation2 pub= sys=notation2File
+externalSubset name=staff ext= sys=staff.dtd
+< CALL 75 rc=0 err=0 wf=1 in=4 p=531 l=14 col=1 i=1 n=0
+> CALL 76 len=7
+< CALL 76 rc=0 err=0 wf=1 in=4 p=531 l=14 col=1 i=1 n=0
+> CALL 77 len=7
+< CALL 77 rc=0 err=0 wf=1 in=4 p=531 l=14 col=1 i=1 n=0
+> CALL 78 len=7
+< CALL 78 rc=0 err=0 wf=1 in=4 p=531 l=14 col=1 i=1 n=0
+> CALL 79 len=7
+< CALL 79 rc=0 err=0 wf=1 in=4 p=531 l=14 col=1 i=1 n=0
+> CALL 80 len=7
+comment [ This is comment number 1.]
+< CALL 80 rc=0 err=0 wf=1 in=6 p=565 l=15 col=1 i=1 n=0
+> CALL 81 len=7
+startElementNs local=[staff] prefix= uri= ns=0 att=0 def=0
+< CALL 81 rc=0 err=0 wf=1 in=7 p=572 l=15 col=8 i=1 n=1
+> CALL 82 len=7
+characters len=2 [\n ]
+< CALL 82 rc=0 err=0 wf=1 in=6 p=574 l=16 col=2 i=1 n=1
+> CALL 83 len=7
+startElementNs local=[employee] prefix= uri= ns=0 att=0 def=0
+characters len=3 [\n  ]
+< CALL 83 rc=0 err=0 wf=1 in=7 p=587 l=17 col=3 i=1 n=2
+> CALL 84 len=7
+< CALL 84 rc=0 err=0 wf=1 in=6 p=587 l=17 col=3 i=1 n=2
+> CALL 85 len=7
+startElementNs local=[employeeId] prefix= uri= ns=0 att=0 def=0
+< CALL 85 rc=0 err=0 wf=1 in=7 p=599 l=17 col=15 i=1 n=3
+> CALL 86 len=7
+characters len=7 [EMP0001]
+< CALL 86 rc=0 err=0 wf=1 in=9 p=606 l=17 col=22 i=1 n=3
+> CALL 87 len=7
+< CALL 87 rc=0 err=0 wf=1 in=9 p=606 l=17 col=22 i=1 n=3
+> CALL 88 len=7
+endElementNs local=[employeeId] prefix= uri=
+characters len=3 [\n  ]
+< CALL 88 rc=0 err=0 wf=1 in=7 p=622 l=18 col=3 i=1 n=2
+> CALL 89 len=7
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 89 rc=0 err=0 wf=1 in=7 p=628 l=18 col=9 i=1 n=3
+> CALL 90 len=7
+< CALL 90 rc=0 err=0 wf=1 in=7 p=628 l=18 col=9 i=1 n=3
+> CALL 91 len=7
+characters len=15 [Margaret Martin]
+< CALL 91 rc=0 err=0 wf=1 in=7 p=643 l=18 col=24 i=1 n=3
+> CALL 92 len=7
+endElementNs local=[name] prefix= uri=
+< CALL 92 rc=0 err=0 wf=1 in=7 p=650 l=18 col=31 i=1 n=2
+> CALL 93 len=7
+characters len=3 [\n  ]
+< CALL 93 rc=0 err=0 wf=1 in=6 p=653 l=19 col=3 i=1 n=2
+> CALL 94 len=7
+startElementNs local=[position] prefix= uri= ns=0 att=0 def=0
+< CALL 94 rc=0 err=0 wf=1 in=7 p=663 l=19 col=13 i=1 n=3
+> CALL 95 len=7
+< CALL 95 rc=0 err=0 wf=1 in=7 p=663 l=19 col=13 i=1 n=3
+> CALL 96 len=7
+characters len=10 [Accountant]
+< CALL 96 rc=0 err=0 wf=1 in=9 p=673 l=19 col=23 i=1 n=3
+> CALL 97 len=7
+endElementNs local=[position] prefix= uri=
+< CALL 97 rc=0 err=0 wf=1 in=7 p=684 l=19 col=34 i=1 n=2
+> CALL 98 len=7
+< CALL 98 rc=0 err=0 wf=1 in=7 p=684 l=19 col=34 i=1 n=2
+> CALL 99 len=7
+characters len=14 [           \n  ]
+< CALL 99 rc=0 err=0 wf=1 in=6 p=698 l=20 col=3 i=1 n=2
+> CALL 100 len=7
+startElementNs local=[salary] prefix= uri= ns=0 att=0 def=0
+< CALL 100 rc=0 err=0 wf=1 in=7 p=706 l=20 col=11 i=1 n=3
+> CALL 101 len=7
+characters len=6 [56,000]
+< CALL 101 rc=0 err=0 wf=1 in=9 p=712 l=20 col=17 i=1 n=3
+> CALL 102 len=7
+endElementNs local=[salary] prefix= uri=
+< CALL 102 rc=0 err=0 wf=1 in=7 p=721 l=20 col=26 i=1 n=2
+> CALL 103 len=7
+characters len=3 [\n  ]
+< CALL 103 rc=0 err=0 wf=1 in=6 p=724 l=21 col=3 i=1 n=2
+> CALL 104 len=7
+startElementNs local=[gender] prefix= uri= ns=0 att=0 def=0
+< CALL 104 rc=0 err=0 wf=1 in=7 p=732 l=21 col=11 i=1 n=3
+> CALL 105 len=7
+characters len=6 [Female]
+< CALL 105 rc=0 err=0 wf=1 in=9 p=738 l=21 col=17 i=1 n=3
+> CALL 106 len=7
+endElementNs local=[gender] prefix= uri=
+< CALL 106 rc=0 err=0 wf=1 in=7 p=747 l=21 col=26 i=1 n=2
+> CALL 107 len=7
+characters len=3 [\n  ]
+< CALL 107 rc=0 err=0 wf=1 in=6 p=750 l=22 col=3 i=1 n=2
+> CALL 108 len=7
+< CALL 108 rc=0 err=0 wf=1 in=6 p=750 l=22 col=3 i=1 n=2
+> CALL 109 len=7
+< CALL 109 rc=0 err=0 wf=1 in=6 p=750 l=22 col=3 i=1 n=2
+> CALL 110 len=7
+startElementNs local=[address] prefix= uri= ns=0 att=1 def=0 [a local=domestic prefix= uri= value=Yes end=1]
+< CALL 110 rc=0 err=0 wf=1 in=7 p=774 l=22 col=27 i=1 n=3
+> CALL 111 len=7
+< CALL 111 rc=0 err=0 wf=1 in=7 p=774 l=22 col=27 i=1 n=3
+> CALL 112 len=7
+< CALL 112 rc=0 err=0 wf=1 in=7 p=774 l=22 col=27 i=1 n=3
+> CALL 113 len=7
+< CALL 113 rc=0 err=0 wf=1 in=7 p=774 l=22 col=27 i=1 n=3
+> CALL 114 len=7
+< CALL 114 rc=0 err=0 wf=1 in=7 p=774 l=22 col=27 i=1 n=3
+> CALL 115 len=7
+characters len=35 [1230 North Ave. Dallas, Texas 98551]
+< CALL 115 rc=0 err=0 wf=1 in=9 p=809 l=22 col=62 i=1 n=3
+> CALL 116 len=7
+endElementNs local=[address] prefix= uri=
+< CALL 116 rc=0 err=0 wf=1 in=7 p=819 l=22 col=72 i=1 n=2
+> CALL 117 len=7
+characters len=2 [\n ]
+< CALL 117 rc=0 err=0 wf=1 in=9 p=821 l=23 col=2 i=1 n=2
+> CALL 118 len=7
+endElementNs local=[employee] prefix= uri=
+< CALL 118 rc=0 err=0 wf=1 in=7 p=832 l=23 col=13 i=1 n=1
+> CALL 119 len=7
+characters len=2 [\n ]
+< CALL 119 rc=0 err=0 wf=1 in=6 p=834 l=24 col=2 i=1 n=1
+> CALL 120 len=7
+startElementNs local=[employee] prefix= uri= ns=0 att=0 def=0
+< CALL 120 rc=0 err=0 wf=1 in=7 p=844 l=24 col=12 i=1 n=2
+> CALL 121 len=7
+characters len=3 [\n  ]
+< CALL 121 rc=0 err=0 wf=1 in=6 p=847 l=25 col=3 i=1 n=2
+> CALL 122 len=7
+startElementNs local=[employeeId] prefix= uri= ns=0 att=0 def=0
+< CALL 122 rc=0 err=0 wf=1 in=7 p=859 l=25 col=15 i=1 n=3
+> CALL 123 len=7
+characters len=7 [EMP0002]
+< CALL 123 rc=0 err=0 wf=1 in=9 p=866 l=25 col=22 i=1 n=3
+> CALL 124 len=7
+< CALL 124 rc=0 err=0 wf=1 in=9 p=866 l=25 col=22 i=1 n=3
+> CALL 125 len=7
+endElementNs local=[employeeId] prefix= uri=
+< CALL 125 rc=0 err=0 wf=1 in=7 p=879 l=25 col=35 i=1 n=2
+> CALL 126 len=7
+characters len=3 [\n  ]
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 126 rc=0 err=0 wf=1 in=7 p=888 l=26 col=9 i=1 n=3
+> CALL 127 len=7
+< CALL 127 rc=0 err=0 wf=1 in=7 p=888 l=26 col=9 i=1 n=3
+> CALL 128 len=7
+< CALL 128 rc=0 err=0 wf=1 in=7 p=888 l=26 col=9 i=1 n=3
+> CALL 129 len=7
+characters len=15 [Martha Raynolds]
+< CALL 129 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 130 len=7
+< CALL 130 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 131 len=7
+< CALL 131 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 132 len=7
+< CALL 132 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 133 len=7
+< CALL 133 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 134 len=7
+< CALL 134 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 135 len=7
+< CALL 135 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 136 len=7
+< CALL 136 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 137 len=7
+< CALL 137 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 138 len=7
+< CALL 138 rc=0 err=0 wf=1 in=7 p=903 l=26 col=24 i=1 n=3
+> CALL 139 len=7
+cdata len=59 [This is a CDATASection with EntityReference number 2 &ent2;]
+characters len=1 [\n]
+< CALL 139 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 140 len=7
+< CALL 140 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 141 len=7
+< CALL 141 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 142 len=7
+< CALL 142 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 143 len=7
+< CALL 143 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 144 len=7
+< CALL 144 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 145 len=7
+< CALL 145 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 146 len=7
+< CALL 146 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 147 len=7
+< CALL 147 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 148 len=7
+< CALL 148 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 149 len=7
+< CALL 149 rc=0 err=0 wf=1 in=7 p=975 l=27 col=1 i=1 n=3
+> CALL 150 len=7
+cdata len=64 [This is an adjacent CDATASection with a reference to a tab &tab;]
+< CALL 150 rc=0 err=0 wf=1 in=9 p=1051 l=27 col=77 i=1 n=3
+> CALL 151 len=7
+endElementNs local=[name] prefix= uri=
+characters len=3 [\n  ]
+< CALL 151 rc=0 err=0 wf=1 in=6 p=1061 l=28 col=3 i=1 n=2
+> CALL 152 len=7
+startElementNs local=[position] prefix= uri= ns=0 att=0 def=0
+< CALL 152 rc=0 err=0 wf=1 in=7 p=1071 l=28 col=13 i=1 n=3
+> CALL 153 len=7
+< CALL 153 rc=0 err=0 wf=1 in=7 p=1071 l=28 col=13 i=1 n=3
+> CALL 154 len=7
+characters len=9 [Secretary]
+< CALL 154 rc=0 err=0 wf=1 in=9 p=1080 l=28 col=22 i=1 n=3
+> CALL 155 len=7
+endElementNs local=[position] prefix= uri=
+< CALL 155 rc=0 err=0 wf=1 in=7 p=1091 l=28 col=33 i=1 n=2
+> CALL 156 len=7
+characters len=3 [\n  ]
+< CALL 156 rc=0 err=0 wf=1 in=6 p=1094 l=29 col=3 i=1 n=2
+> CALL 157 len=7
+startElementNs local=[salary] prefix= uri= ns=0 att=0 def=0
+< CALL 157 rc=0 err=0 wf=1 in=7 p=1102 l=29 col=11 i=1 n=3
+> CALL 158 len=7
+characters len=6 [35,000]
+< CALL 158 rc=0 err=0 wf=1 in=9 p=1108 l=29 col=17 i=1 n=3
+> CALL 159 len=7
+endElementNs local=[salary] prefix= uri=
+< CALL 159 rc=0 err=0 wf=1 in=7 p=1117 l=29 col=26 i=1 n=2
+> CALL 160 len=7
+characters len=3 [\n  ]
+< CALL 160 rc=0 err=0 wf=1 in=6 p=1120 l=30 col=3 i=1 n=2
+> CALL 161 len=7
+startElementNs local=[gender] prefix= uri= ns=0 att=0 def=0
+< CALL 161 rc=0 err=0 wf=1 in=7 p=1128 l=30 col=11 i=1 n=3
+> CALL 162 len=7
+characters len=6 [Female]
+< CALL 162 rc=0 err=0 wf=1 in=9 p=1134 l=30 col=17 i=1 n=3
+> CALL 163 len=7
+endElementNs local=[gender] prefix= uri=
+characters len=3 [\n  ]
+< CALL 163 rc=0 err=0 wf=1 in=6 p=1146 l=31 col=3 i=1 n=2
+> CALL 164 len=7
+< CALL 164 rc=0 err=0 wf=1 in=6 p=1146 l=31 col=3 i=1 n=2
+> CALL 165 len=7
+< CALL 165 rc=0 err=0 wf=1 in=6 p=1146 l=31 col=3 i=1 n=2
+> CALL 166 len=7
+< CALL 166 rc=0 err=0 wf=1 in=6 p=1146 l=31 col=3 i=1 n=2
+> CALL 167 len=7
+< CALL 167 rc=0 err=0 wf=1 in=6 p=1146 l=31 col=3 i=1 n=2
+> CALL 168 len=7
+startElementNs local=[address] prefix= uri= ns=0 att=2 def=0 [a local=domestic prefix= uri= value=Yes end=1] [a local=street prefix= uri= value=Yes end=1]
+< CALL 168 rc=0 err=0 wf=1 in=7 p=1183 l=31 col=40 i=1 n=3
+> CALL 169 len=7
+characters len=16 [1900 Dallas Road]
+reference [ent2]
+< CALL 169 rc=0 err=0 wf=1 in=7 p=1189 l=31 col=46 i=1 n=3
+> CALL 170 len=7
+< CALL 170 rc=0 err=0 wf=1 in=7 p=1189 l=31 col=46 i=1 n=3
+> CALL 171 len=7
+characters len=9 [ Dallas, ]
+characters len=5 [Texas]
+reference [ent3]
+< CALL 171 rc=0 err=0 wf=1 in=7 p=1204 l=31 col=61 i=1 n=3
+> CALL 172 len=7
+< CALL 172 rc=0 err=0 wf=1 in=7 p=1204 l=31 col=61 i=1 n=3
+> CALL 173 len=7
+characters len=7 [\n 98554]
+< CALL 173 rc=0 err=0 wf=1 in=9 p=1211 l=32 col=7 i=1 n=3
+> CALL 174 len=7
+endElementNs local=[address] prefix= uri=
+characters len=2 [\n ]
+< CALL 174 rc=0 err=0 wf=1 in=9 p=1223 l=33 col=2 i=1 n=2
+> CALL 175 len=7
+< CALL 175 rc=0 err=0 wf=1 in=9 p=1223 l=33 col=2 i=1 n=2
+> CALL 176 len=7
+endElementNs local=[employee] prefix= uri=
+characters len=2 [\n ]
+< CALL 176 rc=0 err=0 wf=1 in=6 p=1236 l=34 col=2 i=1 n=1
+> CALL 177 len=7
+startElementNs local=[employee] prefix= uri= ns=0 att=0 def=0
+< CALL 177 rc=0 err=0 wf=1 in=7 p=1246 l=34 col=12 i=1 n=2
+> CALL 178 len=7
+characters len=3 [\n  ]
+< CALL 178 rc=0 err=0 wf=1 in=6 p=1249 l=35 col=3 i=1 n=2
+> CALL 179 len=7
+< CALL 179 rc=0 err=0 wf=1 in=6 p=1249 l=35 col=3 i=1 n=2
+> CALL 180 len=7
+startElementNs local=[employeeId] prefix= uri= ns=0 att=0 def=0
+< CALL 180 rc=0 err=0 wf=1 in=7 p=1261 l=35 col=15 i=1 n=3
+> CALL 181 len=7
+characters len=7 [EMP0003]
+< CALL 181 rc=0 err=0 wf=1 in=9 p=1268 l=35 col=22 i=1 n=3
+> CALL 182 len=7
+endElementNs local=[employeeId] prefix= uri=
+< CALL 182 rc=0 err=0 wf=1 in=7 p=1281 l=35 col=35 i=1 n=2
+> CALL 183 len=7
+characters len=3 [\n  ]
+< CALL 183 rc=0 err=0 wf=1 in=6 p=1284 l=36 col=3 i=1 n=2
+> CALL 184 len=7
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 184 rc=0 err=0 wf=1 in=7 p=1290 l=36 col=9 i=1 n=3
+> CALL 185 len=7
+< CALL 185 rc=0 err=0 wf=1 in=7 p=1290 l=36 col=9 i=1 n=3
+> CALL 186 len=7
+characters len=12 [Roger\n Jones]
+endElementNs local=[name] prefix= uri=
+< CALL 186 rc=0 err=0 wf=1 in=7 p=1309 l=37 col=14 i=1 n=2
+> CALL 187 len=7
+characters len=3 [\n  ]
+< CALL 187 rc=0 err=0 wf=1 in=6 p=1312 l=38 col=3 i=1 n=2
+> CALL 188 len=7
+< CALL 188 rc=0 err=0 wf=1 in=6 p=1312 l=38 col=3 i=1 n=2
+> CALL 189 len=7
+< CALL 189 rc=0 err=0 wf=1 in=6 p=1312 l=38 col=3 i=1 n=2
+> CALL 190 len=7
+< CALL 190 rc=0 err=0 wf=1 in=6 p=1312 l=38 col=3 i=1 n=2
+> CALL 191 len=7
+< CALL 191 rc=0 err=0 wf=1 in=6 p=1312 l=38 col=3 i=1 n=2
+> CALL 192 len=7
+startElementNs local=[position] prefix= uri= ns=0 att=1 def=0 [a local=id prefix= uri= value=partial_collision_id end=1]
+< CALL 192 rc=0 err=0 wf=1 in=7 p=1348 l=38 col=39 i=1 n=3
+> CALL 193 len=7
+< CALL 193 rc=0 err=0 wf=1 in=7 p=1348 l=38 col=39 i=1 n=3
+> CALL 194 len=7
+< CALL 194 rc=0 err=0 wf=1 in=7 p=1348 l=38 col=39 i=1 n=3
+> CALL 195 len=7
+characters len=18 [Department Manager]
+< CALL 195 rc=0 err=0 wf=1 in=9 p=1366 l=38 col=57 i=1 n=3
+> CALL 196 len=7
+endElementNs local=[position] prefix= uri=
+< CALL 196 rc=0 err=0 wf=1 in=7 p=1377 l=38 col=68 i=1 n=2
+> CALL 197 len=7
+characters len=3 [\n  ]
+< CALL 197 rc=0 err=0 wf=1 in=6 p=1380 l=39 col=3 i=1 n=2
+> CALL 198 len=7
+startElementNs local=[salary] prefix= uri= ns=0 att=0 def=0
+< CALL 198 rc=0 err=0 wf=1 in=7 p=1388 l=39 col=11 i=1 n=3
+> CALL 199 len=7
+characters len=7 [100,000]
+< CALL 199 rc=0 err=0 wf=1 in=9 p=1395 l=39 col=18 i=1 n=3
+> CALL 200 len=7
+endElementNs local=[salary] prefix= uri=
+< CALL 200 rc=0 err=0 wf=1 in=7 p=1404 l=39 col=27 i=1 n=2
+> CALL 201 len=7
+characters len=3 [\n  ]
+< CALL 201 rc=0 err=0 wf=1 in=6 p=1407 l=40 col=3 i=1 n=2
+> CALL 202 len=7
+startElementNs local=[gender] prefix= uri= ns=0 att=0 def=0
+startElementNs local=[entElement] prefix= uri= ns=0 att=1 def=0 [a local=domestic prefix= uri= value=Yes end=1]
+characters len=12 [Element data]
+endElementNs local=[entElement] prefix= uri=
+pi target=PItarget data=PIdata
+reference [ent4]
+< CALL 202 rc=0 err=0 wf=1 in=7 p=1421 l=40 col=17 i=1 n=3
+> CALL 203 len=7
+< CALL 203 rc=0 err=0 wf=1 in=9 p=1421 l=40 col=17 i=1 n=3
+> CALL 204 len=7
+endElementNs local=[gender] prefix= uri=
+characters len=3 [\n  ]
+< CALL 204 rc=0 err=0 wf=1 in=6 p=1433 l=41 col=3 i=1 n=2
+> CALL 205 len=7
+< CALL 205 rc=0 err=0 wf=1 in=6 p=1433 l=41 col=3 i=1 n=2
+> CALL 206 len=7
+< CALL 206 rc=0 err=0 wf=1 in=6 p=1433 l=41 col=3 i=1 n=2
+> CALL 207 len=7
+< CALL 207 rc=0 err=0 wf=1 in=6 p=1433 l=41 col=3 i=1 n=2
+> CALL 208 len=7
+< CALL 208 rc=0 err=0 wf=1 in=6 p=1433 l=41 col=3 i=1 n=2
+> CALL 209 len=7
+startElementNs local=[address] prefix= uri= ns=0 att=2 def=0 [a local=domestic prefix= uri= value=Yes end=1] [a local=street prefix= uri= value=No end=1]
+< CALL 209 rc=0 err=0 wf=1 in=7 p=1469 l=41 col=39 i=1 n=3
+> CALL 210 len=7
+< CALL 210 rc=0 err=0 wf=1 in=7 p=1469 l=41 col=39 i=1 n=3
+> CALL 211 len=7
+< CALL 211 rc=0 err=0 wf=1 in=7 p=1469 l=41 col=39 i=1 n=3
+> CALL 212 len=7
+< CALL 212 rc=0 err=0 wf=1 in=7 p=1469 l=41 col=39 i=1 n=3
+> CALL 213 len=7
+< CALL 213 rc=0 err=0 wf=1 in=7 p=1469 l=41 col=39 i=1 n=3
+> CALL 214 len=7
+characters len=29 [PO Box 27 Irving, texas 98553]
+< CALL 214 rc=0 err=0 wf=1 in=9 p=1498 l=41 col=68 i=1 n=3
+> CALL 215 len=7
+endElementNs local=[address] prefix= uri=
+characters len=2 [\n ]
+< CALL 215 rc=0 err=0 wf=1 in=9 p=1510 l=42 col=2 i=1 n=2
+> CALL 216 len=7
+< CALL 216 rc=0 err=0 wf=1 in=9 p=1510 l=42 col=2 i=1 n=2
+> CALL 217 len=7
+endElementNs local=[employee] prefix= uri=
+characters len=2 [\n ]
+< CALL 217 rc=0 err=0 wf=1 in=6 p=1523 l=43 col=2 i=1 n=1
+> CALL 218 len=7
+startElementNs local=[employee] prefix= uri= ns=0 att=0 def=0
+< CALL 218 rc=0 err=0 wf=1 in=7 p=1533 l=43 col=12 i=1 n=2
+> CALL 219 len=7
+characters len=3 [\n  ]
+< CALL 219 rc=0 err=0 wf=1 in=6 p=1536 l=44 col=3 i=1 n=2
+> CALL 220 len=7
+< CALL 220 rc=0 err=0 wf=1 in=6 p=1536 l=44 col=3 i=1 n=2
+> CALL 221 len=7
+startElementNs local=[employeeId] prefix= uri= ns=0 att=0 def=0
+< CALL 221 rc=0 err=0 wf=1 in=7 p=1548 l=44 col=15 i=1 n=3
+> CALL 222 len=7
+characters len=7 [EMP0004]
+< CALL 222 rc=0 err=0 wf=1 in=9 p=1555 l=44 col=22 i=1 n=3
+> CALL 223 len=7
+endElementNs local=[employeeId] prefix= uri=
+< CALL 223 rc=0 err=0 wf=1 in=7 p=1568 l=44 col=35 i=1 n=2
+> CALL 224 len=7
+characters len=3 [\n  ]
+< CALL 224 rc=0 err=0 wf=1 in=6 p=1571 l=45 col=3 i=1 n=2
+> CALL 225 len=7
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 225 rc=0 err=0 wf=1 in=7 p=1577 l=45 col=9 i=1 n=3
+> CALL 226 len=7
+< CALL 226 rc=0 err=0 wf=1 in=7 p=1577 l=45 col=9 i=1 n=3
+> CALL 227 len=7
+characters len=12 [Jeny Oconnor]
+endElementNs local=[name] prefix= uri=
+< CALL 227 rc=0 err=0 wf=1 in=7 p=1596 l=45 col=28 i=1 n=2
+> CALL 228 len=7
+characters len=3 [\n  ]
+< CALL 228 rc=0 err=0 wf=1 in=6 p=1599 l=46 col=3 i=1 n=2
+> CALL 229 len=7
+startElementNs local=[position] prefix= uri= ns=0 att=0 def=0
+< CALL 229 rc=0 err=0 wf=1 in=7 p=1609 l=46 col=13 i=1 n=3
+> CALL 230 len=7
+< CALL 230 rc=0 err=0 wf=1 in=7 p=1609 l=46 col=13 i=1 n=3
+> CALL 231 len=7
+< CALL 231 rc=0 err=0 wf=1 in=7 p=1609 l=46 col=13 i=1 n=3
+> CALL 232 len=7
+characters len=18 [Personnel Director]
+< CALL 232 rc=0 err=0 wf=1 in=9 p=1627 l=46 col=31 i=1 n=3
+> CALL 233 len=7
+endElementNs local=[position] prefix= uri=
+< CALL 233 rc=0 err=0 wf=1 in=7 p=1638 l=46 col=42 i=1 n=2
+> CALL 234 len=7
+characters len=3 [\n  ]
+< CALL 234 rc=0 err=0 wf=1 in=6 p=1641 l=47 col=3 i=1 n=2
+> CALL 235 len=7
+startElementNs local=[salary] prefix= uri= ns=0 att=0 def=0
+< CALL 235 rc=0 err=0 wf=1 in=7 p=1649 l=47 col=11 i=1 n=3
+> CALL 236 len=7
+characters len=6 [95,000]
+< CALL 236 rc=0 err=0 wf=1 in=9 p=1655 l=47 col=17 i=1 n=3
+> CALL 237 len=7
+endElementNs local=[salary] prefix= uri=
+< CALL 237 rc=0 err=0 wf=1 in=7 p=1664 l=47 col=26 i=1 n=2
+> CALL 238 len=7
+characters len=3 [\n  ]
+< CALL 238 rc=0 err=0 wf=1 in=6 p=1667 l=48 col=3 i=1 n=2
+> CALL 239 len=7
+startElementNs local=[gender] prefix= uri= ns=0 att=0 def=0
+< CALL 239 rc=0 err=0 wf=1 in=7 p=1675 l=48 col=11 i=1 n=3
+> CALL 240 len=7
+characters len=6 [Female]
+< CALL 240 rc=0 err=0 wf=1 in=9 p=1681 l=48 col=17 i=1 n=3
+> CALL 241 len=7
+endElementNs local=[gender] prefix= uri=
+characters len=3 [\n  ]
+< CALL 241 rc=0 err=0 wf=1 in=7 p=1693 l=49 col=3 i=1 n=2
+> CALL 242 len=7
+< CALL 242 rc=0 err=0 wf=1 in=6 p=1693 l=49 col=3 i=1 n=2
+> CALL 243 len=7
+< CALL 243 rc=0 err=0 wf=1 in=6 p=1693 l=49 col=3 i=1 n=2
+> CALL 244 len=7
+< CALL 244 rc=0 err=0 wf=1 in=6 p=1693 l=49 col=3 i=1 n=2
+> CALL 245 len=7
+< CALL 245 rc=0 err=0 wf=1 in=6 p=1693 l=49 col=3 i=1 n=2
+> CALL 246 len=7
+< CALL 246 rc=0 err=0 wf=1 in=6 p=1693 l=49 col=3 i=1 n=2
+> CALL 247 len=7
+startElementNs local=[address] prefix= uri= ns=0 att=2 def=0 [a local=domestic prefix= uri= value=Yes end=1] [a local=street prefix= uri= value=Y&ent1; end=1]
+< CALL 247 rc=0 err=0 wf=1 in=7 p=1734 l=49 col=44 i=1 n=3
+> CALL 248 len=7
+< CALL 248 rc=0 err=0 wf=1 in=7 p=1734 l=49 col=44 i=1 n=3
+> CALL 249 len=7
+< CALL 249 rc=0 err=0 wf=1 in=7 p=1734 l=49 col=44 i=1 n=3
+> CALL 250 len=7
+< CALL 250 rc=0 err=0 wf=1 in=7 p=1734 l=49 col=44 i=1 n=3
+> CALL 251 len=7
+< CALL 251 rc=0 err=0 wf=1 in=7 p=1734 l=49 col=44 i=1 n=3
+> CALL 252 len=7
+characters len=34 [27 South Road. Dallas, Texas 98556]
+< CALL 252 rc=0 err=0 wf=1 in=9 p=1768 l=49 col=78 i=1 n=3
+> CALL 253 len=7
+endElementNs local=[address] prefix= uri=
+< CALL 253 rc=0 err=0 wf=1 in=7 p=1778 l=49 col=88 i=1 n=2
+> CALL 254 len=7
+characters len=2 [\n ]
+< CALL 254 rc=0 err=0 wf=1 in=9 p=1780 l=50 col=2 i=1 n=2
+> CALL 255 len=7
+endElementNs local=[employee] prefix= uri=
+< CALL 255 rc=0 err=0 wf=1 in=7 p=1791 l=50 col=13 i=1 n=1
+> CALL 256 len=7
+characters len=2 [\n ]
+< CALL 256 rc=0 err=0 wf=1 in=6 p=1793 l=51 col=2 i=1 n=1
+> CALL 257 len=7
+startElementNs local=[employee] prefix= uri= ns=0 att=0 def=0
+< CALL 257 rc=0 err=0 wf=1 in=7 p=1803 l=51 col=12 i=1 n=2
+> CALL 258 len=7
+characters len=3 [\n  ]
+< CALL 258 rc=0 err=0 wf=1 in=6 p=1806 l=52 col=3 i=1 n=2
+> CALL 259 len=7
+startElementNs local=[employeeId] prefix= uri= ns=0 att=0 def=0
+< CALL 259 rc=0 err=0 wf=1 in=7 p=1818 l=52 col=15 i=1 n=3
+> CALL 260 len=7
+characters len=7 [EMP0005]
+< CALL 260 rc=0 err=0 wf=1 in=9 p=1825 l=52 col=22 i=1 n=3
+> CALL 261 len=7
+< CALL 261 rc=0 err=0 wf=1 in=9 p=1825 l=52 col=22 i=1 n=3
+> CALL 262 len=7
+endElementNs local=[employeeId] prefix= uri=
+< CALL 262 rc=0 err=0 wf=1 in=7 p=1838 l=52 col=35 i=1 n=2
+> CALL 263 len=7
+characters len=3 [\n  ]
+startElementNs local=[name] prefix= uri= ns=0 att=0 def=0
+< CALL 263 rc=0 err=0 wf=1 in=7 p=1847 l=53 col=9 i=1 n=3
+> CALL 264 len=7
+< CALL 264 rc=0 err=0 wf=1 in=7 p=1847 l=53 col=9 i=1 n=3
+> CALL 265 len=7
+characters len=12 [Robert Myers]
+< CALL 265 rc=0 err=0 wf=1 in=9 p=1859 l=53 col=21 i=1 n=3
+> CALL 266 len=7
+endElementNs local=[name] prefix= uri=
+< CALL 266 rc=0 err=0 wf=1 in=7 p=1866 l=53 col=28 i=1 n=2
+> CALL 267 len=7
+characters len=3 [\n  ]
+< CALL 267 rc=0 err=0 wf=1 in=6 p=1869 l=54 col=3 i=1 n=2
+> CALL 268 len=7
+startElementNs local=[position] prefix= uri= ns=0 att=0 def=0
+< CALL 268 rc=0 err=0 wf=1 in=7 p=1879 l=54 col=13 i=1 n=3
+> CALL 269 len=7
+< CALL 269 rc=0 err=0 wf=1 in=7 p=1879 l=54 col=13 i=1 n=3
+> CALL 270 len=7
+< CALL 270 rc=0 err=0 wf=1 in=7 p=1879 l=54 col=13 i=1 n=3
+> CALL 271 len=7
+characters len=19 [Computer Specialist]
+< CALL 271 rc=0 err=0 wf=1 in=9 p=1898 l=54 col=32 i=1 n=3
+> CALL 272 len=7
+endElementNs local=[position] prefix= uri=
+< CALL 272 rc=0 err=0 wf=1 in=7 p=1909 l=54 col=43 i=1 n=2
+> CALL 273 len=7
+characters len=3 [\n  ]
+< CALL 273 rc=0 err=0 wf=1 in=6 p=1912 l=55 col=3 i=1 n=2
+> CALL 274 len=7
+startElementNs local=[salary] prefix= uri= ns=0 att=0 def=0
+< CALL 274 rc=0 err=0 wf=1 in=7 p=1920 l=55 col=11 i=1 n=3
+> CALL 275 len=7
+characters len=6 [90,000]
+< CALL 275 rc=0 err=0 wf=1 in=9 p=1926 l=55 col=17 i=1 n=3
+> CALL 276 len=7
+endElementNs local=[salary] prefix= uri=
+characters len=3 [\n  ]
+< CALL 276 rc=0 err=0 wf=1 in=7 p=1938 l=56 col=3 i=1 n=2
+> CALL 277 len=7
+startElementNs local=[gender] prefix= uri= ns=0 att=0 def=0
+< CALL 277 rc=0 err=0 wf=1 in=7 p=1946 l=56 col=11 i=1 n=3
+> CALL 278 len=7
+characters len=4 [male]
+< CALL 278 rc=0 err=0 wf=1 in=9 p=1950 l=56 col=15 i=1 n=3
+> CALL 279 len=7
+endElementNs local=[gender] prefix= uri=
+< CALL 279 rc=0 err=0 wf=1 in=7 p=1959 l=56 col=24 i=1 n=2
+> CALL 280 len=7
+characters len=3 [\n  ]
+< CALL 280 rc=0 err=0 wf=1 in=6 p=1962 l=57 col=3 i=1 n=2
+> CALL 281 len=7
+< CALL 281 rc=0 err=0 wf=1 in=6 p=1962 l=57 col=3 i=1 n=2
+> CALL 282 len=7
+< CALL 282 rc=0 err=0 wf=1 in=6 p=1962 l=57 col=3 i=1 n=2
+> CALL 283 len=7
+startElementNs local=[address] prefix= uri= ns=0 att=1 def=0 [a local=street prefix= uri= value=Yes end=1]
+< CALL 283 rc=0 err=0 wf=1 in=7 p=1984 l=57 col=25 i=1 n=3
+> CALL 284 len=7
+< CALL 284 rc=0 err=0 wf=1 in=7 p=1984 l=57 col=25 i=1 n=3
+> CALL 285 len=7
+< CALL 285 rc=0 err=0 wf=1 in=7 p=1984 l=57 col=25 i=1 n=3
+> CALL 286 len=7
+< CALL 286 rc=0 err=0 wf=1 in=7 p=1984 l=57 col=25 i=1 n=3
+> CALL 287 len=7
+< CALL 287 rc=0 err=0 wf=1 in=7 p=1984 l=57 col=25 i=1 n=3
+> CALL 288 len=7
+characters len=37 [1821 Nordic. Road, Irving Texas 98558]
+< CALL 288 rc=0 err=0 wf=1 in=9 p=2021 l=57 col=62 i=1 n=3
+> CALL 289 len=7
+< CALL 289 rc=0 err=0 wf=1 in=9 p=2021 l=57 col=62 i=1 n=3
+> CALL 290 len=7
+endElementNs local=[address] prefix= uri=
+characters len=2 [\n ]
+< CALL 290 rc=0 err=0 wf=1 in=9 p=2033 l=58 col=2 i=1 n=2
+> CALL 291 len=7
+endElementNs local=[employee] prefix= uri=
+< CALL 291 rc=0 err=0 wf=1 in=7 p=2044 l=58 col=13 i=1 n=1
+> CALL 292 len=7
+characters len=2 [\n ]
+< CALL 292 rc=0 err=0 wf=1 in=9 p=2046 l=59 col=2 i=1 n=1
+> CALL 293 len=4
+endElementNs local=[staff] prefix= uri=
+< CALL 293 rc=0 err=0 wf=1 in=14 p=2055 l=60 col=1 i=1 n=0
+> FINAL
+endDocument
+< FINAL 0 rc=0 err=0 wf=1 in=-1 p=2055 l=60 col=1 i=1 n=0
+> REFEED
+error dom=1 code=5 level=3 file= line=60 i1=0 i2=1 str1= str2= str3= msg=Extra content at the end of the document\n
+< REFEED 0 rc=5 err=5 wf=0 in=-1 p=2055 l=60 col=1 i=1 n=0

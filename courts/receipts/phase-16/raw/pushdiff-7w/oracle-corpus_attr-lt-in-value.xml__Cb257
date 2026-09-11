@@ -1,0 +1,9 @@
+== /scanout/corpus/attr-lt-in-value.xml bytes=12 mode=Cb257
+> CTOR len=12
+< CTOR ok=1 err=0 wf=1 in=0 p=0 l=1 col=1 i=1 n=0
+> FINAL
+startDocument
+error dom=1 code=38 level=3 file= line=1 i1=0 i2=8 str1= str2= str3= msg=Unescaped '<' not allowed in attributes values\n
+< FINAL 0 rc=38 err=38 wf=0 in=14 p=12 l=1 col=13 i=1 n=0
+> REFEED
+< REFEED 0 rc=38 err=38 wf=0 in=14 p=12 l=1 col=13 i=1 n=0
