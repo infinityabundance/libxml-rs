@@ -339,6 +339,26 @@ pub unsafe extern "C" fn xsltFindTemplate(
     node: *mut _xmlNode,
     mode: *const xmlChar,
 ) -> *mut _xsltTemplate {
+    // The exported entry point carries no transform context, so pattern
+    // PREDICATES cannot be evaluated and are skipped. Internal template
+    // selection uses `xsltFindTemplateInCtxt` with the live context so that
+    // `match="*[@href]"`-style patterns are honored.
+    unsafe { xsltFindTemplateInCtxt(style, node, mode, ptr::null_mut()) }
+}
+
+/// Find the best matching template for a node, evaluating pattern predicates
+/// against `ctxt`'s XPath context.
+///
+/// # Safety
+///
+/// `style`/`node` must be valid; `mode` and `ctxt` may be null (with a null
+/// context, predicates are conservatively treated as satisfied).
+pub(crate) unsafe fn xsltFindTemplateInCtxt(
+    style: *mut _xsltStylesheet,
+    node: *mut _xmlNode,
+    mode: *const xmlChar,
+    ctxt: *mut _xsltTransformContext,
+) -> *mut _xsltTemplate {
     if style.is_null() || node.is_null() {
         return ptr::null_mut();
     }
@@ -387,12 +407,10 @@ pub unsafe extern "C" fn xsltFindTemplate(
             continue;
         }
 
-        // Use xsltTestPattern directly on the compiled pattern.
-        // We pass null for the transform context; this works correctly
-        // for patterns without predicates. Patterns with predicates
-        // require a transform context for XPath evaluation, but will
-        // still produce a conservative (no-match) result.
-        let matched = xsltTestPattern(ptr::null_mut(), pattern_ptr, node);
+        // Use xsltTestPattern with the transform context so pattern
+        // predicates are evaluated (a null context would skip them and make
+        // every predicate-bearing pattern match every node).
+        let matched = xsltTestPattern(ctxt, pattern_ptr, node);
         if matched == 0 {
             templ = (*templ).next;
             continue;

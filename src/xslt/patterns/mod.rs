@@ -1049,8 +1049,14 @@ unsafe fn evaluate_predicates(
         };
         let mut xpath_ctx = crate::xml::xpath::context::XPathContext::new(doc);
 
-        // Copy relevant state from the C ABI context
-        if !saved_node.is_null() {
+        // Copy relevant state from the C ABI context. The context node must be
+        // the node being TESTED (`node`) — using the previous context node
+        // (`saved_node`) evaluated every predicate against the wrong node, so
+        // `match="*[@hit]"` matched whichever element happened to precede a
+        // `hit`-bearing one.
+        if !node.is_null() {
+            xpath_ctx.set_context_node(node);
+        } else if !saved_node.is_null() {
             xpath_ctx.set_context_node(saved_node);
         }
 

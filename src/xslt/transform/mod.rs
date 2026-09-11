@@ -569,7 +569,7 @@ pub(crate) unsafe fn apply_root_template(
         (*(*ctxt).xpathCtxt).contextSize = 1;
         (*(*ctxt).xpathCtxt).proximityPosition = 1;
     }
-    let templ = crate::xslt::templates::xsltFindTemplate(style, doc_node, ptr::null());
+    let templ = crate::xslt::templates::xsltFindTemplateInCtxt(style, doc_node, ptr::null(), ctxt);
     if templ.is_null() {
         // No match: copy nothing (empty result).
         return 0;
@@ -693,7 +693,7 @@ pub(crate) unsafe fn apply_templates_to_node(
     if style.is_null() {
         return -1;
     }
-    let templ = crate::xslt::templates::xsltFindTemplate(style, node, mode);
+    let templ = crate::xslt::templates::xsltFindTemplateInCtxt(style, node, mode, ctxt);
     if templ.is_null() {
         // Built-in template rules (XSLT 1.0 §5.8):
         // - For root/document: apply templates to children.
@@ -2012,6 +2012,37 @@ pub(crate) unsafe fn copy_node_deep(ctxt: *mut _xsltTransformContext, node: *mut
     } else if typ == XML_PI_NODE as c_int {
         if !(*node).name.is_null() {
             append_pi_node(ctxt, (*node).name, (*node).content);
+        }
+    } else if typ == XML_ATTRIBUTE_NODE as c_int {
+        // UPSTREAM-PARITY (transform.c xsltCopyOf -> xsltCopyNode): an
+        // attribute in the copied node-set is added to the current insertion
+        // element with namespace fixup, exactly as `xsl:copy` of an attribute
+        // does. Before this arm existed, `xsl:copy-of select="@*"` silently
+        // dropped EVERY attribute (the `node()`-copy templates in
+        // iso_dsdl_include.xsl lost name/id/context/test and the result no
+        // longer matched the oracle).
+        let target = (*ctxt).insert;
+        if !target.is_null()
+            && (*target).type_ == XML_ELEMENT_NODE as c_int
+            && (*target).children.is_null()
+        {
+            let attr = node as *mut _xmlAttr;
+            let val = node_get_content((*attr).children);
+            let ns = if (*attr).ns.is_null() {
+                ptr::null_mut()
+            } else {
+                crate::abi::exports_xslt_avt::xsltGetSpecialNamespace(
+                    ctxt,
+                    ptr::null_mut(),
+                    (*(*attr).ns).href,
+                    (*(*attr).ns).prefix,
+                    target,
+                )
+            };
+            crate::abi::exports_xml2::xmlSetNsProp(target, ns, (*attr).name, val);
+            if !val.is_null() {
+                libc::free(val as *mut libc::c_void);
+            }
         }
     } else if typ == XML_ELEMENT_NODE as c_int {
         // Create the element.
@@ -4637,6 +4668,56 @@ mod tests {
             let out = run_transform(xsl, src);
             assert!(out.contains("<item>alpha</item>"), "got: {}", out);
             assert!(out.contains("<item>beta</item>"), "got: {}", out);
+        }
+    }
+
+    #[test]
+    /// An `xsl:template match` pattern with PREDICATES must only match nodes
+    /// whose predicates hold. Template selection used to call
+    /// `xsltTestPattern` with a NULL transform context, and the matcher
+    /// conservatively treated every predicate as satisfied — so `match="*[@hit]"`
+    /// captured every element.
+    fn test_xslt_match_pattern_predicates_are_honored() {
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\"><out><xsl:apply-templates/></out></xsl:template>\
+              <xsl:template match=\"node()\"><xsl:copy><xsl:copy-of select=\"@*\"/><xsl:apply-templates/></xsl:copy></xsl:template>\
+              <xsl:template match=\"*[@hit]\">HIT</xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?><a><b hit=\"1\"/><c/></a>\0";
+            let out = run_transform(xsl, src);
+            assert!(
+                out.contains("HIT"),
+                "the matching element is replaced: {out}"
+            );
+            assert!(
+                !out.contains("<b"),
+                "a failing predicate must not match: {out}"
+            );
+            assert!(
+                out.contains("<a>") && out.contains("<c"),
+                "the non-matching elements are copied: {out}"
+            );
+        }
+    }
+
+    #[test]
+    /// `xsl:copy-of select="@*"` must copy the selected ATTRIBUTE nodes onto
+    /// the current result element. `copy_node_deep` had no attribute arm, so
+    /// every attribute was silently dropped.
+    fn test_xslt_copy_of_copies_attributes() {
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\"><out><xsl:apply-templates/></out></xsl:template>\
+              <xsl:template match=\"*\"><xsl:copy><xsl:copy-of select=\"@*\"/><xsl:apply-templates/></xsl:copy></xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?><a x=\"1\" y=\"2\"><b z=\"3\"/></a>\0";
+            let out = run_transform(xsl, src);
+            assert!(out.contains("x=\"1\""), "attribute x copied: {out}");
+            assert!(out.contains("y=\"2\""), "attribute y copied: {out}");
+            assert!(out.contains("z=\"3\""), "attribute z copied: {out}");
         }
     }
 
