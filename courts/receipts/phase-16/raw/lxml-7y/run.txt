@@ -1,0 +1,20 @@
+candidate_sha=b6dfb16270827e74896c4e8c7f1bb015a1f9eb43
+candidate_parent_sha=afa3e7aa1db615f3e90c9112a54ba226ef8556a0
+evidence_kind=root-cause fix (XSLT import chain, namespace-alias, xml prefix, context-node restore, global variable execution)
+release_libxml2_sha256=a4785ad0980c0c63afbd87d33dfd654415e534defbcf9c0d56c41d1487600444
+debug_libxml2_sha256=b2afdf350be1d601edd053f76914153de0049bccbeb1d37fdae69341ea07f27c
+host=libxml-rs/phase14-debian:1 (container lxml-cand and an ephemeral docker run for the XSLT probes)
+oracle_libxml2=2.15.3 oracle_libxslt=1.1.45
+probe=xsltprobe.c (applies a stylesheet, dumps the result document)
+probe_fixtures=nsalias.xsl (minimal xsl:namespace-alias), ch.xsl (xsl:choose in a variable), t.xsl (apply-templates with a not(self::) predicate)
+generated_stylesheet=the candidate output of iso_svrl_for_xslt1.xsl + sct1.xml vs the oracle: 7633 vs 7645 bytes, semantically identical (remaining diff is namespace-declaration order and the &#xA0; entity spelling in an xsl:comment)
+lxml_suite_command=cd /src/lxml && python3 test.py -u -v
+lxml_suite_previous=99 failures / 57 errors = 156 (courts/receipts/phase-16/raw/lxml-7x)
+lxml_suite_now=98 failures / 41 errors = 139
+lxml_suite_fixed=17 tests (16 in test_isoschematron plus test_xslt_pi_embedded_id); see suite-fixed.txt
+lxml_suite_regressions=(none)
+test_isoschematron_cluster=22 failing (20 errors + 2 failures) -> 5 (4 errors + 1 doctest)
+unit_tests=cargo test --lib -> 1324 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+tree_clean=yes
+note=the remaining isoschematron errors are runtime XPath failures applying the generated validator (test_schematron_abstract / phases / phases_kwarg / relaxng_embedded); validation.txt is the diagnostic-parity doctest
