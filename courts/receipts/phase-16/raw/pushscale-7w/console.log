@@ -1,0 +1,14 @@
+# small-chunk curve (1 KiB chunks): 20/40/80 MB
+oracle    n=20480 chunks=20480 bytes=21073920 secs=0.01 MB/s=1752.3 wellFormed=1
+candidate n=20480 chunks=20480 bytes=21073920 secs=0.02 MB/s=1009.6 wellFormed=1
+oracle    n=40960 chunks=40960 bytes=42147840 secs=0.02 MB/s=1673.5 wellFormed=1
+candidate n=40960 chunks=40960 bytes=42147840 secs=0.04 MB/s=1039.2 wellFormed=1
+oracle    n=81920 chunks=81920 bytes=84295680 secs=0.05 MB/s=1758.1 wellFormed=1
+candidate n=81920 chunks=81920 bytes=84295680 secs=0.08 MB/s=1045.6 wellFormed=1
+# large-chunk curve (1 MiB chunks): ~5/10/21 GB
+oracle    n=5120 chunks=5120 bytes=5368734720 secs=2.12 MB/s=2413.5 wellFormed=1
+candidate n=5120 chunks=5120 bytes=5368734720 secs=2.91 MB/s=1758.5 wellFormed=1
+oracle    n=10240 chunks=10240 bytes=10737469440 secs=4.17 MB/s=2454.8 wellFormed=1
+candidate n=10240 chunks=10240 bytes=10737469440 secs=6.14 MB/s=1667.9 wellFormed=1
+oracle    n=20480 chunks=20480 bytes=21474938880 secs=8.08 MB/s=2533.4 wellFormed=1
+candidate n=20480 chunks=20480 bytes=21474938880 secs=12.08 MB/s=1695.3 wellFormed=1
