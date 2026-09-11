@@ -1507,6 +1507,69 @@ pub unsafe fn schematron_validate_doc_schema(
 // These are the C-compatible entry points that get exported via the ABI layer.
 // They use raw pointers and follow libxml2's calling conventions.
 
+/// Where a [`SchematronParserCtxt`] gets its schema source, so a repeated
+/// `xmlSchematronParse` can recompile it (upstream re-reads the document on
+/// every call).
+#[derive(Debug)]
+enum SchematronParserSource {
+    /// A URL that `xmlSchematronParse` reads through the resource loader.
+    Url(String),
+    /// An in-memory schema document.
+    Xml(String),
+    /// No source: an empty schema (a NULL URL).
+    Empty,
+}
+
+/// The ABI `xmlSchematronParserCtxt`.
+///
+/// UPSTREAM-PARITY: upstream keeps the parser context and the schema it
+/// produces as TWO distinct objects (`_xmlSchematronParserCtxt` and
+/// `_xmlSchematron`). A consumer may compile the schema, free the parser
+/// context, and keep using the schema — lxml does exactly that
+/// (`xmlSchematronParse` then `xmlSchematronFreeParserCtxt`, with
+/// `xmlSchematronFree` only at dealloc). Sharing one allocation (as this crate
+/// previously did) left the schema pointer dangling once the parser context
+/// was freed; that use-after-free surfaced as a segfault inside
+/// `xmlSchematronNewValidCtxt`'s schema clone, and as a double free in
+/// `xmllint`'s schematron path.
+#[derive(Debug)]
+pub struct SchematronParserCtxt {
+    /// The compiled schema, taken by `xmlSchematronParse`.
+    schema: Option<SchematronSchema>,
+    /// The source, so a second `xmlSchematronParse` can recompile.
+    source: SchematronParserSource,
+}
+
+impl SchematronParserCtxt {
+    /// A parser context holding an already-compiled schema and the in-memory
+    /// source it was compiled from (the `xmlSchematronNewDocParserCtxt` /
+    /// `xmlSchematronNewMemParserCtxt` shape).
+    #[must_use]
+    pub fn new_compiled(source: String, schema: SchematronSchema) -> *mut c_void {
+        Box::into_raw(Box::new(Self {
+            schema: Some(schema),
+            source: SchematronParserSource::Xml(source),
+        })) as *mut c_void
+    }
+}
+
+/// Compile a schema from a URL through the XML parser (`xmlParseFile`), the
+/// path `xmlSchematronNewParserCtxt` uses.
+///
+/// # SAFETY
+///
+/// - The XML parser globals must be initialized.
+unsafe fn compile_from_url(url_str: &str) -> Option<SchematronSchema> {
+    let c = std::ffi::CString::new(url_str).ok()?;
+    let doc = unsafe { crate::abi::exports_xml2::xmlParseFile(c.as_ptr()) };
+    if doc.is_null() {
+        return None;
+    }
+    let result = unsafe { schematron_parse_doc(doc) };
+    unsafe { crate::abi::exports_xml2::xmlFreeDoc(doc) };
+    result.ok()
+}
+
 /// Create a new Schematron parser context.
 ///
 /// # UPSTREAM-PARITY
@@ -1523,10 +1586,12 @@ pub unsafe extern "C" fn xmlSchematronNewParserCtxt(url: *const c_char) -> *mut 
     if url.is_null() {
         // UPSTREAM-PARITY: a NULL URL yields an empty parser context that
         // later accepts xmlSchematronParse. The context must be a real
-        // constructed SchematronSchema (Box) — zeroed raw memory would be
-        // re-interpreted as a Rust struct with Vec/HashMap fields and
-        // cloned/dropped later (UB).
-        return Box::into_raw(Box::new(SchematronSchema::new())) as *mut c_void;
+        // constructed value — zeroed raw memory would be re-interpreted as a
+        // Rust struct with Vec/HashMap fields and cloned/dropped later (UB).
+        return Box::into_raw(Box::new(SchematronParserCtxt {
+            schema: Some(SchematronSchema::new()),
+            source: SchematronParserSource::Empty,
+        })) as *mut c_void;
     }
 
     let url_str = unsafe {
@@ -1538,24 +1603,20 @@ pub unsafe extern "C" fn xmlSchematronNewParserCtxt(url: *const c_char) -> *mut 
         String::from_utf8_lossy(slice).to_string()
     };
 
-    // Try to parse the schema from the URL
-    if !url_str.is_empty() {
-        let url_c = std::ffi::CString::new(url_str.clone()).ok();
-        if let Some(c) = url_c {
-            let doc = crate::abi::exports_xml2::xmlParseFile(c.as_ptr());
-            if !doc.is_null() {
-                let result = schematron_parse_doc(doc);
-                crate::abi::exports_xml2::xmlFreeDoc(doc);
-                if let Ok(schema) = result {
-                    let schema_box = Box::new(schema);
-                    return Box::into_raw(schema_box) as *mut c_void;
-                }
-            }
-        }
-    }
-
-    // Return empty context for later parsing
-    Box::into_raw(Box::new(SchematronSchema::new())) as *mut c_void
+    // A URL that cannot be read or parsed yields an EMPTY schema at
+    // `xmlSchematronParse` (the historical behavior of this entry point: a
+    // bad URL is not an error here).
+    let schema = if url_str.is_empty() {
+        Some(SchematronSchema::new())
+    } else {
+        Some(unsafe { compile_from_url(&url_str) }.unwrap_or_else(SchematronSchema::new))
+    };
+    let source = if url_str.is_empty() {
+        SchematronParserSource::Empty
+    } else {
+        SchematronParserSource::Url(url_str)
+    };
+    Box::into_raw(Box::new(SchematronParserCtxt { schema, source })) as *mut c_void
 }
 
 /// Create a new Schematron parser context from a memory buffer.
@@ -1578,15 +1639,12 @@ pub unsafe extern "C" fn xmlSchematronNewMemParserCtxt(
         return ptr::null_mut();
     }
 
-    // Parse the schema immediately
+    // Parse the schema immediately (an invalid schema is NULL here).
     let buf_slice = unsafe { std::slice::from_raw_parts(buffer as *const u8, size as usize) };
     let xml_str = String::from_utf8_lossy(buf_slice).to_string();
 
     match schematron_parse(&xml_str) {
-        Ok(schema) => {
-            let schema_box = Box::new(schema);
-            Box::into_raw(schema_box) as *mut c_void
-        }
+        Ok(schema) => SchematronParserCtxt::new_compiled(xml_str, schema),
         Err(_) => ptr::null_mut(),
     }
 }
@@ -1599,18 +1657,36 @@ pub unsafe extern "C" fn xmlSchematronNewMemParserCtxt(
 /// xmlSchematronPtr xmlSchematronParse(xmlSchematronParserCtxtPtr ctxt);
 /// ```
 ///
+/// Returns a schema INDEPENDENT of the parser context, which the caller frees
+/// separately with `xmlSchematronFree`.
+///
 /// # SAFETY
 ///
 /// - `ctxt` must be a valid pointer to a parser context, or NULL.
 #[no_mangle]
-pub const unsafe extern "C" fn xmlSchematronParse(ctxt: *mut c_void) -> *mut c_void {
+pub unsafe extern "C" fn xmlSchematronParse(ctxt: *mut c_void) -> *mut c_void {
     if ctxt.is_null() {
         return ptr::null_mut();
     }
 
-    // If the context already contains a parsed schema (from xmlSchematronNewMemParserCtxt),
-    // return it. Otherwise, return the context as-is.
-    ctxt
+    // SAFETY: the parser context was created by one of this module's
+    // constructors; the caller holds it live for the call.
+    let pctxt = unsafe { &mut *(ctxt as *mut SchematronParserCtxt) };
+    if let Some(schema) = pctxt.schema.take() {
+        return Box::into_raw(Box::new(schema)) as *mut c_void;
+    }
+
+    // A repeated call recompiles from the original source (upstream re-reads
+    // the document on every xmlSchematronParse).
+    let schema = match &pctxt.source {
+        SchematronParserSource::Xml(xml) => schematron_parse(xml).ok(),
+        SchematronParserSource::Url(url) => unsafe { compile_from_url(url) },
+        SchematronParserSource::Empty => Some(SchematronSchema::new()),
+    };
+    match schema {
+        Some(s) => Box::into_raw(Box::new(s)) as *mut c_void,
+        None => ptr::null_mut(),
+    }
 }
 
 /// Free a Schematron schema.
@@ -1643,6 +1719,9 @@ pub unsafe extern "C" fn xmlSchematronFree(schema: *mut c_void) {
 /// void xmlSchematronFreeParserCtxt(xmlSchematronParserCtxtPtr ctxt);
 /// ```
 ///
+/// Frees ONLY the parser context — a schema returned by `xmlSchematronParse`
+/// outlives it.
+///
 /// # SAFETY
 ///
 /// - `ctxt` must be a valid pointer to a parser context, or NULL.
@@ -1653,7 +1732,7 @@ pub unsafe extern "C" fn xmlSchematronFreeParserCtxt(ctxt: *mut c_void) {
     }
     // SAFETY: Reconstruct the Box to drop it.
     unsafe {
-        let _ = Box::from_raw(ctxt as *mut SchematronSchema);
+        let _ = Box::from_raw(ctxt as *mut SchematronParserCtxt);
     }
 }
 
@@ -2874,22 +2953,26 @@ mod tests {
     ///
     /// # Safety
     ///
-    /// - `schema` is a non-NULL heap parser context from `xmlSchematronNewParserCtxt`;
-    ///   it is borrowed by `xmlSchematronNewValidCtxt`, which returns a
-    ///   non-NULL heap validation context owned by the caller.
-    /// - Each context is released exactly once with its matching free
-    ///   function (`xmlSchematronFreeValidCtxt`, then `xmlSchematronFreeParserCtxt`)
-    ///   and never used afterwards.
+    /// - `pctxt` is a non-NULL heap parser context from
+    ///   `xmlSchematronNewParserCtxt`; `schema` is the distinct heap schema
+    ///   from `xmlSchematronParse`; `xmlSchematronNewValidCtxt` borrows the
+    ///   schema and returns a non-NULL heap validation context.
+    /// - Each object is released exactly once with its matching free function
+    ///   (`xmlSchematronFreeValidCtxt`, `xmlSchematronFree`,
+    ///   `xmlSchematronFreeParserCtxt`) and never used afterwards.
     #[test]
     fn test_c_abi_new_free_valid_ctxt() {
-        let schema = unsafe { xmlSchematronNewParserCtxt(ptr::null()) };
+        let pctxt = unsafe { xmlSchematronNewParserCtxt(ptr::null()) };
+        assert!(!pctxt.is_null());
+        let schema = unsafe { xmlSchematronParse(pctxt) };
         assert!(!schema.is_null());
 
         let valid_ctxt = unsafe { xmlSchematronNewValidCtxt(schema, 0) };
         assert!(!valid_ctxt.is_null());
 
         unsafe { xmlSchematronFreeValidCtxt(valid_ctxt) };
-        unsafe { xmlSchematronFreeParserCtxt(schema) };
+        unsafe { xmlSchematronFree(schema) };
+        unsafe { xmlSchematronFreeParserCtxt(pctxt) };
         // Should not crash
     }
 
@@ -2899,9 +2982,9 @@ mod tests {
     ///
     /// - `schema_xml` is a valid byte buffer readable for `schema_xml.len()`
     ///   bytes during the `xmlSchematronNewMemParserCtxt` call.
-    /// - `ctxt` (non-NULL) and the `schema` returned by `xmlSchematronParse`
-    ///   are the same heap pointer: it is released exactly once with
-    ///   `xmlSchematronFree` and never used afterwards.
+    /// - `ctxt` (non-NULL) is the heap parser context and `schema` the DISTINCT
+    ///   heap schema from `xmlSchematronParse`; each is released exactly once
+    ///   with its matching free function and never used afterwards.
     #[test]
     fn test_c_abi_parse_free() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2925,6 +3008,7 @@ mod tests {
         assert!(!schema.is_null());
 
         unsafe { xmlSchematronFree(schema) };
+        unsafe { xmlSchematronFreeParserCtxt(ctxt) };
         // Should not crash
     }
 
@@ -2984,6 +3068,7 @@ mod tests {
         unsafe { crate::abi::exports_xml2::xmlFreeDoc(doc) };
         unsafe { xmlSchematronFreeValidCtxt(valid_ctxt) };
         unsafe { xmlSchematronFree(schema) };
+        unsafe { xmlSchematronFreeParserCtxt(ctxt) };
     }
 
     /// Test the full C-ABI validate path against a failing schema.
@@ -3042,6 +3127,7 @@ mod tests {
         unsafe { crate::abi::exports_xml2::xmlFreeDoc(doc) };
         unsafe { xmlSchematronFreeValidCtxt(valid_ctxt) };
         unsafe { xmlSchematronFree(schema) };
+        unsafe { xmlSchematronFreeParserCtxt(ctxt) };
     }
 
     /// Test NULL handling across the C-ABI schematron entry points.
@@ -3239,5 +3325,51 @@ mod tests {
         unsafe { crate::abi::exports_xml2::xmlFreeDoc(doc) };
 
         assert!(valid, "Child count check failed: {:?}", ctxt.errors);
+    }
+
+    /// The parser context and the schema are DISTINCT allocations (upstream
+    /// `_xmlSchematronParserCtxt` vs `_xmlSchematron`). A consumer compiles the
+    /// schema, frees the parser context, and keeps using the schema — lxml does
+    /// exactly that. Before the split, `xmlSchematronParse` returned the parser
+    /// context itself, so `xmlSchematronFreeParserCtxt` freed the schema and the
+    /// following `xmlSchematronNewValidCtxt` read freed memory (a segfault in
+    /// the schema clone; also a double free in `xmllint`'s schematron path).
+    #[test]
+    fn parser_ctxt_and_schema_are_distinct_allocations() {
+        let xml = r#"<schema xmlns="http://www.ascc.net/xml/schematron"><pattern name="p"><rule context="*"><report test="@*[not(name()='id')]">bad</report></rule></pattern></schema>"#;
+        unsafe {
+            let c = std::ffi::CString::new(xml).unwrap();
+            let pctxt = super::xmlSchematronNewMemParserCtxt(c.as_ptr(), xml.len() as i32);
+            assert!(!pctxt.is_null(), "valid schema compiles");
+            let schema = super::xmlSchematronParse(pctxt);
+            assert!(!schema.is_null());
+            assert_ne!(schema, pctxt, "schema must not alias the parser context");
+            // Freeing the parser context must leave the schema usable.
+            super::xmlSchematronFreeParserCtxt(pctxt);
+            let vctxt = super::xmlSchematronNewValidCtxt(schema, 0);
+            assert!(!vctxt.is_null(), "schema survived its parser context");
+            super::xmlSchematronFreeValidCtxt(vctxt);
+            super::xmlSchematronFree(schema);
+        }
+    }
+
+    /// A repeated `xmlSchematronParse` recompiles from the original source
+    /// (upstream re-reads the document on every call) and still yields a schema
+    /// independent of the parser context.
+    #[test]
+    fn parse_twice_recompiles_independently() {
+        let xml = r#"<schema xmlns="http://www.ascc.net/xml/schematron"><pattern name="p"><rule context="*"><assert test="count(*)=1">n</assert></rule></pattern></schema>"#;
+        unsafe {
+            let c = std::ffi::CString::new(xml).unwrap();
+            let pctxt = super::xmlSchematronNewMemParserCtxt(c.as_ptr(), xml.len() as i32);
+            assert!(!pctxt.is_null());
+            let a = super::xmlSchematronParse(pctxt);
+            let b = super::xmlSchematronParse(pctxt);
+            assert!(!a.is_null() && !b.is_null());
+            assert_ne!(a, b, "each parse yields its own schema");
+            super::xmlSchematronFree(a);
+            super::xmlSchematronFree(b);
+            super::xmlSchematronFreeParserCtxt(pctxt);
+        }
     }
 }

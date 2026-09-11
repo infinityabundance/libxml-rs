@@ -3036,7 +3036,12 @@ pub unsafe extern "C" fn xmlSchematronNewDocParserCtxt(
         return ptr::null_mut();
     };
     match schematron_parse(&xml) {
-        Ok(schema) => Box::into_raw(Box::new(schema)) as *mut xmlSchematronParserCtxt,
+        // A parser context and the schema it produces are DISTINCT objects
+        // (upstream `_xmlSchematronParserCtxt` vs `_xmlSchematron`): the caller
+        // frees the parser context with `xmlSchematronFreeParserCtxt` and keeps
+        // the schema until `xmlSchematronFree`.
+        Ok(schema) => crate::xml::schematron::SchematronParserCtxt::new_compiled(xml, schema)
+            as *mut xmlSchematronParserCtxt,
         Err(_) => ptr::null_mut(),
     }
 }
