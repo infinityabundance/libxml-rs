@@ -362,11 +362,47 @@ pub(crate) unsafe fn xsltFindTemplateInCtxt(
     if style.is_null() || node.is_null() {
         return ptr::null_mut();
     }
-
     let mut best: *mut _xsltTemplate = ptr::null_mut();
     let mut best_priority: f64 = f64::NEG_INFINITY;
-    let mut best_depth: c_int = -1;
+    let mut best_depth: c_int = c_int::MAX;
+    xsltFindTemplateRec(
+        style,
+        node,
+        mode,
+        ctxt,
+        0,
+        &mut best,
+        &mut best_priority,
+        &mut best_depth,
+    );
+    best
+}
 
+/// Recursive worker for `xsltFindTemplateInCtxt` that walks the import chain.
+///
+/// UPSTREAM-PARITY (pattern.c xsltGetTemplate): template selection considers
+/// the templates of the importing stylesheet AND every stylesheet it imports,
+/// transitively. Import precedence is the primary key (a template in a
+/// stylesheet with lower import depth wins over one in a deeper import);
+/// within one stylesheet, higher priority wins, then the later template in
+/// document order (the `templates` list is kept in document order).
+///
+/// The previous implementation scanned only `(*style).templates`, so a
+/// stylesheet that imported its match templates (e.g. iso_svrl_for_xslt1.xsl,
+/// which imports iso_schematron_skeleton_for_xslt1.xsl) matched nothing and
+/// fell through to the built-in rules — producing character data instead of the
+/// generated stylesheet.
+#[allow(clippy::too_many_arguments)]
+unsafe fn xsltFindTemplateRec(
+    style: *mut _xsltStylesheet,
+    node: *mut _xmlNode,
+    mode: *const xmlChar,
+    ctxt: *mut _xsltTransformContext,
+    depth: c_int,
+    best: &mut *mut _xsltTemplate,
+    best_priority: &mut f64,
+    best_depth: &mut c_int,
+) {
     let mut templ: *mut _xsltTemplate = (*style).templates;
     while !templ.is_null() {
         // Only consider templates with a compiled match pattern (params).
@@ -375,51 +411,30 @@ pub(crate) unsafe fn xsltFindTemplateInCtxt(
             continue;
         }
 
-        // ── Mode compatibility ──────────────────────────────────────────
-        // XSLT 1.0 §5.2: template mode matching.
+        // ── Mode compatibility (XSLT 1.0 §5.2) ─────────────────────────
         let templ_has_mode = !(*templ).mode.is_null();
         if templ_has_mode {
-            // Template has an explicit mode: it must match the requested
-            // mode. If no mode was requested, skip.
-            if mode.is_null() {
+            if mode.is_null() || xml_strcmp((*templ).mode, mode) != 0 {
                 templ = (*templ).next;
                 continue;
             }
-            if xml_strcmp((*templ).mode, mode) != 0 {
-                templ = (*templ).next;
-                continue;
-            }
-        } else {
-            // Template has no explicit mode: it matches only when no mode
-            // is requested (the default/implicit mode).
-            if !mode.is_null() {
-                templ = (*templ).next;
-                continue;
-            }
+        } else if !mode.is_null() {
+            templ = (*templ).next;
+            continue;
         }
 
-        // ── Pattern matching ────────────────────────────────────────────
-        // The compiled pattern is carried in `params` (candidate-internal;
-        // upstream carries the match string in `match`).
+        // ── Pattern matching ───────────────────────────────────────────
         let pattern_ptr = (*templ).params as *mut _xsltPattern;
         if pattern_ptr.is_null() {
             templ = (*templ).next;
             continue;
         }
-
-        // Use xsltTestPattern with the transform context so pattern
-        // predicates are evaluated (a null context would skip them and make
-        // every predicate-bearing pattern match every node).
-        let matched = xsltTestPattern(ctxt, pattern_ptr, node);
-        if matched == 0 {
+        if xsltTestPattern(ctxt, pattern_ptr, node) == 0 {
             templ = (*templ).next;
             continue;
         }
 
-        // ── Priority comparison ─────────────────────────────────────────
-        // Determine the effective priority. If the template has an
-        // explicit priority attribute, use it; otherwise compute the
-        // default priority from the compiled pattern.
+        // ── Priority / import-precedence comparison ────────────────────
         let effective_priority: f64 =
             if (*templ).priority as f64 != crate::xslt::patterns::XSLT_PAT_NO_PRIORITY {
                 (*templ).priority as f64
@@ -427,23 +442,38 @@ pub(crate) unsafe fn xsltFindTemplateInCtxt(
                 xsltDefaultPriorityFromNode((*templ).params as *mut _xmlNode)
             };
 
-        // Higher priority wins; ties broken by higher import depth
-        // (stored in `position`; later import = higher precedence).
-        let templ_depth = (*templ).position;
-        if best.is_null()
-            || effective_priority > best_priority
-            || ((effective_priority - best_priority).abs() < f64::EPSILON
-                && templ_depth > best_depth)
-        {
-            best = templ;
-            best_priority = effective_priority;
-            best_depth = templ_depth;
+        // Lower import depth wins; otherwise strictly higher priority;
+        // otherwise keep the first candidate seen. The compiler PREPENDS match
+        // templates, so the list is in reverse document order and "first seen"
+        // is the LAST template in the stylesheet — the XSLT 1.0 §5.5 winner on
+        // a priority tie.
+        let better = (*best).is_null()
+            || depth < *best_depth
+            || (depth == *best_depth && effective_priority > *best_priority);
+        if better {
+            *best = templ;
+            *best_priority = effective_priority;
+            *best_depth = depth;
         }
 
         templ = (*templ).next;
     }
 
-    best
+    // Imported stylesheets: one step deeper (lower import precedence).
+    let mut imp: *mut _xsltStylesheet = (*style).imports;
+    while !imp.is_null() {
+        xsltFindTemplateRec(
+            imp,
+            node,
+            mode,
+            ctxt,
+            depth + 1,
+            best,
+            best_priority,
+            best_depth,
+        );
+        imp = (*imp).next;
+    }
 }
 
 // ── Named template lookup ────────────────────────────────────────────────

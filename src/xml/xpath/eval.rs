@@ -287,25 +287,42 @@ fn eval_step(ctx: &mut XPathContext, step: &Step) -> Result<XPathValue, String> 
 /// here at the start of each step evaluation).
 ///
 /// An unregistered prefix is an error (XPATH_UNDEF_PREFIX_ERROR).
+/// The XML namespace URI (upstream `XML_XML_NAMESPACE`).
+const XML_NS_URI: &str = "http://www.w3.org/XML/1998/namespace";
+
+/// Resolve a namespace prefix against the context's in-scope namespaces.
+///
+/// UPSTREAM-PARITY (xpath.c xmlXPathNsLookup): the `xml` prefix is ALWAYS
+/// bound to the XML namespace, whether or not the document declares it. A
+/// stylesheet referencing `@xml:space` (iso_schematron_skeleton_for_xslt1.xsl)
+/// must resolve without an explicit `xmlns:xml` declaration.
+fn resolve_prefix_uri(
+    namespaces: &std::collections::HashMap<String, String>,
+    prefix: &str,
+) -> Option<String> {
+    if prefix == "xml" {
+        return Some(XML_NS_URI.to_string());
+    }
+    namespaces.get(prefix).cloned()
+}
+
 fn resolve_step_prefix(
     node_test: &NodeTest,
     namespaces: &std::collections::HashMap<String, String>,
 ) -> Result<NodeTest, String> {
     match node_test {
         NodeTest::NameTest(NameTest::QName { prefix, local }) if !prefix.is_empty() => {
-            let uri = namespaces
-                .get(prefix)
+            let uri = resolve_prefix_uri(namespaces, prefix)
                 .ok_or_else(|| format!("Undefined namespace prefix: {}", prefix))?;
             Ok(NodeTest::NameTest(NameTest::QNameUri {
-                uri: uri.clone(),
+                uri,
                 local: local.clone(),
             }))
         }
         NodeTest::NsWildcard(prefix) if !prefix.is_empty() => {
-            let uri = namespaces
-                .get(prefix)
+            let uri = resolve_prefix_uri(namespaces, prefix)
                 .ok_or_else(|| format!("Undefined namespace prefix: {}", prefix))?;
-            Ok(NodeTest::NsWildcardUri(uri.clone()))
+            Ok(NodeTest::NsWildcardUri(uri))
         }
         _ => Ok(node_test.clone()),
     }

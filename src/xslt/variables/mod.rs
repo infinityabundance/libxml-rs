@@ -355,13 +355,64 @@ pub unsafe fn xsltInitGlobalVariables(ctxt: *mut _xsltTransformContext) {
     }
     // Then evaluate stylesheet-defined global variables/params, skipping
     // names already bound by the caller (upstream xsltEvalGlobalVariables
-    // consults ctxt->globalVars).
+    // consults ctxt->globalVars). The importing stylesheet is processed first
+    // (it has higher import precedence), then each imported stylesheet
+    // recursively with skip_if_bound set, so an imported global only fills a
+    // name the importing stylesheet (or a caller parameter) did not bind.
+    init_globals_for_style(ctxt, style, true);
+    let mut imp = (*style).imports;
+    while !imp.is_null() {
+        init_globals_for_style_tree(ctxt, imp);
+        imp = (*imp).next;
+    }
+}
+
+/// Register the global variables/params declared at the top level of one
+/// stylesheet (not its imports), then recurse into its own imports.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext`.
+/// - `style` must be a valid compiled stylesheet.
+unsafe fn init_globals_for_style_tree(
+    ctxt: *mut _xsltTransformContext,
+    style: *mut _xsltStylesheet,
+) {
+    init_globals_for_style(ctxt, style, true);
+    let mut imp = (*style).imports;
+    while !imp.is_null() {
+        init_globals_for_style_tree(ctxt, imp);
+        imp = (*imp).next;
+    }
+}
+
+/// Evaluate the top-level `xsl:variable`/`xsl:param` elements of a single
+/// stylesheet into the transform's XPath variable hash.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext`.
+/// - `style` must be a valid compiled stylesheet.
+unsafe fn init_globals_for_style(
+    ctxt: *mut _xsltTransformContext,
+    style: *mut _xsltStylesheet,
+    skip_if_bound: bool,
+) {
+    // `variables` is stored newest-first (each top-level variable is prepended
+    // by the compiler), so evaluate in DOCUMENT order: a global may reference a
+    // global declared earlier (`$context-xpath` uses `$attributes`), and
+    // evaluating the list as stored would resolve the reference before its
+    // binding exists.
+    let mut order: Vec<*mut _xsltStackElem> = Vec::new();
     let mut var = (*style).variables;
     while !var.is_null() {
-        if (*var).flags & XSLT_VAR_INTERNAL == 0 {
-            register_global_value(ctxt, var, true);
-        }
+        order.push(var);
         var = (*var).next;
+    }
+    for var in order.into_iter().rev() {
+        if (*var).flags & XSLT_VAR_INTERNAL == 0 {
+            register_global_value(ctxt, var, skip_if_bound);
+        }
     }
 }
 
@@ -589,36 +640,30 @@ unsafe fn register_global_value(
         };
         result
     } else if !(*var).tree.is_null() {
-        // Inline content: build a result tree fragment (RVT). The variable
-        // value is a node-set containing the RVT's *document node*, matching
-        // upstream (variables.c xsltEvalVariable → xmlXPathNewValueTree of
-        // the RVT container), so that `exsl:node-set($var)/path` navigation
-        // works and `$var` stringifies to the full text content (§35).
+        // Inline content: EXECUTE the sequence constructor into a result tree
+        // fragment (RVT).
+        //
+        // UPSTREAM-PARITY (variables.c xsltEvalVariable, no-select branch):
+        // `xsltApplyOneTemplate(ctxt, ctxt->node, variable->tree, ...)` runs
+        // the content, so instruction children contribute their RESULTS. The
+        // previous deep-copy inserted the literal stylesheet nodes into the
+        // fragment, so `$context-xpath` (an xsl:if plus an xsl:choose over
+        // @only-child-elements / @visit-text) stringified to ALL branches
+        // concatenated (`@*|*node()*|comment()|...`) instead of the one
+        // selected branch. The RVT's document node is the variable value
+        // (matching upstream `xmlXPathNewValueTree`), so `exsl:node-set($var)`
+        // navigation and `$var` stringification both work.
         let doc = crate::xml::tree::new_doc(ptr::null());
         if doc.is_null() {
             return;
         }
-        // Deep-copy the stylesheet content nodes into the RVT document.
-        let mut child = (*var).tree;
-        let mut last: *mut _xmlNode = ptr::null_mut();
-        while !child.is_null() {
-            let copy = crate::xml::tree::copy_node(child, 1);
-            if !copy.is_null() {
-                if last.is_null() {
-                    (*doc).children = copy;
-                } else {
-                    (*last).next = copy;
-                }
-                (*copy).prev = last;
-                (*copy).parent = doc as *mut _xmlNode;
-                (*copy).doc = doc;
-                last = copy;
-            }
-            child = (*child).next;
-        }
-        if !last.is_null() {
-            (*doc).last = last;
-        }
+        let saved_insert = (*ctxt).insert;
+        let saved_output = (*ctxt).output;
+        (*ctxt).insert = doc as *mut _xmlNode;
+        (*ctxt).output = doc;
+        crate::xslt::transform::execute_content(ctxt, (*var).tree);
+        (*ctxt).insert = saved_insert;
+        (*ctxt).output = saved_output;
         // Own the RVT via the context's document cache (freed exactly once
         // at transform-context teardown, after the XPath context is freed).
         crate::xslt::documents::xsltRegisterRVT(ctxt, doc);

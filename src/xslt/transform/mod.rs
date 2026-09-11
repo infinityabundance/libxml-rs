@@ -1294,6 +1294,23 @@ pub(crate) unsafe fn process_apply_templates(
     };
 
     if !nodes.is_null() && (*nodes).nodeNr > 0 {
+        // UPSTREAM-PARITY (transform.c xsltApplyTemplates): save the context
+        // node/size/position and restore them before returning. Without this,
+        // an apply-templates leaves ctxt->node pointing at the last processed
+        // node, so a following instruction (e.g. the skeleton's
+        // `apply-templates select="*[not(self::iso:ns)]"` after handle-root)
+        // evaluates its select against the wrong context and emits nothing.
+        let saved_node = (*ctxt).node;
+        let saved_context_size = if !(*ctxt).xpathCtxt.is_null() {
+            (*(*ctxt).xpathCtxt).contextSize
+        } else {
+            0
+        };
+        let saved_proximity = if !(*ctxt).xpathCtxt.is_null() {
+            (*(*ctxt).xpathCtxt).proximityPosition
+        } else {
+            0
+        };
         // Check for xsl:sort children.
         let sort = find_sort_children(ctxt, inst);
         let mut node_ptrs: Vec<*mut _xmlNode> = Vec::new();
@@ -1360,6 +1377,11 @@ pub(crate) unsafe fn process_apply_templates(
                     apply_templates_with_params(ctxt, *n, mode, params);
                 }
             }
+        }
+        (*ctxt).node = saved_node;
+        if !(*ctxt).xpathCtxt.is_null() {
+            (*(*ctxt).xpathCtxt).contextSize = saved_context_size;
+            (*(*ctxt).xpathCtxt).proximityPosition = saved_proximity;
         }
     }
 
@@ -3106,6 +3128,58 @@ unsafe fn lre_decls_suppressed(node: *mut _xmlNode) -> bool {
     false
 }
 
+/// Map a stylesheet-side namespace URI through the stylesheet's
+/// `xsl:namespace-alias` table.
+///
+/// UPSTREAM-PARITY (namespaces.c xsltNamespaceAlias): an element/attribute in
+/// the namespace bound to `stylesheet-prefix` is emitted in the namespace
+/// bound to `result-prefix`. This is what lets the Schematron skeleton emit a
+/// stylesheet (`<axsl:stylesheet>` on the alias namespace comes out as a real
+/// XSLT `stylesheet`). Without it the generated document stays in the alias
+/// namespace and is rejected by `xsltParseStylesheetProcess : document is not
+/// a stylesheet`.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid transform context; `href` may be NULL.
+unsafe fn alias_result_ns(
+    ctxt: *mut _xsltTransformContext,
+    href: *const xmlChar,
+) -> *const xmlChar {
+    if href.is_null() || ctxt.is_null() {
+        return href;
+    }
+    let style = (*ctxt).style;
+    if style.is_null() {
+        return href;
+    }
+    alias_result_ns_in(style, href)
+}
+
+/// Search one stylesheet and its imports for an alias of `href`.
+unsafe fn alias_result_ns_in(style: *mut _xsltStylesheet, href: *const xmlChar) -> *const xmlChar {
+    let mut a = (*style).nsAliases as *mut _xsltNsAlias;
+    while !a.is_null() {
+        if !(*a).styleNs.is_null()
+            && !(*a).resultNs.is_null()
+            && unsafe { xmlStrEqual((*a).styleNs, href) != 0 }
+        {
+            return (*a).resultNs;
+        }
+        a = (*a).next;
+    }
+    // Declarations in an imported stylesheet apply to the importing one.
+    let mut imp = (*style).imports;
+    while !imp.is_null() {
+        let r = unsafe { alias_result_ns_in(imp, href) };
+        if r != href {
+            return r;
+        }
+        imp = (*imp).next;
+    }
+    href
+}
+
 /// Create the namespace declarations a literal result element must carry
 /// (XSLT 1.0 §7.1.3): its in-scope namespace nodes from the stylesheet,
 /// minus the xml namespace, minus any prefix bound to the XSLT namespace and
@@ -3179,7 +3253,7 @@ unsafe fn copy_literal_result_ns(
     let suppressed = unsafe { lre_decls_suppressed(inst) };
     if !suppressed {
         for decl in &in_scope {
-            let href = decl.href;
+            let href = unsafe { alias_result_ns(ctxt, decl.href) };
             if href.is_null() {
                 continue;
             }
@@ -3233,7 +3307,7 @@ unsafe fn copy_literal_result_ns(
     let inst_ns = (*inst).ns;
     if !inst_ns.is_null() {
         let want_prefix = (*inst_ns).prefix;
-        let want_href = (*inst_ns).href;
+        let want_href = unsafe { alias_result_ns(ctxt, (*inst_ns).href) };
         // 1. a declaration we just created on elem with the same prefix.
         let mut own = (*elem).nsDef;
         while !own.is_null() {

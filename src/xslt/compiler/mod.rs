@@ -1300,24 +1300,32 @@ unsafe fn prefix_to_uri(node: *mut _xmlNode, prefix: *const xmlChar) -> *mut xml
     if node.is_null() || prefix.is_null() {
         return ptr::null_mut();
     }
-    let mut ns = (*node).nsDef;
-    while !ns.is_null() {
-        let ns_prefix = (*ns).prefix;
-        let prefix_matches = if ns_prefix.is_null() {
-            *prefix == 0
-        } else {
-            libc::strcmp(
-                ns_prefix as *const libc::c_char,
-                prefix as *const libc::c_char,
-            ) == 0
-        };
-        if prefix_matches && !(*ns).href.is_null() {
-            return alloc_str(core::slice::from_raw_parts(
-                (*ns).href,
-                libc::strlen((*ns).href as *const libc::c_char) as usize,
-            ));
+    // Namespace prefixes resolve in scope: check the element's own nsDef, then
+    // each ancestor's, nearest declaration winning. The common case declares
+    // `xmlns:axsl` on the stylesheet root, so an element-local-only lookup
+    // resolved nothing and xsl:namespace-alias silently did nothing.
+    let mut cur = node;
+    while !cur.is_null() {
+        let mut ns = (*cur).nsDef;
+        while !ns.is_null() {
+            let ns_prefix = (*ns).prefix;
+            let prefix_matches = if ns_prefix.is_null() {
+                *prefix == 0
+            } else {
+                libc::strcmp(
+                    ns_prefix as *const libc::c_char,
+                    prefix as *const libc::c_char,
+                ) == 0
+            };
+            if prefix_matches && !(*ns).href.is_null() {
+                return alloc_str(core::slice::from_raw_parts(
+                    (*ns).href,
+                    libc::strlen((*ns).href as *const libc::c_char) as usize,
+                ));
+            }
+            ns = (*ns).next;
         }
-        ns = (*ns).next;
+        cur = (*cur).parent;
     }
     ptr::null_mut()
 }
