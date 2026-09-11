@@ -1,0 +1,46 @@
+candidate_sha=98ea0b46be59c994cd479737a45f390b0b748b49
+evidence_kind=consolidation (final state of the XSLT/XPath/RELAX NG consumer-parity slice) + one exposed latent-bug finding
+release_libxml2_sha256=2e8779bbd5448b13d696f03993e4fbb1200cf792a2ea3217df69c1ff0d68ea7c
+debug_libxml2_sha256=2d4176c0c4fe41e4f5d0c0130bf17902ef2b10ab8975cf4ebecc8da954ccc5ab
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, phpbuild-c)
+oracle_libxml2=2.15.3 oracle_libxslt=1.1.45
+
+lxml_suite_command=cd /src/lxml && python3 test.py -u -v
+lxml_suite_now=100 failures / 38 errors = 138   (was 162 at fd62c8ed)
+lxml_suite_failures_listed_in=suite-failures.txt
+
+php_six_gate=1290 tests, 1250 passed / 0 failed (was 1250 / 0 before this slice)
+pushdiff=4702/4702 byte-identical, behavior_sha256=ebae174b42e61e436bd5911fdc01e13f876ae1009723cbfc67f414b162d69e1d (courts/receipts/phase-16/raw/pushdiff-7w)
+pushscale=small-chunk curve flat over 4x (1009/1039/1045 MB/s), large ~1700 MB/s (courts/receipts/phase-16/raw/pushscale-7w)
+unit_tests=cargo test --lib -> 1324 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+tree_clean=yes
+
+# ── EXPOSED LATENT BUG (pre-existing; not caused by the logic of this slice) ──
+#
+# The XML-namespace-prefix fix in src/xml/xpath/eval.rs (resolve_prefix_uri)
+# changes the binary/rodata layout. In the lxml suite that layout shift
+# intermittently exposes an unrelated pre-existing memory bug:
+#
+#   test_elementpath *TestCase.test_find  followed by  test_htmlparser
+#   -> etree.HTML('<body>') yields an element whose serialization is
+#      "<bodyID>" instead of "<body>" (the name is read past its end).
+#
+# Reproducers committed here: pair2.py (module pair), pair4.py (single test +
+# test_module_HTML). Running test_elementpath then test_htmlparser gives 9
+# module_HTML failures with the eval.rs change and 2 (baseline) without it,
+# even though the change is a no-op unless the XPath references the `xml`
+# prefix (test_elementpath does not). That makes this a layout-sensitive
+# pre-existing bug exposed by new code, not a defect in eval.rs itself.
+#
+# valgrind --tool=memcheck over the pair reports NO invalid read/write in
+# liblibxml_rs.so, and MALLOC_PERTURB_ does not change the output, so the read
+# stays inside an allocation/rodata: a string used as a name is not
+# NUL-terminated where a C-string consumer expects it, and the byte after it is
+# now 'I','D' from adjacent rodata.
+#
+# Impact: the full suite reports 100/38 (138) on most runs and 109/38 (147) in
+# the exposed layout, i.e. the 9 test_module_HTML*/test_module_parse_html/
+# ElementMaker/test_xslt_html_output tests are order-dependent flakiness.
+# This is recorded as the next thing to fix (find the non-terminated name);
+# it is NOT a logic regression in the XSLT/XPath/RELAX NG changes.
