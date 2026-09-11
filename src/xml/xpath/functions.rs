@@ -232,6 +232,17 @@ fn fn_local_name(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathVal
     let node = get_first_node(ctx, args, 0);
     if let Some(node) = node {
         unsafe {
+            // UPSTREAM-PARITY (xpath.c xmlXPathLocalNameFunction): a namespace
+            // node's name is its PREFIX, not the `name` field (which overlaps
+            // the `_xmlNs` layout). The Schematron skeleton selects
+            // `namespace::*[local-name()='xsi']`; reading the wrong field made
+            // the predicate fail and dropped every namespace declaration.
+            if (*node).type_ == crate::abi::types::xmlElementType::XML_NAMESPACE_DECL as i32 {
+                let ns = node as *mut crate::abi::structs::_xmlNs;
+                return Ok(XPathValue::String(crate::xml::string::xmlstr_to_string(
+                    (*ns).prefix,
+                )));
+            }
             let name = crate::xml::string::xmlstr_to_string((*node).name);
             // Strip prefix if present
             if let Some(pos) = name.find(':') {
@@ -285,6 +296,14 @@ fn fn_name(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, St
         unsafe {
             use crate::abi::types::xmlElementType as ET;
             let t = (*node).type_;
+            // UPSTREAM-PARITY (xpath.c xmlXPathNameFunction): a namespace
+            // node's name is its prefix.
+            if t == ET::XML_NAMESPACE_DECL as i32 {
+                let ns = node as *mut crate::abi::structs::_xmlNs;
+                return Ok(XPathValue::String(crate::xml::string::xmlstr_to_string(
+                    (*ns).prefix,
+                )));
+            }
             let name = crate::xml::string::xmlstr_to_string((*node).name);
             if (t == ET::XML_ELEMENT_NODE as i32 || t == ET::XML_ATTRIBUTE_NODE as i32)
                 && !name.is_empty()

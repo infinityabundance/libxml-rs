@@ -2045,6 +2045,30 @@ pub(crate) unsafe fn copy_node_deep(ctxt: *mut _xsltTransformContext, node: *mut
         if !(*node).name.is_null() {
             append_pi_node(ctxt, (*node).name, (*node).content);
         }
+    } else if typ == XML_NAMESPACE_DECL as c_int {
+        // UPSTREAM-PARITY (transform.c xsltCopyOf -> xsltCopyNamespace):
+        // copying a namespace node declares it on the current insertion
+        // element. The Schematron skeleton copies the namespace axis of a
+        // synthetic element (`exsl:node-set($ns-dummy-elements)/*/
+        // namespace::*[local-name()='xsi']`) onto the generated
+        // `<axsl:stylesheet>`; without this arm the declaration was dropped and
+        // every `@xsi:...` expression in the validator failed as
+        // "Undefined namespace prefix: xsi".
+        let target = (*ctxt).insert;
+        if !target.is_null() && (*target).type_ == XML_ELEMENT_NODE as c_int {
+            let ns = node as *mut _xmlNs;
+            let href = (*ns).href;
+            let prefix = (*ns).prefix;
+            if !href.is_null() {
+                let existing = crate::abi::exports_xml2::xmlSearchNs((*target).doc, target, prefix);
+                let same = !existing.is_null()
+                    && !(*existing).href.is_null()
+                    && crate::abi::exports_xml2::xmlStrEqual((*existing).href, href) != 0;
+                if !same {
+                    new_ns(target, href, prefix);
+                }
+            }
+        }
     } else if typ == XML_ATTRIBUTE_NODE as c_int {
         // UPSTREAM-PARITY (transform.c xsltCopyOf -> xsltCopyNode): an
         // attribute in the copied node-set is added to the current insertion
@@ -2422,22 +2446,49 @@ pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mu
     // Borrowed pointers into the stylesheet when no namespace attribute is
     // present; `ns_str` (owned) when the attribute supplied a value. The
     // binding below copies the href/prefix before `ns_str` is freed.
+    // Split an explicit prefix from the QName. `name_str` is an owned (heap)
+    // AVT result, so NUL-terminating the ':' in place yields the prefix and the
+    // local name at name_str[pos+1..]. Upstream xsltElement expands the QName
+    // and passes its prefix to xsltGetSpecialNamespace; dropping it declared
+    // the namespace with a NULL prefix, so `local-name()` on the resulting
+    // namespace node was empty and the Schematron skeleton's
+    // `namespace::*[local-name()='xsi']` selected nothing.
+    let mut elem_name: *const xmlChar = name_str;
+    let mut qname_prefix: *const xmlChar = ptr::null();
+    {
+        let mut i = 0usize;
+        while *name_str.add(i) != 0 && *name_str.add(i) != b':' as xmlChar {
+            i += 1;
+        }
+        if *name_str.add(i) == b':' as xmlChar {
+            *name_str.add(i) = 0;
+            qname_prefix = name_str;
+            elem_name = name_str.add(i + 1);
+        }
+    }
     let mut borrowed_href: *const xmlChar = ptr::null();
-    let mut borrowed_prefix: *const xmlChar = ptr::null();
+    let mut borrowed_prefix: *const xmlChar = qname_prefix;
     if !ns_str.is_null() && *ns_str != 0 {
         borrowed_href = ns_str;
     } else if ns_str.is_null() && !had_ns_attr {
-        // No namespace attribute: in-scope default namespace of the
-        // instruction (prefix NULL).
-        let def = crate::abi::exports_xml2::xmlSearchNs((*inst).doc, inst, ptr::null());
-        if !def.is_null() && !(*def).href.is_null() && *(*def).href != 0 {
-            borrowed_href = (*def).href;
-            borrowed_prefix = (*def).prefix;
+        if !qname_prefix.is_null() {
+            // Resolve the QName prefix in the instruction's namespace scope.
+            let ns = crate::abi::exports_xml2::xmlSearchNs((*inst).doc, inst, qname_prefix);
+            if !ns.is_null() && !(*ns).href.is_null() && *(*ns).href != 0 {
+                borrowed_href = (*ns).href;
+            }
+        } else {
+            // No prefix: in-scope default namespace of the instruction.
+            let def = crate::abi::exports_xml2::xmlSearchNs((*inst).doc, inst, ptr::null());
+            if !def.is_null() && !(*def).href.is_null() && *(*def).href != 0 {
+                borrowed_href = (*def).href;
+                borrowed_prefix = (*def).prefix;
+            }
         }
     }
-    let elem = crate::xml::tree::new_node(ptr::null_mut(), name_str);
-    libc::free(name_str as *mut libc::c_void);
+    let elem = crate::xml::tree::new_node(ptr::null_mut(), elem_name);
     if elem.is_null() {
+        libc::free(name_str as *mut libc::c_void);
         if !ns_str.is_null() {
             libc::free(ns_str as *mut libc::c_void);
         }
@@ -2448,6 +2499,8 @@ pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mu
         // Bind: find or declare the namespace on the element
         // (xsltGetSpecialNamespace — declares a default decl when the
         // prefix is free; mints ns_1.. when the default is taken).
+        // NOTE: `name_str` must stay alive until here because qname_prefix
+        // points into it.
         let bound = crate::abi::exports_xslt_avt::xsltGetSpecialNamespace(
             ctxt,
             inst,
@@ -2457,6 +2510,7 @@ pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mu
         );
         (*elem).ns = bound;
     }
+    libc::free(name_str as *mut libc::c_void);
     if !ns_str.is_null() {
         libc::free(ns_str as *mut libc::c_void);
     }
