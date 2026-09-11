@@ -1,0 +1,1 @@
+test_schematron_abstract (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_abstract)

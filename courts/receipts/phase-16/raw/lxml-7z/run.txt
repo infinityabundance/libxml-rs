@@ -1,0 +1,22 @@
+candidate_sha=71096a000e8219b3508454793a75ca7f67b13418
+candidate_parent_sha=e8816034 (the XSLT import/namespace-alias slice evidence)
+evidence_kind=root-cause fix (namespace-node local-name/name, xsl:element QName prefix, copy-of namespace nodes)
+release_libxml2_sha256=d2e5d77578e4e85fbb868efdd52583d5113837c5b8c42df927ad124a4fd8af32
+debug_libxml2_sha256=e11b815cfbc98e2b19999a0def87c2dbf1f02e751e6249c48d159e0de3c12b49
+host=libxml-rs/phase14-debian:1 (container lxml-cand and an ephemeral docker run for the XSLT probes)
+oracle_libxml2=2.15.3 oracle_libxslt=1.1.45
+probe=xsltprobe2.c (like xsltprobe.c but calls exsltRegisterAll so exsl:node-set is available)
+probe_fixtures=nsaxis.xsl (copy-of a namespace axis node), nsaxis3.xsl (local-name over the namespace axis)
+probe_result=all four candidate outputs match the oracle byte-for-byte:
+  nsaxis : <n xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>   (was <n/>)
+  nsaxis3: <all>[xml][xsi]</all><cnt>1</cnt>                            (was <all>[xml][]</all><cnt>0</cnt>)
+lxml_suite_command=cd /src/lxml && python3 test.py -u -v
+lxml_suite_previous=98 failures / 41 errors = 139
+lxml_suite_now=100 failures / 38 errors = 138
+lxml_suite_fixed=test_schematron_abstract
+lxml_suite_regressions=(none)
+test_isoschematron_cluster=5 -> 4 failing (test_schematron_phases, test_schematron_phases_kwarg, test_schematron_relaxng_embedded, validation.txt doctest)
+unit_tests=cargo test --lib -> 1324 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+tree_clean=yes
+note=an earlier full-suite run reported 147 failures; that run overlapped a lingering python test.py process. A clean run (verified with no other test.py running) reproduces 138. The intermittent test_module_HTML*/ElementMaker/html_output cluster only appears under such overlap and is not attributable to this change.

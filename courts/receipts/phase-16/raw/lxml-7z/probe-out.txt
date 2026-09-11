@@ -1,0 +1,26 @@
+/it/xslt/xsltprobe2.c: In function ‘main’:
+/it/xslt/xsltprobe2.c:10:5: warning: implicit declaration of function ‘xsltRegisterAllExtras’; did you mean ‘exsltRegisterAll’? [-Wimplicit-function-declaration]
+   10 |     xsltRegisterAllExtras();
+      |     ^~~~~~~~~~~~~~~~~~~~~
+      |     exsltRegisterAll
+/it/xslt/xsltprobe2.c: In function ‘main’:
+/it/xslt/xsltprobe2.c:10:5: warning: implicit declaration of function ‘xsltRegisterAllExtras’; did you mean ‘xsltRegisterAllElement’? [-Wimplicit-function-declaration]
+   10 |     xsltRegisterAllExtras();
+      |     ^~~~~~~~~~~~~~~~~~~~~
+      |     xsltRegisterAllElement
+=== nsaxis CAND ===
+<?xml version="1.0"?>
+<out xmlns:exsl="http://exslt.org/common"><n xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/></out>
+
+=== nsaxis ORACLE ===
+<?xml version="1.0"?>
+<out xmlns:exsl="http://exslt.org/common"><n xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/></out>
+
+=== nsaxis3 CAND ===
+<?xml version="1.0"?>
+<out xmlns:exsl="http://exslt.org/common"><all>[xml][xsi]</all><cnt>1</cnt></out>
+
+=== nsaxis3 ORACLE ===
+<?xml version="1.0"?>
+<out xmlns:exsl="http://exslt.org/common"><all>[xml][xsi]</all><cnt>1</cnt></out>
+
