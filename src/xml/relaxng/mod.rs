@@ -1406,6 +1406,469 @@ pub unsafe fn rng_validate_doc(
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// RELAX NG content-model matcher
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// UPSTREAM-PARITY (relaxng.c xmlRelaxNGValidateCompiledContent): a RELAX NG
+// content model is a regular tree grammar. The matcher below decides whether a
+// content pattern can match the element's child-node list by backtracking over
+// spans of child nodes, dispatching sequence/choice/optional/zeroOrMore/
+// oneOrMore/interleave structurally. Attribute patterns never consume child
+// nodes (they are matched against the element's attribute list in a separate,
+// order-insensitive pass) and child-element patterns never consume attributes.
+//
+// The previous implementation assumed every top-level child pattern consumed
+// exactly one child node, so a real grammar — attributes wrapped in <optional>,
+// <group>/<interleave> composition, recursive <ref>s — either rejected valid
+// documents or accepted invalid ones. The ISO Schematron grammar
+// (iso-schematron.rng) exercises all of these, which is why every lxml
+// isoschematron test failed at the RNG validation step.
+
+/// Which node list a content pattern is currently being matched against.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum RngMatchMode {
+    /// Matching against an element's child ELEMENT nodes (document order).
+    Elements,
+    /// Matching against an element's ATTRIBUTE nodes (order-insensitive).
+    Attributes,
+}
+
+/// Does a name class match a node's LOCAL name (and namespace)?
+///
+/// The name class holds an NCName (e.g. `<element name="schema">`); the target
+/// namespace lives on the enclosing `<grammar ns="...">`. A document element
+/// written with a prefix (`sch:schema`) has the same local name, so matching
+/// must strip the prefix — the previous qname comparison rejected every
+/// prefixed document against an unprefixed name class.
+unsafe fn rng_nc_matches_node(nc: &RelaxNgNameClass, node: *mut _xmlNode) -> bool {
+    if node.is_null() {
+        return false;
+    }
+    let local = get_local_name(node);
+    let ns = get_node_ns_uri(node);
+    nc.matches(&local, ns.as_deref())
+}
+
+/// Validate an attribute value against the pattern that describes it.
+///
+/// Attribute patterns carry their value constraint as a child pattern:
+/// `<attribute name="test"><ref name="exprValue"/></attribute>` where the ref
+/// resolves (possibly indirectly) to a `<data>`/`<value>`/`<choice>`.
+unsafe fn rng_attr_value_valid(
+    pattern: &RelaxNgPattern,
+    value: &str,
+    schema: &RelaxNgSchema,
+    depth: &mut i32,
+) -> bool {
+    if *depth > 64 {
+        return true;
+    }
+    *depth += 1;
+    let r = match pattern.pattern_type {
+        RelaxNgPatternType::Text => true,
+        RelaxNgPatternType::Data => rng_validate_datatype_value(pattern.datatype.as_deref(), value),
+        RelaxNgPatternType::Value => pattern.value.as_deref().map_or(true, |v| v == value),
+        RelaxNgPatternType::Empty => value.is_empty(),
+        RelaxNgPatternType::Choice => pattern
+            .children
+            .iter()
+            .any(|c| rng_attr_value_valid(c, value, schema, depth)),
+        RelaxNgPatternType::Sequence
+        | RelaxNgPatternType::Group
+        | RelaxNgPatternType::Interleave
+        | RelaxNgPatternType::OneOrMore => pattern
+            .children
+            .iter()
+            .all(|c| rng_attr_value_valid(c, value, schema, depth)),
+        RelaxNgPatternType::Optional | RelaxNgPatternType::ZeroOrMore => true,
+        RelaxNgPatternType::Ref => {
+            match schema.grammar.lookup(pattern.name.as_deref().unwrap_or("")) {
+                Some(def) => rng_attr_value_valid(def, value, schema, depth),
+                None => true,
+            }
+        }
+        _ => true,
+    };
+    *depth -= 1;
+    r
+}
+
+/// Match a list of patterns (an implicit sequence) over `items`.
+unsafe fn rng_match_seq(
+    pats: &[RelaxNgPattern],
+    items: &[*mut _xmlNode],
+    start: usize,
+    schema: &RelaxNgSchema,
+    ctxt: &mut RelaxNgValidCtxt,
+    mode: RngMatchMode,
+    guard: &mut Vec<(*const RelaxNgPattern, usize)>,
+) -> Vec<usize> {
+    let mut states: Vec<usize> = vec![start];
+    for p in pats {
+        let mut next: Vec<usize> = Vec::new();
+        for &s in &states {
+            for e in rng_match_ends(p, items, s, schema, ctxt, mode, guard) {
+                if !next.contains(&e) {
+                    next.push(e);
+                }
+            }
+        }
+        if next.is_empty() {
+            return next;
+        }
+        states = next;
+    }
+    states
+}
+
+/// Match the body of an `optional`/`zeroOrMore`/`oneOrMore` wrapper. The body
+/// is either a single pattern or an implicit sequence of patterns.
+unsafe fn rng_match_body_ends(
+    p: &RelaxNgPattern,
+    items: &[*mut _xmlNode],
+    start: usize,
+    schema: &RelaxNgSchema,
+    ctxt: &mut RelaxNgValidCtxt,
+    mode: RngMatchMode,
+    guard: &mut Vec<(*const RelaxNgPattern, usize)>,
+) -> Vec<usize> {
+    if p.children.len() == 1 {
+        rng_match_ends(&p.children[0], items, start, schema, ctxt, mode, guard)
+    } else {
+        rng_match_seq(&p.children, items, start, schema, ctxt, mode, guard)
+    }
+}
+
+/// Reachable end offsets for `zeroOrMore(body)` — the reflexive-transitive
+/// closure of the body match, requiring each iteration to consume at least one
+/// item so a nullable body cannot loop forever.
+unsafe fn rng_match_closure(
+    p: &RelaxNgPattern,
+    items: &[*mut _xmlNode],
+    start: usize,
+    schema: &RelaxNgSchema,
+    ctxt: &mut RelaxNgValidCtxt,
+    mode: RngMatchMode,
+    guard: &mut Vec<(*const RelaxNgPattern, usize)>,
+) -> Vec<usize> {
+    let mut result = vec![start];
+    let mut frontier = vec![start];
+    while let Some(s) = frontier.pop() {
+        for e in rng_match_body_ends(p, items, s, schema, ctxt, mode, guard) {
+            if e > s && !result.contains(&e) {
+                result.push(e);
+                frontier.push(e);
+            }
+        }
+    }
+    result.sort_unstable();
+    result.dedup();
+    result
+}
+
+/// Match an `interleave` by backtracking over which child pattern consumes
+/// which items. Memoized on (used-pattern mask, position).
+unsafe fn rng_match_interleave(
+    pats: &[RelaxNgPattern],
+    items: &[*mut _xmlNode],
+    start: usize,
+    schema: &RelaxNgSchema,
+    ctxt: &mut RelaxNgValidCtxt,
+    mode: RngMatchMode,
+    guard: &mut Vec<(*const RelaxNgPattern, usize)>,
+) -> Vec<usize> {
+    let n = pats.len();
+    if n == 0 {
+        return vec![start];
+    }
+    if n > 24 {
+        // Bound the mask; degrade to sequence for pathological grammars.
+        return rng_match_seq(pats, items, start, schema, ctxt, mode, guard);
+    }
+    let full: u32 = if n == 32 { u32::MAX } else { (1u32 << n) - 1 };
+    let mut memo: std::collections::HashMap<(u32, usize), Vec<usize>> =
+        std::collections::HashMap::new();
+    rng_interleave_rec(
+        pats, items, start, 0, full, schema, ctxt, mode, guard, &mut memo,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+unsafe fn rng_interleave_rec(
+    pats: &[RelaxNgPattern],
+    items: &[*mut _xmlNode],
+    i: usize,
+    used: u32,
+    full: u32,
+    schema: &RelaxNgSchema,
+    ctxt: &mut RelaxNgValidCtxt,
+    mode: RngMatchMode,
+    guard: &mut Vec<(*const RelaxNgPattern, usize)>,
+    memo: &mut std::collections::HashMap<(u32, usize), Vec<usize>>,
+) -> Vec<usize> {
+    if used == full {
+        return vec![i];
+    }
+    if let Some(v) = memo.get(&(used, i)) {
+        return v.clone();
+    }
+    let mut out: Vec<usize> = Vec::new();
+    for j in 0..pats.len() {
+        if used & (1u32 << j) != 0 {
+            continue;
+        }
+        for e in rng_match_ends(&pats[j], items, i, schema, ctxt, mode, guard) {
+            if e < i {
+                continue;
+            }
+            for s in rng_interleave_rec(
+                pats,
+                items,
+                e,
+                used | (1u32 << j),
+                full,
+                schema,
+                ctxt,
+                mode,
+                guard,
+                memo,
+            ) {
+                if !out.contains(&s) {
+                    out.push(s);
+                }
+            }
+        }
+    }
+    out.sort_unstable();
+    out.dedup();
+    memo.insert((used, i), out.clone());
+    out
+}
+
+/// Reachable end offsets when matching `pattern` against `items[start..]`.
+///
+/// An end offset `e` means the pattern can match exactly `items[start..e]`.
+/// Empty results mean no match. Errors from speculative branches are the
+/// caller's responsibility to discard.
+unsafe fn rng_match_ends(
+    pattern: &RelaxNgPattern,
+    items: &[*mut _xmlNode],
+    start: usize,
+    schema: &RelaxNgSchema,
+    ctxt: &mut RelaxNgValidCtxt,
+    mode: RngMatchMode,
+    guard: &mut Vec<(*const RelaxNgPattern, usize)>,
+) -> Vec<usize> {
+    if start > items.len() || ctxt.depth >= ctxt.depth_max {
+        return Vec::new();
+    }
+    let key = (pattern as *const RelaxNgPattern, start);
+    if guard.contains(&key) {
+        return Vec::new();
+    }
+    guard.push(key);
+    ctxt.depth += 1;
+
+    let mut out: Vec<usize> = Vec::new();
+    match pattern.pattern_type {
+        RelaxNgPatternType::Element => {
+            if mode == RngMatchMode::Elements {
+                if start < items.len() {
+                    let node = items[start];
+                    if !node.is_null()
+                        && (*node).type_ == XML_ELEMENT_NODE as c_int
+                        && pattern
+                            .name_class
+                            .as_ref()
+                            .map_or(true, |nc| rng_nc_matches_node(nc, node))
+                        && rng_validate_element_pattern(pattern, node, schema, ctxt)
+                    {
+                        out.push(start + 1);
+                    }
+                }
+            } else {
+                // Attributes pass: an element pattern's own attributes belong to
+                // the child element, so it consumes nothing here.
+                out.push(start);
+            }
+        }
+        RelaxNgPatternType::Attribute => {
+            if mode == RngMatchMode::Attributes {
+                if start < items.len() {
+                    let node = items[start];
+                    if !node.is_null()
+                        && (*node).type_ == XML_ATTRIBUTE_NODE as c_int
+                        && pattern
+                            .name_class
+                            .as_ref()
+                            .map_or(true, |nc| rng_nc_matches_node(nc, node))
+                    {
+                        let val = get_node_text(node);
+                        let mut d = 0;
+                        if rng_attr_value_valid(pattern, &val, schema, &mut d) {
+                            out.push(start + 1);
+                        }
+                    }
+                }
+            } else {
+                // Elements pass: attributes are validated separately.
+                out.push(start);
+            }
+        }
+        RelaxNgPatternType::Text
+        | RelaxNgPatternType::Data
+        | RelaxNgPatternType::Value
+        | RelaxNgPatternType::Empty
+        | RelaxNgPatternType::List => out.push(start),
+        RelaxNgPatternType::NotAllowed => {}
+        RelaxNgPatternType::Choice => {
+            for c in &pattern.children {
+                out.extend(rng_match_ends(c, items, start, schema, ctxt, mode, guard));
+            }
+        }
+        RelaxNgPatternType::Sequence | RelaxNgPatternType::Group => {
+            if mode == RngMatchMode::Attributes {
+                out = rng_match_interleave(
+                    &pattern.children,
+                    items,
+                    start,
+                    schema,
+                    ctxt,
+                    mode,
+                    guard,
+                );
+            } else {
+                out = rng_match_seq(&pattern.children, items, start, schema, ctxt, mode, guard);
+            }
+        }
+        RelaxNgPatternType::Interleave => {
+            out = rng_match_interleave(&pattern.children, items, start, schema, ctxt, mode, guard);
+        }
+        RelaxNgPatternType::Optional => {
+            out.push(start);
+            out.extend(rng_match_body_ends(
+                pattern, items, start, schema, ctxt, mode, guard,
+            ));
+        }
+        RelaxNgPatternType::ZeroOrMore => {
+            out = rng_match_closure(pattern, items, start, schema, ctxt, mode, guard);
+        }
+        RelaxNgPatternType::OneOrMore => {
+            let first = rng_match_body_ends(pattern, items, start, schema, ctxt, mode, guard);
+            let mut result: Vec<usize> = Vec::new();
+            let mut frontier: Vec<usize> = Vec::new();
+            for f in first {
+                if !result.contains(&f) {
+                    result.push(f);
+                }
+                if f > start && !frontier.contains(&f) {
+                    frontier.push(f);
+                }
+            }
+            while let Some(s) = frontier.pop() {
+                for e in rng_match_body_ends(pattern, items, s, schema, ctxt, mode, guard) {
+                    if e > s && !result.contains(&e) {
+                        result.push(e);
+                        frontier.push(e);
+                    }
+                }
+            }
+            out = result;
+        }
+        RelaxNgPatternType::Ref => {
+            if let Some(def) = schema.grammar.lookup(pattern.name.as_deref().unwrap_or("")) {
+                out = rng_match_ends(def, items, start, schema, ctxt, mode, guard);
+            }
+        }
+        _ => {
+            // Define / Grammar / Start / Include / ExternalRef: implicit sequence.
+            out = rng_match_seq(&pattern.children, items, start, schema, ctxt, mode, guard);
+        }
+    }
+
+    guard.pop();
+    ctxt.depth -= 1;
+    out.sort_unstable();
+    out.dedup();
+    out
+}
+
+/// The element's character data, concatenated across text/CDATA children.
+unsafe fn rng_element_text(node: *mut _xmlNode) -> String {
+    if node.is_null() {
+        return String::new();
+    }
+    let mut out = String::new();
+    let mut child = (*node).children;
+    while !child.is_null() {
+        let t = (*child).type_;
+        if (t == XML_TEXT_NODE as c_int || t == XML_CDATA_SECTION_NODE as c_int)
+            && !(*child).content.is_null()
+        {
+            let content = (*child).content;
+            let mut len = 0;
+            while *content.add(len) != 0 {
+                len += 1;
+            }
+            out.push_str(&String::from_utf8_lossy(core::slice::from_raw_parts(
+                content, len,
+            )));
+        }
+        child = (*child).next;
+    }
+    out
+}
+
+/// A text-affecting leaf in a content model.
+enum RngTextRule<'a> {
+    /// `<text/>`: any character data is permitted.
+    AnyText,
+    /// A `<data>`/`<value>`/`<list>` leaf constraining the character data.
+    Constrained(&'a RelaxNgPattern),
+}
+
+/// Collect the text-affecting leaves reachable through a content model, WITHOUT
+/// descending into child `<element>` or `<attribute>` patterns (their
+/// character data belongs to the child element / attribute, not this element).
+fn rng_collect_text<'a>(
+    pats: &'a [RelaxNgPattern],
+    schema: &'a RelaxNgSchema,
+    out: &mut Vec<RngTextRule<'a>>,
+    seen: &mut Vec<*const RelaxNgPattern>,
+) {
+    for p in pats {
+        rng_collect_text_one(p, schema, out, seen);
+    }
+}
+
+fn rng_collect_text_one<'a>(
+    p: &'a RelaxNgPattern,
+    schema: &'a RelaxNgSchema,
+    out: &mut Vec<RngTextRule<'a>>,
+    seen: &mut Vec<*const RelaxNgPattern>,
+) {
+    let key = p as *const RelaxNgPattern;
+    if seen.contains(&key) {
+        return;
+    }
+    seen.push(key);
+    match p.pattern_type {
+        RelaxNgPatternType::Text => out.push(RngTextRule::AnyText),
+        RelaxNgPatternType::Data | RelaxNgPatternType::Value | RelaxNgPatternType::List => {
+            out.push(RngTextRule::Constrained(p))
+        }
+        RelaxNgPatternType::Element | RelaxNgPatternType::Attribute => {}
+        RelaxNgPatternType::Ref => {
+            if let Some(d) = schema.grammar.lookup(p.name.as_deref().unwrap_or("")) {
+                rng_collect_text_one(d, schema, out, seen);
+            }
+        }
+        _ => rng_collect_text(&p.children, schema, out, seen),
+    }
+    seen.pop();
+}
+
 /// Run RELAX NG validation of a document against an already-compiled schema
 /// (xmlRelaxNGPtr from xmlRelaxNGParse), collecting the diagnostics WITHOUT
 /// dispatching them to any registered handler. Used by the xmlTextReader
@@ -1545,11 +2008,11 @@ fn rng_validate_element_pattern(
         }
 
         let node_name = get_node_qname(node);
-        let ns_uri = get_node_ns_uri(node);
 
-        // Check if the node name matches the element pattern's name class
+        // Name class check against the LOCAL name (a prefixed document must
+        // match an unprefixed <element name="..."> name class).
         if let Some(ref nc) = pattern.name_class {
-            if !nc.matches(&node_name, ns_uri.as_deref()) {
+            if !rng_nc_matches_node(nc, node) {
                 let pat_name = pattern.name.as_deref().unwrap_or("?");
                 ctxt.record_error(format!(
                     "Element '{}' does not match expected element pattern '{}' at '{}'",
@@ -1562,19 +2025,104 @@ fn rng_validate_element_pattern(
         }
 
         // Push the element name onto the path
-        ctxt.path.push(node_name.clone());
+        ctxt.path.push(get_local_name(node));
 
-        // Validate child patterns against this element's CHILDREN.
-        // UPSTREAM-PARITY (relaxng.c xmlRelaxNGValidateElement): the
-        // content patterns describe the element's children, not the element
-        // itself. The pre-fix code validated them against the element node
-        // directly, so any nested element pattern failed its name match and
-        // every non-empty schema rejected every document (Phase 14 lxml
-        // RelaxNG court).
-        let valid = rng_validate_content(&pattern.children, node, schema, ctxt);
+        // ── attribute pass (order-insensitive, separate from content) ──────
+        let mut attrs: Vec<*mut _xmlNode> = Vec::new();
+        let mut prop = (*node).properties;
+        while !prop.is_null() {
+            attrs.push(prop as *mut _xmlNode);
+            prop = (*prop).next;
+        }
+        let saved_err = ctxt.errors.len();
+        let saved_nb = ctxt.nb_errors;
+        let mut guard_attr: Vec<(*const RelaxNgPattern, usize)> = Vec::new();
+        let attr_ends = rng_match_interleave(
+            &pattern.children,
+            &attrs,
+            0,
+            schema,
+            ctxt,
+            RngMatchMode::Attributes,
+            &mut guard_attr,
+        );
+        let attrs_ok = attr_ends.iter().any(|&e| e == attrs.len());
+        if !attrs_ok {
+            ctxt.errors.truncate(saved_err);
+            ctxt.nb_errors = saved_nb;
+            ctxt.record_error(format!(
+                "Element '{}': attribute content does not match the schema",
+                node_name
+            ));
+        }
+
+        // ── character-data pass ────────────────────────────────────────────
+        let text = rng_element_text(node);
+        let mut text_ok = true;
+        if !text.trim().is_empty() {
+            let mut rules: Vec<RngTextRule> = Vec::new();
+            rng_collect_text(&pattern.children, schema, &mut rules, &mut Vec::new());
+            if rules.iter().any(|r| matches!(r, RngTextRule::AnyText)) {
+                text_ok = true;
+            } else {
+                text_ok = rules.iter().any(|r| match r {
+                    RngTextRule::AnyText => true,
+                    RngTextRule::Constrained(p) => {
+                        let mut d = 0;
+                        rng_attr_value_valid(p, &text, schema, &mut d)
+                    }
+                });
+                if !text_ok {
+                    ctxt.record_error(format!(
+                        "Element '{}': character data is not allowed here",
+                        node_name
+                    ));
+                }
+            }
+        }
+
+        // ── child-element pass ─────────────────────────────────────────────
+        let mut children: Vec<*mut _xmlNode> = Vec::new();
+        let mut child = (*node).children;
+        while !child.is_null() {
+            if (*child).type_ == XML_ELEMENT_NODE as c_int {
+                children.push(child);
+            }
+            child = (*child).next;
+        }
+        let saved_err2 = ctxt.errors.len();
+        let saved_nb2 = ctxt.nb_errors;
+        let mut guard_el: Vec<(*const RelaxNgPattern, usize)> = Vec::new();
+        let ends = rng_match_seq(
+            &pattern.children,
+            &children,
+            0,
+            schema,
+            ctxt,
+            RngMatchMode::Elements,
+            &mut guard_el,
+        );
+        let content_ok = ends.iter().any(|&e| e == children.len());
+        if !content_ok {
+            ctxt.errors.truncate(saved_err2);
+            ctxt.nb_errors = saved_nb2;
+            if children.is_empty() {
+                ctxt.record_error(format!(
+                    "Element '{}': Expecting an element, got nothing",
+                    node_name
+                ));
+            } else {
+                let first = children[0];
+                ctxt.record_error(format!(
+                    "Element '{}': Did not expect element {} there",
+                    node_name,
+                    get_local_name(first)
+                ));
+            }
+        }
 
         ctxt.path.pop();
-        valid
+        attrs_ok && text_ok && content_ok
     }
 }
 
@@ -1591,6 +2139,11 @@ fn rng_validate_element_pattern(
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an _xmlNode or NULL.
+///
+/// Retained for the `rng_validate_pattern` dispatch used by callers that hand
+/// the validator a composite start pattern directly; the element content path
+/// now goes through `rng_match_seq`/`rng_match_interleave`.
+#[allow(dead_code)]
 fn rng_validate_content(
     content: &[RelaxNgPattern],
     node: *mut _xmlNode,

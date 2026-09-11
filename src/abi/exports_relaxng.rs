@@ -975,7 +975,7 @@ pub unsafe extern "C" fn xmlRelaxNGValidatePopElement(
     // Drain the accumulated errors (upstream "release the accumulated errors").
     // SAFETY: ctxt is a live Box<RelaxNgValidCtxt> from the ABI layer.
     let valid = unsafe { &mut *(ctxt as *mut RelaxNgValidCtxt) };
-    let msgs = std::mem::take(&mut valid.errors);
+    let msgs: Vec<String> = std::mem::take(&mut valid.errors);
     valid.nb_errors = 0;
 
     unsafe { dispatch_relaxng_valid_errors(ctxt as usize, &msgs, elem as *mut c_void) };
