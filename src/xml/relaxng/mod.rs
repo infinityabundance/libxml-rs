@@ -730,6 +730,16 @@ unsafe fn rng_parse_doc(doc: *mut _xmlDoc) -> Result<RelaxNgSchema, String> {
             "grammar" => {
                 // Top-level grammar
                 schema.grammar = rng_parse_grammar_node(root_elem, &mut schema, base.as_deref());
+                // UPSTREAM-PARITY (relaxng.c xmlRelaxNGParseGrammar): a
+                // top-level grammar with no <start> pattern is not a usable
+                // RELAX NG schema; upstream reports it and xmlRelaxNGParse
+                // returns NULL (lxml raises RelaxNGParseError).
+                if schema.grammar.start.is_none() {
+                    schema
+                        .errors
+                        .push("Element grammar: Missing start element".to_string());
+                    schema.fatal = true;
+                }
                 Ok(schema)
             }
             "element" | "attribute" | "text" | "choice" | "sequence" | "interleave"
