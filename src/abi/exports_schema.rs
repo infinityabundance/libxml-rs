@@ -724,7 +724,10 @@ fn builtin_type(val_type: c_int) -> *mut XsdType {
 ///
 /// - `ctxt_addr` must be the address of an `XsdValidCtxt` that a caller
 ///   registered state for; otherwise this is a no-op.
-pub(crate) unsafe fn dispatch_valid_errors(ctxt_addr: usize, errors: &[String]) {
+pub(crate) unsafe fn dispatch_valid_errors(
+    ctxt_addr: usize,
+    errors: &[crate::xml::schemas::XsdValidationError],
+) {
     let state = {
         let guard = VALID_STATES.lock();
         guard.get(&ctxt_addr).copied()
@@ -733,7 +736,8 @@ pub(crate) unsafe fn dispatch_valid_errors(ctxt_addr: usize, errors: &[String]) 
     if state.err.is_none() && state.serror.is_none() {
         return;
     }
-    for msg in errors {
+    for err in errors {
+        let msg = &err.message;
         // UPSTREAM-PARITY: upstream schema validity messages end with a
         // newline (xmlSchemaErr -> xmlSchemaVErr with "\n") — PHP's libxml
         // error handler only RAISES messages that carry a trailing newline
@@ -747,20 +751,23 @@ pub(crate) unsafe fn dispatch_valid_errors(ctxt_addr: usize, errors: &[String]) 
         let Ok(cmsg) = CString::new(text.as_str()) else {
             continue;
         };
-        if let Some(err) = state.err {
+        if let Some(err_cb) = state.err {
             // SAFETY: The caller supplied this callback in xmlSchemaSetValidErrors.
-            unsafe { err(state.ctx as *mut c_void, cmsg.as_ptr()) };
+            unsafe { err_cb(state.ctx as *mut c_void, cmsg.as_ptr()) };
         }
         if let Some(serror) = state.serror {
             // SAFETY: The caller supplied this callback in
             // xmlSchemaSetValidStructuredErrors.
             let mut e: _xmlError = unsafe { std::mem::zeroed() };
             e.domain = XML_FROM_SCHEMASV;
-            e.code = 0;
+            e.code = err.code;
             e.message = cmsg.as_ptr() as *mut c_char;
             e.level = xmlErrorLevel::XML_ERR_ERROR as c_int;
             e.file = state.filename as *mut c_char;
             e.line = 0;
+            // UPSTREAM-PARITY: the offending instance node lets consumers
+            // (lxml's _LogEntry.path) compute an XPath location.
+            e.node = err.node as *mut c_void;
             unsafe { serror(state.sctx as *mut c_void, &e) };
         }
     }
@@ -908,8 +915,13 @@ unsafe fn validate_doc_string(ctxt: *mut xmlSchemaValidCtxt, xml: &str) -> c_int
     };
     if doc.is_null() {
         // Mirror upstream xmlSchemaValidateFile: report and bail out with -1.
+        let errs = [crate::xml::schemas::XsdValidationError {
+            code: crate::xml::schemas::XML_SCHEMAV_ELEMENT_CONTENT,
+            node: ptr::null_mut(),
+            message: "Document is not well-formed".to_string(),
+        }];
         unsafe {
-            dispatch_valid_errors(ctxt as usize, &["Document is not well-formed".to_string()]);
+            dispatch_valid_errors(ctxt as usize, &errs);
         }
         return -1;
     }
@@ -2717,8 +2729,13 @@ pub unsafe extern "C" fn xmlSchemaValidateFile(
     // SAFETY: xmlReadFile requires a valid C string; options is forwarded.
     let doc = unsafe { crate::abi::exports_xml2::xmlReadFile(filename, ptr::null(), options) };
     if doc.is_null() {
+        let errs = [crate::xml::schemas::XsdValidationError {
+            code: crate::xml::schemas::XML_SCHEMAV_ELEMENT_CONTENT,
+            node: ptr::null_mut(),
+            message: "Failed to parse document".to_string(),
+        }];
         unsafe {
-            dispatch_valid_errors(ctxt as usize, &["Failed to parse document".to_string()]);
+            dispatch_valid_errors(ctxt as usize, &errs);
         }
         return -1;
     }
@@ -2777,10 +2794,18 @@ pub unsafe extern "C" fn xmlSchemaValidateOneElement(
         Err(errors) => {
             // Record the errors on the context so xmlSchemaGetValidErrors /
             // xmlSchemaIsValid see this run's state.
-            valid_ctxt.errors = errors.clone();
-            valid_ctxt.nb_errors = errors.len() as i32;
-            unsafe { dispatch_valid_errors(ctxt as usize, &errors) };
-            errors.len() as c_int
+            valid_ctxt.errors = errors
+                .iter()
+                .map(|m| crate::xml::schemas::XsdValidationError {
+                    code: crate::xml::schemas::XML_SCHEMAV_ELEMENT_CONTENT,
+                    node: ptr::null_mut(),
+                    message: m.clone(),
+                })
+                .collect();
+            valid_ctxt.nb_errors = valid_ctxt.errors.len() as i32;
+            let errs = valid_ctxt.errors.clone();
+            unsafe { dispatch_valid_errors(ctxt as usize, &errs) };
+            errs.len() as c_int
         }
     }
 }

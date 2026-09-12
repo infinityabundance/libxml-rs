@@ -422,14 +422,35 @@ impl Default for XsdSchema {
 pub struct XsdValidCtxt {
     /// The schema being validated against.
     pub schema: Option<XsdSchema>,
-    /// Error messages collected during validation.
-    pub errors: Vec<String>,
+    /// Structured error diagnostics collected during validation.
+    pub errors: Vec<XsdValidationError>,
     /// The total number of validation errors recorded.
     pub nb_errors: i32,
     /// Whether missing attributes with a schema `default`/`fixed` value are
     /// injected into the instance (xmlSchemaSetValidOptions with
     /// XML_SCHEMA_VAL_VC_I_CREATE, php's LIBXML_SCHEMA_CREATE).
     pub create_defaults: bool,
+}
+
+/// Upstream `XML_SCHEMAV_ELEMENT_CONTENT` (libxml2's error code for a
+/// content-model violation). The internal engine reports content-model and
+/// datatype diagnostics under this code; lxml's `error_log.filter_types`
+/// matches on it.
+pub const XML_SCHEMAV_ELEMENT_CONTENT: i32 = 1871;
+
+/// A structured schema-validation diagnostic.
+///
+/// Carries the upstream `XML_SCHEMAV_*` error code and the instance node the
+/// diagnostic refers to so consumers (lxml's `_ErrorLog`) can populate
+/// `error.type` and `error.path` the way upstream does.
+#[derive(Debug, Clone)]
+pub struct XsdValidationError {
+    /// Upstream `XML_SCHEMAV_*` error code.
+    pub code: i32,
+    /// The instance node the diagnostic refers to (NULL when document-level).
+    pub node: *mut _xmlNode,
+    /// Human-readable message, without a trailing newline.
+    pub message: String,
 }
 
 impl XsdValidCtxt {
@@ -441,6 +462,16 @@ impl XsdValidCtxt {
             nb_errors: 0,
             create_defaults: false,
         }
+    }
+
+    /// Record a content-model diagnostic against `node`.
+    pub fn push_error(&mut self, node: *mut _xmlNode, message: String) {
+        self.errors.push(XsdValidationError {
+            code: XML_SCHEMAV_ELEMENT_CONTENT,
+            node,
+            message,
+        });
+        self.nb_errors += 1;
     }
 }
 
@@ -801,6 +832,31 @@ unsafe fn xsd_parse_schema_doc(doc: *mut _xmlDoc) -> Result<XsdSchema, String> {
 
         if schema_node.is_null() {
             return Err("Schema document root is not <schema>".to_string());
+        }
+
+        // UPSTREAM-PARITY (xmlschemas.c xmlSchemaParse): the <schema> element's
+        // content model admits only components in the XSD namespace. A child
+        // in no namespace (e.g. a bare <element> instead of <xsd:element>) or
+        // in a foreign namespace makes the schema content invalid; upstream
+        // raises
+        //   Element '{...}schema': The content is not valid. Expected is ...
+        // and xmlSchemaParse returns NULL (lxml's XMLSchemaParseError).
+        const XSD_NS: &str = "http://www.w3.org/2001/XMLSchema";
+        let mut child = (*schema_node).children;
+        while !child.is_null() {
+            if (*child).type_ == XML_ELEMENT_NODE as c_int {
+                let ns = get_node_ns_href(child);
+                if ns.as_deref() != Some(XSD_NS) {
+                    return Err(format!(
+                        "Element '{{{}}}schema': The content is not valid. Expected is \
+                         ((include | import | redefine | annotation)*, \
+                         (((simpleType | complexType | group | attributeGroup) | \
+                         element | attribute | notation), annotation*)*).",
+                        XSD_NS
+                    ));
+                }
+            }
+            child = (*child).next;
         }
 
         Ok(xsd_parse_schema_node(schema_node))
@@ -2221,7 +2277,7 @@ pub fn xsd_validate(schema: &XsdSchema, doc: &str) -> Result<(), Vec<String>> {
     if result {
         Ok(())
     } else {
-        Err(ctxt.errors)
+        Err(ctxt.errors.iter().map(|e| e.message.clone()).collect())
     }
 }
 
@@ -2234,8 +2290,7 @@ unsafe fn xsd_validate_doc(schema: &XsdSchema, doc: *mut _xmlDoc, ctxt: &mut Xsd
     unsafe {
         let root = (*doc).children;
         if root.is_null() {
-            ctxt.errors.push("Document has no root element".to_string());
-            ctxt.nb_errors += 1;
+            ctxt.push_error(ptr::null_mut(), "Document has no root element".to_string());
             return false;
         }
 
@@ -2246,8 +2301,7 @@ unsafe fn xsd_validate_doc(schema: &XsdSchema, doc: *mut _xmlDoc, ctxt: &mut Xsd
         }
 
         if root_elem.is_null() {
-            ctxt.errors.push("Document has no root element".to_string());
-            ctxt.nb_errors += 1;
+            ctxt.push_error(ptr::null_mut(), "Document has no root element".to_string());
             return false;
         }
 
@@ -2276,11 +2330,13 @@ unsafe fn xsd_validate_doc(schema: &XsdSchema, doc: *mut _xmlDoc, ctxt: &mut Xsd
             // No matching global element declaration for the validation
             // root: fail with the exact upstream diagnostic
             // (DOMDocument_schemaValidate_error2 / reader schema errors).
-            ctxt.errors.push(format!(
-                "Element '{}': No matching global declaration available for the validation root.",
-                root_name
-            ));
-            ctxt.nb_errors += 1;
+            ctxt.push_error(
+                root_elem,
+                format!(
+                    "Element '{}': No matching global declaration available for the validation root.",
+                    root_name
+                ),
+            );
             false
         }
     }
@@ -2310,7 +2366,10 @@ pub(crate) unsafe fn xsd_validate_doc_compiled(
         let mut ctxt = XsdValidCtxt::new();
         ctxt.create_defaults = create_defaults;
         let valid = xsd_validate_doc(schema_ref, doc, &mut ctxt);
-        (valid, ctxt.errors)
+        (
+            valid,
+            ctxt.errors.iter().map(|e| e.message.clone()).collect(),
+        )
     }
 }
 
@@ -2365,11 +2424,13 @@ fn xsd_validate_element(
         // declaration only when the schema uses qualified element form.
         if let Some(ref comp_name) = component.name {
             if comp_name != &node_local || node_ns.as_deref() != decl_ns.as_deref() {
-                ctxt.errors.push(format!(
-                    "Element '{}' does not match expected '{}'",
-                    node_name, comp_name
-                ));
-                ctxt.nb_errors += 1;
+                ctxt.push_error(
+                    node,
+                    format!(
+                        "Element '{}' does not match expected '{}'",
+                        node_name, comp_name
+                    ),
+                );
                 return false;
             }
         }
@@ -2389,11 +2450,13 @@ fn xsd_validate_element(
                     let text = get_node_text(node);
                     if let Some(ref dt) = tc.datatype {
                         if !xsd_validate_datatype(dt, &text, &tc.facets) {
-                            ctxt.errors.push(format!(
-                                "Element '{}' has invalid value '{}' for type '{:?}'",
-                                node_name, text, dt
-                            ));
-                            ctxt.nb_errors += 1;
+                            ctxt.push_error(
+                                node,
+                                format!(
+                                    "Element '{}' has invalid value '{}' for type '{:?}'",
+                                    node_name, text, dt
+                                ),
+                            );
                             valid = false;
                         }
                     }
@@ -2404,11 +2467,13 @@ fn xsd_validate_element(
             // Direct datatype on the element (simple content)
             let text = get_node_text(node);
             if !xsd_validate_datatype(dt, &text, &component.facets) {
-                ctxt.errors.push(format!(
-                    "Element '{}' has invalid value '{}' for type '{:?}'",
-                    node_name, text, dt
-                ));
-                ctxt.nb_errors += 1;
+                ctxt.push_error(
+                    node,
+                    format!(
+                        "Element '{}' has invalid value '{}' for type '{:?}'",
+                        node_name, text, dt
+                    ),
+                );
                 valid = false;
             }
         } else if let Some(ref base_name) = component.base {
@@ -2437,11 +2502,13 @@ fn xsd_validate_element(
                         let text = get_node_text(node);
                         if let Some(ref dt) = named.datatype {
                             if !xsd_validate_datatype(dt, &text, &named.facets) {
-                                ctxt.errors.push(format!(
-                                    "Element '{}' has invalid value '{}' for type '{}'",
-                                    node_name, text, base_name
-                                ));
-                                ctxt.nb_errors += 1;
+                                ctxt.push_error(
+                                    node,
+                                    format!(
+                                        "Element '{}' has invalid value '{}' for type '{}'",
+                                        node_name, text, base_name
+                                    ),
+                                );
                                 valid = false;
                             }
                         }
@@ -2588,88 +2655,150 @@ pub fn xsd_validate_model_group(
 
         match component.component_type {
             XsdComponentType::Sequence => {
-                // Validate in-order
+                // Validate in-order. A model group's OWN minOccurs/maxOccurs
+                // multiplies its content: the default 1..1 is a single pass,
+                // while minOccurs="4" maxOccurs="4" makes the whole sequence
+                // repeat. Verified against libxml2 2.15.3: a
+                // <sequence minOccurs="4" maxOccurs="4"><element name="b"/>
+                // </sequence> accepts exactly four <b/> children.
+                let gmin = component.min_occurs.max(0);
+                let gmax = component.max_occurs;
                 let mut child_idx = 0;
                 let mut part_counts: Vec<i32> = vec![0; component.children.len()];
-                for (k, part) in component.children.iter().enumerate() {
-                    let min = part.min_occurs;
-                    let max = part.max_occurs;
-                    let match_name = part.name.as_deref().unwrap_or("");
-                    let match_ref = part.ref_name.as_deref().unwrap_or("");
+                let mut reps: i32 = 0;
+                let mut ended_incomplete = false;
+                let mut missing_at: Option<usize> = None;
 
-                    let mut count = 0;
-                    while child_idx < child_nodes.len() && (max == -1 || count < max) {
-                        let child_node = child_nodes[child_idx];
-                        let child_name = get_node_qname(child_node);
+                while gmax == -1 || reps < gmax {
+                    if child_idx >= child_nodes.len() {
+                        break;
+                    }
+                    let start_idx = child_idx;
+                    let mut pass_complete = true;
 
-                        if part.component_type == XsdComponentType::Any
-                            || (!match_name.is_empty() && child_name == match_name)
-                            || (!match_ref.is_empty() && child_name == match_ref)
-                        {
-                            // UPSTREAM-PARITY (xmlschemas.c
-                            // xmlSchemaValidatorPopElem): every matched
-                            // child is checked against its type; a bad value
-                            // raises "Element '%s': '%s' is not a valid value
-                            // of the atomic type '%s'." BEFORE the parent's
-                            // content model is checked.
-                            if let Some(ref dt) = part.datatype {
-                                let text = get_node_text(child_node);
-                                if !xsd_validate_datatype(dt, &text, &part.facets) {
-                                    let type_name = datatype_kind_qname(dt);
-                                    ctxt.errors.push(format!(
-                                        "Element '{}': '{}' is not a valid value of the atomic type '{}'.",
-                                        child_name, text, type_name
-                                    ));
-                                    ctxt.nb_errors += 1;
-                                    valid = false;
-                                }
-                            }
-                            // UPSTREAM-PARITY: a matched child that itself
-                            // carries a named type reference is validated
-                            // recursively (e.g. <shipTo type="USAddress">
-                            // against the USAddress content model), so a
-                            // missing required sub-child is reported.
-                            if part.component_type == XsdComponentType::Element
-                                && (part.datatype.is_none())
-                                && (!part.children.is_empty() || part.base.is_some())
+                    for (k, part) in component.children.iter().enumerate() {
+                        let min = part.min_occurs;
+                        let max = part.max_occurs;
+                        let match_name = part.name.as_deref().unwrap_or("");
+                        let match_ref = part.ref_name.as_deref().unwrap_or("");
+
+                        let mut count = 0;
+                        while child_idx < child_nodes.len() && (max == -1 || count < max) {
+                            let child_node = child_nodes[child_idx];
+                            let child_name = get_node_qname(child_node);
+
+                            if part.component_type == XsdComponentType::Any
+                                || (!match_name.is_empty() && child_name == match_name)
+                                || (!match_ref.is_empty() && child_name == match_ref)
                             {
-                                valid &= xsd_validate_element(part, child_node, schema, ctxt);
+                                // UPSTREAM-PARITY (xmlschemas.c
+                                // xmlSchemaValidatorPopElem): every matched
+                                // child is checked against its type; a bad value
+                                // raises "Element '%s': '%s' is not a valid value
+                                // of the atomic type '%s'." BEFORE the parent's
+                                // content model is checked.
+                                if let Some(ref dt) = part.datatype {
+                                    let text = get_node_text(child_node);
+                                    if !xsd_validate_datatype(dt, &text, &part.facets) {
+                                        let type_name = datatype_kind_qname(dt);
+                                        ctxt.push_error(
+                                            child_node,
+                                            format!(
+                                                "Element '{}': '{}' is not a valid value of the atomic type '{}'.",
+                                                child_name, text, type_name
+                                            ),
+                                        );
+                                        valid = false;
+                                    }
+                                }
+                                // UPSTREAM-PARITY: a matched child that itself
+                                // carries a named type reference is validated
+                                // recursively (e.g. <shipTo type="USAddress">
+                                // against the USAddress content model), so a
+                                // missing required sub-child is reported.
+                                if part.component_type == XsdComponentType::Element
+                                    && (part.datatype.is_none())
+                                    && (!part.children.is_empty() || part.base.is_some())
+                                {
+                                    valid &= xsd_validate_element(part, child_node, schema, ctxt);
+                                }
+                                count += 1;
+                                child_idx += 1;
+                            } else if count >= min {
+                                break;
+                            } else {
+                                // UPSTREAM-PARITY (xmlschemas.c
+                                // xmlSchemaValidateChildElem): on the first
+                                // content-model mismatch the offending child is
+                                // reported once and the element's content is
+                                // marked BAD — downstream parts are NOT
+                                // validated (no cascading "missing child" /
+                                // "unexpected extra" errors), matching the
+                                // oracle's single-error-per-address behavior.
+                                ctxt.push_error(
+                                    child_node,
+                                    format!(
+                                        "Element '{}': This element is not expected. Expected is ( {} ).",
+                                        child_name, match_name
+                                    ),
+                                );
+                                valid = false;
+                                content_bad = true;
+                                break;
                             }
-                            count += 1;
-                            child_idx += 1;
-                        } else if count >= min {
+                        }
+                        part_counts[k] += count;
+                        if content_bad {
                             break;
-                        } else {
-                            // UPSTREAM-PARITY (xmlschemas.c
-                            // xmlSchemaValidateChildElem): on the first
-                            // content-model mismatch the offending child is
-                            // reported once and the element's content is
-                            // marked BAD — downstream parts are NOT
-                            // validated (no cascading "missing child" /
-                            // "unexpected extra" errors), matching the
-                            // oracle's single-error-per-address behavior.
-                            ctxt.errors.push(format!(
-                                "Element '{}': This element is not expected. Expected is ( {} ).",
-                                child_name, match_name
-                            ));
-                            ctxt.nb_errors += 1;
-                            valid = false;
-                            content_bad = true;
+                        }
+                        if count < min {
+                            // Not enough of this part to complete the
+                            // repetition. The error itself is emitted once,
+                            // after the loop, so that repeated passes do not
+                            // stack diagnostics (upstream reports a single
+                            // error per address).
+                            pass_complete = false;
+                            ended_incomplete = true;
+                            if missing_at.is_none() {
+                                missing_at = Some(k);
+                            }
                             break;
                         }
                     }
-                    part_counts[k] = count;
+
                     if content_bad {
                         break;
                     }
+                    if child_idx == start_idx {
+                        // No progress in this repetition: stop rather than spin.
+                        break;
+                    }
+                    if !pass_complete {
+                        break;
+                    }
+                    reps += 1;
+                }
 
-                    if count < min {
+                if !content_bad {
+                    if !ended_incomplete && reps >= gmin && child_idx < child_nodes.len() {
+                        // UPSTREAM-PARITY: children left over once the
+                        // automaton is satisfied are reported with the bare
+                        // "This element is not expected." form (no
+                        // "Expected is (...)" clause).
+                        let extra = get_node_qname(child_nodes[child_idx]);
+                        ctxt.push_error(
+                            child_nodes[child_idx],
+                            format!("Element '{}': This element is not expected.", extra),
+                        );
+                        valid = false;
+                    } else if ended_incomplete || reps < gmin {
                         // UPSTREAM-PARITY (xmlschemas.c
                         // xmlSchemaComplexTypeErr): the missing-child error
                         // lists the automaton's still-expected particles —
                         // for a sequence, every part up to and including the
                         // failed one with remaining capacity (an unbounded or
                         // not-yet-saturated earlier part can still appear).
+                        let k = missing_at.unwrap_or(0);
                         let mut expected: Vec<String> = Vec::new();
                         for (j, p) in component.children.iter().enumerate().take(k + 1) {
                             let name = p.name.as_deref().unwrap_or("");
@@ -2687,39 +2816,23 @@ pub fn xsd_validate_model_group(
                             }
                         }
                         let node_name = get_node_qname(node);
-                        if expected.len() > 1 {
-                            ctxt.errors.push(format!(
+                        let msg = if expected.len() > 1 {
+                            format!(
                                 "Element '{}': Missing child element(s). Expected is one of ( {} ).",
                                 node_name,
                                 expected.join(", ")
-                            ));
+                            )
                         } else if expected.len() == 1 {
-                            ctxt.errors.push(format!(
+                            format!(
                                 "Element '{}': Missing child element(s). Expected is ( {} ).",
                                 node_name, expected[0]
-                            ));
+                            )
                         } else {
-                            ctxt.errors.push(format!(
-                                "Element '{}': Missing child element(s).",
-                                node_name
-                            ));
-                        }
-                        ctxt.nb_errors += 1;
+                            format!("Element '{}': Missing child element(s).", node_name)
+                        };
+                        ctxt.push_error(node, msg);
                         valid = false;
                     }
-                }
-
-                // Check for unexpected extra children
-                if content_bad {
-                    // Content already reported as bad — do not stack an
-                    // "unexpected extra" error on top (upstream stops once
-                    // BAD_CONTENT is set).
-                } else if child_idx < child_nodes.len() {
-                    let extra = get_node_qname(child_nodes[child_idx]);
-                    ctxt.errors
-                        .push(format!("Unexpected element '{}' in sequence", extra));
-                    ctxt.nb_errors += 1;
-                    valid = false;
                 }
             }
             XsdComponentType::Choice => {
@@ -2741,9 +2854,10 @@ pub fn xsd_validate_model_group(
                         }
                     }
                     if !matched {
-                        ctxt.errors
-                            .push(format!("Element '{}' is not valid in choice", child_name));
-                        ctxt.nb_errors += 1;
+                        ctxt.push_error(
+                            *child_node,
+                            format!("Element '{}' is not valid in choice", child_name),
+                        );
                         valid = false;
                     }
                     matched = false; // Reset for next child
@@ -2762,11 +2876,10 @@ pub fn xsd_validate_model_group(
                         }
                     }
                     if !matched {
-                        ctxt.errors.push(format!(
-                            "Element '{}' is not valid in all group",
-                            child_name
-                        ));
-                        ctxt.nb_errors += 1;
+                        ctxt.push_error(
+                            *child_node,
+                            format!("Element '{}' is not valid in all group", child_name),
+                        );
                         valid = false;
                     }
                 }
@@ -2814,11 +2927,13 @@ fn xsd_validate_restriction_extension(
             let text = get_node_text(node);
             if !xsd_validate_datatype(dt, &text, &component.facets) {
                 let node_name = get_node_qname(node);
-                ctxt.errors.push(format!(
-                    "Element '{}' has invalid value '{}' for type '{:?}'",
-                    node_name, text, dt
-                ));
-                ctxt.nb_errors += 1;
+                ctxt.push_error(
+                    node,
+                    format!(
+                        "Element '{}' has invalid value '{}' for type '{:?}'",
+                        node_name, text, dt
+                    ),
+                );
                 valid = false;
             }
         }
@@ -2854,11 +2969,13 @@ fn xsd_validate_attribute(
                 // Validate attribute value against its datatype
                 if let Some(ref dt) = component.datatype {
                     if !xsd_validate_datatype(dt, val, &component.facets) {
-                        ctxt.errors.push(format!(
-                            "Attribute '{}' has invalid value '{}' for type '{:?}'",
-                            attr_name, val, dt
-                        ));
-                        ctxt.nb_errors += 1;
+                        ctxt.push_error(
+                            node,
+                            format!(
+                                "Attribute '{}' has invalid value '{}' for type '{:?}'",
+                                attr_name, val, dt
+                            ),
+                        );
                         return false;
                     }
                 }
@@ -2866,9 +2983,10 @@ fn xsd_validate_attribute(
             }
             None => {
                 if is_required {
-                    ctxt.errors
-                        .push(format!("Required attribute '{}' is missing", attr_name));
-                    ctxt.nb_errors += 1;
+                    ctxt.push_error(
+                        node,
+                        format!("Required attribute '{}' is missing", attr_name),
+                    );
                     false
                 } else {
                     true
@@ -2949,11 +3067,13 @@ fn xsd_validate_element_inline(
                                 let text = get_node_text(child);
                                 if let Some(ref dt) = tc.datatype {
                                     if !xsd_validate_datatype(dt, &text, &tc.facets) {
-                                        ctxt.errors.push(format!(
-                                            "Element '{}' has invalid value '{}'",
-                                            child_name, text
-                                        ));
-                                        ctxt.nb_errors += 1;
+                                        ctxt.push_error(
+                                            child,
+                                            format!(
+                                                "Element '{}' has invalid value '{}'",
+                                                child_name, text
+                                            ),
+                                        );
                                         valid = false;
                                     }
                                 }
@@ -2980,11 +3100,13 @@ fn xsd_validate_element_inline(
                                     let text = get_node_text(child);
                                     if let Some(ref dt) = named.datatype {
                                         if !xsd_validate_datatype(dt, &text, &named.facets) {
-                                            ctxt.errors.push(format!(
-                                                "Element '{}' has invalid value '{}'",
-                                                child_name, text
-                                            ));
-                                            ctxt.nb_errors += 1;
+                                            ctxt.push_error(
+                                                child,
+                                                format!(
+                                                    "Element '{}' has invalid value '{}'",
+                                                    child_name, text
+                                                ),
+                                            );
                                             valid = false;
                                         }
                                     }
@@ -4724,12 +4846,13 @@ mod tests {
         assert_eq!(ctxt.errors.len(), 1);
         assert!(
             ctxt.errors[0]
+                .message
                 .contains("No matching global declaration available for the validation root."),
             "unexpected diagnostic: {:?}",
             ctxt.errors[0]
         );
         assert!(
-            ctxt.errors[0].contains("'root'"),
+            ctxt.errors[0].message.contains("'root'"),
             "root name missing: {:?}",
             ctxt.errors[0]
         );
