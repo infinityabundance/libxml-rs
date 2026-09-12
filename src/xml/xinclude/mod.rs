@@ -468,11 +468,31 @@ unsafe fn process_single_include(
         return unsafe { apply_fallback(include_node, doc, visited) };
     }
 
-    let href_str = unsafe { xmlstr_to_bytes(href) };
+    // Resolve a relative href against the including document's URL. Upstream
+    // xinclude.c xmlXIncludeLoadDoc builds `xmlBuildURI(href, ctxt->base)`;
+    // reading the raw attribute failed for every relative href
+    // (`include/test_xinclude.xml` -> "../test.xml"), so the include was left
+    // unexpanded and xmlXIncludeProcess returned 0.
+    let resolved_href = if !(*doc).URL.is_null() {
+        unsafe {
+            crate::abi::exports_uri::xmlBuildURI(href as *const c_char, (*doc).URL as *const c_char)
+        }
+    } else {
+        ptr::null_mut()
+    };
+    let effective_href: *mut xmlChar = if resolved_href.is_null() {
+        href
+    } else {
+        resolved_href
+    };
+    let href_str = unsafe { xmlstr_to_bytes(effective_href) };
 
     // Check for circular reference.
     if visited.iter().any(|v| v.as_slice() == href_str) {
         allocator::xmlFreeImpl(href as *mut c_void);
+        if !resolved_href.is_null() {
+            allocator::xmlFreeImpl(resolved_href as *mut c_void);
+        }
         if !xpointer_attr.is_null() {
             allocator::xmlFreeImpl(xpointer_attr as *mut c_void);
         }
@@ -512,9 +532,9 @@ unsafe fn process_single_include(
     visited.push(href_str.to_vec());
 
     let result = if is_text_mode {
-        unsafe { process_text_include(include_node, doc, href, accept_attr, visited) }
+        unsafe { process_text_include(include_node, doc, effective_href, accept_attr, visited) }
     } else {
-        unsafe { process_xml_include(include_node, doc, href, xpointer_attr, visited) }
+        unsafe { process_xml_include(include_node, doc, effective_href, xpointer_attr, visited) }
     };
 
     // Remove this URL from visited.
@@ -522,6 +542,9 @@ unsafe fn process_single_include(
 
     // Free allocated attribute strings.
     allocator::xmlFreeImpl(href as *mut c_void);
+    if !resolved_href.is_null() {
+        allocator::xmlFreeImpl(resolved_href as *mut c_void);
+    }
 
     if !parse_attr.is_null() {
         allocator::xmlFreeImpl(parse_attr as *mut c_void);

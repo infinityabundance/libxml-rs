@@ -1,0 +1,12 @@
+=== CAND ===
+xinclude_rc=1
+<doc>
+ <foo>
+ <a>
+  <b>
+=== ORACLE ===
+xinclude_rc=1
+<doc>
+ <foo>
+ <a>
+  <b>

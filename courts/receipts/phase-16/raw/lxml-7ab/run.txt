@@ -1,0 +1,28 @@
+candidate_sha=b7c02ef4abd35ef8b4c28f11d6a9aa9bc7d9eec4
+evidence_kind=root-cause fix (xmlXIncludeProcess left relative hrefs unresolved)
+release_libxml2_sha256=b6803a6cffd82362e19e86ff0795eba7baddbb3a9fcfe37539b028bab20cf3f5
+debug_libxml2_sha256=56a9dc1bcee99cc641c870ea900478a46d211835a4b865ac8279228f5e12ec68
+host=libxml-rs/phase14-debian:1 (container lxml-cand and an ephemeral docker run for the probe)
+oracle_libxml2=2.15.3
+probe=xiprobe.c (xmlXIncludeProcess on include/test_xinclude.xml, then dumps the tree)
+fixture=the lxml test pair: include/test_xinclude.xml (references ../test.xml)
+probe_result=candidate and oracle now byte-identical: xinclude_rc=1 and the
+  <xi:include> is replaced by the included <a><b></b></a>; before the fix the
+  candidate returned 0 and left <include> in place
+root_cause=process_single_include read the raw href attribute with io_read_file,
+  never building it against the including document's URL. Upstream
+  xinclude.c xmlXIncludeLoadDoc uses xmlBuildURI(href, ctxt->base), so every
+  relative href failed to open and the include fell through to fallback.
+lxml_suite_command=cd /src/lxml && python3 test.py -u -v
+lxml_suite_previous=100 failures / 38 errors = 138
+lxml_suite_now=99 failures / 38 errors = 137
+lxml_suite_fixed=test_xinclude (lxml.tests.test_etree.ETreeXIncludeTestCase)
+lxml_suite_regressions=(none)
+remaining=the resolver-driven XInclude cases (test_xinclude_text,
+  test_xinclude_resolver x2, test_xinclude_resolver_recursive) still fail: they
+  install an etree.Resolver and expect the include fetch to go through the
+  document's resolver rather than the default file loader. That is the next
+  XInclude root cause.
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+tree_clean=yes

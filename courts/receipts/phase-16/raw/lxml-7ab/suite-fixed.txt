@@ -1,0 +1,1 @@
+test_xinclude (lxml.tests.test_etree.ETreeXIncludeTestCase.test_xinclude)
