@@ -2335,6 +2335,21 @@ impl XmlParser {
                 };
                 Some((etype, content))
             } else {
+                // UPSTREAM-PARITY (parser.c xmlParseElementDecl): a content
+                // model that does not start with EMPTY, ANY or '(' is a fatal
+                // error ("xmlParseElementDecl: 'EMPTY', 'ANY' or '(' expected").
+                // Previously the declaration was silently dropped, so
+                // <!ELEMENT b HONKEY> compiled instead of raising DTDParseError.
+                self.raise_error_now(
+                    XML_FROM_PARSER,
+                    XML_ERR_ELEMCONTENT_NOT_STARTED,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "xmlParseElementDecl: 'EMPTY', 'ANY' or '(' expected\n".to_string(),
+                    Some(name.to_vec()),
+                    None,
+                    None,
+                    0,
+                );
                 None
             };
         unsafe {

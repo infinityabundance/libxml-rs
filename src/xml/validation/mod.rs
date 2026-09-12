@@ -1256,7 +1256,16 @@ pub unsafe fn validate_element(
 
                     // ID/IDREF specific validation
                     if atype == XML_ATTRIBUTE_ID as c_int {
-                        if validate_id(ctxt, doc, elem, attr_value) == 0 {
+                        // UPSTREAM-PARITY (valid.c xmlValidateOneAttribute):
+                        // an ID attribute is registered with xmlAddID, which
+                        // stores an xmlID in doc->ids and reports
+                        // "ID %s already defined" on a duplicate. The
+                        // pre-fix path called a candidate-only validate_id
+                        // that stored the element NODE under the value, which
+                        // free_id_table then misinterpreted as an xmlID
+                        // (segfault) and which disagreed with add_id's
+                        // duplicate detection.
+                        if add_id(ctxt, doc, attr_value, attr_prop).is_null() {
                             valid = 0;
                         }
                     } else if atype == XML_ATTRIBUTE_IDREF as c_int {
@@ -1560,15 +1569,19 @@ pub unsafe fn validate_root(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDoc) -> c_in
             return 0;
         }
 
-        // Get the DTD
-        let dtd = get_valid_dtd(doc);
+        // UPSTREAM-PARITY (valid.c xmlValidateRoot): the root-name check only
+        // consults the document's INTERNAL subset (`doc->intSubset`), and only
+        // when it has a name. During xmlValidateDtd the internal subset is
+        // NULL (the passed DTD is substituted as the external subset), so the
+        // check is skipped — matching an oracle that reports no root-name
+        // error for post-validation against a separate DTD.
+        let dtd = d.intSubset;
         if dtd.is_null() {
-            // No DTD — nothing to validate against
             return 1;
         }
 
         // UPSTREAM-PARITY: libxml2 checks that the root element name matches
-        // the DTD's name (the DOCTYPE name).
+        // the internal subset's DOCTYPE name.
         let dtd_ref = &*dtd;
         if !dtd_ref.name.is_null() && string::xml_strcmp((*root).name, dtd_ref.name) != 0 {
             let root_str = string::xmlstr_to_string((*root).name);
@@ -1871,13 +1884,26 @@ pub unsafe fn validate_dtd(
             );
         }
 
-        // UPSTREAM-PARITY (valid.c xmlValidateDtd): beyond DTD-internal
-        // consistency, xmlValidateDtd walks every element of the document and
-        // validates it against the DTD (content model, attributes, required
-        // attributes, ID/IDREF). The doc is passed explicitly so an external
-        // subset can validate a document it wasn't loaded from.
+        // UPSTREAM-PARITY (valid.c xmlValidateDtd): substitute the passed DTD
+        // for the document's own subsets while validating, and clear the
+        // id/ref tables so ID uniqueness is re-derived from this walk. The
+        // doc is passed explicitly so a DTD loaded separately can validate a
+        // document that has none (or a different one).
         if !doc.is_null() {
-            let d = &*doc;
+            let d = unsafe { &mut *doc };
+            let old_ext = d.extSubset;
+            let old_int = d.intSubset;
+            d.extSubset = dtd;
+            d.intSubset = ptr::null_mut();
+            if !d.ids.is_null() {
+                free_id_table(d.ids as *mut hash::HashTable);
+                d.ids = ptr::null_mut();
+            }
+            if !d.refs.is_null() {
+                free_ref_table(d.refs as *mut hash::HashTable);
+                d.refs = ptr::null_mut();
+            }
+
             let mut root = d.children;
             while !root.is_null() {
                 if (*root).type_ == XML_ELEMENT_NODE as c_int {
@@ -1885,13 +1911,27 @@ pub unsafe fn validate_dtd(
                 }
                 root = (*root).next;
             }
-            if !root.is_null() {
+
+            let mut ret = validate_root(ctxt, doc);
+            if ret != 0 && !root.is_null() {
                 // validate_element recurses; a 0 return marks the doc invalid
                 // but all errors are still reported via vctxt_error handlers.
-                let el_valid = validate_element(ctxt, doc, root);
-                if el_valid == 0 {
-                    c.valid = 0;
-                }
+                ret = validate_element(ctxt, doc, root);
+                ret &= validate_document_final(ctxt, doc);
+            }
+            if ret == 0 {
+                c.valid = 0;
+            }
+
+            d.extSubset = old_ext;
+            d.intSubset = old_int;
+            if !d.ids.is_null() {
+                free_id_table(d.ids as *mut hash::HashTable);
+                d.ids = ptr::null_mut();
+            }
+            if !d.refs.is_null() {
+                free_ref_table(d.refs as *mut hash::HashTable);
+                d.refs = ptr::null_mut();
             }
         }
 

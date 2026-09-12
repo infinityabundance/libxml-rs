@@ -601,14 +601,13 @@ unsafe fn parse_dtd_text(
         if !doc.is_null() {
             tree::free_doc(doc);
         }
-        // Fallback: an empty DTD carrying the identifiers.
-
-        dtd::new_dtd(
-            ptr::null_mut(),
-            c"none".as_ptr() as *const xmlChar,
-            public_id,
-            system_id,
-        )
+        // UPSTREAM-PARITY (parser.c xmlParseDTD / xmlIOParseDTD): a DTD whose
+        // declarations failed to parse returns NULL, so consumers (lxml's
+        // _parseDtdFromFilelike) raise DTDParseError. The pre-fix fallback
+        // returned an empty DTD named "none" carrying the identifiers, which
+        // made a broken DTD (<!ELEMENT b HONKEY>) compile silently.
+        let _ = (public_id, system_id);
+        ptr::null_mut()
     }
 }
 

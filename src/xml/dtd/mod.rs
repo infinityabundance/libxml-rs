@@ -996,39 +996,15 @@ pub unsafe fn copy_element(elem: *mut _xmlElement) -> *mut _xmlElement {
         (*copy).parent = e.parent;
         (*copy).doc = e.doc;
 
-        // Copy attribute declarations (linked list)
-        if !e.attributes.is_null() {
-            // UPSTREAM-PARITY: We copy the attribute linked list by
-            // iterating and copying each attribute.
-            let mut src_attr = e.attributes;
-            let mut prev_copy: *mut _xmlAttribute = ptr::null_mut();
-            let mut first_copy: *mut _xmlAttribute = ptr::null_mut();
-
-            while !src_attr.is_null() {
-                let attr_copy = copy_attribute_decl(src_attr);
-                if attr_copy.is_null() {
-                    // Free what we've copied so far
-                    let mut to_free = first_copy;
-                    while !to_free.is_null() {
-                        let next = (*to_free).nexth;
-                        free_attribute(to_free);
-                        to_free = next;
-                    }
-                    allocator::xmlFreeImpl(copy as *mut c_void);
-                    return ptr::null_mut();
-                }
-
-                if prev_copy.is_null() {
-                    first_copy = attr_copy;
-                } else {
-                    (*prev_copy).nexth = attr_copy;
-                }
-                prev_copy = attr_copy;
-                src_attr = (*src_attr).nexth;
-            }
-
-            (*copy).attributes = first_copy;
-        }
+        // UPSTREAM-PARITY (valid.c xmlCopyElement): the element->attribute
+        // declaration links are NOT copied. Upstream deliberately leaves
+        // `attributes` NULL here; the attribute declarations are copied
+        // separately (xmlCopyAttributeTable) and consumers that need the
+        // links rebuild them (lxml's `_copyDtd` walks the copied DTD's
+        // XML_ATTRIBUTE_DECL children and calls _linkDtdAttribute). Linking
+        // them here made every attribute appear TWICE after lxml's rebuild
+        // (verified against the oracle: copied element 'a' has 0 attributes).
+        (*copy).attributes = ptr::null_mut();
 
         copy
     }
