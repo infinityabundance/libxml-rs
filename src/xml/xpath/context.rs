@@ -531,16 +531,35 @@ impl XPathContext {
         self.functions.insert(name.to_string(), Box::new(func));
     }
 
-    /// Register a variable binding.
+    /// Bind a variable using the PUBLIC XPath registration semantics.
     ///
-    /// The variable is stored in the local `variables` map under `name`.
-    /// It will be found by [`resolve_variable`](Self::resolve_variable) before
-    /// any C callback is consulted.
-    pub fn register_variable(&mut self, name: &str, value: XPathValue) {
-        // A same-named binding in an inner scope SHADOWS the outer one; keep the
-        // previous value so `unregister_variable` restores it instead of
-        // deleting the name (XSLT recursive templates re-bind `$caller`-style
-        // parameters on every call).
+    /// A new registration REPLACES any existing binding (upstream
+    /// `xmlXPathRegisterVariableNS` -> `xmlHashUpdateEntry2`). This is the
+    /// contract of the exported `xmlXPathRegisterVariable[NS]` API and of a
+    /// host that evaluates plain XPath.
+    ///
+    /// XSLT lexical/dynamic scoping is a DIFFERENT notion of ownership and must
+    /// NOT use this method: a template parameter may shadow an outer variable of
+    /// the same name and popping it must restore the outer value. That is
+    /// [`push_scoped_variable`](Self::push_scoped_variable) /
+    /// [`pop_scoped_variable`](Self::pop_scoped_variable).
+    pub fn set_variable(&mut self, name: &str, value: XPathValue) {
+        self.variables.insert(name.to_string(), value);
+    }
+
+    /// Remove a variable binding (upstream `xmlXPathRegisterVariableNS` with a
+    /// NULL value -> `xmlHashRemoveEntry2`). Any XSLT shadow stack for the name
+    /// is discarded so a later pop cannot resurrect it.
+    pub fn remove_variable(&mut self, name: &str) {
+        self.variables.remove(name);
+        self.variable_shadow.remove(name);
+    }
+
+    /// Push an XSLT-scoped binding, preserving the current value so
+    /// [`pop_scoped_variable`](Self::pop_scoped_variable) restores it instead of
+    /// deleting the name (recursive templates re-bind `$caller`-style parameters
+    /// on every call).
+    pub fn push_scoped_variable(&mut self, name: &str, value: XPathValue) {
         if let Some(previous) = self.variables.insert(name.to_string(), value) {
             self.variable_shadow
                 .entry(name.to_string())
@@ -549,12 +568,9 @@ impl XPathContext {
         }
     }
 
-    /// Remove a variable binding from the context's variable hash, restoring
-    /// the shadowed value if there is one.
-    ///
-    /// Used to unwind local XSLT variable scopes when a variable is popped
-    /// from the transform variable stack.
-    pub fn unregister_variable(&mut self, name: &str) {
+    /// Pop an XSLT-scoped binding, restoring the shadowed value if one exists
+    /// and otherwise removing the name.
+    pub fn pop_scoped_variable(&mut self, name: &str) {
         if let Some(stack) = self.variable_shadow.get_mut(name) {
             if let Some(previous) = stack.pop() {
                 if stack.is_empty() {
@@ -868,7 +884,7 @@ mod tests {
     #[test]
     fn test_register_and_resolve_variable() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
-        ctx.register_variable("foo", XPathValue::String("bar".to_string()));
+        ctx.set_variable("foo", XPathValue::String("bar".to_string()));
 
         let result = ctx.resolve_variable("foo");
         assert!(result.is_some());
@@ -882,9 +898,9 @@ mod tests {
     }
     #[allow(clippy::approx_constant)]
     #[test]
-    fn test_register_variable_number() {
+    fn test_set_variable_number() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
-        ctx.register_variable("pi", XPathValue::Number(3.14159));
+        ctx.set_variable("pi", XPathValue::Number(3.14159));
 
         let result = ctx.resolve_variable("pi");
         assert!(result.is_some());
@@ -893,9 +909,9 @@ mod tests {
     }
 
     #[test]
-    fn test_register_variable_boolean() {
+    fn test_set_variable_boolean() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
-        ctx.register_variable("flag", XPathValue::Boolean(true));
+        ctx.set_variable("flag", XPathValue::Boolean(true));
 
         let result = ctx.resolve_variable("flag");
         assert!(result.is_some());
@@ -903,25 +919,51 @@ mod tests {
     }
 
     #[test]
-    fn test_register_variable_nodeset() {
+    fn test_set_variable_nodeset() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
         let ns = NodeSet::new();
-        ctx.register_variable("nodes", XPathValue::NodeSet(ns));
+        ctx.set_variable("nodes", XPathValue::NodeSet(ns));
 
         let result = ctx.resolve_variable("nodes");
         assert!(result.is_some());
         assert!(matches!(result.unwrap(), XPathValue::NodeSet(_)));
     }
 
+    /// PUBLIC XPath registration semantics (upstream
+    /// `xmlXPathRegisterVariableNS`): a second registration REPLACES the first,
+    /// and `value == NULL` REMOVES the binding. These must not shadow/restore
+    /// like the XSLT scoped pair.
     #[test]
-    fn test_variable_overwrite() {
+    fn test_set_variable_replaces_and_remove_clears() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
-        ctx.register_variable("x", XPathValue::Number(1.0));
-        ctx.register_variable("x", XPathValue::Number(2.0));
+        ctx.set_variable("x", XPathValue::String("A".to_string()));
+        assert_eq!(ctx.resolve_variable("x").unwrap().as_string(), "A");
 
-        let result = ctx.resolve_variable("x");
-        assert!(result.is_some());
-        assert!((result.unwrap().as_number() - 2.0).abs() < 1e-10);
+        ctx.set_variable("x", XPathValue::String("B".to_string()));
+        assert_eq!(ctx.resolve_variable("x").unwrap().as_string(), "B");
+
+        // value == NULL removes the binding; $x becomes undefined.
+        ctx.remove_variable("x");
+        assert!(ctx.resolve_variable("x").is_none());
+    }
+
+    /// XSLT scoped semantics: an inner binding of the same name shadows the
+    /// outer one, and popping it RESTORES the outer value (recursive templates
+    /// re-bind `$caller`-style parameters on every call).
+    #[test]
+    fn test_scoped_variable_shadows_and_restores() {
+        let mut ctx = XPathContext::new(std::ptr::null_mut());
+        ctx.push_scoped_variable("caller", XPathValue::String("outer".to_string()));
+        assert_eq!(ctx.resolve_variable("caller").unwrap().as_string(), "outer");
+
+        ctx.push_scoped_variable("caller", XPathValue::String("inner".to_string()));
+        assert_eq!(ctx.resolve_variable("caller").unwrap().as_string(), "inner");
+
+        ctx.pop_scoped_variable("caller");
+        assert_eq!(ctx.resolve_variable("caller").unwrap().as_string(), "outer");
+
+        ctx.pop_scoped_variable("caller");
+        assert!(ctx.resolve_variable("caller").is_none());
     }
 
     // ── Namespaces ───────────────────────────────────────────────────────
@@ -1204,7 +1246,7 @@ mod tests {
         }
 
         // Register some bindings — these should survive reset.
-        ctx.register_variable("x", XPathValue::Number(42.0));
+        ctx.set_variable("x", XPathValue::Number(42.0));
         ctx.register_namespace("p", "http://example.com/ns");
         fn dummy(_: &mut XPathContext, _: &[XPathValue]) -> Result<XPathValue, String> {
             Ok(XPathValue::Boolean(true))
@@ -1291,7 +1333,7 @@ mod tests {
     #[test]
     fn test_context_clone() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
-        ctx.register_variable("x", XPathValue::Number(10.0));
+        ctx.set_variable("x", XPathValue::Number(10.0));
         ctx.register_namespace("ns", "http://example.com/ns");
         ctx.set_error("clone test");
 
@@ -1346,9 +1388,9 @@ mod tests {
     #[test]
     fn test_register_multiple_variables() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
-        ctx.register_variable("a", XPathValue::Number(1.0));
-        ctx.register_variable("b", XPathValue::String("two".to_string()));
-        ctx.register_variable("c", XPathValue::Boolean(true));
+        ctx.set_variable("a", XPathValue::Number(1.0));
+        ctx.set_variable("b", XPathValue::String("two".to_string()));
+        ctx.set_variable("c", XPathValue::Boolean(true));
 
         assert_eq!(ctx.variables.len(), 3);
         assert_eq!(ctx.resolve_variable("a").unwrap().as_number(), 1.0);

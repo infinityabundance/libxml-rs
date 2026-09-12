@@ -109,7 +109,7 @@ pub unsafe fn xsltPushVariable(
             } else {
                 crate::abi::exports_xml2::object_to_xpathvalue_pub((*var).value)
             };
-            (*internal).register_variable(&name, value);
+            (*internal).push_scoped_variable(&name, value);
         }
     }
     0
@@ -148,7 +148,7 @@ pub unsafe fn xsltPopVariable(ctxt: *mut _xsltTransformContext) -> *mut _xsltSta
                 let name_len = libc::strlen((*var).name as *const libc::c_char);
                 let name_bytes = core::slice::from_raw_parts((*var).name, name_len);
                 let name = String::from_utf8_lossy(name_bytes).into_owned();
-                (*internal).unregister_variable(&name);
+                (*internal).pop_scoped_variable(&name);
             }
         }
     }
@@ -682,7 +682,7 @@ unsafe fn register_global_value(
         if !xpath_ctxt.is_null() {
             let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
             if !internal.is_null() {
-                (*internal).register_variable(&key, v);
+                (*internal).push_scoped_variable(&key, v);
             }
         }
     }

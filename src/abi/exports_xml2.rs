@@ -7402,7 +7402,7 @@ pub unsafe extern "C" fn xmlXPathRegisterVariable(
     name: *const xmlChar,
     value: *mut _xmlXPathObject,
 ) -> c_int {
-    if ctxt.is_null() || name.is_null() || value.is_null() {
+    if ctxt.is_null() || name.is_null() {
         return -1;
     }
     let internal = (*ctxt).extra as *mut XPathContext;
@@ -7416,8 +7416,14 @@ pub unsafe extern "C" fn xmlXPathRegisterVariable(
         Err(_) => return -1,
     };
 
+    // UPSTREAM-PARITY (xpath.c xmlXPathRegisterVariable): a NULL value removes
+    // the binding; otherwise it replaces any existing one. No shadow stack.
+    if value.is_null() {
+        internal.remove_variable(name_str);
+        return 0;
+    }
     let xpath_val = object_to_xpathvalue(value);
-    internal.register_variable(name_str, xpath_val);
+    internal.set_variable(name_str, xpath_val);
     0
 }
 

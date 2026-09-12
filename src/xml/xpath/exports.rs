@@ -4963,7 +4963,7 @@ pub unsafe extern "C" fn xmlXPathRegisterVariableNS(
     ns_uri: *const xmlChar,
     value: *mut _xmlXPathObject,
 ) -> c_int {
-    if ctxt.is_null() || name.is_null() || value.is_null() {
+    if ctxt.is_null() || name.is_null() {
         return -1;
     }
     let internal = (*ctxt).extra as *mut XPathContext;
@@ -4983,8 +4983,16 @@ pub unsafe extern "C" fn xmlXPathRegisterVariableNS(
             Err(_) => return -1,
         }
     };
+    // UPSTREAM-PARITY (xpath.c xmlXPathRegisterVariableNS): a NULL value
+    // REMOVES the binding (`xmlHashRemoveEntry2`) and returns 0; a non-NULL
+    // value REPLACES any existing binding (`xmlHashUpdateEntry2`). Neither has
+    // XSLT shadow-stack semantics.
+    if value.is_null() {
+        internal.remove_variable(&qualified);
+        return 0;
+    }
     let xpath_val = crate::abi::exports_xml2::object_to_xpathvalue_pub(value);
-    internal.register_variable(&qualified, xpath_val);
+    internal.set_variable(&qualified, xpath_val);
     0
 }
 

@@ -611,6 +611,32 @@ int main(void) {
            xmlXPathVariableLookup(ctxt, BAD_CAST "w") == NULL);
     xmlXPathRegisteredVariablesCleanup(ctxt);
 
+    /* Public registration semantics (xpath.c xmlXPathRegisterVariable[NS]):
+     * a second registration REPLACES the stored value, and a NULL value
+     * REMOVES the binding. This is distinct from XSLT lexical scoping. */
+    printf("varsetA=%d\n", xmlXPathRegisterVariable(ctxt, BAD_CAST "x",
+                                                    xmlXPathNewString(BAD_CAST "A")));
+    print_obj("varA", xmlXPathVariableLookup(ctxt, BAD_CAST "x"));
+    printf("varsetB=%d\n", xmlXPathRegisterVariable(ctxt, BAD_CAST "x",
+                                                    xmlXPathNewString(BAD_CAST "B")));
+    print_obj("varB", xmlXPathVariableLookup(ctxt, BAD_CAST "x"));
+    printf("varnull=%d\n", xmlXPathRegisterVariable(ctxt, BAD_CAST "x", NULL));
+    printf("varundef=%d\n", xmlXPathVariableLookup(ctxt, BAD_CAST "x") == NULL);
+
+    printf("varsetnsA=%d\n", xmlXPathRegisterVariableNS(ctxt, BAD_CAST "x",
+                                                        BAD_CAST "urn:v",
+                                                        xmlXPathNewString(BAD_CAST "NA")));
+    print_obj("varNsA", xmlXPathVariableLookupNS(ctxt, BAD_CAST "x", BAD_CAST "urn:v"));
+    printf("varsetnsB=%d\n", xmlXPathRegisterVariableNS(ctxt, BAD_CAST "x",
+                                                        BAD_CAST "urn:v",
+                                                        xmlXPathNewString(BAD_CAST "NB")));
+    print_obj("varNsB", xmlXPathVariableLookupNS(ctxt, BAD_CAST "x", BAD_CAST "urn:v"));
+    printf("varnullns=%d\n", xmlXPathRegisterVariableNS(ctxt, BAD_CAST "x",
+                                                        BAD_CAST "urn:v", NULL));
+    printf("varundefns=%d\n",
+           xmlXPathVariableLookupNS(ctxt, BAD_CAST "x", BAD_CAST "urn:v") == NULL);
+    xmlXPathRegisteredVariablesCleanup(ctxt);
+
     printf("regfunc=%d\n", xmlXPathRegisterFunc(ctxt, BAD_CAST "triple",
                                                 triple_func));
     printf("funclookup=%d\n", xmlXPathFunctionLookup(ctxt, BAD_CAST "triple")

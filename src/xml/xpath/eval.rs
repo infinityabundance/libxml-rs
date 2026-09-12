@@ -1080,7 +1080,7 @@ mod tests {
     #[test]
     fn test_eval_variable_found() {
         let mut ctx = setup_context();
-        ctx.register_variable("x", XPathValue::Number(42.0));
+        ctx.set_variable("x", XPathValue::Number(42.0));
         let result = eval_xpath(&mut ctx, "$x").unwrap();
         assert_eq!(result.as_number(), 42.0);
     }
