@@ -28,6 +28,23 @@ case "$MODE" in
     export PKG_CONFIG_PATH=/cand-pc
     export LD_LIBRARY_PATH=/candidate/lib
     export PATH=/candidate/bin:/usr/bin:/bin
+    # build.rs bakes the HOST artifact path into each libtool `.la` libdir
+    # (the candidate is built on the host at $REPO/target/debug but consumed
+    # in-container at /candidate). libtool resolves `-lxml2`/`-lxslt`/`-lexslt`
+    # through those `.la` files and, when the recorded libdir does not exist,
+    # emits the host absolute path to the linker — which is absent in the
+    # container and fails any relink. Make each recorded libdir true by
+    # bridging it to the mounted /candidate/lib. Without this the PHP gate only
+    # passes while `make` is a no-op; any candidate change forces a relink and
+    # the link dies with "cannot find <host>/lib/libexslt.so".
+    for f in /candidate/lib/*.la; do
+      [ -f "$f" ] || continue
+      d="$(sed -n "s/^libdir='\\(.*\\)'/\\1/p" "$f")"
+      [ -n "$d" ] || continue
+      [ -e "$d" ] && continue
+      mkdir -p "$(dirname "$d")" 2>/dev/null || continue
+      ln -sfn /candidate/lib "$d" 2>/dev/null || true
+    done
     ;;
   *)
     echo "lib.sh: unknown mode '$MODE'" >&2

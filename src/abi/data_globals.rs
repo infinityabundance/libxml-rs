@@ -520,8 +520,14 @@ pub fn xslt_default_generic_error_func() -> Option<xmlGenericErrorFunc> {
 pub static xmlStringText: [xmlChar; 5] = [b't', b'e', b'x', b't', 0];
 
 /// `const xmlChar xmlStringTextNoenc[]` — "textnoenc"
+///
+/// UPSTREAM-PARITY (tree.c 2.15): `{ 't','e','x','t','n','o','e','n','c', 0 }`
+/// — ten bytes, NUL-terminated. The trailing NUL is load-bearing: consumers
+/// (xmlsave.c, HTMLtree.c, debugXML.c) compare this marker by pointer, and any
+/// string operation on a node whose name is this marker must not run past its
+/// end.
 #[no_mangle]
-pub static xmlStringTextNoenc: [xmlChar; 9] = *b"textnoenc";
+pub static xmlStringTextNoenc: [xmlChar; 10] = *b"textnoenc\0";
 
 /// `const xmlChar xmlStringComment[]` — "comment"
 #[no_mangle]

@@ -131,6 +131,59 @@ unsafe fn dup_str(s: *const xmlChar) -> *mut xmlChar {
     unsafe { crate::abi::exports_xml2::xmlStrdup(s) }
 }
 
+/// Intern `name` in `doc`'s dictionary when it owns one, else heap-duplicate
+/// (upstream tree.c `xmlNewPropInternal` / `xmlNewDocProp`).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// if ((doc != NULL) && (doc->dict != NULL))
+///     cur->name = (xmlChar *) xmlDictLookup(doc->dict, name, -1);
+/// else
+///     cur->name = xmlStrdup(name);
+/// ```
+///
+/// lxml's address-based tag matching (`_MultiTagMatcher`, `iterchildren(tag)`,
+/// ElementPath predicates) compares attribute names by dictionary pointer, so
+/// an attribute added to a dict-owning document must have its name interned.
+unsafe fn intern_name_in_doc(doc: *mut _xmlDoc, name: *const xmlChar) -> *mut xmlChar {
+    if name.is_null() {
+        return ptr::null_mut();
+    }
+    if !doc.is_null() {
+        let dict = unsafe { (*doc).dict };
+        if !dict.is_null() {
+            let interned = unsafe {
+                crate::xml::dictionary::dict_lookup(
+                    dict as *mut crate::xml::dictionary::Dict,
+                    name,
+                    -1,
+                )
+            };
+            return interned as *mut xmlChar;
+        }
+    }
+    unsafe { dup_str(name) }
+}
+
+/// Free `name` unless the document's dictionary owns it (upstream `DICT_FREE`).
+///
+/// Used by the `eatname` error paths of `xmlNewPropInternal`, which must not
+/// free a name that came from (and is owned by) the document dictionary.
+unsafe fn free_name_unless_dict_owned(doc: *mut _xmlDoc, name: *const xmlChar) {
+    if name.is_null() {
+        return;
+    }
+    let dict = if doc.is_null() {
+        ptr::null_mut()
+    } else {
+        unsafe { (*doc).dict }
+    };
+    if !crate::abi::exports_hash::dict_owns_str(dict, name) {
+        unsafe { xmlFreeImpl(name as *mut c_void) };
+    }
+}
+
 /// Length of a null-terminated xmlChar string (NULL → 0).
 unsafe fn str_len(s: *const xmlChar) -> c_int {
     unsafe { crate::abi::exports_xml2::xmlStrlen(s) }
@@ -806,15 +859,26 @@ unsafe fn new_prop_internal(
 ) -> *mut _xmlAttr {
     let doc: *mut _xmlDoc;
     if !node.is_null() && (*node).type_ != XML_ELEMENT_NODE as c_int {
+        // UPSTREAM-PARITY (tree.c xmlNewPropInternal): an eaten name is only
+        // freed when the document dictionary does not own it.
         if eatname == 1 {
-            unsafe { xmlFreeImpl(name as *mut c_void) };
+            unsafe { free_name_unless_dict_owned((*node).doc, name) };
         }
         return ptr::null_mut();
     }
     let cur = unsafe { xmlMallocZero(size_of::<_xmlAttr>()) } as *mut _xmlAttr;
     if cur.is_null() {
         if eatname == 1 {
-            unsafe { xmlFreeImpl(name as *mut c_void) };
+            unsafe {
+                free_name_unless_dict_owned(
+                    if node.is_null() {
+                        ptr::null_mut()
+                    } else {
+                        (*node).doc
+                    },
+                    name,
+                )
+            };
         }
         return ptr::null_mut();
     }
@@ -829,7 +893,9 @@ unsafe fn new_prop_internal(
     (*cur).ns = ns;
 
     if eatname == 0 {
-        (*cur).name = unsafe { dup_str(name) };
+        // UPSTREAM-PARITY (tree.c xmlNewPropInternal): name is interned in the
+        // owning document's dictionary when it has one.
+        (*cur).name = unsafe { intern_name_in_doc(doc, name) };
         if (*cur).name.is_null() {
             unsafe { free_prop_impl(cur) };
             return ptr::null_mut();
@@ -2226,7 +2292,9 @@ pub unsafe extern "C" fn xmlNewDocProp(
         return ptr::null_mut();
     }
     (*cur).type_ = XML_ATTRIBUTE_NODE as c_int;
-    (*cur).name = unsafe { dup_str(name) };
+    // UPSTREAM-PARITY (tree.c xmlNewDocProp): intern the name in the
+    // document's dictionary when it has one.
+    (*cur).name = unsafe { intern_name_in_doc(doc, name) };
     if (*cur).name.is_null() {
         unsafe { xmlFreeImpl(cur as *mut c_void) };
         return ptr::null_mut();

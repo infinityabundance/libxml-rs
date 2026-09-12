@@ -1722,9 +1722,9 @@ pub unsafe extern "C" fn xsltCopyTextString(
         if !copy.is_null() {
             // Upstream renames the text node to the xmlStringTextNoenc
             // static marker; this engine duplicates the marker string
-            // (ownership: the node frees its name). NB: we use a local
-            // NUL-terminated copy rather than the engine's
-            // xmlStringTextNoenc static, which lacks its NUL terminator.
+            // (ownership: this node frees its name, and the engine compares
+            // the marker by content in `is_noenc_text`). The bytes match the
+            // upstream static exactly, including its NUL terminator.
             let name = alloc_str(b"textnoenc");
             if !name.is_null() {
                 xmlFreeImpl((*copy).name as *mut c_void);

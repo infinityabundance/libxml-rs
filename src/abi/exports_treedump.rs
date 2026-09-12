@@ -1107,7 +1107,12 @@ unsafe fn new_reconciled_ns(
 ///
 /// - `name` must be NULL or a valid NUL-terminated `xmlChar` string.
 /// - `doc` must be NULL or a valid `_xmlDoc` whose dictionary outlives the copy.
-unsafe fn copy_name_into_doc(name: *const xmlChar, doc: *mut _xmlDoc) -> *const xmlChar {
+/// - `node_type` must be the `_xmlNode.type` of the node whose name is copied.
+unsafe fn copy_name_into_doc(
+    name: *const xmlChar,
+    doc: *mut _xmlDoc,
+    node_type: c_int,
+) -> *const xmlChar {
     if name.is_null() {
         return ptr::null();
     }
@@ -1116,13 +1121,42 @@ unsafe fn copy_name_into_doc(name: *const xmlChar, doc: *mut _xmlDoc) -> *const 
     // kept by POINTER, never copied or interned. Text/comment/PI nodes are
     // identified across the tree code (and by consumers) by `node->name`
     // pointing at one of these globals; replacing it with a dictionary copy
-    // breaks that identity. Interning "text" into the document dictionary made
-    // PHP's modern-DOM clone/adopt path misclassify the copied text nodes and
-    // double-free at document teardown.
+    // breaks that identity.
     if crate::xml::tree::is_static_node_name(name) {
         return name;
     }
-    let _ = doc;
+    // Text and comment nodes have the "text"/"comment" marker as their name.
+    // The candidate represents that marker as a heap string (upstream uses the
+    // shared statics and, in xmlStaticCopyNode, only interns "real" names).
+    // Interning it would make the marker dict-owned while `xmlNodeSetDoc`
+    // deliberately does not migrate text/comment names across documents, so a
+    // clone moved into another doc would keep a pointer into the source
+    // document's dictionary and double-free at teardown (PHP modern-DOM
+    // clone/adopt). Keep the marker a plain heap copy instead, matching the
+    // non-dict upstream branch.
+    if node_type == XML_TEXT_NODE as c_int || node_type == XML_COMMENT_NODE as c_int {
+        return xml_strdup(name);
+    }
+    // UPSTREAM-PARITY (tree.c xmlStaticCopyNode): when the target document
+    // owns a name dictionary the copied name is interned in it
+    // (`xmlDictLookup(doc->dict, name, -1)`), else heap-duplicated. This is
+    // load-bearing for lxml's address-based tag matching (`_MultiTagMatcher`,
+    // `iterchildren(tag)`, ElementPath predicates).
+    if !doc.is_null() {
+        let dict = unsafe { (*doc).dict };
+        if !dict.is_null() {
+            let interned = unsafe {
+                crate::xml::dictionary::dict_lookup(
+                    dict as *mut crate::xml::dictionary::Dict,
+                    name,
+                    -1,
+                )
+            };
+            if !interned.is_null() {
+                return interned;
+            }
+        }
+    }
     xml_strdup(name)
 }
 
@@ -1181,7 +1215,7 @@ unsafe fn static_copy_node(
         (*ret).doc = doc;
         (*ret).parent = parent;
         if !n.name.is_null() {
-            (*ret).name = copy_name_into_doc(n.name, doc);
+            (*ret).name = copy_name_into_doc(n.name, doc, n.type_);
             if (*ret).name.is_null() {
                 free_node(ret);
                 return ptr::null_mut();
@@ -1445,7 +1479,7 @@ unsafe fn copy_prop_internal(
     }
     unsafe {
         (*ret).type_ = XML_ATTRIBUTE_NODE as c_int;
-        (*ret).name = copy_name_into_doc((*cur).name, ret_doc);
+        (*ret).name = copy_name_into_doc((*cur).name, ret_doc, XML_ATTRIBUTE_NODE as c_int);
 
         if !(*cur).name.is_null() && (*ret).name.is_null() {
             xmlFreeImpl(ret as *mut c_void);
