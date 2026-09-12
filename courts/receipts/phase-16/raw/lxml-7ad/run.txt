@@ -1,0 +1,14 @@
+candidate_sha=2eece63c
+evidence_kind=root-cause fix (copy-name dictionary interning + xmlStringTextNoenc terminator)
+debug_libxml2_sha256=b801f367da9c019e0878a7269bc60bab32058516a758d327422d38c779c09756
+host=libxml-rs/phase14-debian:1 (rebuilt after a host reboot; containers lxml-cand,
+  lxml-oracle and phpbuild-c recreated from the checked-in sources and the repo's
+  Dockerfile.debian)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u -v
+lxml_suite_previous=101 unique ids at a578906a
+lxml_suite_now=93 unique ids (76 failures / 22 errors = 98 raw)
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c)
+tree_clean=yes

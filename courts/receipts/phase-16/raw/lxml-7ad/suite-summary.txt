@@ -1,0 +1,15 @@
+Ran 2007 tests in 83.975s
+FAILED (failures=76, errors=22)
+
+Baseline (a578906a / lxml-7ac): Ran 2007 tests in 84.104s
+FAILED (failures=80, errors=26)
+
+Set comparison (unique ids):
+  baseline unique = 101
+  now unique      = 93
+  fixed           =  8
+  new             =  0
+
+Note on raw counts: the doctest `.txt` entries appear once per failing example
+in the raw harness output, so the raw total (98) exceeds the unique-id total
+(93). Ids are compared as a set.
