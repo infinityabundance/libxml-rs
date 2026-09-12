@@ -1,0 +1,16 @@
+candidate_sha=2db724a6
+evidence_kind=root-cause fixes (file-based xmlParseDTD: EOF check, DTD detach, declaration recording)
+debug_libxml2_sha256=1b3dfe1a3cf4532316d61c2be64f83a8e25b8ec8e5babe51310fd0830600c2b8
+  (the suite was measured on the immediately preceding build c1f77a6d; the only
+   difference is the removal of a duplicated comment line)
+host=libxml-rs/phase14-debian:1 (rebuilt after a host reboot; containers lxml-cand,
+  lxml-oracle and phpbuild-c recreated from the checked-in sources and the repo's
+  Dockerfile.debian)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u -v
+lxml_suite_previous=80 unique ids at 0e6a5c34
+lxml_suite_now=79 unique ids (68 failures / 16 errors = 84 raw)
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c)
+tree_clean=yes

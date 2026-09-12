@@ -1,0 +1,26 @@
+Ran 2007 tests in 82.011s
+FAILED (failures=68, errors=16)
+
+Previous (0e6a5c34 / lxml-7ag): Ran 2007 tests in 82.597s
+FAILED (failures=68, errors=17)
+
+Set comparison (unique ids):
+  previous unique = 80
+  now unique      = 79
+  fixed           =  1
+  new             =  0
+
+Fixed:
+  test_dtd_attrs  (lxml.tests.test_dtd.ETreeDtdTestCase.test_dtd_attrs)
+
+test_dtd.py: 8 failed / 30 passed -> 7 failed / 31 passed.
+
+The remaining test_dtd failures each have their own cause and are tracked for
+follow-up:
+  test_dtd_broken              (DTDParseError not raised for "<!ELEMENT b HONKEY>")
+  test_dtd_file / _pathlike    (xmlValidateDtd does not substitute the passed DTD
+                                for the document's subsets while walking elements)
+  test_dtd_invalid             (DocumentInvalid not raised by assertValid)
+  test_dtd_invalid_duplicate_id
+  test_dtd_api_internal        (2 != 4)
+  test_internal_dtds           (1 != 2)
