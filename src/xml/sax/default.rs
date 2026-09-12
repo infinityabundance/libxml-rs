@@ -1213,40 +1213,53 @@ pub(crate) mod default_sax_handler {
                                 (*av).content
                             };
                             if !v.is_null() {
-                                let res = crate::xml::validation::is_id(c.myDoc, node, attr);
-                                if res > 0 {
-                                    let reg = crate::xml::validation::add_id(
-                                        ptr::null_mut(),
-                                        c.myDoc,
-                                        v,
-                                        attr,
-                                    );
-                                    // UPSTREAM-PARITY (SAX2.c
-                                    // xmlSAX2AttributeNs tail): a duplicate
-                                    // ID value is reported through the
-                                    // parser's validation context —
-                                    // "ID %s already defined" at the
-                                    // attribute's position (php surfaces it as
-                                    // a warning; Dom\XMLDocument
-                                    // createFromString bug79701 expects it).
-                                    if reg.is_null() {
-                                        let msg = format!(
-                                            "ID {} already defined\n\0",
-                                            crate::xml::string::xmlstr_to_string(v)
+                                // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs):
+                                // ID/IDREF registration is skipped when the
+                                // caller requested XML_SKIP_IDS. lxml's
+                                // _initSaxDocument sets it (via loadsubset) for
+                                // XMLParser(collect_ids=False), so
+                                // getelementids() / XMLDTDID return an empty
+                                // dict.
+                                let skip_ids =
+                                    (c.loadsubset & crate::abi::constants::XML_SKIP_IDS) != 0;
+                                if !skip_ids {
+                                    let res = crate::xml::validation::is_id(c.myDoc, node, attr);
+                                    if res > 0 {
+                                        let reg = crate::xml::validation::add_id(
+                                            ptr::null_mut(),
+                                            c.myDoc,
+                                            v,
+                                            attr,
                                         );
-                                        default_sax_handler::raise_ctxt_validity_error(
-                                            ctxt,
-                                            513, // XML_DTD_ID_REDEFINED
-                                            msg.as_ptr() as *const c_char,
+                                        // UPSTREAM-PARITY (SAX2.c
+                                        // xmlSAX2AttributeNs tail): a duplicate
+                                        // ID value is reported through the
+                                        // parser's validation context —
+                                        // "ID %s already defined" at the
+                                        // attribute's position (php surfaces it as
+                                        // a warning; Dom\XMLDocument
+                                        // createFromString bug79701 expects it).
+                                        if reg.is_null() {
+                                            let msg = format!(
+                                                "ID {} already defined\n\0",
+                                                crate::xml::string::xmlstr_to_string(v)
+                                            );
+                                            default_sax_handler::raise_ctxt_validity_error(
+                                                ctxt,
+                                                513, // XML_DTD_ID_REDEFINED
+                                                msg.as_ptr() as *const c_char,
+                                            );
+                                        }
+                                    } else if crate::xml::validation::is_ref(c.myDoc, node, attr)
+                                        > 0
+                                    {
+                                        crate::xml::validation::add_ref(
+                                            ptr::null_mut(),
+                                            c.myDoc,
+                                            v,
+                                            attr,
                                         );
                                     }
-                                } else if crate::xml::validation::is_ref(c.myDoc, node, attr) > 0 {
-                                    crate::xml::validation::add_ref(
-                                        ptr::null_mut(),
-                                        c.myDoc,
-                                        v,
-                                        attr,
-                                    );
                                 }
                             }
                         }

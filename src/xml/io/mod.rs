@@ -1525,8 +1525,17 @@ unsafe extern "C" fn file_write_callback(
     buffer: *const c_char,
     len: c_int,
 ) -> c_int {
-    if context.is_null() || buffer.is_null() || len <= 0 {
+    if context.is_null() || len < 0 || (len > 0 && buffer.is_null()) {
         return -1;
+    }
+    // UPSTREAM-PARITY (xmlIO.c xmlFileWrite): a zero-length write is a
+    // success (returns 0). xmlOutputBufferFlush invokes the callback
+    // unconditionally, including with an empty buffer at close time, so
+    // treating len == 0 as an error made xmlOutputBufferClose return -1 for
+    // any output large enough to have been flushed during writing
+    // (lxml's test_write_file_url: SerialisationError -1).
+    if len == 0 {
+        return 0;
     }
 
     let fd = context as c_int;
@@ -1675,6 +1684,27 @@ pub(crate) fn output_buffer_create_filename(
         }
     };
 
+    // UPSTREAM-PARITY (xmlIO.c xmlOutputBufferCreateFilename): the name is a
+    // URL. A `file://` scheme (and any authority such as `localhost`) is
+    // stripped and the remaining path is percent-decoded once. lxml depends on
+    // both halves: it escapes `%` to `%25` in a plain filename before calling,
+    // and passes `file://` URLs unescaped (test_write_filename_special_percent,
+    // test_write_file_url).
+    let decoded_storage;
+    let path_str: &str = {
+        let rest = if path_str.len() >= 7 && path_str[..7].eq_ignore_ascii_case("file://") {
+            let after = &path_str[7..];
+            match after.find('/') {
+                Some(p) => &after[p..],
+                None => after,
+            }
+        } else {
+            path_str
+        };
+        decoded_storage = url_unescape_path(rest);
+        decoded_storage.as_str()
+    };
+
     let path_c = std::ffi::CString::new(path_str).unwrap_or_default();
 
     // Upstream xmlOutputDefaultOpen (xmlIO.c): filename "-" means stdout
@@ -1771,6 +1801,30 @@ pub(crate) fn output_buffer_create_filename(
     }
 
     obuf
+}
+
+/// Percent-decode a URL-escaped path (upstream `xmlURIUnescapeString`).
+///
+/// `%XX` sequences with valid hex digits are decoded; a `%` that does not
+/// introduce a valid escape is passed through unchanged.
+fn url_unescape_path(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' && i + 2 < b.len() {
+            let hi = (b[i + 1] as char).to_digit(16);
+            let lo = (b[i + 2] as char).to_digit(16);
+            if let (Some(hi), Some(lo)) = (hi, lo) {
+                out.push((hi * 16 + lo) as u8);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
 }
 
 /// Create an output buffer for a file descriptor.

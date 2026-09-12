@@ -7033,11 +7033,13 @@ impl XmlParser {
         }
         let data_cstr: *const xmlChar = {
             let bytes = self.resolve_text(data);
-            if bytes.is_empty() {
-                ptr::null()
-            } else {
-                Self::vec_to_cstr_null(bytes)
-            }
+            // UPSTREAM-PARITY (parser.c xmlParseComment): an empty comment is
+            // delivered as an EMPTY non-NULL string (the buf == NULL branch
+            // passes BAD_CAST ""), not NULL. xmlSAX2Comment then creates a
+            // comment whose content is "", which the serializer emits as
+            // <!----> (it skips only a NULL content). A NULL here dropped the
+            // empty comment from the output (test_comment_parse_empty).
+            Self::vec_to_cstr_keep_empty(bytes)
         };
         self.sync_input_position();
         unsafe {
