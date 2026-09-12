@@ -1,0 +1,11 @@
+Raw unique ids: previous 52 (7ar), now 51.
+After removing the known-flaky group: previous 49, now 48 -> 1 fixed, 0 new.
+
+Fixed:
+  test_relaxng_invalid_schema2   (lxml.tests.test_relaxng.ETreeRelaxNGTestCase)
+
+New: none.
+
+test_relaxng.py: 2 failed / 11 passed -> 1 failed / 12 passed
+(remaining: test_relaxng_generic_error — <data type="IDREF"/> reference
+resolution is not implemented in the RELAX NG validator).

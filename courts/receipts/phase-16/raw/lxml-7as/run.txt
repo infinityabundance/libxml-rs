@@ -1,0 +1,12 @@
+candidate_sha=742a6f99
+evidence_kind=root-cause fix (RELAX NG: top-level grammar with no start pattern is invalid)
+debug_libxml2_sha256=f33f5b5e7bcb078a119ad49ac612092728222a7d13c0a5c774e216144fb0c16c
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=52 raw ids at 24ead03b (lxml-7ar), 49 excluding the flaky group
+lxml_suite_now=51 raw ids, 48 excluding the flaky group
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes
