@@ -1,0 +1,12 @@
+candidate_sha=81e5f013
+evidence_kind=root-cause fixes (XSD model-group occurs, structured validation errors, XSD-namespace schema content)
+debug_libxml2_sha256=c482fedd623ec36c8e768d3a0b7d9c8bbe9932eb81db755c0db96d3c13a7e69e
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=79 unique ids at 4960a85b (lxml-7ah)
+lxml_suite_now=72 unique ids (61 failures / 16 errors = 77 raw)
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes

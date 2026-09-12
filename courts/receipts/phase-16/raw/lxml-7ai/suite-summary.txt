@@ -1,0 +1,36 @@
+Ran 2007 tests in 82.162s
+FAILED (failures=61, errors=16)
+
+Previous (4960a85b / lxml-7ah): Ran 2007 tests in 82.011s
+FAILED (failures=68, errors=16)
+
+Set comparison (unique ids):
+  previous unique = 79
+  now unique      = 72
+  fixed           =  7
+  new             =  0
+
+Fixed:
+  test_xmlschema_default_attributes                   (lxml.tests.test_xmlschema.ETreeXMLSchemaTestCase)
+  test_xmlschema_parse_default_attributes             (lxml.tests.test_xmlschema.ETreeXMLSchemaTestCase)
+  test_xmlschema_parse_default_attributes_schema_config (lxml.tests.test_xmlschema.ETreeXMLSchemaTestCase)
+  test_xmlschema_parse_fixed_attributes               (lxml.tests.test_xmlschema.ETreeXMLSchemaTestCase)
+  test_xmlschema_error_log                            (lxml.tests.test_xmlschema.ETreeXMLSchemaTestCase)
+  test_xmlschema_error_log_path                       (lxml.tests.test_xmlschema.ETreeXMLSchemaTestCase)
+  test_xmlschema_invalid_schema1                      (lxml.tests.test_xmlschema.ETreeXMLSchemaTestCase)
+
+test_xmlschema.py: 10 failed / 21 passed -> 3 failed / 28 passed.
+
+Remaining test_xmlschema failures (all one cause):
+  test_xmlschema_parse            XMLSyntaxError not raised by parse
+  test_xmlschema_stringio         XMLSyntaxError not raised by stringio
+  test_xmlschema_iterparse_fail   XMLSyntaxError not raised by list
+
+These need xmlSchemaSAXPlug to actually intercept SAX events during parse;
+lxml decides via xmlSchemaIsValid(valid_ctxt) after parsing (parser.pxi
+_handleParseResult). The current xmlSchemaSAXPlug is a documented
+pass-through stub.
+
+Note: an earlier verbose run (7ai log) also listed the known-flaky
+test_module_HTML* group plus ElementMaker; the stable non-verbose re-run
+(used for the counts above) does not contain them.
