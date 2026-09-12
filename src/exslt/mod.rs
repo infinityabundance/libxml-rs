@@ -322,34 +322,96 @@ pub extern "C" fn exsltDynRegister() {
 #[no_mangle]
 pub const extern "C" fn exsltCryptoRegister() {}
 
-/// `exsltDateXpathCtxtRegister(ctxt, prefix)` — register the dates module
-/// on a specific XPath context (upstream date.c). The candidate's registry
-/// is global; registration is performed for all contexts.
-#[no_mangle]
-pub extern "C" fn exsltDateXpathCtxtRegister(_ctxt: *mut c_void, _prefix: *const xmlChar) -> c_int {
-    dates::register_all();
+/// Register a module's functions on an XPath context under `{uri}local`,
+/// mirroring upstream's per-module `exslt*XpathCtxtRegister` entry points
+/// (libexslt `date.c`/`math.c`/`sets.c`/`strings.c`), each of which calls
+/// `xmlXPathRegisterNs(ctxt, prefix, NS)` followed by one
+/// `xmlXPathRegisterFuncNS(ctxt, local, NS, fn)` per function.
+///
+/// The functions are registered under the namespace URI, not the prefix, so
+/// any prefix the caller bound to `uri` resolves. The module's own copies are
+/// used: registration must not depend on the process-wide EXSLT registry,
+/// because the whole-archive facades partition statics and `exsltRegisterAll`
+/// populates libxslt's copy, not libexslt's.
+///
+/// # Safety
+///
+/// - `ctxt` must be NULL or a live `xmlXPathContextPtr`.
+/// - `prefix` must be NULL or a NUL-terminated string that stays alive for the
+///   call (upstream copies it via `xmlXPathRegisterNs`).
+unsafe fn xpath_ctxt_register_module(
+    ctxt: *mut c_void,
+    prefix: *const xmlChar,
+    uri: &str,
+    functions: &[(&str, ExsltFunction)],
+) -> c_int {
+    if ctxt.is_null() || prefix.is_null() {
+        return -1;
+    }
+    let c_ctxt = ctxt as *mut crate::abi::structs::_xmlXPathContext;
+    let internal = unsafe { (*c_ctxt).extra } as *mut XPathContext;
+    if internal.is_null() {
+        return -1;
+    }
+
+    // Register the module namespace so the caller's prefix resolves to `uri`.
+    let uri_c = format!("{uri}\0");
+    let rc = unsafe {
+        crate::abi::exports_xml2::xmlXPathRegisterNs(
+            c_ctxt,
+            prefix,
+            uri_c.as_ptr() as *const xmlChar,
+        )
+    };
+    if rc != 0 {
+        return -1;
+    }
+
+    for (name, f) in functions {
+        let qualified = format!("{{{uri}}}{name}");
+        let f = *f;
+        // SAFETY: `internal` is the live Rust context behind `ctxt->extra`;
+        // registration only mutates the context's function map.
+        unsafe { (*internal).register_function(&qualified, move |cx, args| f(cx, args)) };
+    }
     0
+}
+
+/// `exsltDateXpathCtxtRegister(ctxt, prefix)` — register the dates module
+/// on a specific XPath context (upstream libexslt date.c).
+#[no_mangle]
+pub unsafe extern "C" fn exsltDateXpathCtxtRegister(
+    ctxt: *mut c_void,
+    prefix: *const xmlChar,
+) -> c_int {
+    unsafe { xpath_ctxt_register_module(ctxt, prefix, EXSLT_NS_DATES, dates::FUNCTIONS) }
 }
 
 /// `exsltMathXpathCtxtRegister(ctxt, prefix)` — math module (see above).
 #[no_mangle]
-pub extern "C" fn exsltMathXpathCtxtRegister(_ctxt: *mut c_void, _prefix: *const xmlChar) -> c_int {
-    math::register_all();
-    0
+pub unsafe extern "C" fn exsltMathXpathCtxtRegister(
+    ctxt: *mut c_void,
+    prefix: *const xmlChar,
+) -> c_int {
+    unsafe { xpath_ctxt_register_module(ctxt, prefix, EXSLT_NS_MATH, math::FUNCTIONS) }
 }
 
 /// `exsltSetsXpathCtxtRegister(ctxt, prefix)` — sets module (see above).
 #[no_mangle]
-pub extern "C" fn exsltSetsXpathCtxtRegister(_ctxt: *mut c_void, _prefix: *const xmlChar) -> c_int {
-    sets::register_all();
-    0
+pub unsafe extern "C" fn exsltSetsXpathCtxtRegister(
+    ctxt: *mut c_void,
+    prefix: *const xmlChar,
+) -> c_int {
+    unsafe { xpath_ctxt_register_module(ctxt, prefix, EXSLT_NS_SETS, sets::FUNCTIONS) }
 }
 
 /// `exsltStrXpathCtxtRegister(ctxt, prefix)` — strings module (see above).
 #[no_mangle]
-pub extern "C" fn exsltStrXpathCtxtRegister(_ctxt: *mut c_void, _prefix: *const xmlChar) -> c_int {
-    strings::register_all();
-    0
+pub unsafe extern "C" fn exsltStrXpathCtxtRegister(
+    ctxt: *mut c_void,
+    prefix: *const xmlChar,
+) -> c_int {
+    unsafe { xpath_ctxt_register_module(ctxt, prefix, EXSLT_NS_STRINGS, strings::FUNCTIONS) }
 }
 
 #[cfg(test)]

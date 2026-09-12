@@ -191,19 +191,49 @@ fn exp_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, St
 /// precision as a decimal string. We emit the shortest round-trip
 /// representation, which matches upstream for the default precision.
 fn constant_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
-    let name = args
-        .first()
-        .map(|a| a.as_string().to_ascii_uppercase())
-        .unwrap_or_default();
-    let value = match name.as_str() {
-        "PI" => std::f64::consts::PI,
-        "E" => std::f64::consts::E,
-        "SQRRT2" => std::f64::consts::SQRT_2,
-        "LN2" => std::f64::consts::LN_2,
-        "LN10" => std::f64::consts::LN_10,
-        "LOG2E" => std::f64::consts::LOG2_E,
-        "LOG10E" => std::f64::consts::LOG10_E,
-        _ => f64::NAN,
+    // UPSTREAM-PARITY (libexslt math.c exsltMathConstant): each constant is a
+    // decimal STRING truncated to `min(decimals, (int)precision)` characters
+    // and then parsed as a number, so the result carries only the requested
+    // number of significant digits. The name comparison is case-sensitive and
+    // an unknown name (or precision < 1) yields NaN.
+    const PI: &str = "3.1415926535897932384626433832795028841971693993751";
+    const E: &str = "2.71828182845904523536028747135266249775724709369996";
+    const SQRRT2: &str = "1.41421356237309504880168872420969807856967187537694";
+    const LN2: &str = "0.69314718055994530941723212145817656807550013436025";
+    const LN10: &str = "2.30258509299404568402";
+    const LOG2E: &str = "1.4426950408889634074";
+    const SQRT1_2: &str = "0.70710678118654752440";
+
+    let name = args.first().map(|a| a.as_string()).unwrap_or_default();
+    let precision = args.get(1).map(|a| a.as_number()).unwrap_or(f64::NAN);
+
+    if name.is_empty() || precision.is_nan() || precision < 1.0 {
+        return Ok(XPathValue::Number(f64::NAN));
+    }
+    let constant = match name.as_str() {
+        "PI" => PI,
+        "E" => E,
+        "SQRRT2" => SQRRT2,
+        "LN2" => LN2,
+        "LN10" => LN10,
+        "LOG2E" => LOG2E,
+        "SQRT1_2" => SQRT1_2,
+        _ => return Ok(XPathValue::Number(f64::NAN)),
+    };
+
+    let mut len = constant.len();
+    let p = precision as i64;
+    if p <= len as i64 {
+        len = p.max(0) as usize;
+    }
+    let prefix = &constant[..len];
+    // `xmlXPathCastStringToNumber("3.")` is 3.0; Rust's float parser accepts a
+    // trailing '.' as well, but normalise defensively so the result never
+    // depends on that detail.
+    let value = if prefix.ends_with('.') {
+        format!("{prefix}0").parse::<f64>().unwrap_or(f64::NAN)
+    } else {
+        prefix.parse::<f64>().unwrap_or(f64::NAN)
     };
     Ok(XPathValue::Number(value))
 }
@@ -251,25 +281,33 @@ fn num_at(args: &[XPathValue], index: usize) -> f64 {
 }
 
 /// Register all `math:` functions.
+/// `(local-name, implementation)` pairs for the EXSLT Math module, in
+/// upstream `exsltMathXpathCtxtRegister` order.
+pub const FUNCTIONS: &[(&str, ExsltFunction)] = &[
+    ("max", max_fn as ExsltFunction),
+    ("min", min_fn as ExsltFunction),
+    ("highest", highest_fn as ExsltFunction),
+    ("lowest", lowest_fn as ExsltFunction),
+    ("abs", abs_fn as ExsltFunction),
+    ("sqrt", sqrt_fn as ExsltFunction),
+    ("power", power_fn as ExsltFunction),
+    ("log", log_fn as ExsltFunction),
+    ("sin", sin_fn as ExsltFunction),
+    ("cos", cos_fn as ExsltFunction),
+    ("tan", tan_fn as ExsltFunction),
+    ("asin", asin_fn as ExsltFunction),
+    ("acos", acos_fn as ExsltFunction),
+    ("atan", atan_fn as ExsltFunction),
+    ("atan2", atan2_fn as ExsltFunction),
+    ("exp", exp_fn as ExsltFunction),
+    ("constant", constant_fn as ExsltFunction),
+    ("random", random_fn as ExsltFunction),
+];
+
 pub fn register_all() {
-    register("math:max", max_fn as ExsltFunction);
-    register("math:min", min_fn as ExsltFunction);
-    register("math:highest", highest_fn as ExsltFunction);
-    register("math:lowest", lowest_fn as ExsltFunction);
-    register("math:abs", abs_fn as ExsltFunction);
-    register("math:sqrt", sqrt_fn as ExsltFunction);
-    register("math:power", power_fn as ExsltFunction);
-    register("math:log", log_fn as ExsltFunction);
-    register("math:sin", sin_fn as ExsltFunction);
-    register("math:cos", cos_fn as ExsltFunction);
-    register("math:tan", tan_fn as ExsltFunction);
-    register("math:asin", asin_fn as ExsltFunction);
-    register("math:acos", acos_fn as ExsltFunction);
-    register("math:atan", atan_fn as ExsltFunction);
-    register("math:atan2", atan2_fn as ExsltFunction);
-    register("math:exp", exp_fn as ExsltFunction);
-    register("math:constant", constant_fn as ExsltFunction);
-    register("math:random", random_fn as ExsltFunction);
+    for (name, f) in FUNCTIONS {
+        register(&format!("math:{name}"), *f);
+    }
 }
 
 #[cfg(test)]
@@ -364,21 +402,32 @@ mod tests {
 
     #[test]
     fn test_constant() {
+        // UPSTREAM-PARITY (libexslt math.c exsltMathConstant): the decimal
+        // string is truncated to `(int)precision` characters before parsing.
         let mut c = ctx();
-        let v = constant_fn(
-            &mut c,
-            &[
-                XPathValue::String("PI".to_string()),
-                XPathValue::Number(10.0),
-            ],
-        )
-        .unwrap()
-        .as_number();
-        assert!((v - std::f64::consts::PI).abs() < 1e-9);
-        let v = constant_fn(&mut c, &[XPathValue::String("E".to_string())])
+        let call = |c: &mut XPathContext, name: &str, precision: f64| {
+            constant_fn(
+                c,
+                &[
+                    XPathValue::String(name.to_string()),
+                    XPathValue::Number(precision),
+                ],
+            )
             .unwrap()
-            .as_number();
-        assert!((v - std::f64::consts::E).abs() < 1e-9);
+            .as_number()
+        };
+        assert!((call(&mut c, "PI", 10.0) - 3.14159265).abs() < 1e-12);
+        assert!((call(&mut c, "PI", 4.0) - 3.14).abs() < 1e-12);
+        assert!((call(&mut c, "E", 10.0) - 2.71828182).abs() < 1e-12);
+        assert!((call(&mut c, "SQRT1_2", 6.0) - 0.7071).abs() < 1e-12);
+        // A name with no matching constant, a precision below 1, and a
+        // missing precision argument all yield NaN.
+        assert!(call(&mut c, "NOPE", 10.0).is_nan());
+        assert!(call(&mut c, "PI", 0.0).is_nan());
+        assert!(constant_fn(&mut c, &[XPathValue::String("PI".to_string())])
+            .unwrap()
+            .as_number()
+            .is_nan());
     }
 
     #[test]

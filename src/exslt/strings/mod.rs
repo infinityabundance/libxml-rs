@@ -132,30 +132,46 @@ fn padding_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue
 
 /// str:align(string, padding, alignment) — pad/truncate to padding's length.
 fn align_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
+    // UPSTREAM-PARITY (libexslt strings.c exsltStrAlignFunction): the padding
+    // string is the alignment canvas, not a source of repeated spaces. A
+    // string shorter than the padding is centred (floor) / right-aligned by
+    // slicing the padding's own characters, and a string at least as long as
+    // the padding is truncated to the padding's width.
     let s = str_at(args, 0);
     let padding = str_at(args, 1);
     let alignment = match args.get(2) {
         Some(v) => v.as_string(),
         None => String::new(),
     };
-    let target = padding.chars().count();
-    let len = s.chars().count();
-    if len >= target {
-        // Truncate (upstream truncates to the padding width).
-        return Ok(XPathValue::String(s.chars().take(target).collect()));
+    let str_l = s.chars().count();
+    let padding_l = padding.chars().count();
+
+    if str_l == padding_l {
+        return Ok(XPathValue::String(s));
     }
-    let fill = target - len;
-    let out = match alignment.as_str() {
-        "right" => format!("{}{}", " ".repeat(fill), s),
-        "center" => {
-            // Upstream rounds the extra space to the LEFT for odd fills.
-            let left = fill.div_ceil(2);
-            let right = fill - left;
-            format!("{}{}{}", " ".repeat(left), s, " ".repeat(right))
-        }
-        _ => format!("{}{}", s, " ".repeat(fill)), // left (default)
+    if str_l > padding_l {
+        return Ok(XPathValue::String(s.chars().take(padding_l).collect()));
+    }
+
+    let out = if alignment == "right" {
+        let head: String = padding.chars().take(padding_l - str_l).collect();
+        format!("{head}{s}")
+    } else if alignment == "center" {
+        let left = (padding_l - str_l) / 2;
+        let head: String = padding.chars().take(left).collect();
+        let right_start = char_byte_offset(&padding, left + str_l);
+        format!("{head}{s}{}", &padding[right_start..])
+    } else {
+        let str_s = char_byte_offset(&padding, str_l);
+        format!("{s}{}", &padding[str_s..])
     };
     Ok(XPathValue::String(out))
+}
+
+/// Byte offset of the `n`-th character of `s` (`s.len()` when `s` has fewer
+/// than `n` characters). Mirrors `xmlUTF8Strsize`.
+fn char_byte_offset(s: &str, n: usize) -> usize {
+    s.char_indices().nth(n).map(|(i, _)| i).unwrap_or(s.len())
 }
 
 /// str:concat(sep, node-set) — concatenate string values with a separator.
@@ -288,16 +304,24 @@ fn push_text(ns: &mut NodeSet, bytes: &[u8]) {
     }
 }
 
+/// `(local-name, implementation)` pairs for the EXSLT Strings module, in
+/// upstream `exsltStrXpathCtxtRegister` order.
+pub const FUNCTIONS: &[(&str, ExsltFunction)] = &[
+    ("tokenize", tokenize_fn as ExsltFunction),
+    ("split", split_fn as ExsltFunction),
+    ("replace", replace_fn as ExsltFunction),
+    ("padding", padding_fn as ExsltFunction),
+    ("align", align_fn as ExsltFunction),
+    ("concat", concat_fn as ExsltFunction),
+    ("encode-uri", encode_uri_fn as ExsltFunction),
+    ("decode-uri", decode_uri_fn as ExsltFunction),
+];
+
 /// Register all `str:` functions.
 pub fn register_all() {
-    register("str:tokenize", tokenize_fn as ExsltFunction);
-    register("str:split", split_fn as ExsltFunction);
-    register("str:replace", replace_fn as ExsltFunction);
-    register("str:padding", padding_fn as ExsltFunction);
-    register("str:align", align_fn as ExsltFunction);
-    register("str:concat", concat_fn as ExsltFunction);
-    register("str:encode-uri", encode_uri_fn as ExsltFunction);
-    register("str:decode-uri", decode_uri_fn as ExsltFunction);
+    for (name, f) in FUNCTIONS {
+        register(&format!("str:{name}"), *f);
+    }
 }
 
 #[cfg(test)]
@@ -387,7 +411,7 @@ mod tests {
             ],
         )
         .unwrap();
-        assert_eq!(r.as_string(), "  ab ");
+        assert_eq!(r.as_string(), " ab  ");
     }
 
     /// `str:concat` joins the string values of nodes sharing a document.

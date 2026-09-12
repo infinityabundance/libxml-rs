@@ -979,45 +979,48 @@ fn parse_date_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathVa
     Ok(XPathValue::String(format_date_time(&dt, false)))
 }
 
+/// `(local-name, implementation)` pairs for the EXSLT Dates and Times
+/// module, in upstream `exsltDateXpathCtxtRegister` order.
+///
+/// Single source of truth for both registration paths: the global registry
+/// (`register_all`) and per-XPath-context registration
+/// (`exsltDateXpathCtxtRegister`, used by lxml's `XPath` evaluator).
+pub const FUNCTIONS: &[(&str, ExsltFunction)] = &[
+    ("date-time", date_time_fn as ExsltFunction),
+    ("date", date_fn as ExsltFunction),
+    ("time", time_fn as ExsltFunction),
+    ("year", year_fn as ExsltFunction),
+    ("month-in-year", month_in_year_fn as ExsltFunction),
+    ("day-in-month", day_in_month_fn as ExsltFunction),
+    (
+        "day-of-week-in-month",
+        day_of_week_in_month_fn as ExsltFunction,
+    ),
+    ("day-in-year", day_in_year_fn as ExsltFunction),
+    ("day-in-week", day_in_week_fn as ExsltFunction),
+    ("week-in-year", week_in_year_fn as ExsltFunction),
+    ("day-name", day_name_fn as ExsltFunction),
+    ("day-abbreviation", day_abbreviation_fn as ExsltFunction),
+    ("month-name", month_name_fn as ExsltFunction),
+    ("month-abbreviation", month_abbreviation_fn as ExsltFunction),
+    ("hour-in-day", hour_in_day_fn as ExsltFunction),
+    ("minute-in-hour", minute_in_hour_fn as ExsltFunction),
+    ("second-in-minute", second_in_minute_fn as ExsltFunction),
+    ("leap-year", leap_year_fn as ExsltFunction),
+    ("seconds", seconds_fn as ExsltFunction),
+    ("sum", sum_fn as ExsltFunction),
+    ("duration", duration_fn as ExsltFunction),
+    ("add", add_fn as ExsltFunction),
+    ("add-duration", add_fn as ExsltFunction),
+    ("format-date", format_date_fn as ExsltFunction),
+    ("parse-date", parse_date_fn as ExsltFunction),
+];
+
 /// Register all `date:` functions.
 pub fn register_all() {
-    register("date:date-time", date_time_fn as ExsltFunction);
-    register("date:date", date_fn as ExsltFunction);
-    register("date:time", time_fn as ExsltFunction);
-    register("date:year", year_fn as ExsltFunction);
-    register("date:month-in-year", month_in_year_fn as ExsltFunction);
-    register("date:day-in-month", day_in_month_fn as ExsltFunction);
-    register(
-        "date:day-of-week-in-month",
-        day_of_week_in_month_fn as ExsltFunction,
-    );
-    register("date:day-in-year", day_in_year_fn as ExsltFunction);
-    register("date:day-in-week", day_in_week_fn as ExsltFunction);
-    register("date:week-in-year", week_in_year_fn as ExsltFunction);
-    register("date:day-name", day_name_fn as ExsltFunction);
-    register(
-        "date:day-abbreviation",
-        day_abbreviation_fn as ExsltFunction,
-    );
-    register("date:month-name", month_name_fn as ExsltFunction);
-    register(
-        "date:month-abbreviation",
-        month_abbreviation_fn as ExsltFunction,
-    );
-    register("date:hour-in-day", hour_in_day_fn as ExsltFunction);
-    register("date:minute-in-hour", minute_in_hour_fn as ExsltFunction);
-    register(
-        "date:second-in-minute",
-        second_in_minute_fn as ExsltFunction,
-    );
-    register("date:leap-year", leap_year_fn as ExsltFunction);
-    register("date:seconds", seconds_fn as ExsltFunction);
-    register("date:sum", sum_fn as ExsltFunction);
-    register("date:duration", duration_fn as ExsltFunction);
-    register("date:add", add_fn as ExsltFunction);
-    register("date:add-duration", add_fn as ExsltFunction);
-    register("date:format-date", format_date_fn as ExsltFunction);
-    register("date:parse-date", parse_date_fn as ExsltFunction);
+    for (name, f) in FUNCTIONS {
+        register(&format!("date:{name}"), *f);
+    }
 }
 
 #[cfg(test)]

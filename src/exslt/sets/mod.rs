@@ -153,14 +153,22 @@ fn two_sets(args: &[XPathValue]) -> (NodeSet, NodeSet) {
     }
 }
 
+/// `(local-name, implementation)` pairs for the EXSLT Sets module, in
+/// upstream `exsltSetsXpathCtxtRegister` order.
+pub const FUNCTIONS: &[(&str, ExsltFunction)] = &[
+    ("difference", difference_fn as ExsltFunction),
+    ("intersection", intersection_fn as ExsltFunction),
+    ("distinct", distinct_fn as ExsltFunction),
+    ("has-same-node", has_same_node_fn as ExsltFunction),
+    ("leading", leading_fn as ExsltFunction),
+    ("trailing", trailing_fn as ExsltFunction),
+];
+
 /// Register all `set:` functions.
 pub fn register_all() {
-    register("set:difference", difference_fn as ExsltFunction);
-    register("set:intersection", intersection_fn as ExsltFunction);
-    register("set:distinct", distinct_fn as ExsltFunction);
-    register("set:has-same-node", has_same_node_fn as ExsltFunction);
-    register("set:leading", leading_fn as ExsltFunction);
-    register("set:trailing", trailing_fn as ExsltFunction);
+    for (name, f) in FUNCTIONS {
+        register(&format!("set:{name}"), *f);
+    }
 }
 
 #[cfg(test)]
