@@ -1,0 +1,31 @@
+Ran 2007 tests in 87.160s
+FAILED (failures=56, errors=13)
+
+Previous (5b99dbc8 / lxml-7ai): Ran 2007 tests in 82.162s
+FAILED (failures=61, errors=16)
+
+Set comparison (unique ids, stable non-verbose run; no flaky module_HTML group):
+  previous unique = 72
+  now unique      = 64
+  fixed           =  8
+  new             =  0
+
+Fixed:
+  test_xslt_encoding                  (lxml.tests.test_xslt.ETreeXSLTTestCase)
+  test_xslt_unicode                   (lxml.tests.test_xslt.ETreeXSLTTestCase)
+  test_xslt_unicode_standalone        (lxml.tests.test_xslt.ETreeXSLTTestCase)
+  test_xslt_broken                    (lxml.tests.test_xslt.ETreeXSLTTestCase)
+  test_xslt_invalid_stylesheet        (lxml.tests.test_xslt.ETreeXSLTTestCase)
+  test_xslt_parsing_error_log         (lxml.tests.test_xslt.ETreeXSLTTestCase)
+  test_thread_xslt_parsing_error_log  (lxml.tests.test_threading.ThreadingTestCase)
+  /src/lxml/doc/extensions.txt
+
+test_xslt.py: 10 failed / 84 passed -> 4 failed / 90 passed.
+
+Remaining test_xslt failures (independent causes):
+  test_xslt_default_parameters        (stylesheet parameter override 'Default' vs 'Bar')
+  test_xslt_document_parse_deny       (XSLTAccessControl(read_file=False): document() must raise XSLTApplyError)
+  test_xslt_document_parse_deny_all   (access_control=DENY_ALL)
+  test_variable_result_tree_fragment  (RTF variable not walked by apply-templates)
+
+test_dtd.py and the HTML/XSD clusters are unchanged by this commit.
