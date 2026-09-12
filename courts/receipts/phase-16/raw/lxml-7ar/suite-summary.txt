@@ -1,0 +1,15 @@
+Raw unique ids: previous 58 (7ap), now 52.
+After removing the known-flaky group: previous 55, now 49 -> 6 fixed, 0 new.
+
+Fixed:
+  test_c14n_file                    (lxml.tests.test_etree.ETreeC14NTestCase)
+  test_c14n_file_pathlike           (lxml.tests.test_etree.ETreeC14NTestCase)
+  test_XMLDTDID_no_id_dict          (lxml.tests.test_etree.ETreeOnlyTestCase)
+  test_comment_parse_empty          (lxml.tests.test_etree.ETreeOnlyTestCase)
+  test_write_file_url               (lxml.tests.test_etree.ETreeWriteTestCase)
+  test_write_filename_special_percent (lxml.tests.test_io.ETreeIOTestCase)
+
+New: none.
+
+The known-flaky group (module-level HTML/HTML-output tests plus ElementMaker)
+is unchanged and intermittent; see lxml-7ah/7ap.

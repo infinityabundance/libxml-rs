@@ -1,0 +1,12 @@
+candidate_sha=24ead03b
+evidence_kind=root-cause fixes (zero-length file write; output filename URL decoding; empty comment; XML_SKIP_IDS)
+debug_libxml2_sha256=7b606271d2f7f8624811dc6c1cece77d1a1077f01645e6d4999b9e638a78d9a8
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=58 raw ids at bdb8ed79 (lxml-7ap), 55 excluding the flaky group
+lxml_suite_now=52 raw ids, 49 excluding the flaky group
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes
