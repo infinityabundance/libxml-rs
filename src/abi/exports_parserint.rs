@@ -1513,8 +1513,12 @@ unsafe fn pi_parse_entity_value(
             pi_fatal_err(ctxt, XML_ERR_ENTITY_NOT_STARTED);
             return ptr::null_mut();
         }
-        let start = pi_cur_ptr(ctxt);
         pi_next1(ctxt);
+        // UPSTREAM-PARITY (parser.c xmlParseEntityValue): `orig` is the raw
+        // literal BETWEEN the quotes — the pointer must be taken after the
+        // opening quote is consumed, otherwise the quote itself is included
+        // and the closing character displaces the last literal byte.
+        let lit_start = pi_cur_ptr(ctxt);
         let mut len: usize = 0;
         loop {
             if pi_stopped(ctxt) {
@@ -1537,9 +1541,9 @@ unsafe fn pi_parse_entity_value(
             len += 1;
         }
         if !orig.is_null() {
-            *orig = pi_strndup_bytes(start, len);
+            *orig = pi_strndup_bytes(lit_start, len);
         }
-        let val = pi_strndup_bytes(start, len);
+        let val = pi_strndup_bytes(lit_start, len);
         pi_next1(ctxt);
         val
     }
@@ -2246,6 +2250,43 @@ unsafe fn pi_parse_entity_decl(ctxt: *mut _xmlParserCtxt) {
                             value,
                         );
                     }
+                    // UPSTREAM-PARITY (parser.c xmlParseEntityDecl ->
+                    // xmlSAX2EntityDecl -> xmlAddDocEntity/xmlAddDtdEntity):
+                    // the callback fires AND the declaration is recorded in the
+                    // current subset. The candidate's default SAX2 entityDecl
+                    // is a no-op, so the direct add is what records it —
+                    // without it `<!ENTITY c "&#42;">` vanished from the DTD
+                    // (dtd.entities() was empty). `orig` keeps the raw literal
+                    // and `value` the decoded content.
+                    if !c.myDoc.is_null() {
+                        let dtd = if c.inSubset == 2 {
+                            (*c.myDoc).extSubset
+                        } else {
+                            (*c.myDoc).intSubset
+                        };
+                        if !dtd.is_null() {
+                            // UPSTREAM-PARITY (entities.c xmlAddDocEntity): the
+                            // stored replacement text is the value with entity
+                            // and character references expanded, while `orig`
+                            // keeps the raw literal (`"&#42;"` -> content `*`).
+                            let decoded = crate::xml::entities::string_decode_entities(
+                                c.myDoc, value, 0, 0, 0, 0,
+                            );
+                            let content = if decoded.is_null() { value } else { decoded };
+                            crate::xml::entities::add_entity_with_orig(
+                                dtd,
+                                name,
+                                XML_INTERNAL_GENERAL_ENTITY as c_int,
+                                ptr::null(),
+                                ptr::null(),
+                                content,
+                                orig,
+                            );
+                            if !decoded.is_null() && decoded != value {
+                                xmlFreeImpl(decoded as *mut c_void);
+                            }
+                        }
+                    }
                 } else {
                     uri = pi_parse_external_id(ctxt, &mut literal, 1);
                     if pi_raw(ctxt) != b'>' && pi_skip_blanks(ctxt) == 0 {
@@ -2577,12 +2618,44 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
                     break;
                 }
                 let c = &*ctxt;
+                // UPSTREAM-PARITY (parser.c xmlParseAttributeListDecl ->
+                // xmlSAX2AttributeDecl -> xmlAddAttributeDecl): the callback
+                // fires AND the declaration is added to the current DTD. The
+                // candidate's default SAX2 attributeDecl is a no-op, so the
+                // direct add is what records the declaration (without it a
+                // DTD loaded through xmlParseDTD had no attribute
+                // declarations and dtd.elements()[0].attributes() was empty).
+                let dtd = {
+                    let doc = c.myDoc;
+                    if doc.is_null() {
+                        ptr::null_mut()
+                    } else if c.inSubset == 2 {
+                        (*doc).extSubset
+                    } else {
+                        (*doc).intSubset
+                    }
+                };
                 if !c.sax.is_null() && c.disableSAX == 0 {
                     SaxDispatcher::attribute_decl(
                         &*c.sax,
                         c.userData,
                         elem_name,
                         attr_name,
+                        type_,
+                        def,
+                        default_value,
+                        tree,
+                    );
+                }
+                if !dtd.is_null() {
+                    // `add_attribute_decl` takes ownership of `tree` (attaches
+                    // it, or frees it for a duplicate declaration).
+                    let elem_decl = crate::xml::dtd::get_element_decl_created(dtd, elem_name);
+                    crate::xml::dtd::add_attribute_decl(
+                        dtd,
+                        elem_decl,
+                        attr_name,
+                        ptr::null(),
                         type_,
                         def,
                         default_value,
@@ -2986,16 +3059,38 @@ unsafe fn pi_parse_element_decl(ctxt: *mut _xmlParserCtxt) -> c_int {
             } else {
                 pi_next1(ctxt);
                 let c = &*ctxt;
+                // UPSTREAM-PARITY (parser.c xmlParseElementDecl ->
+                // xmlSAX2ElementDecl): the callback fires AND the declaration
+                // is added to the current DTD (valid.c xmlAddElementDecl).
+                // The candidate's default SAX2 elementDecl is a no-op, so the
+                // direct add is what records the declaration — without it a
+                // DTD loaded through xmlParseDTD / xmlParseExternalSubset had
+                // no element declarations (dtd.elements() was empty and
+                // validation rejected every document).
+                let dtd = {
+                    let doc = c.myDoc;
+                    if doc.is_null() {
+                        ptr::null_mut()
+                    } else if c.inSubset == 2 {
+                        (*doc).extSubset
+                    } else {
+                        (*doc).intSubset
+                    }
+                };
                 if !c.sax.is_null() && c.disableSAX == 0 && (*c.sax).elementDecl.is_some() {
                     if !content.is_null() {
                         (*content).parent = ptr::null_mut();
                     }
                     SaxDispatcher::element_decl(&*c.sax, c.userData, name, ret, content);
-                    if !content.is_null() && (*content).parent.is_null() {
-                        // Not plugged into a DTD — free it.
-                        free_content_model(content);
-                    }
-                } else if !content.is_null() {
+                }
+                if !dtd.is_null() {
+                    // `add_element_decl` takes ownership of `content` (it either
+                    // attaches it to the new declaration or frees it when a
+                    // declaration for the name already exists), exactly like
+                    // state.rs' parse_element_decl.
+                    crate::xml::dtd::add_element_decl(dtd, name, ret, content);
+                } else if !content.is_null() && (*content).parent.is_null() {
+                    // No DTD to own it and no custom handler plugged it in.
                     free_content_model(content);
                 }
             }
@@ -3119,7 +3214,7 @@ unsafe fn pi_parse_external_subset(
             }
             if (*input).cur >= (*input).end {
                 if (*ctxt).inputNr <= old_input_nr {
-                    pi_fatal_err(ctxt, XML_ERR_EXT_SUBSET_NOT_FINISHED);
+                    pi_check_eof(ctxt, XML_ERR_EXT_SUBSET_NOT_FINISHED);
                     break;
                 }
                 pi_pop_pe(ctxt);
@@ -3138,6 +3233,35 @@ unsafe fn pi_parse_external_subset(
             }
             pi_skip_blanks(ctxt);
         }
+    }
+}
+
+/// Upstream `xmlParserCheckEOF` (parserInternals.c): raises `code` only when
+/// the input was NOT fully consumed, then flushes any encoder to detect a
+/// truncated multi-byte sequence. A completely consumed input is a valid EOF.
+///
+/// The unconditional fatal error this replaces made every file-based
+/// `xmlParseDTD` fail — a fully consumed external subset reaches EOF
+/// legitimately ("error parsing DTD").
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid parser context.
+unsafe fn pi_check_eof(ctxt: *mut _xmlParserCtxt, code: c_int) {
+    unsafe {
+        if (*ctxt).errNo != 0 {
+            return;
+        }
+        let input = pi_input(ctxt);
+        if input.is_null() {
+            return;
+        }
+        if (*input).cur < (*input).end {
+            pi_fatal_err(ctxt, code);
+        }
+        // The candidate's file inputs carry no separate encoder object here, so
+        // the upstream truncated-multibyte-sequence flush is a no-op: a
+        // decoder error would already have been latched by the input layer.
     }
 }
 
@@ -5172,6 +5296,32 @@ pub unsafe extern "C" fn xmlParseDTD(
         (*ctxt).inSubset = 2;
         (*ctxt).hasExternalSubset = 1;
 
+        // UPSTREAM-PARITY (parser.c xmlCtxtParseDtd, reached via
+        // xmlSAXParseDTD): the parser document is created up front with an
+        // EXTERNAL subset. That is the DTD the SAX handlers populate while
+        // `inSubset == 2` and the one xmlParseDTD returns. Creating it here
+        // (rather than letting the external-subset parser create an internal
+        // subset) is what makes the declarations land in the returned DTD.
+        let pid = if public_id.is_null() {
+            b"none\0".as_ptr() as *const xmlChar
+        } else {
+            public_id
+        };
+        let sid = b"none\0".as_ptr() as *const xmlChar;
+        let doc = crate::xml::tree::new_doc(c"1.0".as_ptr() as *const xmlChar);
+        if doc.is_null() {
+            free_parser_ctxt(ctxt);
+            return ptr::null_mut();
+        }
+        (*doc).properties |= crate::abi::types::xmlDocProperties::XML_DOC_INTERNAL as c_int;
+        (*ctxt).myDoc = doc;
+        (*doc).extSubset =
+            crate::xml::tree::new_dtd(doc, b"none\0".as_ptr() as *const xmlChar, pid, system_id);
+        if (*doc).extSubset.is_null() {
+            free_parser_ctxt(ctxt);
+            return ptr::null_mut();
+        }
+
         let mut ret: *mut _xmlDtd = ptr::null_mut();
         let input_buf = match crate::abi::exports_parser::open_filename_routed(
             system_id as *const c_char,
@@ -5231,10 +5381,25 @@ pub unsafe extern "C" fn xmlParseDTD(
 
         if (*ctxt).wellFormed != 0 && !(*ctxt).myDoc.is_null() {
             let doc = (*ctxt).myDoc;
-            if !(*doc).intSubset.is_null() {
-                ret = (*doc).intSubset;
-            } else if !(*doc).extSubset.is_null() {
+            // UPSTREAM-PARITY (parser.c xmlCtxtParseDtd): the returned DTD is
+            // the EXTERNAL subset, DETACHED from the parser document before the
+            // context (and thus the document) is freed, and its `doc` pointer
+            // plus the `doc` pointer of every child are cleared. Without the
+            // detach the returned DTD dangled into the freed document.
+            if !(*doc).extSubset.is_null() {
                 ret = (*doc).extSubset;
+                (*doc).extSubset = ptr::null_mut();
+            } else if !(*doc).intSubset.is_null() {
+                ret = (*doc).intSubset;
+                (*doc).intSubset = ptr::null_mut();
+            }
+            if !ret.is_null() {
+                (*ret).doc = ptr::null_mut();
+                let mut tmp = (*ret).children;
+                while !tmp.is_null() {
+                    (*tmp).doc = ptr::null_mut();
+                    tmp = (*tmp).next;
+                }
             }
         }
         free_parser_ctxt(ctxt);
