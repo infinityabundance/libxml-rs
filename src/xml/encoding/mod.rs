@@ -2021,7 +2021,13 @@ unsafe extern "C" fn latin1_output_func(
                 }
                 let cp = ((byte as u32 & 0x1F) << 6) | (second as u32 & 0x3F);
                 if cp > 0xFF {
-                    return -1; // Outside Latin-1 range
+                    // Not representable in Latin-1: report an INPUT error so
+                    // xmlCharEncOutput substitutes a decimal character
+                    // reference (upstream's iconv-backed handler raises EILSEQ;
+                    // returning -1 here made the whole serialize fail).
+                    *outlen = out_pos as c_int;
+                    *inlen = (in_pos - 2) as c_int;
+                    return -2;
                 }
                 out_slice[out_pos] = cp as u8;
                 out_pos += 1;
@@ -2032,9 +2038,12 @@ unsafe extern "C" fn latin1_output_func(
             // Unexpected continuation byte
             return -1;
         } else {
-            // Multi-byte sequence for codepoints > U+00FF
-            // Skip the rest of the sequence and return error
-            return -1;
+            // A multi-byte sequence for a codepoint > U+00FF: not
+            // representable in Latin-1. Report an INPUT error at the lead
+            // byte so the caller emits &#NNN; and resumes (see above).
+            *outlen = out_pos as c_int;
+            *inlen = (in_pos - 1) as c_int;
+            return -2;
         }
     }
 
