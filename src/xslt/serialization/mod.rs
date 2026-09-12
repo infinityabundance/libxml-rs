@@ -106,7 +106,6 @@ use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
-use crate::xml::encoding;
 use std::ffi::c_void;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
@@ -490,6 +489,12 @@ pub unsafe extern "C" fn xsltSaveResultToString(
     };
 
     // Convert to the output encoding when it is not UTF-8.
+    //
+    // UPSTREAM-PARITY: xsltSaveResultToString (xsltutils.c) serializes into an
+    // xmlOutputBuffer whose encoder is the stylesheet's output encoding, so the
+    // returned bytes are in THAT encoding (including its byte-order mark for
+    // UTF-16). Route the serialized UTF-8 through the same output-buffer
+    // encoder rather than hand-converting.
     let encoding = if !style.is_null() {
         import_chain_str(style, |st| st.encoding)
     } else {
@@ -499,20 +504,9 @@ pub unsafe extern "C" fn xsltSaveResultToString(
         && !cstr_eq_ignore_case(encoding, b"UTF-8")
         && !cstr_eq_ignore_case(encoding, b"UTF8")
     {
-        let enc = crate::abi::versioning::c_str_to_bytes(encoding as *const c_char).unwrap_or(b"");
-        let enc_lower = enc.to_ascii_lowercase();
-        if enc_lower.as_slice() == b"iso-8859-1"
-            || enc_lower.as_slice() == b"latin1"
-            || enc_lower.as_slice() == b"latin-1"
-        {
-            match encoding::utf8_to_latin1(&bytes) {
-                Ok(c) => c,
-                Err(_) => bytes,
-            }
-        } else {
-            // RESIDUAL R-ENCODING-CONVERSION: encodings other than UTF-8 and
-            // ISO-8859-1 are emitted as UTF-8 for now.
-            bytes
+        match unsafe { convert_bytes_to_encoding(encoding, &bytes) } {
+            Some(c) => c,
+            None => bytes,
         }
     } else {
         bytes
@@ -529,6 +523,44 @@ pub unsafe extern "C" fn xsltSaveResultToString(
     *doc_txt_ptr = out;
     *doc_txt_len = converted.len() as c_int;
     0
+}
+
+/// Convert serialized UTF-8 bytes into `encoding` using the same output-buffer
+/// encoder the file/buffer save paths use.
+///
+/// Returns `None` when no handler exists for `encoding` (the caller then keeps
+/// the UTF-8 bytes).
+///
+/// # SAFETY
+///
+/// - `encoding` must be a valid NUL-terminated C string.
+unsafe fn convert_bytes_to_encoding(encoding: *const xmlChar, utf8: &[u8]) -> Option<Vec<u8>> {
+    let handler = crate::xml::encoding::find_encoding_handler(encoding);
+    if handler.is_null() {
+        return None;
+    }
+    let out_buf = crate::xml::io::buf_create(-1);
+    if out_buf.is_null() {
+        return None;
+    }
+    let ob = crate::xml::io::output_buffer_create_buffer(out_buf, handler);
+    if ob.is_null() {
+        crate::xml::io::buf_free(out_buf);
+        return None;
+    }
+    crate::xml::io::output_buffer_write(ob, utf8.len() as c_int, utf8.as_ptr() as *const c_char);
+    // close flushes the encoder (emitting the BOM for UTF-16) into out_buf.
+    crate::xml::io::output_buffer_close(ob);
+    let len = crate::xml::io::buf_length(out_buf);
+    let content = crate::xml::io::buf_content(out_buf);
+    let result = if len > 0 && !content.is_null() {
+        // SAFETY: content/len describe the converted buffer.
+        Some(unsafe { core::slice::from_raw_parts(content, len as usize) }.to_vec())
+    } else {
+        Some(Vec::new())
+    };
+    crate::xml::io::buf_free(out_buf);
+    result
 }
 
 /// Save a result document to a file (FILE*).

@@ -305,6 +305,15 @@ pub unsafe extern "C" fn xsltParseStylesheetDoc(doc: *mut _xmlDoc) -> *mut _xslt
         xsltFreeStylesheet(style);
         return ptr::null_mut();
     }
+    // UPSTREAM-PARITY (xslt.c xsltParseStylesheetUser): a stylesheet that
+    // recorded compile errors is not handed back as usable. The document is
+    // detached before the shell is freed so the caller remains its sole
+    // owner (lxml, on seeing NULL, frees its own copy).
+    if (*style).errors != 0 {
+        (*style).doc = ptr::null_mut();
+        xsltFreeStylesheet(style);
+        return ptr::null_mut();
+    }
     style
 }
 

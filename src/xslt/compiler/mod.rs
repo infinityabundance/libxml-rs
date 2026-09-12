@@ -482,9 +482,30 @@ pub(crate) unsafe fn compile_top_level(
                 compile_output(style, child);
             }
             Some("stylesheet") | Some("transform") => {
-                // Nested stylesheet elements are an error; ignore.
+                // UPSTREAM-PARITY (xslt.c xsltParseStylesheetTop): xsl:stylesheet
+                // is not allowed nested inside a stylesheet.
+                if let Some(n) = name.as_deref() {
+                    emit_compile_error(
+                        style,
+                        child,
+                        format!("xsltParseStylesheetTop: unknown {} element", n).as_bytes(),
+                    );
+                    (*style).errors += 1;
+                }
             }
-            _ => {}
+            _ => {
+                // UPSTREAM-PARITY (xslt.c xsltParseStylesheetTop): any other
+                // XSLT-namespace element at the top level is an unknown
+                // stylesheet element and fails compilation.
+                if let Some(n) = name.as_deref() {
+                    emit_compile_error(
+                        style,
+                        child,
+                        format!("xsltParseStylesheetTop: unknown {} element", n).as_bytes(),
+                    );
+                    (*style).errors += 1;
+                }
+            }
         }
         child = next;
     }
