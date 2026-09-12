@@ -1257,6 +1257,12 @@ unsafe fn transition_to_body(ctxt: &mut HtmlParserCtxt) {
 struct HtmlAttr {
     name: Vec<u8>,
     value: Vec<u8>,
+    /// Whether the source carried an explicit `=value` (quoted or not). A
+    /// minimized attribute (`<option selected>`) has none, and upstream
+    /// `htmlParseStartTag` creates such an attribute with a NULL value —
+    /// `attr->children == NULL` — which the HTML serializer then writes as a
+    /// bare name (`<option selected>`, not `<option selected="">`).
+    has_value: bool,
     #[allow(dead_code)]
     quoted: bool,
 }
@@ -1346,6 +1352,7 @@ fn parse_attributes(ctxt: &mut HtmlParserCtxt) -> Vec<HtmlAttr> {
             attrs.push(HtmlAttr {
                 name,
                 value,
+                has_value: true,
                 quoted,
             });
         } else {
@@ -1353,6 +1360,7 @@ fn parse_attributes(ctxt: &mut HtmlParserCtxt) -> Vec<HtmlAttr> {
             attrs.push(HtmlAttr {
                 name,
                 value: Vec::new(),
+                has_value: false,
                 quoted: false,
             });
         }
@@ -1584,14 +1592,22 @@ unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
 unsafe fn attach_attrs(node: *mut _xmlNode, attrs: &[HtmlAttr]) {
     for attr in attrs {
         let name_c = bytes_to_xmlstr(&attr.name);
-        let val_c = bytes_to_xmlstr(&attr.value);
-        if !name_c.is_null() {
+        if name_c.is_null() {
+            continue;
+        }
+        // UPSTREAM-PARITY (HTMLparser.c htmlParseStartTag): a minimized
+        // attribute is created with a NULL value (no text child), not an empty
+        // string; the serializer distinguishes the two.
+        if attr.has_value {
+            let val_c = bytes_to_xmlstr(&attr.value);
             tree::set_prop(node, name_c, val_c);
-            xmlFreeImpl(name_c as *mut c_void);
             if !val_c.is_null() {
                 xmlFreeImpl(val_c as *mut c_void);
             }
+        } else {
+            tree::set_prop(node, name_c, ptr::null());
         }
+        xmlFreeImpl(name_c as *mut c_void);
     }
 }
 
@@ -1766,17 +1782,7 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
         // Void element: create node, add attributes, add as child (no children)
         let node = new_element_node(ptr::null_mut(), tag_name);
         if !node.is_null() {
-            for attr in attrs {
-                let name_c = bytes_to_xmlstr(&attr.name);
-                let val_c = bytes_to_xmlstr(&attr.value);
-                if !name_c.is_null() {
-                    tree::set_prop(node, name_c, val_c);
-                    xmlFreeImpl(name_c as *mut c_void);
-                    if !val_c.is_null() {
-                        xmlFreeImpl(val_c as *mut c_void);
-                    }
-                }
-            }
+            attach_attrs(node, attrs);
             let insertion_point = if ctxt.current.is_null() {
                 if ctxt.options & HTML_PARSE_NOIMPLIED != 0 {
                     ctxt.doc as *mut _xmlNode
@@ -1796,17 +1802,7 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
     // Regular element
     let node = new_element_node(ptr::null_mut(), tag_name);
     if !node.is_null() {
-        for attr in attrs {
-            let name_c = bytes_to_xmlstr(&attr.name);
-            let val_c = bytes_to_xmlstr(&attr.value);
-            if !name_c.is_null() {
-                tree::set_prop(node, name_c, val_c);
-                xmlFreeImpl(name_c as *mut c_void);
-                if !val_c.is_null() {
-                    xmlFreeImpl(val_c as *mut c_void);
-                }
-            }
-        }
+        attach_attrs(node, attrs);
 
         let insertion_point = if ctxt.current.is_null() {
             if ctxt.in_body || ctxt.body_created {
@@ -2040,11 +2036,20 @@ fn parse_html_doctype_decl(input: &[u8]) -> Option<(Vec<u8>, Option<Vec<u8>>, Op
 
 /// Parse HTML from a buffer.
 ///
+/// `pre_doc` is either NULL (a document is created here) or a document already
+/// created by the SAX `startDocument` hook (upstream htmlParseDocument fires
+/// `sax->startDocument` before parsing, and the default handler creates
+/// `ctxt->myDoc`; lxml's `_initSaxDocument` wrapper adopts `ctxt->dict` as
+/// `doc->dict` at that point). When non-NULL it becomes the parse target so the
+/// consumer sees exactly the document it was told about.
+///
 /// # Safety
 ///
 /// - `buffer` must point to valid memory of at least `size` bytes.
-unsafe fn html_parse_buffer(
+/// - `pre_doc` must be NULL or a valid `_xmlDoc` not yet fully populated.
+unsafe fn html_parse_buffer_into(
     ctxt: &mut HtmlParserCtxt,
+    pre_doc: *mut _xmlDoc,
     buffer: *const c_char,
     size: c_int,
 ) -> *mut _xmlDoc {
@@ -2052,11 +2057,16 @@ unsafe fn html_parse_buffer(
         return ptr::null_mut();
     }
 
-    // Create document with HTML_DOCUMENT_NODE type
-    let doc = tree::new_doc(ptr::null());
-    if doc.is_null() {
-        return ptr::null_mut();
-    }
+    // Create document with HTML_DOCUMENT_NODE type (or reuse the SAX hook's).
+    let doc = if pre_doc.is_null() {
+        let d = tree::new_doc(ptr::null());
+        if d.is_null() {
+            return ptr::null_mut();
+        }
+        d
+    } else {
+        pre_doc
+    };
     unsafe {
         (*doc).type_ = XML_HTML_DOCUMENT_NODE as c_int;
         // UPSTREAM-PARITY: HTML documents carry no version (htmlNewDocNoDtD
@@ -2326,17 +2336,7 @@ unsafe fn html_parse_buffer(
                 // Create the element first
                 let raw_node = new_element_node(ptr::null_mut(), &tag_name);
                 if !raw_node.is_null() {
-                    for attr in &attrs {
-                        let name_c = bytes_to_xmlstr(&attr.name);
-                        let val_c = bytes_to_xmlstr(&attr.value);
-                        if !name_c.is_null() {
-                            tree::set_prop(raw_node, name_c, val_c);
-                            xmlFreeImpl(name_c as *mut c_void);
-                            if !val_c.is_null() {
-                                xmlFreeImpl(val_c as *mut c_void);
-                            }
-                        }
-                    }
+                    attach_attrs(raw_node, &attrs);
 
                     let insertion_point = if ctxt.current.is_null() {
                         if ctxt.in_head {
@@ -2497,6 +2497,75 @@ unsafe fn html_parse_buffer(
     doc
 }
 
+/// Intern every element and attribute name of an HTML document into `dict`,
+/// mirroring the parser-side interning upstream performs unconditionally in
+/// `htmlParseName`/`htmlParseStartTag` (`xmlDictLookupHashed(ctxt->dict, …)`).
+///
+/// Upstream HTML always interns element/attribute names in `ctxt->dict`; the
+/// document only *adopts* that dictionary when a consumer's `startDocument`
+/// hook (lxml's `_initSaxDocument`) sets `doc->dict`. The candidate builds the
+/// tree before the dictionary is known, so this single tree-order pass performs
+/// the same interning at completion. `free_node` already consults `doc->dict`
+/// before freeing a name, so no ownership bookkeeping is needed here.
+///
+/// # Safety
+///
+/// - `doc` must be a valid `_xmlDoc` whose tree stays alive for the call.
+/// - `dict` must be NULL or a live dictionary obtained from `xmlDictCreate`.
+pub(crate) unsafe fn intern_doc_names_into_dict(doc: *mut _xmlDoc, dict: *mut c_void) {
+    if doc.is_null() || dict.is_null() {
+        return;
+    }
+    unsafe { intern_names_chain((*doc).children, dict) }
+}
+
+/// Intern the names of every element in a sibling chain and their descendants.
+///
+/// # Safety
+///
+/// - `cur` must be NULL or a valid live node chain within one document.
+/// - `dict` must be a live dictionary.
+unsafe fn intern_names_chain(mut cur: *mut _xmlNode, dict: *mut c_void) {
+    while !cur.is_null() {
+        let t = unsafe { (*cur).type_ };
+        if t == XML_ELEMENT_NODE as c_int {
+            unsafe { intern_name(cur, dict) };
+            let mut attr = unsafe { (*cur).properties };
+            while !attr.is_null() {
+                // `_xmlAttr` shares the `_xmlNode` prefix (type_, name, …), so
+                // the intern helper can operate on it through the cast.
+                unsafe { intern_name(attr as *mut _xmlNode, dict) };
+                attr = unsafe { (*attr).next };
+            }
+            if !unsafe { (*cur).children }.is_null() {
+                unsafe { intern_names_chain((*cur).children, dict) };
+            }
+        }
+        cur = unsafe { (*cur).next };
+    }
+}
+
+/// Replace a node/attribute name with its dictionary-interned pointer, freeing
+/// the previous heap copy when the dictionary did not already own it.
+///
+/// # Safety
+///
+/// - `node` must be a valid element or attribute node; `dict` a live dictionary.
+unsafe fn intern_name(node: *mut _xmlNode, dict: *mut c_void) {
+    let name = unsafe { (*node).name };
+    if name.is_null() {
+        return;
+    }
+    let interned = unsafe { crate::abi::exports_xml2::xmlDictLookup(dict, name, -1) };
+    if interned.is_null() || interned == name {
+        return;
+    }
+    unsafe {
+        xmlFreeImpl(name as *mut c_void);
+        (*node).name = interned;
+    }
+}
+
 /// Register ID/IDREF attributes of every element in the sibling chain and
 /// their element descendants (tree order, first registration wins).
 ///
@@ -2594,16 +2663,8 @@ pub unsafe fn parse_file(
     encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
-    if filename.is_null() {
+    let Some(content) = (unsafe { read_file_bytes(filename) }) else {
         return ptr::null_mut();
-    }
-
-    // Read the file into memory
-    let filename_str = unsafe { std::ffi::CStr::from_ptr(filename) };
-    let path = filename_str.to_str().unwrap_or("");
-    let content = match std::fs::read(path) {
-        Ok(data) => data,
-        Err(_) => return ptr::null_mut(),
     };
 
     let mut ctxt = HtmlParserCtxt::new();
@@ -2614,8 +2675,9 @@ pub unsafe fn parse_file(
     }
 
     let doc = unsafe {
-        html_parse_buffer(
+        html_parse_buffer_into(
             &mut ctxt,
+            ptr::null_mut(),
             content.as_ptr() as *const c_char,
             content.len() as c_int,
         )
@@ -2628,6 +2690,31 @@ pub unsafe fn parse_file(
     }
 
     doc
+}
+
+/// Read an HTML source file into memory.
+///
+/// The registered `xmlParserInputBufferCreateFilenameDefault` loader (php
+/// streams) is consulted first; without one the built-in file read runs. This
+/// mirrors `htmlCreateFileParserCtxt`'s main-document open so the
+/// `htmlCtxtReadFile` path applies the same loader semantics.
+///
+/// # Safety
+///
+/// - `filename` must be NULL or a valid NUL-terminated C string.
+pub(crate) unsafe fn read_file_bytes(filename: *const c_char) -> Option<Vec<u8>> {
+    if filename.is_null() {
+        return None;
+    }
+    if crate::xml::globals::get_parser_input_buffer_create_filename_value_cross_dso().is_some() {
+        crate::abi::exports_parser::call_loader_materialize(filename).ok()
+    } else {
+        let name = unsafe { std::ffi::CStr::from_ptr(filename) }
+            .to_str()
+            .ok()?
+            .to_owned();
+        std::fs::read(name).ok()
+    }
 }
 
 /// Parse HTML from a memory buffer.
@@ -2662,6 +2749,26 @@ pub(crate) unsafe fn parse_memory_enc(
     encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
+    unsafe { parse_memory_enc_into(ptr::null_mut(), buffer, size, encoding, options) }
+}
+
+/// Parse HTML from a memory buffer into an already-created document.
+///
+/// Used by the push front-end after firing the SAX `startDocument` hook so the
+/// consumer's document (with its adopted dictionary) is the parse target.
+///
+/// # Safety
+///
+/// - `buffer` must point to valid memory of at least `size` bytes.
+/// - `doc` must be NULL or a valid, empty `_xmlDoc`.
+/// - `encoding` must be a valid NUL-terminated C string or NULL.
+pub(crate) unsafe fn parse_memory_enc_into(
+    doc: *mut _xmlDoc,
+    buffer: *const c_char,
+    size: c_int,
+    encoding: *const c_char,
+    options: c_int,
+) -> *mut _xmlDoc {
     if buffer.is_null() || size <= 0 {
         return ptr::null_mut();
     }
@@ -2671,7 +2778,7 @@ pub(crate) unsafe fn parse_memory_enc(
     if !encoding.is_null() {
         ctxt.encoding = unsafe { c_strdup(encoding) };
     }
-    unsafe { html_parse_buffer(&mut ctxt, buffer, size) }
+    unsafe { html_parse_buffer_into(&mut ctxt, doc, buffer, size) }
 }
 
 /// Parse HTML from a null-terminated string.
@@ -2700,7 +2807,14 @@ pub(crate) unsafe fn parse_doc(
         ctxt.encoding = unsafe { c_strdup(encoding) };
     }
 
-    unsafe { html_parse_buffer(&mut ctxt, cur as *const c_char, len as c_int) }
+    unsafe {
+        html_parse_buffer_into(
+            &mut ctxt,
+            ptr::null_mut(),
+            cur as *const c_char,
+            len as c_int,
+        )
+    }
 }
 
 /// Create an HTML parser context for file parsing.
@@ -2769,6 +2883,15 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut c_void) {
         }
         if !(*state).encoding.is_null() {
             xmlFreeImpl((*state).encoding as *mut c_void);
+        }
+        // Free the context's name dictionary (upstream htmlFreeParserCtxt ->
+        // xmlFreeParserCtxt -> xmlDictFree(ctxt->dict)). A consumer that
+        // adopted the dict as `doc->dict` holds its own reference, so this
+        // only releases the context's.
+        let c = ctxt as *mut _xmlParserCtxt;
+        if !(*c).dict.is_null() {
+            crate::abi::exports_xml2::xmlDictFree((*c).dict);
+            (*c).dict = ptr::null_mut();
         }
         xmlFreeImpl(ctxt);
     }

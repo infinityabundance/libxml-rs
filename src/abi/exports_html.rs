@@ -2516,6 +2516,22 @@ unsafe fn html_ctxt_alloc() -> *mut c_void {
     if mem.is_null() {
         return ptr::null_mut();
     }
+    // UPSTREAM-PARITY (HTMLparser.c htmlInitParserCtxt): every HTML parser
+    // context owns a name dictionary, created eagerly at construction and
+    // stored in the ABI-visible `ctxt->dict`. This is load-bearing for
+    // consumers: lxml installs `_initSaxDocument` as `sax.startDocument`,
+    // which adopts `ctxt->dict` as `doc->dict`. Its `_MultiTagMatcher` then
+    // interns tag names in that dict and compares element name pointers by
+    // address, so a NULL `ctxt->dict` makes `iter("html")` silently match
+    // nothing. `dictNames` stays 0 for HTML (upstream never sets it), so a
+    // bare-C `htmlReadMemory` still leaves `doc->dict` NULL, as upstream.
+    let dict = crate::abi::exports_xml2::xmlDictCreate();
+    if dict.is_null() {
+        // htmlNewSAXParserCtxt failure path: free the half-built context and
+        // return NULL rather than letting a dict-less context escape.
+        xmlFreeImpl(mem as *mut c_void);
+        return ptr::null_mut();
+    }
     let state = mem.add(HTML_CTXT_STATE_OFFSET) as *mut HtmlOpaqueCtxt;
     unsafe {
         ptr::write(
@@ -2549,9 +2565,18 @@ unsafe fn html_ctxt_alloc() -> *mut c_void {
         // NULL sax selects the exported htmlDefaultSAXHandler global.
         let c = mem as *mut _xmlParserCtxt;
         (*c).html = 1;
+        (*c).dict = dict;
         (*c).sax = ptr::addr_of!(crate::abi::data_globals::htmlDefaultSAXHandler)
             as *const _xmlSAXHandler as *mut _xmlSAXHandler;
+        // UPSTREAM-PARITY (HTMLparser.c htmlInitParserCtxt): with a NULL sax
+        // the default HTML SAX handler is installed and `userData` is the
+        // context itself; with a caller-provided sax, a NULL userData also
+        // falls back to the context. Consumers (lxml's `_initSaxDocument`,
+        // `_receiveParserError`) cast the callback argument straight back to
+        // `xmlParserCtxt*`, so this must be the context pointer, not NULL.
+        (*c).userData = mem as *mut c_void;
         (*state).sax = (*c).sax;
+        (*state).user_data = mem as *mut c_void;
     }
     mem as *mut c_void
 }
@@ -2602,11 +2627,18 @@ pub unsafe extern "C" fn htmlNewSAXParserCtxt(
         } else {
             sax as *mut _xmlSAXHandler
         };
-        (*c).userData = userData;
+        // upstream htmlInitParserCtxt: sax==NULL => userData = ctxt; otherwise
+        // userData ? userData : ctxt.
+        let ud = if sax.is_null() || userData.is_null() {
+            host
+        } else {
+            userData
+        };
+        (*c).userData = ud;
         (*c).html = 1;
         let st = unsafe { html_state(host) };
         (*st).sax = (*c).sax;
-        (*st).user_data = userData;
+        (*st).user_data = ud;
     }
     host
 }
@@ -2685,10 +2717,17 @@ pub unsafe extern "C" fn htmlCreatePushParserCtxt(
         } else {
             sax
         };
-        (*c).userData = user_data;
+        // upstream htmlInitParserCtxt: sax==NULL => userData = ctxt; otherwise
+        // userData ? userData : ctxt.
+        let ud = if sax.is_null() || user_data.is_null() {
+            host
+        } else {
+            user_data
+        };
+        (*c).userData = ud;
         (*c).html = 1;
         (*st).sax = (*c).sax;
-        (*st).user_data = user_data;
+        (*st).user_data = ud;
         if !filename.is_null() {
             (*st).filename = c_strdup(filename);
         }
@@ -2938,19 +2977,63 @@ pub unsafe extern "C" fn htmlParseChunk(
     }
 
     if terminate != 0 {
-        let doc = unsafe {
-            html::parse_memory_enc(
+        let c = ctxt as *mut _xmlParserCtxt;
+        // UPSTREAM-PARITY (HTMLparser.c htmlParseDocument): the parser fires
+        // the SAX `startDocument` hook before parsing; the default
+        // xmlSAX2StartDocument creates `ctxt->myDoc`, and a consumer that
+        // replaced the hook (lxml's `_initSaxDocument`) uses that point to
+        // adopt `ctxt->dict` as `doc->dict` and enable `dictNames`. Only run
+        // the hook when the consumer actually replaced the default start
+        // handler; otherwise the engine's own document construction is
+        // observably identical and cheaper.
+        let sax = unsafe { (*c).sax };
+        let start_hook = if !sax.is_null() {
+            unsafe { (*sax).startDocument }
+        } else {
+            None
+        };
+        let has_custom_start = start_hook.is_some()
+            && start_hook != Some(crate::abi::exports_xml2::xmlSAX2StartDocument);
+        let mut doc = ptr::null_mut();
+        if has_custom_start {
+            if let Some(hook) = start_hook {
+                unsafe { hook((*c).userData) };
+            }
+            doc = unsafe { (*c).myDoc };
+        }
+        let parsed = unsafe {
+            html::parse_memory_enc_into(
+                doc,
                 (*st).input as *const c_char,
                 (*st).input_len as c_int,
                 (*st).encoding,
                 (*st).options,
             )
         };
-        let c = ctxt as *mut _xmlParserCtxt;
         unsafe {
-            (*st).doc = doc;
-            (*c).myDoc = doc;
-            if !doc.is_null() {
+            if has_custom_start {
+                // The hook created `ctxt->myDoc`; keep the two in sync.
+                (*c).myDoc = parsed;
+                // Intern the tree's names into the dictionary the consumer
+                // adopted (`doc->dict` == `ctxt->dict` after _initSaxDocument)
+                // so address-based tag matching (lxml _MultiTagMatcher) works.
+                if (*c).dictNames != 0 && !(*c).dict.is_null() && !parsed.is_null() {
+                    if (*parsed).dict.is_null() {
+                        (*parsed).dict = (*c).dict;
+                        crate::abi::exports_hash::xmlDictReference((*c).dict);
+                    }
+                    html::intern_doc_names_into_dict(parsed, (*c).dict);
+                }
+                if let Some(sax) = sax.as_ref() {
+                    if let Some(end) = sax.endDocument {
+                        end((*c).userData);
+                    }
+                }
+            } else {
+                (*c).myDoc = parsed;
+            }
+            (*st).doc = parsed;
+            if !parsed.is_null() {
                 (*c).wellFormed = 1;
             }
             // The accumulated input is no longer needed.
@@ -3112,7 +3195,28 @@ pub unsafe extern "C" fn htmlCtxtReadFile(
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
     let st = unsafe { html_state(ctxt) };
-    let doc = unsafe { html::parse_file(filename, encoding, (*st).options) };
+    // UPSTREAM-PARITY (parserInternals.c xmlCtxtErrIO via htmlCtxtReadFile ->
+    // xmlCtxtNewInputFromUrl): a failed main-document load records the I/O
+    // warning `failed to load "%s": %s` into `ctxt->lastError` (domain
+    // XML_FROM_IO) and fires the parser error channel before returning NULL.
+    // lxml's `_raiseParseError` raises IOError when
+    // `lastError.domain == XML_FROM_IO`, so this must be a real recorded error
+    // and not merely a stderr message.
+    let Some(bytes) = (unsafe { html::read_file_bytes(filename) }) else {
+        let msg = crate::abi::exports_parser::io_load_failure_message(filename);
+        unsafe {
+            crate::abi::exports_parser::emit_io_warning(ctxt as *mut _xmlParserCtxt, msg);
+        }
+        return ptr::null_mut();
+    };
+    let doc = unsafe {
+        html::parse_memory_enc(
+            bytes.as_ptr() as *const c_char,
+            bytes.len() as c_int,
+            encoding,
+            (*st).options,
+        )
+    };
     unsafe { html_ctxt_finish_read(ctxt, doc, filename) }
 }
 

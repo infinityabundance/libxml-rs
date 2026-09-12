@@ -1089,6 +1089,37 @@ unsafe fn new_reconciled_ns(
     new_ns(tree, unsafe { (*ns).href }, unsafe { (*ns).prefix })
 }
 
+/// Copy a node/attribute name for a node being placed into `doc`.
+///
+/// # UPSTREAM-PARITY (tree.c xmlStaticCopyNode / xmlNewPropInternal)
+///
+/// When the target document owns a name dictionary, the copied name is
+/// interned in that dictionary (`xmlDictLookup(doc->dict, name, -1)`) rather
+/// than heap-duplicated. This is load-bearing: lxml's tag matching
+/// (`_MultiTagMatcher`, `iterchildren(tag)`, ElementPath predicates) compares
+/// name pointers against `xmlDictLookup`/`xmlDictExists` results, so a node
+/// copied into a dict-owning document with a heap name becomes invisible to
+/// address-based iteration (`test_elementpath.test_find` after
+/// `elem[1] = deepcopy(elem[2])`). Without a dictionary the name is
+/// heap-copied, matching upstream's non-dict branch.
+///
+/// # SAFETY
+///
+/// - `name` must be NULL or a valid NUL-terminated `xmlChar` string.
+/// - `doc` must be NULL or a valid `_xmlDoc` whose dictionary outlives the copy.
+unsafe fn copy_name_into_doc(name: *const xmlChar, doc: *mut _xmlDoc) -> *const xmlChar {
+    if name.is_null() {
+        return ptr::null();
+    }
+    if !doc.is_null() && !unsafe { (*doc).dict }.is_null() {
+        let interned = unsafe { crate::abi::exports_xml2::xmlDictLookup((*doc).dict, name, -1) };
+        if !interned.is_null() {
+            return interned;
+        }
+    }
+    xml_strdup(name)
+}
+
 /// Port of upstream tree.c `xmlStaticCopyNode`: copy `node` into document
 /// `doc` with parent `parent`; `extended` is 0 (shallow), 1 (deep) or 2
 /// (shallow plus properties/namespaces). Returns the copy or NULL on
@@ -1144,7 +1175,7 @@ unsafe fn static_copy_node(
         (*ret).doc = doc;
         (*ret).parent = parent;
         if !n.name.is_null() {
-            (*ret).name = xml_strdup(n.name);
+            (*ret).name = copy_name_into_doc(n.name, doc);
             if (*ret).name.is_null() {
                 free_node(ret);
                 return ptr::null_mut();
@@ -1408,7 +1439,11 @@ unsafe fn copy_prop_internal(
     }
     unsafe {
         (*ret).type_ = XML_ATTRIBUTE_NODE as c_int;
-        (*ret).name = xml_strdup((*cur).name);
+        (*ret).name = copy_name_into_doc((*cur).name, ret_doc);
+        if !(*cur).name.is_null() && (*ret).name.is_null() {
+            xmlFreeImpl(ret as *mut c_void);
+            return ptr::null_mut();
+        }
         (*ret).doc = ret_doc;
         (*ret).parent = target;
 
