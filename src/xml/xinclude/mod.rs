@@ -165,20 +165,7 @@ const XML_XINCLUDE_NO_INCLUDE: c_int = 0;
 ///
 /// `doc` must be a valid pointer to a parsed `_xmlDoc`, or NULL.
 pub unsafe fn xinclude_process(doc: *mut _xmlDoc) -> c_int {
-    if doc.is_null() {
-        return XINCLUDE_FAILURE;
-    }
-
-    // Track visited URLs to detect circular references.
-    let mut visited: Vec<Vec<u8>> = Vec::new();
-
-    let count = unsafe { process_doc(doc, &mut visited) };
-
-    if count > 0 {
-        unsafe { mark_doc_xinclude_processed(doc) };
-    }
-
-    count
+    unsafe { xinclude_process_flags(doc, 0, ptr::null_mut()) }
 }
 
 /// Process XInclude nodes with flags.
@@ -187,10 +174,20 @@ pub unsafe fn xinclude_process(doc: *mut _xmlDoc) -> c_int {
 /// - `XML_PARSE_NOXINCNODE` (0x8000) — do not generate XInclude start/end nodes
 /// - `XML_PARSE_NONET` (0x800) — disallow network access when fetching resources
 ///
+/// `private` is the xinclude context's `_private` (upstream
+/// `xmlXIncludeProcessTreeFlagsData` passes it through to every
+/// included-document parser context so a consumer's document loader — lxml's
+/// `_local_resolver` — resolves through the consumer's own resolver registry).
+///
 /// # SAFETY
 ///
-/// `doc` must be a valid pointer to a parsed `_xmlDoc`, or NULL.
-pub unsafe fn xinclude_process_flags(doc: *mut _xmlDoc, flags: c_int) -> c_int {
+/// `doc` must be a valid pointer to a parsed `_xmlDoc`, or NULL. `private` must
+/// be NULL or a pointer valid for the consumer's loader callbacks.
+pub unsafe fn xinclude_process_flags(
+    doc: *mut _xmlDoc,
+    flags: c_int,
+    private: *mut c_void,
+) -> c_int {
     if doc.is_null() {
         return XINCLUDE_FAILURE;
     }
@@ -200,12 +197,11 @@ pub unsafe fn xinclude_process_flags(doc: *mut _xmlDoc, flags: c_int) -> c_int {
     // xmlXIncludeProcessFlags processes and only the tree-level markers
     // differ). php's DOMDocument::xinclude() always passes NOXINCNODE;
     // returning early here left every <xi:include> untouched.
-    let _ = flags;
 
     // Track visited URLs to detect circular references.
     let mut visited: Vec<Vec<u8>> = Vec::new();
 
-    let count = unsafe { process_doc(doc, &mut visited) };
+    let count = unsafe { process_doc(doc, &mut visited, flags, private) };
 
     if count > 0 {
         unsafe { mark_doc_xinclude_processed(doc) };
@@ -236,7 +232,13 @@ unsafe fn mark_doc_xinclude_processed(doc: *mut _xmlDoc) {
 ///
 /// `doc` must be a valid, non-null pointer.
 /// `visited` tracks URLs to detect circular references.
-unsafe fn process_doc(doc: *mut _xmlDoc, visited: &mut Vec<Vec<u8>>) -> c_int {
+/// `flags`/`private` are forwarded to every included-document parse.
+unsafe fn process_doc(
+    doc: *mut _xmlDoc,
+    visited: &mut Vec<Vec<u8>>,
+    flags: c_int,
+    private: *mut c_void,
+) -> c_int {
     let mut count: c_int = 0;
 
     // Find the root element (first child that is an element node).
@@ -247,7 +249,7 @@ unsafe fn process_doc(doc: *mut _xmlDoc, visited: &mut Vec<Vec<u8>>) -> c_int {
 
     // Recursively process the tree.
     unsafe {
-        count += process_node_tree(root, doc, visited);
+        count += process_node_tree(root, doc, visited, flags, private);
     }
 
     count
@@ -264,6 +266,8 @@ unsafe fn process_node_tree(
     node: *mut _xmlNode,
     doc: *mut _xmlDoc,
     visited: &mut Vec<Vec<u8>>,
+    flags: c_int,
+    private: *mut c_void,
 ) -> c_int {
     if node.is_null() {
         return 0;
@@ -282,7 +286,7 @@ unsafe fn process_node_tree(
         if node_type == XML_XINCLUDE_START as c_int {
             let mut child = unsafe { (*node).children };
             while !child.is_null() {
-                count += unsafe { process_node_tree(child, doc, visited) };
+                count += unsafe { process_node_tree(child, doc, visited, flags, private) };
                 child = unsafe { (*child).next };
             }
         }
@@ -301,7 +305,8 @@ unsafe fn process_node_tree(
     for child_node in children {
         // Check if this is an XInclude element.
         if unsafe { is_xinclude_element(child_node) } {
-            let processed = unsafe { process_single_include(child_node, doc, visited) };
+            let processed =
+                unsafe { process_single_include(child_node, doc, visited, flags, private) };
             if processed >= 0 {
                 count += processed;
             } else {
@@ -315,7 +320,7 @@ unsafe fn process_node_tree(
                 || child_type == XML_DOCUMENT_FRAG_NODE as c_int
                 || child_type == XML_XINCLUDE_START as c_int
             {
-                count += unsafe { process_node_tree(child_node, doc, visited) };
+                count += unsafe { process_node_tree(child_node, doc, visited, flags, private) };
             }
         }
     }
@@ -427,6 +432,8 @@ unsafe fn process_single_include(
     include_node: *mut _xmlNode,
     doc: *mut _xmlDoc,
     visited: &mut Vec<Vec<u8>>,
+    flags: c_int,
+    private: *mut c_void,
 ) -> c_int {
     // Get the `href` attribute.
     let href = unsafe { tree::get_prop(include_node, ATTR_HREF.as_ptr() as *const xmlChar) };
@@ -447,14 +454,14 @@ unsafe fn process_single_include(
                 Ok(s) => s.to_string(),
                 Err(_) => {
                     allocator::xmlFreeImpl(xpointer_attr as *mut c_void);
-                    return unsafe { apply_fallback(include_node, doc, visited) };
+                    return unsafe { apply_fallback(include_node, doc, visited, flags, private) };
                 }
             };
             allocator::xmlFreeImpl(xpointer_attr as *mut c_void);
             if let Some(target) = unsafe { xpointer::xptr_eval(&xptr_utf8, doc) } {
                 let copy = unsafe { tree::copy_node(target, 1) };
                 if copy.is_null() {
-                    return unsafe { apply_fallback(include_node, doc, visited) };
+                    return unsafe { apply_fallback(include_node, doc, visited, flags, private) };
                 }
                 unsafe { set_doc_recursive(copy, doc) };
                 unsafe { replace_node_with_content(include_node, copy, doc) };
@@ -465,7 +472,7 @@ unsafe fn process_single_include(
                 allocator::xmlFreeImpl(xpointer_attr as *mut c_void);
             }
         }
-        return unsafe { apply_fallback(include_node, doc, visited) };
+        return unsafe { apply_fallback(include_node, doc, visited, flags, private) };
     }
 
     // Resolve a relative href against the including document's URL. Upstream
@@ -496,7 +503,7 @@ unsafe fn process_single_include(
         if !xpointer_attr.is_null() {
             allocator::xmlFreeImpl(xpointer_attr as *mut c_void);
         }
-        return unsafe { apply_fallback(include_node, doc, visited) };
+        return unsafe { apply_fallback(include_node, doc, visited, flags, private) };
     }
 
     // Get the `parse` attribute (default is "xml").
@@ -532,9 +539,28 @@ unsafe fn process_single_include(
     visited.push(href_str.to_vec());
 
     let result = if is_text_mode {
-        unsafe { process_text_include(include_node, doc, effective_href, accept_attr, visited) }
+        unsafe {
+            process_text_include(
+                include_node,
+                doc,
+                effective_href,
+                accept_attr,
+                visited,
+                private,
+            )
+        }
     } else {
-        unsafe { process_xml_include(include_node, doc, effective_href, xpointer_attr, visited) }
+        unsafe {
+            process_xml_include(
+                include_node,
+                doc,
+                effective_href,
+                xpointer_attr,
+                visited,
+                flags,
+                private,
+            )
+        }
     };
 
     // Remove this URL from visited.
@@ -561,7 +587,7 @@ unsafe fn process_single_include(
 
     match result {
         Ok(processed) => processed,
-        Err(()) => unsafe { apply_fallback(include_node, doc, visited) },
+        Err(()) => unsafe { apply_fallback(include_node, doc, visited, flags, private) },
     }
 }
 
@@ -579,9 +605,10 @@ unsafe fn process_text_include(
     href: *mut xmlChar,
     _accept: *mut xmlChar,
     _visited: &mut Vec<Vec<u8>>,
+    private: *mut c_void,
 ) -> Result<c_int, ()> {
     // Read the file content.
-    let content = unsafe { io_read_file(href) };
+    let content = unsafe { io_read_file(href, private) };
 
     if content.is_null() {
         return Err(());
@@ -626,9 +653,11 @@ unsafe fn process_xml_include(
     href: *mut xmlChar,
     xpointer_attr: *mut xmlChar,
     visited: &mut Vec<Vec<u8>>,
+    flags: c_int,
+    private: *mut c_void,
 ) -> Result<c_int, ()> {
     // Parse the referenced document.
-    let included_doc = unsafe { parse_xml_document(href) };
+    let included_doc = unsafe { parse_xml_document(href, flags, private) };
     if included_doc.is_null() {
         return Err(());
     }
@@ -644,7 +673,7 @@ unsafe fn process_xml_include(
     };
 
     // Recursively process includes in the included document.
-    let _ = unsafe { process_doc(included_doc, visited) };
+    let _ = unsafe { process_doc(included_doc, visited, flags, private) };
 
     // Free the included document now that its nodes have been moved
     // into the main tree via deep-copy.
@@ -730,6 +759,8 @@ unsafe fn apply_fallback(
     include_node: *mut _xmlNode,
     doc: *mut _xmlDoc,
     visited: &mut Vec<Vec<u8>>,
+    flags: c_int,
+    private: *mut c_void,
 ) -> c_int {
     if include_node.is_null() {
         return XINCLUDE_FAILURE;
@@ -789,7 +820,7 @@ unsafe fn apply_fallback(
         let mut cur = first_inserted;
         loop {
             unsafe {
-                let _ = process_node_tree(cur, doc, visited);
+                let _ = process_node_tree(cur, doc, visited, flags, private);
             }
             if cur == last_inserted {
                 break;
@@ -884,7 +915,7 @@ unsafe fn remove_node(node: *mut _xmlNode) {
 /// # SAFETY
 ///
 /// `filename` must be a valid null-terminated xmlChar string or NULL.
-unsafe fn io_read_file(filename: *const xmlChar) -> *mut xmlChar {
+unsafe fn io_read_file(filename: *const xmlChar, private: *mut c_void) -> *mut xmlChar {
     if filename.is_null() {
         return ptr::null_mut();
     }
@@ -894,6 +925,29 @@ unsafe fn io_read_file(filename: *const xmlChar) -> *mut xmlChar {
         Ok(s) => s,
         Err(_) => return ptr::null_mut(),
     };
+
+    // UPSTREAM-PARITY (xmlIO.c xmlLoadResource -> xmlCurrentExternalEntityLoader):
+    // the registered external entity loader goes FIRST, so a consumer resolver
+    // (lxml's `xmlSetExternalEntityLoader` document loader, active around
+    // XInclude processing) supplies the included resource. Without a custom
+    // loader this routes to the default loader, which itself consults the php
+    // streams create-filename hook.
+    if let Some(data) =
+        crate::abi::exports_parser::load_external_entity_bytes(c_filename.as_ptr(), private)
+    {
+        if data.is_empty() {
+            return ptr::null_mut();
+        }
+        let result = unsafe { allocator::xmlMallocImpl(data.len() + 1) as *mut xmlChar };
+        if result.is_null() {
+            return ptr::null_mut();
+        }
+        unsafe {
+            ptr::copy_nonoverlapping(data.as_ptr(), result, data.len());
+            *result.add(data.len()) = 0; // null-terminate
+        }
+        return result;
+    }
 
     // UPSTREAM-PARITY (xmlIO.c xmlParserInputBufferCreateFilename + the
     // consumer's xmlParserInputBufferCreateFilenameDefault hook): a registered
@@ -942,7 +996,14 @@ unsafe fn io_read_file(filename: *const xmlChar) -> *mut xmlChar {
         return result;
     }
 
-    let fd = unsafe { libc::open(c_filename.as_ptr(), libc::O_RDONLY) };
+    let fd = unsafe {
+        let path_bytes = crate::xml::uri::convert_uri_to_path(c_filename.to_bytes())
+            .unwrap_or_else(|| c_filename.to_bytes().to_vec());
+        match std::ffi::CString::new(path_bytes) {
+            Ok(p) => libc::open(p.as_ptr(), libc::O_RDONLY),
+            Err(_) => -1,
+        }
+    };
     if fd < 0 {
         return ptr::null_mut();
     }
@@ -989,32 +1050,57 @@ unsafe fn io_read_file(filename: *const xmlChar) -> *mut xmlChar {
 /// # SAFETY
 ///
 /// `filename` must be a valid null-terminated xmlChar string or NULL.
-unsafe fn parse_xml_document(filename: *const xmlChar) -> *mut _xmlDoc {
+/// `private` must be NULL or a pointer valid for consumer loader callbacks.
+unsafe fn parse_xml_document(
+    filename: *const xmlChar,
+    flags: c_int,
+    private: *mut c_void,
+) -> *mut _xmlDoc {
     if filename.is_null() {
         return ptr::null_mut();
     }
 
-    // Read the file content.
-    let content = unsafe { io_read_file(filename) };
+    // UPSTREAM-PARITY (xinclude.c xmlXIncludeParseFile): the include is parsed
+    // through a FRESH parser context whose `_private` is the xinclude
+    // context's `_private` (lxml's `_ParserContext`), so the consumer's
+    // document loader (`xmlSetExternalEntityLoader`) resolves the include; the
+    // document parser's options are applied, always with XML_PARSE_DTDLOAD so
+    // ID attributes declared in external DTDs are detected.
+    let pctxt = unsafe { crate::abi::exports_parser::xmlNewParserCtxt() };
+    if pctxt.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        (*pctxt)._private = private;
+    }
+    let options = flags | (crate::abi::types::XML_PARSE_DTDLOAD as c_int);
+
+    // Read the content through the external entity loader with `pctxt` so the
+    // resolver sees its own context.
+    let content = unsafe { io_read_file(filename, private) };
     if content.is_null() {
+        unsafe { crate::xml::parser::helpers::free_parser_ctxt(pctxt) };
         return ptr::null_mut();
     }
 
     let content_bytes = unsafe { xmlstr_to_bytes(content) };
     let size = content_bytes.len() as c_int;
 
-    // Parse the content as XML.
+    // Parse the content as XML with the prepared context (the URL keeps the
+    // included document's own base for its relative references).
     let doc = unsafe {
-        crate::abi::exports_xml2::xmlReadMemory(
+        crate::abi::exports_parser::xmlCtxtReadMemory(
+            pctxt,
             content as *const c_char,
             size,
             filename as *const c_char,
             ptr::null(), // encoding
-            0,           // options
+            options,
         )
     };
 
     allocator::xmlFreeImpl(content as *mut c_void);
+    unsafe { crate::xml::parser::helpers::free_parser_ctxt(pctxt) };
 
     doc
 }
@@ -1607,7 +1693,7 @@ mod tests {
             let doc = create_simple_doc();
             let r1 = xinclude_process(doc);
             assert!(r1 >= 0);
-            let r2 = xinclude_process_flags(doc, 0);
+            let r2 = xinclude_process_flags(doc, 0, ptr::null_mut());
             assert!(r2 >= 0);
             tree::free_doc(doc);
         }
@@ -1785,7 +1871,7 @@ mod tests {
         unsafe {
             let doc = create_simple_doc();
             let r1 = xinclude_process(doc);
-            let r2 = xinclude_process_flags(doc, 0);
+            let r2 = xinclude_process_flags(doc, 0, ptr::null_mut());
             assert_eq!(r1, r2);
             tree::free_doc(doc);
         }
@@ -1801,7 +1887,7 @@ mod tests {
     fn test_xinclude_process_flags_noxincnode() {
         unsafe {
             let doc = create_simple_doc();
-            let result = xinclude_process_flags(doc, XML_PARSE_NOXINCNODE);
+            let result = xinclude_process_flags(doc, XML_PARSE_NOXINCNODE, ptr::null_mut());
             assert_eq!(result, 0);
             tree::free_doc(doc);
         }
@@ -1927,7 +2013,7 @@ mod tests {
             }
 
             let mut visited = Vec::new();
-            let count = { process_node_tree(root, doc, &mut visited) };
+            let count = { process_node_tree(root, doc, &mut visited, 0, ptr::null_mut()) };
             assert_eq!(count, 0, "Should not process sentinel nodes");
 
             // Unlink sentinel before freeing

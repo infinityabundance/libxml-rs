@@ -3129,7 +3129,7 @@ impl XmlParser {
                 (*self.ctxt).inSubset = 1;
             }
             if let Some(sys) = sys_id {
-                self.load_external_dtd_file(dtd, sys);
+                self.load_external_dtd_file(dtd, ext_id, sys);
             }
             unsafe {
                 (*self.ctxt).inSubset = 0;
@@ -3158,15 +3158,28 @@ impl XmlParser {
         Ok(())
     }
 
-    /// Resolve a DTD system ID relative to the document URL's directory,
-    /// read the file, and parse its declarations into `dtd`.
-    fn load_external_dtd_file(&mut self, dtd: *mut _xmlDtd, sys_id: &[u8]) {
-        let path = self.resolve_dtd_path(sys_id);
-        let content = match path {
-            Some(p) => std::fs::read(&p).ok(),
-            None => None,
+    /// Resolve a DTD system ID, read its declarations, and parse them into
+    /// `dtd`.
+    ///
+    /// # UPSTREAM-PARITY (parser.c xmlParseExternalSubset ->
+    /// xmlCtxtParseExternalEntity -> xmlNewInputFromUrl)
+    ///
+    /// The external subset is fetched through the registered external entity
+    /// loader (`xmlLoadExternalEntity`), which is how a consumer's resolver
+    /// (lxml's `xmlSetExternalEntityLoader` document loader, php's streams
+    /// loader) supplies the DTD. Only when no loader yields an input does the
+    /// built-in filesystem path apply.
+    fn load_external_dtd_file(&mut self, dtd: *mut _xmlDtd, ext_id: Option<&[u8]>, sys_id: &[u8]) {
+        let content = match self.load_external_dtd_through_loader(ext_id, sys_id) {
+            Some(bytes) => bytes,
+            None => match self.resolve_dtd_path(sys_id) {
+                Some(p) => match std::fs::read(&p) {
+                    Ok(bytes) => bytes,
+                    Err(_) => return,
+                },
+                None => return,
+            },
         };
-        let Some(content) = content else { return };
         if content.is_empty() {
             return;
         }
@@ -3177,6 +3190,95 @@ impl XmlParser {
         // (nested external PEs included).
         let mut dtd_opt = Some(dtd);
         let _ = self.process_dtd_fragment(&mut dtd_opt, &content, 0, true, None);
+    }
+
+    /// Fetch an external DTD system id through the consumer's entity machinery,
+    /// returning its bytes (None when nothing supplied an input).
+    ///
+    /// # UPSTREAM-PARITY (SAX2.c xmlSAX2ExternalSubset ->
+    /// xmlSAX2ResolveEntity -> xmlLoadExternalEntity)
+    ///
+    /// The system id is first resolved into an absolute URI against the
+    /// document's base URL, then handed to the SAX `resolveEntity` callback
+    /// when one is installed (the default handler builds the URI and calls the
+    /// registered external entity loader), else straight to
+    /// `xmlLoadExternalEntity`.
+    fn load_external_dtd_through_loader(
+        &self,
+        ext_id: Option<&[u8]>,
+        sys_id: &[u8],
+    ) -> Option<Vec<u8>> {
+        // Absolute URI: xmlBuildURI(systemId, base) with the document input's
+        // filename (or the parser directory) as base, like xmlSAX2ResolveEntity.
+        let mut sys = sys_id.to_vec();
+        sys.push(0);
+        let base: *const c_char = unsafe {
+            let input = (*self.ctxt).input;
+            let mut b: *const c_char = ptr::null();
+            if !input.is_null() && !(*input).filename.is_null() {
+                b = (*input).filename;
+            }
+            if b.is_null() {
+                b = (*self.ctxt).directory;
+            }
+            b
+        };
+        let uri_ptr =
+            unsafe { crate::abi::exports_uri::xmlBuildURI(sys.as_ptr() as *const c_char, base) };
+        // xmlBuildURI(NULL base) copies the URI; a NULL result falls back to the
+        // raw system id.
+        let uri_owned: Option<Vec<u8>> = if uri_ptr.is_null() {
+            None
+        } else {
+            let bytes = unsafe {
+                core::slice::from_raw_parts(
+                    uri_ptr as *const u8,
+                    libc::strlen(uri_ptr as *const c_char),
+                )
+                .to_vec()
+            };
+            unsafe { crate::abi::allocator::xmlFreeImpl(uri_ptr as *mut c_void) };
+            Some(bytes)
+        };
+        let mut uri = uri_owned.clone().unwrap_or_else(|| sys_id.to_vec());
+        uri.push(0);
+        let mut public = ext_id.map(|e| e.to_vec()).unwrap_or_default();
+        if !public.is_empty() {
+            public.push(0);
+        }
+        let public_ptr = if public.is_empty() {
+            ptr::null()
+        } else {
+            public.as_ptr() as *const c_char
+        };
+
+        let loaded = unsafe {
+            let sax = (*self.ctxt).sax;
+            let mut input = ptr::null_mut();
+            if !sax.is_null() {
+                if let Some(resolve) = (*sax).resolveEntity {
+                    input = resolve(
+                        (*self.ctxt).userData,
+                        public_ptr as *const xmlChar,
+                        uri.as_ptr() as *const xmlChar,
+                    );
+                }
+            }
+            if input.is_null() {
+                input = crate::abi::exports_parser::xmlLoadExternalEntity(
+                    uri.as_ptr() as *const c_char,
+                    public_ptr,
+                    self.ctxt,
+                );
+            }
+            input
+        };
+        if loaded.is_null() {
+            return None;
+        }
+        let bytes = unsafe { crate::abi::exports_parser::parser_input_contents(loaded) };
+        unsafe { crate::abi::exports_xml2::xmlFreeInputStream(loaded) };
+        Some(bytes)
     }
 
     /// Resolve a DTD system id to a filesystem path, honoring a relative

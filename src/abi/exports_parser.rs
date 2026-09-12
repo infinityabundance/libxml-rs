@@ -357,12 +357,120 @@ unsafe fn parser_input_from_buf(buf: *mut _xmlParserInputBuffer) -> *mut _xmlPar
     input
 }
 
+/// Materialize the bytes of an external resource through the registered
+/// external entity loader.
+///
+/// Returns `None` when the loader yields no input. Used by the XInclude
+/// loader so a consumer's resolver (lxml's `xmlSetExternalEntityLoader`
+/// registration) can supply included documents, matching upstream
+/// `xmlXIncludeLoadDoc` -> `xmlReadFile` -> `xmlLoadResource`.
+///
+/// # Safety
+///
+/// - `url` must be a valid NUL-terminated C string or NULL.
+pub(crate) unsafe fn load_external_entity_bytes(
+    url: *const c_char,
+    private: *mut c_void,
+) -> Option<Vec<u8>> {
+    if url.is_null() {
+        return None;
+    }
+    // A non-NULL parser context is REQUIRED: consumer resolvers (lxml's
+    // `_local_resolver`) treat the context argument as a `xmlParserCtxt*` and
+    // dereference it. `private` is the xinclude context's `_private`, which
+    // upstream propagates into the include parse context
+    // (xinclude.c xmlXIncludeParseFile: `pctxt->_private = ctxt->_private`).
+    let ctxt = unsafe { xmlNewParserCtxt() };
+    if ctxt.is_null() {
+        return None;
+    }
+    unsafe {
+        (*ctxt)._private = private;
+    }
+    let input = unsafe { xmlLoadExternalEntity(url, ptr::null(), ctxt) };
+    let bytes = if input.is_null() {
+        None
+    } else {
+        let b = unsafe { parser_input_contents(input) };
+        unsafe { crate::abi::exports_xml2::xmlFreeInputStream(input) };
+        Some(b)
+    };
+    unsafe { helpers::free_parser_ctxt(ctxt) };
+    bytes
+}
+
 /// `pub(crate)` wrapper of [`parser_input_from_buf`] for the sibling
 /// xmlNewInputFrom* family (11.1-X R-000165 closure).
 pub(crate) unsafe fn parser_input_from_buf_pub(
     buf: *mut _xmlParserInputBuffer,
 ) -> *mut _xmlParserInput {
     unsafe { parser_input_from_buf(buf) }
+}
+
+/// Materialize the readable bytes of an external-entity input.
+///
+/// Prefers the `base..end` window (memory inputs); falls back to draining the
+/// backing input buffer for IO-backed inputs (lxml's `resolve_file` document
+/// loader builds one from a Python file object).
+///
+/// # Safety
+///
+/// - `input` must be NULL or a valid `_xmlParserInput` whose `buf` (when
+///   non-NULL) stays alive for the call.
+pub(crate) unsafe fn parser_input_contents(input: *mut _xmlParserInput) -> Vec<u8> {
+    if input.is_null() {
+        return Vec::new();
+    }
+    unsafe {
+        let pi = &*input;
+        if !pi.base.is_null() && !pi.end.is_null() && pi.end >= pi.base {
+            let len = (pi.end as usize).saturating_sub(pi.base as usize);
+            if len > 0 {
+                return core::slice::from_raw_parts(pi.base, len).to_vec();
+            }
+        }
+        if !pi.buf.is_null() {
+            return input_buffer_data(pi.buf);
+        }
+        Vec::new()
+    }
+}
+
+/// Open `filename` through the create-filename path and return a parser input
+/// buffer, matching upstream `xmlNewInputFromFile` ->
+/// `xmlParserInputBufferCreateFilename`.
+///
+/// The registered `xmlParserInputBufferCreateFilenameDefault` (php streams)
+/// is consulted first; without one the built-in file open runs. Returns NULL
+/// when the file cannot be read.
+///
+/// # Safety
+///
+/// - `filename` must be a valid NUL-terminated C string or NULL.
+pub(crate) unsafe fn input_buffer_from_filename(
+    filename: *const c_char,
+    enc: c_int,
+) -> *mut _xmlParserInputBuffer {
+    if filename.is_null() {
+        return ptr::null_mut();
+    }
+    if globals::get_parser_input_buffer_create_filename_value_cross_dso().is_some() {
+        return match call_loader_materialize(filename) {
+            Ok(data) => {
+                if data.is_empty() {
+                    crate::xml::io::input_buffer_create_empty()
+                } else {
+                    io::input_buffer_create_mem(
+                        data.as_ptr() as *const c_char,
+                        data.len() as c_int,
+                        enc,
+                    )
+                }
+            }
+            Err(()) => ptr::null_mut(),
+        };
+    }
+    crate::xml::io::input_buffer_create_file(filename, enc)
 }
 
 /// Materialise an `InputBuffer` (owned copy) from a raw `_xmlParserInput`,
@@ -405,6 +513,13 @@ unsafe fn ctxt_read_doc(
         xmlCtxtReset(ctxt);
         apply_options(ctxt, options);
         helpers::setup_parser_input(ctxt, input);
+        // UPSTREAM-PARITY (xmlCtxtNewInputFromMemory): the caller-supplied URL
+        // becomes the input's filename, which is the base against which a
+        // relative external-subset system id is resolved
+        // (xmlSAX2ResolveEntity -> xmlBuildURI(systemId, ctxt->input->filename)).
+        if !url.is_null() && !(*ctxt).input.is_null() {
+            (*(*ctxt).input).filename = string::xml_strdup(url as *const xmlChar) as *const c_char;
+        }
         if helpers::parse_document(ctxt) != 0 {
             let doc = (*ctxt).myDoc;
             (*ctxt).myDoc = ptr::null_mut();

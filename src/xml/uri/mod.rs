@@ -116,6 +116,27 @@ const fn hex_val(c: u8) -> Option<u8> {
     }
 }
 
+/// Convert a file URI to a local filesystem path.
+///
+/// # UPSTREAM-PARITY (xmlIO.c xmlConvertUriToPath)
+///
+/// Recognizes the `file://localhost/`, `file:///` and `file:/` prefixes (the
+/// last because "lots of generators seem to be lazy to read RFC 1738") and
+/// percent-unescapes the remainder. Returns `None` when `uri` is not a file
+/// URI, in which case the caller uses it verbatim.
+pub(crate) fn convert_uri_to_path(uri: &[u8]) -> Option<Vec<u8>> {
+    let rest: &[u8] = if uri.len() >= 17 && uri[..17].eq_ignore_ascii_case(b"file://localhost/") {
+        &uri[16..]
+    } else if uri.len() >= 8 && uri[..8].eq_ignore_ascii_case(b"file:///") {
+        &uri[7..]
+    } else if uri.len() >= 6 && uri[..6].eq_ignore_ascii_case(b"file:/") {
+        &uri[5..]
+    } else {
+        return None;
+    };
+    Some(percent_decode(rest))
+}
+
 /// Percent-decode a URI component in-place.
 /// Returns a new `Vec<u8>` with percent-encoded sequences decoded.
 fn percent_decode(data: &[u8]) -> Vec<u8> {

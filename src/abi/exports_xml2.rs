@@ -3926,14 +3926,36 @@ pub unsafe extern "C" fn xmlNewInputFromFile(
     ctxt: *mut _xmlParserCtxt,
     filename: *const c_char,
 ) -> *mut _xmlParserInput {
-    // SAFETY: filename must be a valid C string. ctxt may be NULL.
-    // This function allocates a _xmlParserInput. The caller owns it.
-    // Note: The InputBuffer backing data is NOT leaked here (no ctxt._private
-    // to store it). Use xmlCreateFileParserCtxt + xmlParseDocument instead.
+    // UPSTREAM-PARITY (parserInternals.c xmlNewInputFromFile): open the file
+    // through xmlParserInputBufferCreateFilename, wrap it in an input whose
+    // base/cur/end reference the buffer's content, and own a copy of the
+    // filename (freed by xmlFreeInputStream). The pre-fix export cast a
+    // `_xmlParserInputBuffer*` straight to `_xmlParserInput*`, so any consumer
+    // that actually used the result (lxml's `resolve_filename` document
+    // loader) crashed reading the mismatched struct.
     if filename.is_null() {
         return ptr::null_mut();
     }
-    crate::xml::parser::helpers::alloc_parser_input_buffer() as *mut _xmlParserInput
+    let _ = ctxt;
+    let buf = unsafe {
+        crate::abi::exports_parser::input_buffer_from_filename(
+            filename,
+            xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
+        )
+    };
+    if buf.is_null() {
+        return ptr::null_mut();
+    }
+    let input = unsafe { crate::abi::exports_parser::parser_input_from_buf_pub(buf) };
+    if input.is_null() {
+        crate::xml::io::input_buffer_free(buf);
+        return ptr::null_mut();
+    }
+    unsafe {
+        (*input).filename =
+            crate::xml::string::xml_strdup(filename as *const xmlChar) as *const c_char;
+    }
+    input
 }
 
 /// Free a parser input.
@@ -7530,7 +7552,7 @@ pub unsafe extern "C" fn xmlXIncludeProcess(doc: *mut _xmlDoc) -> c_int {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlXIncludeProcessFlags(doc: *mut _xmlDoc, flags: c_int) -> c_int {
-    crate::xml::xinclude::xinclude_process_flags(doc, flags)
+    crate::xml::xinclude::xinclude_process_flags(doc, flags, ptr::null_mut())
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

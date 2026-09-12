@@ -213,7 +213,7 @@ unsafe fn process_ctxt_doc(ctxt: xmlXIncludeCtxtPtr) -> c_int {
         return XINCLUDE_ERROR;
     }
     let flags = unsafe { (*ctxt).flags };
-    let ret = unsafe { xinclude::xinclude_process_flags(doc, flags) };
+    let ret = unsafe { xinclude::xinclude_process_flags(doc, flags, (*ctxt).data) };
     if ret < 0 {
         // The engine reports failure without a fine-grained error code, so
         // record a generic parser error to make xmlXIncludeGetLastError

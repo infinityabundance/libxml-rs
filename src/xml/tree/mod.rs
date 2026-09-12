@@ -1338,6 +1338,25 @@ unsafe fn free_ns_list(ns: *mut _xmlNs) {
     }
 }
 
+/// Whether `name` is one of the shared static node-name markers.
+///
+/// # UPSTREAM-PARITY (tree.c)
+///
+/// Text, CDATA, PI and comment nodes store their `name` as one of the globals
+/// `xmlStringText`, `xmlStringTextNoenc` or `xmlStringComment`. These markers
+/// are compared by POINTER throughout the tree code (and by consumers) to
+/// identify a node's kind, so copies must share the same pointer rather than
+/// duplicating or dictionary-interning the bytes.
+pub(crate) fn is_static_node_name(name: *const xmlChar) -> bool {
+    if name.is_null() {
+        return false;
+    }
+    let p = name as *const core::ffi::c_void;
+    p == crate::abi::data_globals::xmlStringText.as_ptr() as *const core::ffi::c_void
+        || p == crate::abi::data_globals::xmlStringTextNoenc.as_ptr() as *const core::ffi::c_void
+        || p == crate::abi::data_globals::xmlStringComment.as_ptr() as *const core::ffi::c_void
+}
+
 /// Free a single namespace declaration (upstream `xmlFreeNs`).
 ///
 /// # SAFETY
@@ -1387,7 +1406,13 @@ pub unsafe fn copy_node(node: *const _xmlNode, recursive: c_int) -> *mut _xmlNod
 
     unsafe {
         (*new_node).type_ = n.type_;
-        (*new_node).name = dup_xml_str(n.name);
+        // UPSTREAM-PARITY (tree.c xmlStaticCopyNode): the shared static name
+        // markers are preserved by pointer; other names are copied.
+        (*new_node).name = if is_static_node_name(n.name) {
+            n.name
+        } else {
+            dup_xml_str(n.name)
+        };
         // UPSTREAM-PARITY (tree.c xmlStaticCopyNode): the line number is
         // copied for element nodes only; text/CDATA/comment/PI copies keep
         // line 0.

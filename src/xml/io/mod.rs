@@ -1118,11 +1118,19 @@ pub(crate) fn input_buffer_create_file(
         }
     };
 
-    // Open the file
-    let fd = unsafe {
-        let path_c = std::ffi::CString::new(filename_str).unwrap_or_default();
-        libc::open(path_c.as_ptr(), libc::O_RDONLY)
+    // UPSTREAM-PARITY (xmlIO.c xmlFdOpen -> xmlConvertUriToPath): a `file:` URI
+    // is converted to a local path (percent-unescaped) before opening. lxml's
+    // `resolve_filename` document loader hands us `file:///…` URLs, which a
+    // bare `open()` cannot reach.
+    let path_bytes = crate::xml::uri::convert_uri_to_path(filename_str.as_bytes())
+        .unwrap_or_else(|| filename_str.as_bytes().to_vec());
+    let path_c = match std::ffi::CString::new(path_bytes) {
+        Ok(c) => c,
+        Err(_) => return ptr::null_mut(),
     };
+
+    // Open the file
+    let fd = unsafe { libc::open(path_c.as_ptr(), libc::O_RDONLY) };
 
     if fd < 0 {
         return ptr::null_mut();
@@ -1130,10 +1138,7 @@ pub(crate) fn input_buffer_create_file(
 
     // Stat the file to get its size
     let mut stat_buf: libc::stat = unsafe { std::mem::zeroed() };
-    let stat_ret = unsafe {
-        let path_c = std::ffi::CString::new(filename_str).unwrap_or_default();
-        libc::stat(path_c.as_ptr(), &mut stat_buf)
-    };
+    let stat_ret = unsafe { libc::stat(path_c.as_ptr(), &mut stat_buf) };
 
     let file_size = if stat_ret == 0 {
         stat_buf.st_size as usize

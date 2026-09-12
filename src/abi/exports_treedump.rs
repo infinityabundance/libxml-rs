@@ -1111,12 +1111,18 @@ unsafe fn copy_name_into_doc(name: *const xmlChar, doc: *mut _xmlDoc) -> *const 
     if name.is_null() {
         return ptr::null();
     }
-    if !doc.is_null() && !unsafe { (*doc).dict }.is_null() {
-        let interned = unsafe { crate::abi::exports_xml2::xmlDictLookup((*doc).dict, name, -1) };
-        if !interned.is_null() {
-            return interned;
-        }
+    // UPSTREAM-PARITY (tree.c xmlStaticCopyNode): the shared static name
+    // markers `xmlStringText` / `xmlStringTextNoenc` / `xmlStringComment` are
+    // kept by POINTER, never copied or interned. Text/comment/PI nodes are
+    // identified across the tree code (and by consumers) by `node->name`
+    // pointing at one of these globals; replacing it with a dictionary copy
+    // breaks that identity. Interning "text" into the document dictionary made
+    // PHP's modern-DOM clone/adopt path misclassify the copied text nodes and
+    // double-free at document teardown.
+    if crate::xml::tree::is_static_node_name(name) {
+        return name;
     }
+    let _ = doc;
     xml_strdup(name)
 }
 
@@ -1440,6 +1446,7 @@ unsafe fn copy_prop_internal(
     unsafe {
         (*ret).type_ = XML_ATTRIBUTE_NODE as c_int;
         (*ret).name = copy_name_into_doc((*cur).name, ret_doc);
+
         if !(*cur).name.is_null() && (*ret).name.is_null() {
             xmlFreeImpl(ret as *mut c_void);
             return ptr::null_mut();
