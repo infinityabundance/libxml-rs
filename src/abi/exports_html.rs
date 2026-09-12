@@ -2460,9 +2460,11 @@ pub const unsafe extern "C" fn htmlParseCharRef(_ctxt: *mut c_void) -> c_int {
 /// struct at `HTML_CTXT_STATE_OFFSET`. The field prefix mirrors
 /// `HtmlParserCtxt`'s declaration **exactly** (same field types, same order,
 /// same default Rust representation — NOT `repr(C)`), which places
-/// `filename`/`encoding` at the same byte offsets as the internal struct
-/// (64 / 72 on 64-bit; verified empirically). The trailing fields are ABI
-/// state that the internal module never touches.
+/// `filename`/`encoding` at the same byte offsets as the internal struct.
+/// Both structs are `#[repr(C)]`, so the shared prefix has an identical,
+/// deterministic layout (field order is preserved verbatim); the trailing
+/// fields are ABI state that the internal module never touches.
+#[repr(C)]
 #[allow(dead_code)]
 struct HtmlOpaqueCtxt {
     // ── prefix mirroring xml::html::HtmlParserCtxt ──────────────────────
@@ -2485,8 +2487,20 @@ struct HtmlOpaqueCtxt {
     err: bool,
     filename: *mut c_char,
     encoding: *mut c_char,
-    // ── ABI state (not touched by the internal module) ──────────────────
+    // ── ABI state (not touched by the internal module) ──────────────
     options: c_int,
+    /// Mirror of the engine's host back-pointer (set in `html_ctxt_alloc`).
+    host: *mut _xmlParserCtxt,
+    /// Mirror of the engine's SAX-dispatch flag.
+    dispatch_sax: bool,
+    /// Mirror of the engine's incremental `instate`.
+    instate: c_int,
+    /// Mirror of the engine's `started` flag.
+    started: bool,
+    /// Mirror of the engine's `ended` flag.
+    ended: bool,
+    /// Mirror of the engine's raw-text element name (see `HtmlParserCtxt`).
+    data_tag: *mut c_char,
     sax: *mut _xmlSAXHandler,
     user_data: *mut c_void,
 }
@@ -2556,6 +2570,12 @@ unsafe fn html_ctxt_alloc() -> *mut c_void {
                 filename: ptr::null_mut(),
                 encoding: ptr::null_mut(),
                 options: 0,
+                host: mem as *mut _xmlParserCtxt,
+                dispatch_sax: false,
+                instate: crate::abi::types::xmlParserInputState::XML_PARSER_START as c_int,
+                started: false,
+                ended: false,
+                data_tag: ptr::null_mut(),
                 sax: ptr::null_mut(),
                 user_data: ptr::null_mut(),
             },
@@ -2565,6 +2585,10 @@ unsafe fn html_ctxt_alloc() -> *mut c_void {
         // NULL sax selects the exported htmlDefaultSAXHandler global.
         let c = mem as *mut _xmlParserCtxt;
         (*c).html = 1;
+        // Upstream htmlInitParserCtxt: a fresh context is well-formed and in
+        // XML_PARSER_START (the HTML push driver transitions from there).
+        (*c).wellFormed = 1;
+        (*c).instate = crate::abi::types::xmlParserInputState::XML_PARSER_START as c_int;
         (*c).dict = dict;
         (*c).sax = ptr::addr_of!(crate::abi::data_globals::htmlDefaultSAXHandler)
             as *const _xmlSAXHandler as *mut _xmlSAXHandler;
@@ -2596,6 +2620,62 @@ unsafe fn html_ctxt_set_input(ctxt: *mut c_void, buffer: *const c_char, size: c_
         ptr::copy_nonoverlapping(buffer as *const u8, nb, len);
         (*st).input = nb;
         (*st).input_len = len;
+        (*st).input_pos = 0;
+    }
+}
+
+/// Whether the context's SAX handler has been replaced by a consumer, so a
+/// whole-document HTML parse must *dispatch* callbacks (upstream always
+/// dispatches; the candidate's direct tree builder is used only when the
+/// default `xmlSAX2*` handler is installed, keeping the PHP court exact).
+unsafe fn html_sax_is_custom(c: *mut _xmlParserCtxt) -> bool {
+    if c.is_null() {
+        return false;
+    }
+    let sax = unsafe { (*c).sax };
+    if sax.is_null() {
+        return false;
+    }
+    match unsafe { (*sax).startElement } {
+        None => unsafe { (*sax).startElementNs.is_some() },
+        Some(cb) => cb as usize != crate::abi::exports_xml2::xmlSAX2StartElement as usize,
+    }
+}
+
+/// Adopt the leading bytes `xmlCtxtResetPush` parked in the context's XML
+/// input into the HTML engine's own accumulated buffer (once, at push start).
+///
+/// `_htmlCtxtResetPush` (lxml) hands the first (encoding-sniffing) bytes to
+/// `xmlCtxtResetPush` and the remainder to `htmlParseChunk`; the C-visible
+/// `_xmlParserInput` is never advanced for HTML, so `[cur, end)` holds exactly
+/// those leading bytes.
+unsafe fn html_ctxt_adopt_reset_push_prefix(ctxt: *mut c_void) {
+    let c = ctxt as *mut _xmlParserCtxt;
+    let st = html_state(ctxt);
+    if unsafe { (*c).input.is_null() } {
+        return;
+    }
+    let cur = unsafe { (*c).input };
+    let base = unsafe { (*cur).cur };
+    let end = unsafe { (*cur).end };
+    if base.is_null() || end.is_null() {
+        return;
+    }
+    let n = (end as usize).saturating_sub(base as usize);
+    if n == 0 {
+        return;
+    }
+    let nb = unsafe { xmlMallocImpl(n) } as *mut u8;
+    if nb.is_null() {
+        return;
+    }
+    unsafe {
+        ptr::copy_nonoverlapping(base, nb, n);
+        if !(*st).input.is_null() {
+            xmlFreeImpl((*st).input as *mut c_void);
+        }
+        (*st).input = nb;
+        (*st).input_len = n;
         (*st).input_pos = 0;
     }
 }
@@ -2861,6 +2941,12 @@ pub unsafe extern "C" fn htmlCtxtReset(ctxt: *mut c_void) {
         (*st).options = 0;
         (*st).line = 1;
         (*st).err = false;
+        // Reset the incremental push state so a reused context starts a fresh
+        // document (upstream htmlCtxtReset -> xmlCtxtReset).
+        let engine = crate::xml::html::engine_ptr(c);
+        if !engine.is_null() {
+            crate::xml::html::push_reset(&mut *engine);
+        }
         // C-visible state: upstream htmlCtxtReset clears the input streams
         // and doc, resets errNo and wellFormed, and keeps the SAX handler
         // and userData.
@@ -2959,90 +3045,60 @@ pub unsafe extern "C" fn htmlParseChunk(
         return XML_ERR_ARGUMENT;
     }
     let st = unsafe { html_state(ctxt) };
+    let c = ctxt as *mut _xmlParserCtxt;
+    let engine = unsafe { crate::xml::html::engine_ptr(c) };
+    if engine.is_null() {
+        return XML_ERR_ARGUMENT;
+    }
+    // Push mode: `emit_*` dispatches the consumer's SAX1 callbacks (the default
+    // handler routes back into the same tree builder).
+    unsafe {
+        (*engine).dispatch_sax = true;
+        (*engine).host = c;
+    }
+
+    // UPSTREAM-PARITY (HTMLparser.c htmlParseChunk PARSER_STOPPED guard): a
+    // stopped context returns its recorded error without parsing further.
+    if unsafe { (*c).disableSAX } != 0 {
+        return unsafe { (*c).errNo };
+    }
+
+    // First push: adopt any bytes that `xmlCtxtResetPush` parked in the XML
+    // input. lxml's `_htmlCtxtResetPush` feeds the leading (encoding-sniffing)
+    // bytes there and the remainder through `htmlParseChunk`, so both halves
+    // must reach the same engine buffer.
+    if unsafe { (*st).input_len } == 0 {
+        unsafe { html_ctxt_adopt_reset_push_prefix(ctxt) };
+    }
+
     if unsafe { (*st).input.is_null() } {
         return XML_ERR_ARGUMENT;
     }
 
     if size > 0 {
-        let new_len = unsafe { (*st).input_len }.wrapping_add(size as usize);
-        let nb = unsafe { xmlReallocImpl((*st).input as *mut c_void, new_len) } as *mut u8;
+        let old = unsafe { (*st).input_len };
+        let new_len = old + size as usize;
+        let nb = unsafe { xmlReallocImpl((*st).input as *mut c_void, new_len.max(1)) } as *mut u8;
         if nb.is_null() {
             return XML_ERR_NO_MEMORY;
         }
         unsafe {
-            ptr::copy_nonoverlapping(chunk as *const u8, nb.add((*st).input_len), size as usize);
+            ptr::copy_nonoverlapping(chunk as *const u8, nb.add(old), size as usize);
             (*st).input = nb;
             (*st).input_len = new_len;
         }
     }
 
-    if terminate != 0 {
-        let c = ctxt as *mut _xmlParserCtxt;
-        // UPSTREAM-PARITY (HTMLparser.c htmlParseDocument): the parser fires
-        // the SAX `startDocument` hook before parsing; the default
-        // xmlSAX2StartDocument creates `ctxt->myDoc`, and a consumer that
-        // replaced the hook (lxml's `_initSaxDocument`) uses that point to
-        // adopt `ctxt->dict` as `doc->dict` and enable `dictNames`. Only run
-        // the hook when the consumer actually replaced the default start
-        // handler; otherwise the engine's own document construction is
-        // observably identical and cheaper.
-        let sax = unsafe { (*c).sax };
-        let start_hook = if !sax.is_null() {
-            unsafe { (*sax).startDocument }
-        } else {
-            None
-        };
-        let has_custom_start = start_hook.is_some()
-            && start_hook != Some(crate::abi::exports_xml2::xmlSAX2StartDocument);
-        let mut doc = ptr::null_mut();
-        if has_custom_start {
-            if let Some(hook) = start_hook {
-                unsafe { hook((*c).userData) };
-            }
-            doc = unsafe { (*c).myDoc };
+    unsafe {
+        crate::xml::html::push_drive(&mut *engine, terminate != 0);
+        if terminate != 0 {
+            crate::xml::html::push_terminate(&mut *engine);
         }
-        let parsed = unsafe {
-            html::parse_memory_enc_into(
-                doc,
-                (*st).input as *const c_char,
-                (*st).input_len as c_int,
-                (*st).encoding,
-                (*st).options,
-            )
-        };
-        unsafe {
-            if has_custom_start {
-                // The hook created `ctxt->myDoc`; keep the two in sync.
-                (*c).myDoc = parsed;
-                // Intern the tree's names into the dictionary the consumer
-                // adopted (`doc->dict` == `ctxt->dict` after _initSaxDocument)
-                // so address-based tag matching (lxml _MultiTagMatcher) works.
-                if (*c).dictNames != 0 && !(*c).dict.is_null() && !parsed.is_null() {
-                    if (*parsed).dict.is_null() {
-                        (*parsed).dict = (*c).dict;
-                        crate::abi::exports_hash::xmlDictReference((*c).dict);
-                    }
-                    html::intern_doc_names_into_dict(parsed, (*c).dict);
-                }
-                if let Some(sax) = sax.as_ref() {
-                    if let Some(end) = sax.endDocument {
-                        end((*c).userData);
-                    }
-                }
-            } else {
-                (*c).myDoc = parsed;
-            }
-            (*st).doc = parsed;
-            if !parsed.is_null() {
-                (*c).wellFormed = 1;
-            }
-            // The accumulated input is no longer needed.
-            xmlFreeImpl((*st).input as *mut c_void);
-            (*st).input = ptr::null_mut();
-            (*st).input_len = 0;
-        }
+        // Keep the public document pointer in sync (the default
+        // `xmlSAX2StartDocument` / lxml's `_initSaxDocument` create it).
+        (*st).doc = (*c).myDoc;
+        (*c).errNo
     }
-    XML_ERR_OK
 }
 
 /// Parse an HTML document and return the resulting document tree.
@@ -3143,7 +3199,16 @@ pub unsafe extern "C" fn htmlCtxtReadMemory(
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
     let st = unsafe { html_state(ctxt) };
-    let doc = unsafe { html::parse_memory_enc(buffer, size, encoding, (*st).options) };
+    let doc = unsafe {
+        html::parse_memory_enc_hosted(
+            ctxt as *mut _xmlParserCtxt,
+            buffer,
+            size,
+            encoding,
+            (*st).options,
+            unsafe { html_sax_is_custom(ctxt as *mut _xmlParserCtxt) },
+        )
+    };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }
 }
 

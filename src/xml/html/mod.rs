@@ -88,9 +88,9 @@ use core::ffi::c_void;
 use core::mem::size_of;
 use core::ptr;
 use core::slice;
-use std::os::raw::{c_char, c_int};
+use std::os::raw::{c_char, c_int, c_long};
 
-use crate::abi::allocator::{xmlFreeImpl, xmlMallocZero};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocZero, xmlReallocImpl};
 use crate::abi::structs::*;
 use crate::abi::types::xmlDocProperties::XML_DOC_WELLFORMED;
 use crate::abi::types::xmlElementType::*;
@@ -750,7 +750,8 @@ fn html_entity_lookup(name: &str) -> Option<&'static str> {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Internal HTML parser context.
-struct HtmlParserCtxt {
+#[repr(C)]
+pub(crate) struct HtmlParserCtxt {
     /// The document being built
     doc: *mut _xmlDoc,
     /// Current insertion point (current parent node)
@@ -791,10 +792,35 @@ struct HtmlParserCtxt {
     /// Parse options (XML_PARSE_NOBLANKS etc., forwarded from the host
     /// htmlParserCtxt by the exports).
     options: c_int,
+    /// Non-NULL when this engine drives a C-visible push context: the
+    /// `_xmlParserCtxt` at offset 0 of the host block. In that mode element
+    /// creation is *dispatched* through `(*host).sax` instead of being
+    /// performed directly, so the default HTML SAX1 handler
+    /// (`xmlSAX2StartElement` -> `xmlSAX2StartHtmlElement`) remains the single
+    /// tree-building authority, and `input_pos` persists across calls so the
+    /// incremental driver resumes where it parked.
+    pub(crate) host: *mut _xmlParserCtxt,
+    /// True when `emit_*` should *dispatch* the consumer's SAX1 callbacks
+    /// instead of mutating the tree directly. Set by `htmlParseChunk` (push
+    /// mode); a hosted whole-document parse (`htmlCtxtReadMemory`) sets `host`
+    /// for error reporting but leaves this false.
+    pub(crate) dispatch_sax: bool,
+    /// Incremental parser state (`XML_PARSER_START` .. `XML_PARSER_EOF`),
+    /// mirroring upstream `ctxt->instate` for the HTML push machine.
+    instate: c_int,
+    /// Set once `startDocument` has been dispatched.
+    started: bool,
+    /// Set once `endDocument` has been dispatched.
+    ended: bool,
+    /// Raw-text element name for the incremental driver (`<script>`, `<style>`):
+    /// once a raw-text element's start tag has been emitted, the driver consumes
+    /// everything up to the matching case-insensitive `</name` before closing
+    /// it. Heap C string, lazily allocated; NULL when in normal data mode.
+    data_tag: *mut c_char,
 }
 
 impl HtmlParserCtxt {
-    const fn new() -> Self {
+    fn new() -> Self {
         HtmlParserCtxt {
             doc: ptr::null_mut(),
             current: ptr::null_mut(),
@@ -815,6 +841,12 @@ impl HtmlParserCtxt {
             filename: ptr::null_mut(),
             encoding: ptr::null_mut(),
             options: 0,
+            host: ptr::null_mut(),
+            dispatch_sax: false,
+            instate: crate::abi::types::xmlParserInputState::XML_PARSER_START as c_int,
+            started: false,
+            ended: false,
+            data_tag: ptr::null_mut(),
         }
     }
 
@@ -1149,7 +1181,11 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         }
     }
 
-    ctxt.current = current;
+    // The rules above compute the insertion point *after* auto-close. Emit an
+    // `endElement` for every element that is closed on the way there
+    // (upstream htmlAutoClose -> htmlAutoCloseOnClose), so consumers observe
+    // the implicit ends instead of only the tree mutation.
+    unsafe { close_until(ctxt, current) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1167,21 +1203,20 @@ unsafe fn ensure_html(ctxt: &mut HtmlParserCtxt) -> *mut _xmlNode {
         return ctxt.html;
     }
 
-    let html_node = tree::new_node(ptr::null_mut(), b"html\0" as *const u8 as *const xmlChar);
+    // UPSTREAM-PARITY (HTMLparser.c htmlCheckImplied): the implied <html>
+    // element is reported through the SAX handler like any other element, so a
+    // consumer-driven push parse observes the same event that a whole-document
+    // parse materialises in its tree. It attaches at document level.
+    let saved = ctxt.current;
+    ctxt.current = ptr::null_mut();
+    unsafe { emit_start(ctxt, b"html", &[]) };
+    let html_node = ctxt.current;
     if html_node.is_null() {
+        ctxt.current = saved;
         return ptr::null_mut();
-    }
-    {
-        // Set HTML_IMPLIED flag concept - mark as auto-created
-        // (We track this via a separate flag rather than modifying the node structure)
     }
     ctxt.html = html_node;
     ctxt.html_created = true;
-
-    // Add to document
-    tree::add_child(ctxt.doc as *mut _xmlNode, html_node);
-    ctxt.current = html_node;
-
     html_node
 }
 
@@ -1195,20 +1230,18 @@ unsafe fn ensure_head(ctxt: &mut HtmlParserCtxt) -> *mut _xmlNode {
     }
 
     // Ensure html exists first
-    ensure_html(ctxt);
+    unsafe { ensure_html(ctxt) };
 
-    let head_node = tree::new_node(ptr::null_mut(), b"head\0" as *const u8 as *const xmlChar);
+    // Parent is <html> when it exists, else the document (NOIMPLIED).
+    ctxt.current = ctxt.html;
+    unsafe { emit_start(ctxt, b"head", &[]) };
+    let head_node = ctxt.current;
     if head_node.is_null() {
         return ptr::null_mut();
     }
     ctxt.head = head_node;
     ctxt.head_created = true;
-
-    // Add as child of html
-    tree::add_child(ctxt.html, head_node);
-    ctxt.current = head_node;
     ctxt.in_head = true;
-
     head_node
 }
 
@@ -1222,20 +1255,17 @@ unsafe fn ensure_body(ctxt: &mut HtmlParserCtxt) -> *mut _xmlNode {
     }
 
     // Ensure html exists first
-    ensure_html(ctxt);
+    unsafe { ensure_html(ctxt) };
 
-    let body_node = tree::new_node(ptr::null_mut(), b"body\0" as *const u8 as *const xmlChar);
+    ctxt.current = ctxt.html;
+    unsafe { emit_start(ctxt, b"body", &[]) };
+    let body_node = ctxt.current;
     if body_node.is_null() {
         return ptr::null_mut();
     }
     ctxt.body = body_node;
     ctxt.body_created = true;
-
-    // Add as child of html
-    tree::add_child(ctxt.html, body_node);
-    ctxt.current = body_node;
     ctxt.in_body = true;
-
     body_node
 }
 
@@ -1545,10 +1575,8 @@ unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
 
     if insertion_point.is_null() {
         // Fall back to document
-        let text_node = new_text_node(text);
-        if !text_node.is_null() {
-            tree::add_child(ctxt.doc as *mut _xmlNode, text_node);
-        }
+        ctxt.current = ptr::null_mut();
+        unsafe { emit_text(ctxt, text) };
         return;
     }
 
@@ -1560,27 +1588,20 @@ unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
         if text.iter().all(|b| b.is_ascii_whitespace()) {
             return;
         }
-        let content = trim_ascii_start(text);
-        let html_node = new_element_node(ptr::null_mut(), b"html");
+        let content = trim_ascii_start(text).to_vec();
+        ctxt.current = ptr::null_mut();
+        unsafe { emit_start(ctxt, b"html", &[]) };
+        let html_node = ctxt.current;
         if !html_node.is_null() {
-            let text_node = new_text_node(content);
-            if !text_node.is_null() {
-                tree::add_child(html_node, text_node);
-            }
-            tree::add_child(ctxt.doc as *mut _xmlNode, html_node);
             ctxt.html = html_node;
             ctxt.html_created = true;
-            ctxt.current = html_node;
+            unsafe { emit_text(ctxt, &content) };
         }
         return;
     }
 
-    let text_node = new_text_node(text);
-    if text_node.is_null() {
-        return;
-    }
-
-    tree::add_child(insertion_point, text_node);
+    ctxt.current = insertion_point;
+    unsafe { emit_text(ctxt, text) };
 }
 
 /// Attach parsed HTML attributes to a freshly created element node.
@@ -1611,6 +1632,602 @@ unsafe fn attach_attrs(node: *mut _xmlNode, attrs: &[HtmlAttr]) {
     }
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// SAX emission seam
+//
+// The HTML grammar decisions (implicit html/head/body, auto-close, void
+// elements, raw text) live in the engine below and are expressed in terms of
+// `emit_*` calls. In whole-document mode (`ctxt.host == NULL`) `emit_*`
+// performs the tree mutation directly. In push mode (`ctxt.host` non-NULL, set
+// by the exports) `emit_*` dispatches the corresponding SAX1 callback; the
+// DEFAULT handler (`xmlSAX2StartElement` -> `xmlSAX2StartHtmlElement`,
+// `xmlSAX2EndElement`, `xmlSAX2Characters`, ...) then performs the very same
+// tree mutation. That keeps a single tree-building authority: a
+// whole-document parse and a consumer-driven push parse (lxml's
+// iterparse/target/pull paths) build identical trees.
+// ═════════════════════════════════════════════════════════════════════════════
+
+/// The engine-state pointer inside a host HTML parser context: the host block
+/// is a real `_xmlParserCtxt` at offset 0 followed by the engine state.
+///
+/// # Safety
+///
+/// - `host` must be NULL or point to a host allocation created by
+///   `html_ctxt_alloc` / `create_file_parser_ctxt`.
+pub(crate) const unsafe fn engine_ptr(host: *mut _xmlParserCtxt) -> *mut HtmlParserCtxt {
+    if host.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { (host as *mut u8).add(size_of::<_xmlParserCtxt>()) as *mut HtmlParserCtxt }
+}
+
+/// Heap-allocated SAX1 attribute array: `[name, value, ..., NULL]`, with the
+/// backing NUL-terminated strings owned until `free`.
+struct Sax1Attrs {
+    array: Vec<*const xmlChar>,
+    owned: Vec<*mut c_void>,
+}
+
+impl Sax1Attrs {
+    /// Build the SAX1 array for `attrs`.
+    ///
+    /// # Safety
+    ///
+    /// - `attrs` is a live slice; the returned holder owns freshly allocated
+    ///   NUL-terminated strings that must be released with `free`.
+    unsafe fn build(attrs: &[HtmlAttr]) -> Self {
+        let mut array = Vec::with_capacity(attrs.len() * 2 + 1);
+        let mut owned = Vec::with_capacity(attrs.len() * 2);
+        for attr in attrs {
+            let name_c = unsafe { bytes_to_xmlstr(&attr.name) };
+            if name_c.is_null() {
+                continue;
+            }
+            owned.push(name_c as *mut c_void);
+            // UPSTREAM-PARITY (HTMLparser.c htmlParseStartTag): a minimized
+            // attribute carries a NULL value in the SAX1 array, exactly as
+            // `attach_attrs` reproduces for the direct tree builder.
+            let val_c = if attr.has_value {
+                let v = unsafe { bytes_to_xmlstr(&attr.value) };
+                if !v.is_null() {
+                    owned.push(v as *mut c_void);
+                }
+                v
+            } else {
+                ptr::null()
+            };
+            array.push(name_c as *const xmlChar);
+            array.push(val_c as *const xmlChar);
+        }
+        array.push(ptr::null());
+        Sax1Attrs { array, owned }
+    }
+
+    /// `[name, value, ..., NULL]`, or NULL when there are no attributes
+    /// (upstream passes NULL, not a single-NULL array).
+    fn ptr(&mut self) -> *mut *const xmlChar {
+        if self.owned.is_empty() {
+            ptr::null_mut()
+        } else {
+            self.array.as_mut_ptr()
+        }
+    }
+
+    /// Release the owned NUL-terminated strings.
+    ///
+    /// # Safety
+    ///
+    /// - Must be called at most once per holder, after the callback returns.
+    unsafe fn free(&mut self) {
+        for p in self.owned.drain(..) {
+            unsafe { xmlFreeImpl(p) };
+        }
+    }
+}
+
+/// Push `node` onto the C-visible element stack (`ctxt->nodeTab`), mirroring
+/// upstream `nodePush` (SAX2.c). The default SAX `characters` / `comment` /
+/// `processingInstruction` handlers read `nodeTab[nodeNr - 1]`, so the stack
+/// must stay in sync with the engine's own insertion point.
+///
+/// # Safety
+///
+/// - `host` must be NULL or a live host context; `node` a valid element node.
+unsafe fn html_node_push(host: *mut _xmlParserCtxt, node: *mut _xmlNode) {
+    if host.is_null() || node.is_null() {
+        return;
+    }
+    let c = unsafe { &mut *host };
+    if c.nodeTab.is_null() || c.nodeNr >= c.nodeMax {
+        let new_max = if c.nodeMax <= 0 {
+            10
+        } else {
+            (c.nodeMax as i64 * 2).min(c_int::MAX as i64) as c_int
+        };
+        let bytes = (new_max as usize).saturating_mul(core::mem::size_of::<*mut _xmlNode>());
+        let new_tab =
+            unsafe { xmlReallocImpl(c.nodeTab as *mut c_void, bytes) } as *mut *mut _xmlNode;
+        if new_tab.is_null() {
+            return;
+        }
+        c.nodeTab = new_tab;
+        c.nodeMax = new_max;
+    }
+    unsafe {
+        *c.nodeTab.add(c.nodeNr as usize) = node;
+    }
+    c.nodeNr += 1;
+    c.node = node;
+}
+
+/// Pop the C-visible element stack (`nodePop`), returning the new top (NULL at
+/// the document level).
+///
+/// # Safety
+///
+/// - `host` must be NULL or a live host context.
+unsafe fn html_node_pop(host: *mut _xmlParserCtxt) -> *mut _xmlNode {
+    if host.is_null() {
+        return ptr::null_mut();
+    }
+    let c = unsafe { &mut *host };
+    if c.nodeNr > 0 {
+        c.nodeNr -= 1;
+    }
+    c.node = if c.nodeNr > 0 && !c.nodeTab.is_null() {
+        unsafe { *c.nodeTab.add((c.nodeNr - 1) as usize) }
+    } else {
+        ptr::null_mut()
+    };
+    c.node
+}
+
+/// Create an element node and link it under the current insertion point.
+///
+/// This is the single tree-building authority for HTML elements: called
+/// directly in whole-document mode and from the default SAX1 handler in push
+/// mode. It performs no grammar decisions (those belong to the engine).
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine whose `doc` is a live `_xmlDoc`.
+/// - `name` and `attrs` must be live for the call.
+unsafe fn html_create_element_node(
+    ctxt: &mut HtmlParserCtxt,
+    name: &[u8],
+    attrs: &[HtmlAttr],
+) -> *mut _xmlNode {
+    let node = unsafe { new_element_node(ptr::null_mut(), name) };
+    if node.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { attach_attrs(node, attrs) };
+    let parent = if ctxt.current.is_null() {
+        ctxt.doc as *mut _xmlNode
+    } else {
+        ctxt.current
+    };
+    if !parent.is_null() {
+        unsafe { tree::add_child(parent, node) };
+    }
+    if ctxt.dispatch_sax {
+        unsafe { html_node_push(ctxt.host, node) };
+    }
+    ctxt.current = node;
+    node
+}
+
+/// Close the open element named `name` (if any) and every element above it,
+/// emitting an `endElement` for each. Used for the implicit head -> body
+/// transition (upstream `htmlStartClose` body-closes-head rule).
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine whose open-element chain is reachable
+///   through `current`'s `parent` links.
+unsafe fn close_open_element_named(ctxt: &mut HtmlParserCtxt, name: &[u8]) {
+    let mut cur = ctxt.current;
+    while !cur.is_null() {
+        if unsafe { (*cur).type_ } == XML_ELEMENT_NODE as c_int && !unsafe { (*cur).name.is_null() }
+        {
+            let bytes = unsafe { xmlstr_to_bytes((*cur).name) };
+            if bytes.eq_ignore_ascii_case(name) {
+                let stop = unsafe { get_parent_element(cur) };
+                unsafe { close_until(ctxt, stop) };
+                return;
+            }
+        }
+        cur = unsafe { (*cur).parent };
+    }
+}
+
+/// Emit an element start. In push mode the callback is the consumer's SAX1
+/// `startElement`; the default handler routes back into
+/// `html_create_element_node`.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine; `name`/`attrs` live for the call.
+unsafe fn emit_start(ctxt: &mut HtmlParserCtxt, name: &[u8], attrs: &[HtmlAttr]) {
+    if !ctxt.dispatch_sax {
+        unsafe { html_create_element_node(ctxt, name, attrs) };
+        return;
+    }
+    let host = ctxt.host;
+    let sax = unsafe { (*host).sax };
+    if sax.is_null() {
+        return;
+    }
+    let Some(cb) = (unsafe { (*sax).startElement }) else {
+        return;
+    };
+    let name_c = unsafe { bytes_to_xmlstr(name) };
+    if name_c.is_null() {
+        return;
+    }
+    let mut holder = unsafe { Sax1Attrs::build(attrs) };
+    let atts = holder.ptr();
+    let before = ctxt.current;
+    unsafe { cb((*host).userData, name_c, atts) };
+    unsafe { holder.free() };
+    unsafe { xmlFreeImpl(name_c as *mut c_void) };
+    // UPSTREAM-PARITY: upstream tracks the open-element stack independently of
+    // the consumer's handler (`ctxt->nameTab` plus `ctxt->node` maintained by
+    // nodePush). A consumer that replaces `startElement` without chaining to
+    // the default handler (lxml's parser *target*) materialises no node, so the
+    // engine must still record the element to keep its grammar decisions
+    // (implicit html/head/body, auto-close, end-tag matching) coherent.
+    if core::ptr::eq(ctxt.current, before) {
+        unsafe { html_create_element_node(ctxt, name, attrs) };
+    }
+}
+
+/// Emit an element end. In whole-document mode the insertion point simply
+/// moves to the parent element.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine.
+unsafe fn emit_end(ctxt: &mut HtmlParserCtxt, name: &[u8]) {
+    if !ctxt.dispatch_sax {
+        ctxt.current = unsafe { get_parent_element(ctxt.current) };
+        return;
+    }
+    let host = ctxt.host;
+    let sax = unsafe { (*host).sax };
+    if sax.is_null() {
+        return;
+    }
+    let Some(cb) = (unsafe { (*sax).endElement }) else {
+        return;
+    };
+    let name_c = unsafe { bytes_to_xmlstr(name) };
+    if name_c.is_null() {
+        return;
+    }
+    unsafe { cb((*host).userData, name_c) };
+    unsafe { xmlFreeImpl(name_c as *mut c_void) };
+}
+
+/// Close the current element (emit its end, then move up one level). Used by
+/// auto-close and by matching end tags; supports both modes.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine whose `current`, when non-NULL, is a node in
+///   its own document tree.
+unsafe fn emit_end_current(ctxt: &mut HtmlParserCtxt) {
+    let top = ctxt.current;
+    if top.is_null() {
+        return;
+    }
+    // Only elements participate in the HTML end-tag grammar; the document node
+    // is the floor of the open-element chain.
+    if unsafe { (*top).type_ } != XML_ELEMENT_NODE as c_int {
+        ctxt.current = unsafe { (*top).parent };
+        return;
+    }
+    // Dispatch the element's OWN name pointer, not a copy: the name is
+    // interned in the parser dictionary (by
+    // `_fixHtmlDictNodeNames`/`xmlDictLookup` on the way in), and lxml's
+    // `_MultiTagMatcher` compares element names by dictionary address. Upstream
+    // `htmlParseEndTag` likewise passes the interned `ctxt->name`.
+    if ctxt.dispatch_sax {
+        let host = ctxt.host;
+        if !host.is_null() {
+            let sax = unsafe { (*host).sax };
+            if !sax.is_null() {
+                if let Some(cb) = unsafe { (*sax).endElement } {
+                    unsafe { cb((*host).userData, unsafe { (*top).name }) };
+                }
+            }
+        }
+    }
+    if core::ptr::eq(ctxt.current, top) {
+        // The consumer did not advance the insertion point; force it so the
+        // auto-close walk always terminates.
+        ctxt.current = unsafe { get_parent_element(top) };
+    }
+}
+
+/// Close every open element from the current insertion point up to (but not
+/// including) `stop`, emitting an end for each.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine; `stop` must be NULL or an ancestor of the
+///   open-element chain reachable from `ctxt.current`.
+unsafe fn close_until(ctxt: &mut HtmlParserCtxt, stop: *mut _xmlNode) {
+    let mut guard = 0usize;
+    while !ctxt.current.is_null() && !core::ptr::eq(ctxt.current, stop) {
+        let before = ctxt.current;
+        unsafe { emit_end_current(ctxt) };
+        if core::ptr::eq(ctxt.current, before) {
+            break;
+        }
+        guard += 1;
+        if guard > 100_000 {
+            break;
+        }
+    }
+}
+
+/// Emit character data. Whole-document mode creates a text node directly;
+/// push mode dispatches `sax.characters`, whose default handler
+/// (`xmlSAX2Characters`) merges into the top of `nodeTab`.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine; `text` live for the call.
+unsafe fn emit_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
+    if text.is_empty() {
+        return;
+    }
+    if !ctxt.dispatch_sax {
+        let node = unsafe { new_text_node(text) };
+        if node.is_null() {
+            return;
+        }
+        if !ctxt.current.is_null() {
+            unsafe { tree::add_child(ctxt.current, node) };
+        } else if !ctxt.doc.is_null() {
+            unsafe { tree::add_child(ctxt.doc as *mut _xmlNode, node) };
+        }
+        return;
+    }
+    let host = ctxt.host;
+    let sax = unsafe { (*host).sax };
+    if sax.is_null() {
+        return;
+    }
+    let Some(cb) = (unsafe { (*sax).characters }) else {
+        return;
+    };
+    let text_c = unsafe { bytes_to_xmlstr(text) };
+    if text_c.is_null() {
+        return;
+    }
+    unsafe { cb((*host).userData, text_c, text.len() as c_int) };
+    unsafe { xmlFreeImpl(text_c as *mut c_void) };
+}
+
+/// Emit a comment. Whole-document mode adds a comment node; push mode
+/// dispatches `sax.comment`.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine; `text` live for the call.
+unsafe fn emit_comment(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
+    if !ctxt.dispatch_sax {
+        let content = unsafe { bytes_to_xmlstr(text) };
+        let node = unsafe { tree::new_comment(content) };
+        unsafe { xmlFreeImpl(content as *mut c_void) };
+        if node.is_null() {
+            return;
+        }
+        let parent = if ctxt.current.is_null() {
+            ctxt.doc as *mut _xmlNode
+        } else {
+            ctxt.current
+        };
+        if !parent.is_null() {
+            unsafe { tree::add_child(parent, node) };
+        }
+        return;
+    }
+    let host = ctxt.host;
+    let sax = unsafe { (*host).sax };
+    if sax.is_null() {
+        return;
+    }
+    let Some(cb) = (unsafe { (*sax).comment }) else {
+        return;
+    };
+    let content = unsafe { bytes_to_xmlstr(text) };
+    if content.is_null() {
+        return;
+    }
+    unsafe { cb((*host).userData, content) };
+    unsafe { xmlFreeImpl(content as *mut c_void) };
+}
+
+/// Emit a processing instruction. Whole-document mode adds a PI node; push
+/// mode dispatches `sax.processingInstruction`.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine; `target`/`data` live for the call.
+unsafe fn emit_pi(ctxt: &mut HtmlParserCtxt, target: &[u8], data: &[u8]) {
+    if !ctxt.dispatch_sax {
+        let t = unsafe { bytes_to_xmlstr(target) };
+        let d = unsafe { bytes_to_xmlstr(data) };
+        let node = unsafe { tree::new_pi(t, d) };
+        unsafe {
+            xmlFreeImpl(t as *mut c_void);
+            xmlFreeImpl(d as *mut c_void);
+        }
+        if node.is_null() {
+            return;
+        }
+        let parent = if ctxt.current.is_null() {
+            ctxt.doc as *mut _xmlNode
+        } else {
+            ctxt.current
+        };
+        if !parent.is_null() {
+            unsafe { tree::add_child(parent, node) };
+        }
+        return;
+    }
+    let host = ctxt.host;
+    let sax = unsafe { (*host).sax };
+    if sax.is_null() {
+        return;
+    }
+    let Some(cb) = (unsafe { (*sax).processingInstruction }) else {
+        return;
+    };
+    let t = unsafe { bytes_to_xmlstr(target) };
+    let d = unsafe { bytes_to_xmlstr(data) };
+    if !t.is_null() {
+        unsafe { cb((*host).userData, t, d) };
+    }
+    unsafe {
+        xmlFreeImpl(t as *mut c_void);
+        xmlFreeImpl(d as *mut c_void);
+    }
+}
+
+/// Emit the internal subset (`<!DOCTYPE ...>`). Push mode dispatches
+/// `sax.internalSubset`, which is how a target observes the doctype.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine; the optional slices live for the call.
+unsafe fn emit_doctype(
+    ctxt: &mut HtmlParserCtxt,
+    name: Option<&[u8]>,
+    public_id: Option<&[u8]>,
+    system_id: Option<&[u8]>,
+) {
+    if !ctxt.dispatch_sax {
+        return;
+    }
+    let host = ctxt.host;
+    let sax = unsafe { (*host).sax };
+    if sax.is_null() {
+        return;
+    }
+    let Some(cb) = (unsafe { (*sax).internalSubset }) else {
+        return;
+    };
+    let n = name
+        .map(|v| unsafe { bytes_to_xmlstr(v) })
+        .unwrap_or(ptr::null_mut());
+    let p = public_id
+        .map(|v| unsafe { bytes_to_xmlstr(v) })
+        .unwrap_or(ptr::null_mut());
+    let s = system_id
+        .map(|v| unsafe { bytes_to_xmlstr(v) })
+        .unwrap_or(ptr::null_mut());
+    unsafe {
+        cb(
+            (*host).userData,
+            n as *const xmlChar,
+            p as *const xmlChar,
+            s as *const xmlChar,
+        );
+    }
+    unsafe {
+        if !n.is_null() {
+            xmlFreeImpl(n as *mut c_void);
+        }
+        if !p.is_null() {
+            xmlFreeImpl(p as *mut c_void);
+        }
+        if !s.is_null() {
+            xmlFreeImpl(s as *mut c_void);
+        }
+    }
+}
+
+/// Convert a NULL-terminated SAX1 attribute array into parsed attributes.
+///
+/// # Safety
+///
+/// - `atts` must be NULL or a NULL-terminated `[name, value, ...]` array of
+///   NUL-terminated strings.
+unsafe fn read_sax1_attrs(atts: *mut *const xmlChar) -> Vec<HtmlAttr> {
+    let mut out = Vec::new();
+    if atts.is_null() {
+        return out;
+    }
+    let mut i = 0usize;
+    loop {
+        let n = unsafe { *atts.add(i) };
+        if n.is_null() {
+            break;
+        }
+        let v = unsafe { *atts.add(i + 1) };
+        let name = unsafe { xmlstr_to_bytes(n) }.to_vec();
+        let (value, has_value) = if v.is_null() {
+            (Vec::new(), false)
+        } else {
+            (unsafe { xmlstr_to_bytes(v) }.to_vec(), true)
+        };
+        out.push(HtmlAttr {
+            name,
+            value,
+            has_value,
+            quoted: true,
+        });
+        i += 2;
+    }
+    out
+}
+
+/// Default HTML SAX1 start-element handler (upstream `xmlSAX2StartHtmlElement`,
+/// SAX2.c). Reached from the exported `xmlSAX2StartElement` when `ctxt->html`.
+///
+/// # Safety
+///
+/// - `ctx` must be a live host HTML parser context; `name` a NUL-terminated
+///   element name; `atts` NULL or a SAX1 attribute array.
+pub(crate) unsafe fn sax1_start_element_html(
+    ctx: *mut _xmlParserCtxt,
+    name: *const xmlChar,
+    atts: *mut *const xmlChar,
+) {
+    if ctx.is_null() || name.is_null() {
+        return;
+    }
+    let engine = unsafe { engine_ptr(ctx) };
+    if engine.is_null() {
+        return;
+    }
+    let ctxt = unsafe { &mut *engine };
+    let name_bytes = unsafe { xmlstr_to_bytes(name) }.to_vec();
+    let attrs = unsafe { read_sax1_attrs(atts) };
+    unsafe { html_create_element_node(ctxt, &name_bytes, &attrs) };
+}
+
+/// Default HTML SAX1 end-element handler (upstream `xmlSAX2EndElement`).
+///
+/// # Safety
+///
+/// - `ctx` must be a live host HTML parser context.
+pub(crate) unsafe fn sax1_end_element_html(ctx: *mut _xmlParserCtxt) {
+    if ctx.is_null() {
+        return;
+    }
+    let engine = unsafe { engine_ptr(ctx) };
+    if engine.is_null() {
+        return;
+    }
+    let node = unsafe { html_node_pop(ctx) };
+    unsafe { (*engine).current = node };
+}
+
 /// Process a start tag in the tree builder.
 unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[HtmlAttr]) {
     let tag_lower: Vec<u8> = tag_name.iter().map(|b| b.to_ascii_lowercase()).collect();
@@ -1632,14 +2249,10 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
         }
         // Create or use existing html
         if ctxt.html.is_null() {
-            let html_node = new_element_node(ptr::null_mut(), tag_name);
-            if !html_node.is_null() {
-                attach_attrs(html_node, attrs);
-                ctxt.html = html_node;
-                ctxt.html_created = false; // parsed, not implied
-                tree::add_child(ctxt.doc as *mut _xmlNode, html_node);
-                ctxt.current = html_node;
-            }
+            ctxt.current = ptr::null_mut();
+            unsafe { emit_start(ctxt, tag_name, attrs) };
+            ctxt.html = ctxt.current;
+            ctxt.html_created = false; // parsed, not implied
         } else {
             // html already auto-created, just set current
             ctxt.current = ctxt.html;
@@ -1653,25 +2266,16 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
             return;
         }
         // Ensure html exists
-        ensure_html(ctxt);
+        unsafe { ensure_html(ctxt) };
 
         if ctxt.head.is_null() {
-            let head_node = new_element_node(ptr::null_mut(), tag_name);
-            if !head_node.is_null() {
-                attach_attrs(head_node, attrs);
-                ctxt.head = head_node;
-                ctxt.head_created = false;
-                // UPSTREAM-PARITY: a source <head> without an <html> parent
-                // becomes a top-level element under HTML_PARSE_NOIMPLIED.
-                let parent = if ctxt.html.is_null() {
-                    ctxt.doc as *mut _xmlNode
-                } else {
-                    ctxt.html
-                };
-                tree::add_child(parent, head_node);
-                ctxt.current = head_node;
-                ctxt.in_head = true;
-            }
+            // UPSTREAM-PARITY: a source <head> without an <html> parent
+            // becomes a top-level element under HTML_PARSE_NOIMPLIED.
+            ctxt.current = ctxt.html;
+            unsafe { emit_start(ctxt, tag_name, attrs) };
+            ctxt.head = ctxt.current;
+            ctxt.head_created = false;
+            ctxt.in_head = true;
         } else {
             ctxt.current = ctxt.head;
             ctxt.in_head = true;
@@ -1685,27 +2289,19 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
             return;
         }
         // Ensure html exists
-        ensure_html(ctxt);
+        unsafe { ensure_html(ctxt) };
 
         if ctxt.body.is_null() {
-            let body_node = new_element_node(ptr::null_mut(), tag_name);
-            if !body_node.is_null() {
-                attach_attrs(body_node, attrs);
-                ctxt.body = body_node;
-                ctxt.body_created = false;
-                // UPSTREAM-PARITY: a source <body> without an <html> parent
-                // becomes a top-level element under HTML_PARSE_NOIMPLIED.
-                let parent = if ctxt.html.is_null() {
-                    ctxt.doc as *mut _xmlNode
-                } else {
-                    ctxt.html
-                };
-                tree::add_child(parent, body_node);
-                ctxt.current = body_node;
-                ctxt.in_body = true;
-                ctxt.in_head = false;
-                ctxt.seen_body_content = true;
-            }
+            // UPSTREAM-PARITY (HTMLparser.c htmlStartClose): an explicit <body>
+            // implicitly closes an open <head> (and anything inside it).
+            unsafe { close_open_element_named(ctxt, b"head") };
+            ctxt.current = ctxt.html;
+            unsafe { emit_start(ctxt, tag_name, attrs) };
+            ctxt.body = ctxt.current;
+            ctxt.body_created = false;
+            ctxt.in_body = true;
+            ctxt.in_head = false;
+            ctxt.seen_body_content = true;
         } else {
             ctxt.current = ctxt.body;
             ctxt.in_body = true;
@@ -1718,36 +2314,15 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
     // For head-only elements (<title>, <meta>, <link>, <style>, <script>)
     if is_head_tag && !ctxt.seen_body_content {
         if ctxt.head.is_null() {
-            ensure_head(ctxt);
+            unsafe { ensure_head(ctxt) };
         }
 
+        // UPSTREAM-PARITY (NOIMPLIED): top-level head-only elements become
+        // document children; `emit_start` attaches at `ctxt.current` (NULL ->
+        // document), exactly like the previous explicit insertion point.
+        unsafe { emit_start(ctxt, tag_name, attrs) };
         if is_empty {
-            // Void element in head
-            let node = new_element_node(ptr::null_mut(), tag_name);
-            if !node.is_null() {
-                attach_attrs(node, attrs);
-                // UPSTREAM-PARITY (NOIMPLIED): top-level head-only elements
-                // become document children.
-                let ip = if ctxt.current.is_null() {
-                    ctxt.doc as *mut _xmlNode
-                } else {
-                    ctxt.current
-                };
-                tree::add_child(ip, node);
-            }
-            return;
-        }
-
-        let node = new_element_node(ptr::null_mut(), tag_name);
-        if !node.is_null() {
-            attach_attrs(node, attrs);
-            let ip = if ctxt.current.is_null() {
-                ctxt.doc as *mut _xmlNode
-            } else {
-                ctxt.current
-            };
-            tree::add_child(ip, node);
-            ctxt.current = node;
+            unsafe { emit_end_current(ctxt) };
         }
         return;
     }
@@ -1763,67 +2338,57 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
             if ctxt.options & HTML_PARSE_NOIMPLIED != 0 {
                 // current stays NULL -> top-level nodes attach to the doc
             } else if ctxt.body.is_null() {
-                ensure_body(ctxt);
+                unsafe { close_open_element_named(ctxt, b"head") };
+                unsafe { ensure_body(ctxt) };
             } else {
                 ctxt.current = ctxt.body;
                 ctxt.in_body = true;
             }
         } else if ctxt.body.is_null() && ctxt.options & HTML_PARSE_NOIMPLIED == 0 {
-            ensure_body(ctxt);
+            unsafe { ensure_body(ctxt) };
         }
     }
 
     // Auto-close elements as needed
     if !ctxt.current.is_null() {
-        auto_close_element(ctxt, tag_str);
+        unsafe { auto_close_element(ctxt, tag_str) };
     }
 
     if is_empty {
-        // Void element: create node, add attributes, add as child (no children)
-        let node = new_element_node(ptr::null_mut(), tag_name);
-        if !node.is_null() {
-            attach_attrs(node, attrs);
-            let insertion_point = if ctxt.current.is_null() {
-                if ctxt.options & HTML_PARSE_NOIMPLIED != 0 {
-                    ctxt.doc as *mut _xmlNode
-                } else {
-                    ctxt.body
-                }
+        // Void element: emit start then end, mirroring upstream
+        // htmlParseElementInternal (which calls sax->endElement straight after
+        // the startElement for an empty element). The insertion point falls
+        // back to <body> when no element is open.
+        let insertion_point = if ctxt.current.is_null() {
+            if ctxt.options & HTML_PARSE_NOIMPLIED != 0 {
+                ptr::null_mut()
             } else {
-                ctxt.current
-            };
-            if !insertion_point.is_null() {
-                tree::add_child(insertion_point, node);
+                ctxt.body
             }
+        } else {
+            ctxt.current
+        };
+        ctxt.current = insertion_point;
+        unsafe {
+            emit_start(ctxt, tag_name, attrs);
+            emit_end_current(ctxt);
         }
         return;
     }
 
     // Regular element
-    let node = new_element_node(ptr::null_mut(), tag_name);
-    if !node.is_null() {
-        attach_attrs(node, attrs);
-
-        let insertion_point = if ctxt.current.is_null() {
-            if ctxt.in_body || ctxt.body_created {
-                ctxt.body
-            } else if ctxt.in_head || ctxt.head_created {
-                ctxt.head
-            } else if ctxt.html_created {
-                ctxt.html
-            } else {
-                ctxt.doc as *mut _xmlNode
-            }
+    if ctxt.current.is_null() {
+        ctxt.current = if ctxt.in_body || ctxt.body_created {
+            ctxt.body
+        } else if ctxt.in_head || ctxt.head_created {
+            ctxt.head
+        } else if ctxt.html_created {
+            ctxt.html
         } else {
-            ctxt.current
+            ptr::null_mut()
         };
-
-        if !insertion_point.is_null() {
-            tree::add_child(insertion_point, node);
-            // For non-void elements, this becomes the new insertion point
-            ctxt.current = node;
-        }
     }
+    unsafe { emit_start(ctxt, tag_name, attrs) };
 }
 
 /// Process an end tag in the tree builder.
@@ -1848,39 +2413,47 @@ unsafe fn handle_end_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8]) {
         return;
     }
 
-    if tag_str == "html" {
-        ctxt.current = ctxt.doc as *mut _xmlNode;
-        return;
-    }
-
-    if tag_str == "head" {
-        ctxt.in_head = false;
-        ctxt.current = ctxt.html;
-        return;
-    }
-
-    if tag_str == "body" {
-        ctxt.in_body = false;
-        ctxt.current = ctxt.html;
-        return;
-    }
-
-    // Walk up the tree to find a matching open element
+    // Walk up the tree to find a matching open element.
     let mut cur = ctxt.current;
+    let mut found = ptr::null_mut();
     while !cur.is_null() {
         let ctype = unsafe { (*cur).type_ };
         if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur).name.is_null() } {
             let name_bytes = unsafe { xmlstr_to_bytes((*cur).name) };
             if name_bytes.eq_ignore_ascii_case(tag_name) {
-                // Found the matching element - close by moving current to parent
-                ctxt.current = unsafe { (*cur).parent };
-                return;
+                found = cur;
+                break;
             }
         }
         cur = unsafe { (*cur).parent };
     }
 
-    // If no matching element found, ignore the end tag (tag-recovery behavior)
+    // If no matching element is found, report the mismatch and ignore the end
+    // tag (upstream htmlParseEndTag "Unexpected end tag"). HTML errors clear
+    // `wellFormed` but remain recoverable, so lxml's `recover=False` paths
+    // raise while the default (recover=True) paths keep going.
+    if found.is_null() {
+        let mut msg: Vec<u8> = Vec::new();
+        msg.extend_from_slice(b"Unexpected end tag : ");
+        msg.extend_from_slice(tag_name);
+        msg.push(b'\n');
+        unsafe { push_html_error(ctxt, crate::abi::types::XML_ERR_TAG_NAME_MISMATCH, &msg) };
+        return;
+    }
+
+    // UPSTREAM-PARITY: leaving <head>/<body> clears the corresponding region
+    // flag; the elements themselves are closed below through SAX so consumers
+    // observe the end events (iterparse expects ('end', head/body/html)).
+    if tag_str == "head" {
+        ctxt.in_head = false;
+    } else if tag_str == "body" {
+        ctxt.in_body = false;
+    }
+
+    // Close every open element from the insertion point up to and including the
+    // matching element (upstream htmlAutoCloseOnClose + endElement).
+    let stop = unsafe { get_parent_element(found) };
+    unsafe { close_until(ctxt, stop) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2164,6 +2737,12 @@ unsafe fn html_parse_buffer_into(
 
     // Main parse loop
     loop {
+        // A consumer SAX handler may stop the parse (lxml's
+        // `_handleSaxException` sets `disableSAX` after an exception in a
+        // parser target); honour it immediately.
+        if ctxt.dispatch_sax && push_stopped(ctxt) {
+            break;
+        }
         if ctxt.is_eof() {
             break;
         }
@@ -2731,6 +3310,47 @@ pub unsafe fn parse_memory(buffer: *const c_char, size: c_int) -> *mut _xmlDoc {
     unsafe { parse_memory_enc(buffer, size, ptr::null(), 0) }
 }
 
+/// Parse HTML from a memory buffer with an explicit input encoding, reporting
+/// errors through `host` (upstream `htmlCtxtReadMemory`). The tree is still
+/// built directly (no SAX dispatch): a hosted whole-document parse only needs
+/// the context for diagnostic delivery.
+///
+/// # Safety
+///
+/// - `host` must be NULL or a live host HTML parser context.
+/// - `buffer` must point to valid memory of at least `size` bytes.
+/// - `size` must be non-negative.
+/// - `encoding` must be a valid NUL-terminated C string or NULL.
+pub(crate) unsafe fn parse_memory_enc_hosted(
+    host: *mut _xmlParserCtxt,
+    buffer: *const c_char,
+    size: c_int,
+    encoding: *const c_char,
+    options: c_int,
+    dispatch_sax: bool,
+) -> *mut _xmlDoc {
+    if buffer.is_null() || size <= 0 {
+        return ptr::null_mut();
+    }
+    let mut ctxt = HtmlParserCtxt::new();
+    ctxt.options = options;
+    ctxt.host = host;
+    ctxt.dispatch_sax = dispatch_sax;
+    if !encoding.is_null() {
+        ctxt.encoding = unsafe { c_strdup(encoding) };
+    }
+    let doc = unsafe { html_parse_buffer_into(&mut ctxt, ptr::null_mut(), buffer, size) };
+    // The engine's `input` borrows the caller's buffer (or a local Vec), so
+    // only the duplicated encoding string is owned here.
+    if !ctxt.encoding.is_null() {
+        unsafe { xmlFreeImpl(ctxt.encoding as *mut c_void) };
+    }
+    if !ctxt.data_tag.is_null() {
+        unsafe { xmlFreeImpl(ctxt.data_tag as *mut c_void) };
+    }
+    doc
+}
+
 /// Parse HTML from a memory buffer with an explicit input encoding.
 ///
 /// UPSTREAM-PARITY: equivalent to `htmlCtxtReadMemory` where the caller's
@@ -2750,6 +3370,987 @@ pub(crate) unsafe fn parse_memory_enc(
     options: c_int,
 ) -> *mut _xmlDoc {
     unsafe { parse_memory_enc_into(ptr::null_mut(), buffer, size, encoding, options) }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Incremental HTML push parser
+//
+// Faithful port of upstream HTMLparser.c `htmlParseTryOrFinish` +
+// `htmlParseElementInternal` / `htmlParseEndTag` / `htmlParseCharData` /
+// `htmlParseComment` / `htmlParseDocTypeDecl`. The driver never replays parsed
+// input: `input_pos` only ever advances, and each construct either completes or
+// parks (the cursor is rewound to the construct start and the call returns) until
+// the next chunk supplies the missing bytes. The persistent lookups
+// (`htmlParseLookupGt` / `htmlParseLookupString`) mirror upstream
+// `ctxt->checkIndex` / `ctxt->endCheckState` so an unfinished construct is
+// rescanned only over the newly available region, keeping the engine O(N).
+// ═════════════════════════════════════════════════════════════════════════════
+
+/// `HTML_PARSER_BIG_BUFFER_SIZE` (HTMLparser.c): character data shorter than
+/// this waits for a delimiter instead of being emitted early.
+const HTML_BIG_BUFFER_SIZE: usize = 1000;
+
+/// Persistent tag-lookup states (HTMLparser.c `xmlLookupStates`).
+const LSTATE_TAG_NAME: c_int = 0;
+const LSTATE_BEFORE_ATTR_NAME: c_int = 1;
+const LSTATE_ATTR_NAME: c_int = 2;
+const LSTATE_AFTER_ATTR_NAME: c_int = 3;
+const LSTATE_BEFORE_ATTR_VALUE: c_int = 4;
+const LSTATE_ATTR_VALUE_DQUOTED: c_int = 5;
+const LSTATE_ATTR_VALUE_SQUOTED: c_int = 6;
+const LSTATE_ATTR_VALUE_UNQUOTED: c_int = 7;
+
+/// `IS_WS_HTML` (HTMLparser.c): HTML whitespace, including form feed.
+const fn is_ws_html(c: u8) -> bool {
+    matches!(c, b' ' | b'\t' | b'\n' | b'\r' | 0x0c)
+}
+
+/// Read the byte at `pos` (or 0 past the end).
+///
+/// # Safety
+///
+/// - `ctxt.input` must be valid for `ctxt.input_len` bytes.
+unsafe fn push_byte(ctxt: &HtmlParserCtxt, pos: usize) -> u8 {
+    if pos < ctxt.input_len && !ctxt.input.is_null() {
+        unsafe { *ctxt.input.add(pos) }
+    } else {
+        0
+    }
+}
+
+/// `POS`-style case-insensitive comparison of `ctxt.input[pos..]` against `s`.
+///
+/// # Safety
+///
+/// - `ctxt.input` must be valid for `ctxt.input_len` bytes.
+unsafe fn push_match_ci(ctxt: &HtmlParserCtxt, pos: usize, s: &[u8]) -> bool {
+    if pos + s.len() > ctxt.input_len {
+        return false;
+    }
+    for (i, &b) in s.iter().enumerate() {
+        if unsafe { push_byte(ctxt, pos + i) }.to_ascii_uppercase() != b.to_ascii_uppercase() {
+            return false;
+        }
+    }
+    true
+}
+
+/// Set `instate` on the engine and mirror it into the C-visible context.
+fn set_instate(ctxt: &mut HtmlParserCtxt, state: c_int) {
+    ctxt.instate = state;
+    if !ctxt.host.is_null() {
+        unsafe { (*ctxt.host).instate = state };
+    }
+}
+
+/// True when the parser has been stopped by the consumer (lxml's
+/// `_handleSaxException` sets `disableSAX`) or has reached EOF.
+fn push_stopped(ctxt: &HtmlParserCtxt) -> bool {
+    if ctxt.instate == crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int {
+        return true;
+    }
+    if ctxt.host.is_null() {
+        return false;
+    }
+    unsafe { (*ctxt.host).disableSAX != 0 }
+}
+
+/// Raise an HTML parser error (upstream `htmlParseErr` -> `xmlCtxtErr`): the
+/// context records `errNo`, clears `wellFormed` (so lxml's `recover=False`
+/// paths raise `XMLSyntaxError`) and delivers the diagnostic through the
+/// context's structured/generic error channel. Deliberately does NOT set
+/// `disableSAX` — HTML errors are recoverable and parsing continues.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine driving a host context.
+unsafe fn push_html_error(ctxt: &mut HtmlParserCtxt, code: c_int, msg: &[u8]) {
+    let host = ctxt.host;
+    if host.is_null() {
+        return;
+    }
+    unsafe {
+        (*host).errNo = code;
+        (*host).wellFormed = 0;
+        (*host).nbErrors = (*host).nbErrors.wrapping_add(1);
+    }
+    let line = if unsafe { (*host).input.is_null() } {
+        1
+    } else {
+        unsafe { (*(*host).input).line }
+    };
+    let msg_c = unsafe { bytes_to_xmlstr(msg) };
+    let delivery = unsafe { crate::xml::errors::parser_delivery(host) };
+    unsafe {
+        crate::xml::errors::raise_error_streamed(
+            host as *mut c_void,
+            crate::abi::types::XML_FROM_HTML,
+            code,
+            crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
+            ptr::null(),
+            line,
+            0,
+            ptr::null(),
+            ptr::null(),
+            ptr::null(),
+            0,
+            msg_c as *const c_char,
+            None,
+            None,
+            delivery,
+            None,
+        );
+        xmlFreeImpl(msg_c as *mut c_void);
+    }
+}
+
+/// Upstream `htmlParseLookupGt`: is the terminating `>` of the tag at the
+/// current position already available (outside quoted attribute values)?
+/// Persists `checkIndex`/`endCheckState` so the scan resumes where it stopped.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine driving a host context.
+unsafe fn html_lookup_gt(ctxt: &mut HtmlParserCtxt) -> bool {
+    let host = ctxt.host;
+    if host.is_null() {
+        return true;
+    }
+    if ctxt.input.is_null() {
+        return false;
+    }
+    let mut state = unsafe { (*host).endCheckState };
+    let mut cur = if unsafe { (*host).checkIndex } == 0 {
+        ctxt.input_pos + 2
+    } else {
+        ctxt.input_pos + unsafe { (*host).checkIndex } as usize
+    };
+    while cur < ctxt.input_len {
+        let c = unsafe { *ctxt.input.add(cur) };
+        cur += 1;
+        if state != LSTATE_ATTR_VALUE_SQUOTED && state != LSTATE_ATTR_VALUE_DQUOTED {
+            if c == b'/' && state != LSTATE_BEFORE_ATTR_VALUE && state != LSTATE_ATTR_VALUE_UNQUOTED
+            {
+                state = LSTATE_BEFORE_ATTR_NAME;
+                continue;
+            } else if c == b'>' {
+                unsafe {
+                    (*host).checkIndex = 0;
+                    (*host).endCheckState = 0;
+                }
+                return true;
+            }
+        }
+        match state {
+            LSTATE_TAG_NAME => {
+                if is_ws_html(c) {
+                    state = LSTATE_BEFORE_ATTR_NAME;
+                }
+            }
+            LSTATE_BEFORE_ATTR_NAME => {
+                if !is_ws_html(c) {
+                    state = LSTATE_ATTR_NAME;
+                }
+            }
+            LSTATE_ATTR_NAME => {
+                if c == b'=' {
+                    state = LSTATE_BEFORE_ATTR_VALUE;
+                } else if is_ws_html(c) {
+                    state = LSTATE_AFTER_ATTR_NAME;
+                }
+            }
+            LSTATE_AFTER_ATTR_NAME => {
+                if c == b'=' {
+                    state = LSTATE_BEFORE_ATTR_VALUE;
+                } else if !is_ws_html(c) {
+                    state = LSTATE_ATTR_NAME;
+                }
+            }
+            LSTATE_BEFORE_ATTR_VALUE => {
+                if c == b'"' {
+                    state = LSTATE_ATTR_VALUE_DQUOTED;
+                } else if c == b'\'' {
+                    state = LSTATE_ATTR_VALUE_SQUOTED;
+                } else if !is_ws_html(c) {
+                    state = LSTATE_ATTR_VALUE_UNQUOTED;
+                }
+            }
+            LSTATE_ATTR_VALUE_DQUOTED => {
+                if c == b'"' {
+                    state = LSTATE_BEFORE_ATTR_NAME;
+                }
+            }
+            LSTATE_ATTR_VALUE_SQUOTED => {
+                if c == b'\'' {
+                    state = LSTATE_BEFORE_ATTR_NAME;
+                }
+            }
+            LSTATE_ATTR_VALUE_UNQUOTED => {
+                if is_ws_html(c) {
+                    state = LSTATE_BEFORE_ATTR_NAME;
+                }
+            }
+            _ => {}
+        }
+    }
+    let index = cur - ctxt.input_pos;
+    unsafe {
+        (*host).checkIndex = if index > (c_int::MAX as usize) / 2 {
+            0
+        } else {
+            index as c_long
+        };
+        (*host).endCheckState = state;
+    }
+    false
+}
+
+/// Upstream `htmlParseLookupString`: does `input[cur + start_delta..]` contain
+/// `needle` with at least `extra_len` bytes after it? Persists `checkIndex` and
+/// deliberately rescans only `needle.len() + extra_len - 1` bytes of overlap.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine driving a host context.
+unsafe fn html_lookup_string(
+    ctxt: &mut HtmlParserCtxt,
+    start_delta: usize,
+    needle: &[u8],
+    extra_len: usize,
+) -> bool {
+    let host = ctxt.host;
+    if host.is_null() {
+        return true;
+    }
+    if ctxt.input.is_null() || needle.is_empty() {
+        return false;
+    }
+    let len = ctxt.input_len;
+    let check = unsafe { (*host).checkIndex };
+    let mut cur = if check == 0 {
+        ctxt.input_pos + start_delta
+    } else {
+        ctxt.input_pos + check as usize
+    };
+    if cur > len {
+        cur = len;
+    }
+    // find `needle` from `cur`
+    let mut term: Option<usize> = None;
+    let mut i = cur;
+    while i + needle.len() <= len {
+        let hit = (0..needle.len()).all(|k| unsafe { *ctxt.input.add(i + k) } == needle[k]);
+        if hit {
+            term = Some(i);
+            break;
+        }
+        i += 1;
+    }
+    if let Some(term) = term {
+        if len - term >= extra_len + 1 {
+            unsafe { (*host).checkIndex = 0 };
+            return true;
+        }
+    }
+    let rescan = needle.len() + extra_len;
+    let rescan = rescan.saturating_sub(1);
+    let end = if len.saturating_sub(cur) <= rescan {
+        cur
+    } else {
+        len - rescan
+    };
+    let index = end.saturating_sub(ctxt.input_pos);
+    unsafe {
+        (*host).checkIndex = if index > (c_int::MAX as usize) / 2 {
+            0
+        } else {
+            index as c_long
+        };
+    }
+    false
+}
+
+/// Dispatch `setDocumentLocator` + `startDocument` (upstream
+/// `htmlParseTryOrFinish` XML_DECL state).
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine driving a host context.
+unsafe fn push_start_document(ctxt: &mut HtmlParserCtxt) {
+    let host = ctxt.host;
+    if host.is_null() {
+        return;
+    }
+    let sax = unsafe { (*host).sax };
+    if sax.is_null() {
+        return;
+    }
+    if let Some(cb) = unsafe { (*sax).setDocumentLocator } {
+        let loc = ptr::addr_of!(crate::abi::data_globals::xmlDefaultSAXLocator)
+            as *mut crate::abi::callbacks::_xmlSAXLocator;
+        unsafe { cb((*host).userData, loc) };
+    }
+    if unsafe { (*host).disableSAX } == 0 {
+        if let Some(cb) = unsafe { (*sax).startDocument } {
+            unsafe { cb((*host).userData) };
+        }
+    }
+    // Adopt the document the handler created (`xmlSAX2StartDocument` / lxml's
+    // `_initSaxDocument`) as the engine's tree target, so root-level elements
+    // attach to `ctxt->myDoc` exactly as in whole-document mode.
+    ctxt.doc = unsafe { (*host).myDoc };
+}
+
+/// Emit an `endElement` for every still-open element (upstream
+/// `htmlAutoCloseOnEnd`).
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine.
+unsafe fn push_auto_close_on_end(ctxt: &mut HtmlParserCtxt) {
+    let mut guard = 0usize;
+    while !ctxt.current.is_null() && unsafe { (*ctxt.current).type_ } == XML_ELEMENT_NODE as c_int {
+        let before = ctxt.current;
+        unsafe { emit_end_current(ctxt) };
+        if core::ptr::eq(ctxt.current, before) {
+            break;
+        }
+        guard += 1;
+        if guard > 100_000 {
+            break;
+        }
+    }
+}
+
+/// Parse a comment. `bogus` selects the HTML bogus-comment form (`<!...>` or
+/// `<?...>` terminated by `>`), else the real `<!-- -->` form. The caller has
+/// already positioned the cursor.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine with a complete construct available.
+unsafe fn push_parse_comment(ctxt: &mut HtmlParserCtxt, bogus: bool) {
+    let start = ctxt.input_pos;
+    if bogus {
+        let mut i = start;
+        while i < ctxt.input_len && unsafe { push_byte(ctxt, i) } != b'>' {
+            i += 1;
+        }
+        let content = unsafe { slice::from_raw_parts(ctxt.input.add(start), i - start) }.to_vec();
+        ctxt.input_pos = if i < ctxt.input_len { i + 1 } else { i };
+        unsafe { emit_comment(ctxt, &content) };
+        return;
+    }
+
+    // Real comment: `<!--` has been consumed by the caller.
+    if unsafe { push_byte(ctxt, start) } == b'>' {
+        // `<!-->`: empty comment
+        ctxt.input_pos = start + 1;
+        unsafe { emit_comment(ctxt, b"") };
+        return;
+    }
+    if unsafe { push_byte(ctxt, start) } == b'-' && unsafe { push_byte(ctxt, start + 1) } == b'>' {
+        // `<!--->`: empty comment
+        ctxt.input_pos = start + 2;
+        unsafe { emit_comment(ctxt, b"") };
+        return;
+    }
+    let mut i = start;
+    loop {
+        if i + 2 >= ctxt.input_len + 1 {
+            break;
+        }
+        if unsafe { push_byte(ctxt, i) } == b'-' && unsafe { push_byte(ctxt, i + 1) } == b'-' {
+            break;
+        }
+        if i >= ctxt.input_len {
+            break;
+        }
+        i += 1;
+    }
+    let end = i.min(ctxt.input_len);
+    let content = unsafe { slice::from_raw_parts(ctxt.input.add(start), end - start) }.to_vec();
+    ctxt.input_pos = if end + 2 < ctxt.input_len {
+        end + 3
+    } else {
+        ctxt.input_len
+    };
+    unsafe { emit_comment(ctxt, &content) };
+}
+
+/// Parse a `<!DOCTYPE ...>` declaration (upstream `htmlParseDocTypeDecl`) and
+/// emit `internalSubset`. The caller has positioned the cursor at `<`.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine with a complete declaration available.
+unsafe fn push_parse_doctype(ctxt: &mut HtmlParserCtxt) {
+    // consume `<!DOCTYPE`
+    ctxt.input_pos += 9;
+    while ctxt.input_pos < ctxt.input_len && is_ws_html(unsafe { push_byte(ctxt, ctxt.input_pos) })
+    {
+        ctxt.input_pos += 1;
+    }
+    let mut name: Option<Vec<u8>> = None;
+    if ctxt.input_pos < ctxt.input_len && unsafe { push_byte(ctxt, ctxt.input_pos) } != b'>' {
+        let start = ctxt.input_pos;
+        while ctxt.input_pos < ctxt.input_len {
+            let c = unsafe { push_byte(ctxt, ctxt.input_pos) };
+            if is_ws_html(c) || c == b'>' {
+                break;
+            }
+            ctxt.input_pos += 1;
+        }
+        name = Some(
+            unsafe { slice::from_raw_parts(ctxt.input.add(start), ctxt.input_pos - start) }
+                .to_vec(),
+        );
+        while ctxt.input_pos < ctxt.input_len
+            && is_ws_html(unsafe { push_byte(ctxt, ctxt.input_pos) })
+        {
+            ctxt.input_pos += 1;
+        }
+    }
+
+    let mut public_id: Option<Vec<u8>> = None;
+    let mut system_id: Option<Vec<u8>> = None;
+    if unsafe { push_match_ci(ctxt, ctxt.input_pos, b"PUBLIC") } {
+        ctxt.input_pos += 6;
+        skip_ws(ctxt);
+        public_id = parse_doctype_literal(ctxt);
+        skip_ws(ctxt);
+        system_id = parse_doctype_literal(ctxt);
+    } else if unsafe { push_match_ci(ctxt, ctxt.input_pos, b"SYSTEM") } {
+        ctxt.input_pos += 6;
+        skip_ws(ctxt);
+        system_id = parse_doctype_literal(ctxt);
+    }
+
+    // Skip the bogus remainder of the declaration.
+    while ctxt.input_pos < ctxt.input_len && unsafe { push_byte(ctxt, ctxt.input_pos) } != b'>' {
+        ctxt.input_pos += 1;
+    }
+    if ctxt.input_pos < ctxt.input_len {
+        ctxt.input_pos += 1;
+    }
+
+    unsafe {
+        emit_doctype(
+            ctxt,
+            name.as_deref(),
+            public_id.as_deref(),
+            system_id.as_deref(),
+        )
+    }
+}
+
+fn skip_ws(ctxt: &mut HtmlParserCtxt) {
+    while ctxt.input_pos < ctxt.input_len && is_ws_html(unsafe { push_byte(ctxt, ctxt.input_pos) })
+    {
+        ctxt.input_pos += 1;
+    }
+}
+
+/// Parse a quoted (or unquoted) DOCTYPE literal.
+unsafe fn parse_doctype_literal(ctxt: &mut HtmlParserCtxt) -> Option<Vec<u8>> {
+    if ctxt.input_pos >= ctxt.input_len {
+        return None;
+    }
+    let quote = unsafe { push_byte(ctxt, ctxt.input_pos) };
+    if quote == b'"' || quote == b'\'' {
+        ctxt.input_pos += 1;
+        let start = ctxt.input_pos;
+        while ctxt.input_pos < ctxt.input_len && unsafe { push_byte(ctxt, ctxt.input_pos) } != quote
+        {
+            ctxt.input_pos += 1;
+        }
+        let value = unsafe { slice::from_raw_parts(ctxt.input.add(start), ctxt.input_pos - start) }
+            .to_vec();
+        if ctxt.input_pos < ctxt.input_len {
+            ctxt.input_pos += 1;
+        }
+        Some(value)
+    } else {
+        let start = ctxt.input_pos;
+        while ctxt.input_pos < ctxt.input_len {
+            let c = unsafe { push_byte(ctxt, ctxt.input_pos) };
+            if is_ws_html(c) || c == b'>' {
+                break;
+            }
+            ctxt.input_pos += 1;
+        }
+        Some(
+            unsafe { slice::from_raw_parts(ctxt.input.add(start), ctxt.input_pos - start) }
+                .to_vec(),
+        )
+    }
+}
+
+/// Parse character data up to the next `<` or `&` (upstream
+/// `htmlParseCharData`). Returns false when the caller must park (incomplete
+/// input in non-final mode).
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine.
+unsafe fn push_parse_char_data(ctxt: &mut HtmlParserCtxt, partial: bool) -> bool {
+    let start = ctxt.input_pos;
+    let mut text: Vec<u8> = Vec::new();
+    loop {
+        match ctxt.peek() {
+            Some(b'<') => break,
+            Some(b'&') => {
+                let entity = parse_entity(ctxt);
+                text.extend_from_slice(&entity);
+            }
+            Some(0) => {
+                ctxt.next();
+            }
+            Some(ch) => {
+                text.push(ch);
+                ctxt.next();
+            }
+            None => {
+                if partial {
+                    ctxt.input_pos = start;
+                    return false;
+                }
+                break;
+            }
+        }
+    }
+    if !text.is_empty() {
+        unsafe { emit_text(ctxt, &text) };
+    }
+    true
+}
+
+/// Parse an end tag (upstream `htmlParseEndTag`). The cursor is at `<`.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine with a complete end tag available.
+unsafe fn push_parse_end_tag(ctxt: &mut HtmlParserCtxt) {
+    // consume `</`
+    ctxt.input_pos += 2;
+    if ctxt.input_pos >= ctxt.input_len {
+        unsafe { emit_text(ctxt, b"</") };
+        return;
+    }
+    if unsafe { push_byte(ctxt, ctxt.input_pos) } == b'>' {
+        ctxt.input_pos += 1;
+        return;
+    }
+    if !unsafe { push_byte(ctxt, ctxt.input_pos) }.is_ascii_alphabetic() {
+        // Bogus comment form: `</ ... >`.
+        unsafe { push_parse_comment(ctxt, true) };
+        return;
+    }
+    let start = ctxt.input_pos;
+    while ctxt.input_pos < ctxt.input_len {
+        let c = unsafe { push_byte(ctxt, ctxt.input_pos) };
+        if is_ws_html(c) || c == b'>' || c == b'/' {
+            break;
+        }
+        ctxt.input_pos += 1;
+    }
+    let name =
+        unsafe { slice::from_raw_parts(ctxt.input.add(start), ctxt.input_pos - start) }.to_vec();
+    // Skip any attributes and reach `>`.
+    while ctxt.input_pos < ctxt.input_len && unsafe { push_byte(ctxt, ctxt.input_pos) } != b'>' {
+        ctxt.input_pos += 1;
+    }
+    if ctxt.input_pos < ctxt.input_len {
+        ctxt.input_pos += 1;
+    }
+    unsafe { handle_end_tag(ctxt, &name) };
+}
+
+/// Parse a start tag and its element (upstream `htmlParseElementInternal`).
+/// The cursor is at `<`.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine with a complete start tag available.
+unsafe fn push_parse_element_internal(ctxt: &mut HtmlParserCtxt) {
+    // consume `<`
+    ctxt.next();
+    let tag_name = ctxt.read_while(|ch| {
+        ch != b'>'
+            && ch != b'/'
+            && ch != b' '
+            && ch != b'\t'
+            && ch != b'\n'
+            && ch != b'\r'
+            && ch != 0x0c
+    });
+    if tag_name.is_empty() {
+        unsafe { emit_text(ctxt, b"<") };
+        return;
+    }
+    let attrs = parse_attributes(ctxt);
+    if ctxt.peek() == Some(b'/') {
+        ctxt.next();
+    }
+    if ctxt.peek() == Some(b'>') {
+        ctxt.next();
+    }
+
+    let tag_lower: Vec<u8> = tag_name.iter().map(|b| b.to_ascii_lowercase()).collect();
+    let tag_str = core::str::from_utf8(&tag_lower).unwrap_or("");
+
+    unsafe { handle_start_tag(ctxt, &tag_name, &attrs) };
+
+    // Raw-text elements: remember the tag so the CONTENT state consumes
+    // everything up to the matching case-insensitive `</name` (upstream sets
+    // `endCheckState = info->dataMode`; the candidate tracks only the two
+    // raw-text elements, matching the whole-document engine).
+    if tag_str == "script" || tag_str == "style" {
+        if !ctxt.data_tag.is_null() {
+            unsafe { xmlFreeImpl(ctxt.data_tag as *mut c_void) };
+        }
+        let mut owned = tag_lower.clone();
+        owned.push(0);
+        ctxt.data_tag = owned.as_ptr() as *mut c_char;
+        // Leak-free: copy into a fresh allocation.
+        let n = owned.len();
+        let buf = unsafe { crate::abi::allocator::xmlMallocImpl(n) } as *mut u8;
+        if !buf.is_null() {
+            unsafe {
+                ptr::copy_nonoverlapping(owned.as_ptr(), buf, n);
+                ctxt.data_tag = buf as *mut c_char;
+            }
+        }
+    }
+}
+
+/// Raw-text data mode: consume everything up to the matching `</name`. Returns
+/// false when the caller must park.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine in raw-text mode (`data_tag` non-NULL).
+unsafe fn push_parse_raw_text(ctxt: &mut HtmlParserCtxt, terminate: bool) -> bool {
+    let tag = unsafe { core::ffi::CStr::from_ptr(ctxt.data_tag) }
+        .to_bytes()
+        .to_vec();
+    let mut marker: Vec<u8> = Vec::with_capacity(tag.len() + 2);
+    marker.extend_from_slice(b"</");
+    marker.extend_from_slice(&tag);
+
+    let start = ctxt.input_pos;
+    let mut hit: Option<usize> = None;
+    let mut i = start;
+    while i + marker.len() <= ctxt.input_len {
+        let matched = (0..marker.len()).all(|k| {
+            unsafe { push_byte(ctxt, i + k) }.to_ascii_lowercase() == marker[k].to_ascii_lowercase()
+        });
+        if matched {
+            hit = Some(i);
+            break;
+        }
+        i += 1;
+    }
+
+    match hit {
+        Some(idx) => {
+            let text =
+                unsafe { slice::from_raw_parts(ctxt.input.add(start), idx - start) }.to_vec();
+            if !text.is_empty() {
+                unsafe { emit_text(ctxt, &text) };
+            }
+            // Consume `</name` then everything up to and including `>`.
+            ctxt.input_pos = idx + marker.len();
+            while ctxt.input_pos < ctxt.input_len
+                && unsafe { push_byte(ctxt, ctxt.input_pos) } != b'>'
+            {
+                ctxt.input_pos += 1;
+            }
+            if ctxt.input_pos < ctxt.input_len {
+                ctxt.input_pos += 1;
+            }
+            unsafe { handle_end_tag(ctxt, &tag) };
+            unsafe { xmlFreeImpl(ctxt.data_tag as *mut c_void) };
+            ctxt.data_tag = ptr::null_mut();
+            true
+        }
+        None => {
+            if terminate {
+                let text =
+                    unsafe { slice::from_raw_parts(ctxt.input.add(start), ctxt.input_len - start) }
+                        .to_vec();
+                if !text.is_empty() {
+                    unsafe { emit_text(ctxt, &text) }
+                }
+                ctxt.input_pos = ctxt.input_len;
+                unsafe { handle_end_tag(ctxt, &tag) };
+                unsafe { xmlFreeImpl(ctxt.data_tag as *mut c_void) };
+                ctxt.data_tag = ptr::null_mut();
+                true
+            } else {
+                false
+            }
+        }
+    }
+}
+
+/// Drive the incremental HTML parser over the accumulated input. `input_pos`
+/// persists across calls; each construct either completes or is re-attempted on
+/// the next chunk.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine driving a host context, with `input`/`
+///   input_len` describing the accumulated (UTF-8) source.
+pub(crate) unsafe fn push_drive(ctxt: &mut HtmlParserCtxt, terminate: bool) {
+    if !ctxt.host.is_null() && ctxt.doc.is_null() {
+        ctxt.doc = unsafe { (*ctxt.host).myDoc };
+    }
+    loop {
+        if push_stopped(ctxt) {
+            return;
+        }
+        if ctxt.instate == crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int {
+            return;
+        }
+        match ctxt.instate {
+            s if s == crate::abi::types::xmlParserInputState::XML_PARSER_START as c_int => {
+                if !terminate && ctxt.input_len - ctxt.input_pos < 4 {
+                    return;
+                }
+                // Encoding detection is handled by the input layer before the
+                // first chunk (htmlCreatePushParserCtxt / xmlCtxtResetPush).
+                set_instate(
+                    ctxt,
+                    crate::abi::types::xmlParserInputState::XML_PARSER_XML_DECL as c_int,
+                );
+            }
+            s if s == crate::abi::types::xmlParserInputState::XML_PARSER_XML_DECL as c_int => {
+                if !ctxt.started {
+                    ctxt.started = true;
+                    unsafe { push_start_document(ctxt) };
+                }
+                set_instate(
+                    ctxt,
+                    crate::abi::types::xmlParserInputState::XML_PARSER_MISC as c_int,
+                );
+            }
+            s if s == crate::abi::types::xmlParserInputState::XML_PARSER_START_TAG as c_int => {
+                if !terminate && !unsafe { html_lookup_gt(ctxt) } {
+                    return;
+                }
+                unsafe { push_parse_element_internal(ctxt) };
+                if push_stopped(ctxt) {
+                    return;
+                }
+                set_instate(
+                    ctxt,
+                    crate::abi::types::xmlParserInputState::XML_PARSER_CONTENT as c_int,
+                );
+            }
+            s if s == crate::abi::types::xmlParserInputState::XML_PARSER_END_TAG as c_int => {
+                if !terminate && !unsafe { html_lookup_gt(ctxt) } {
+                    return;
+                }
+                unsafe { push_parse_end_tag(ctxt) };
+                if push_stopped(ctxt) {
+                    return;
+                }
+                set_instate(
+                    ctxt,
+                    crate::abi::types::xmlParserInputState::XML_PARSER_CONTENT as c_int,
+                );
+                if !ctxt.host.is_null() {
+                    unsafe { (*ctxt.host).checkIndex = 0 };
+                }
+            }
+            s if s == crate::abi::types::xmlParserInputState::XML_PARSER_MISC as c_int
+                || s == crate::abi::types::xmlParserInputState::XML_PARSER_PROLOG as c_int
+                || s == crate::abi::types::xmlParserInputState::XML_PARSER_CONTENT as c_int =>
+            {
+                if ctxt.instate
+                    != crate::abi::types::xmlParserInputState::XML_PARSER_CONTENT as c_int
+                {
+                    ctxt.skip_whitespace();
+                }
+                // Raw-text mode (script/style): consume up to the end tag.
+                if !ctxt.data_tag.is_null() {
+                    if !unsafe { push_parse_raw_text(ctxt, terminate) } {
+                        return;
+                    }
+                    continue;
+                }
+                let avail = ctxt.input_len - ctxt.input_pos;
+                if avail < 1 {
+                    return;
+                }
+                if ctxt.peek() == Some(b'<') {
+                    let next = if avail < 2 {
+                        if !terminate {
+                            return;
+                        }
+                        b' '
+                    } else {
+                        ctxt.peek_at(1).unwrap_or(b' ')
+                    };
+                    if next == b'!' {
+                        if !terminate && avail < 4 {
+                            return;
+                        }
+                        if ctxt.peek_at(2) == Some(b'-') && ctxt.peek_at(3) == Some(b'-') {
+                            if !terminate && !unsafe { html_lookup_string(ctxt, 2, b"-->", 0) } {
+                                return;
+                            }
+                            ctxt.next();
+                            ctxt.next();
+                            ctxt.next();
+                            ctxt.next();
+                            unsafe { push_parse_comment(ctxt, false) };
+                        } else {
+                            if !terminate && avail < 9 {
+                                return;
+                            }
+                            if unsafe { push_match_ci(ctxt, ctxt.input_pos + 2, b"DOCTYPE") } {
+                                if !terminate && !unsafe { html_lookup_string(ctxt, 9, b">", 0) } {
+                                    return;
+                                }
+                                unsafe { push_parse_doctype(ctxt) };
+                                if ctxt.instate
+                                    == crate::abi::types::xmlParserInputState::XML_PARSER_MISC
+                                        as c_int
+                                {
+                                    set_instate(
+                                        ctxt,
+                                        crate::abi::types::xmlParserInputState::XML_PARSER_PROLOG
+                                            as c_int,
+                                    );
+                                }
+                            } else {
+                                if !terminate && !unsafe { html_lookup_string(ctxt, 2, b">", 0) } {
+                                    return;
+                                }
+                                ctxt.next();
+                                ctxt.next();
+                                unsafe { push_parse_comment(ctxt, true) };
+                            }
+                        }
+                    } else if next == b'?' {
+                        if !terminate && !unsafe { html_lookup_string(ctxt, 2, b">", 0) } {
+                            return;
+                        }
+                        ctxt.next();
+                        unsafe { push_parse_comment(ctxt, true) };
+                    } else if next == b'/' {
+                        set_instate(
+                            ctxt,
+                            crate::abi::types::xmlParserInputState::XML_PARSER_END_TAG as c_int,
+                        );
+                        if !ctxt.host.is_null() {
+                            unsafe { (*ctxt.host).checkIndex = 0 };
+                        }
+                    } else if next.is_ascii_alphabetic() {
+                        set_instate(
+                            ctxt,
+                            crate::abi::types::xmlParserInputState::XML_PARSER_START_TAG as c_int,
+                        );
+                        if !ctxt.host.is_null() {
+                            unsafe { (*ctxt.host).checkIndex = 0 };
+                        }
+                    } else {
+                        unsafe { handle_text(ctxt, b"<") };
+                        ctxt.next();
+                    }
+                } else {
+                    if avail < HTML_BIG_BUFFER_SIZE {
+                        if !terminate && !unsafe { html_lookup_string(ctxt, 0, b"<", 0) } {
+                            return;
+                        }
+                    }
+                    if !ctxt.host.is_null() {
+                        unsafe { (*ctxt.host).checkIndex = 0 };
+                    }
+                    if !unsafe { push_parse_char_data(ctxt, !terminate) } {
+                        return;
+                    }
+                }
+            }
+            _ => {
+                unsafe {
+                    push_html_error(
+                        ctxt,
+                        crate::abi::types::XML_ERR_INTERNAL_ERROR,
+                        b"HPP: internal error\n",
+                    )
+                };
+                set_instate(
+                    ctxt,
+                    crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int,
+                );
+                return;
+            }
+        }
+    }
+}
+
+/// Finish a push parse: auto-close open elements, then dispatch `endDocument`
+/// and mark EOF (upstream `htmlParseChunk` termination branch).
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine driving a host context.
+pub(crate) unsafe fn push_terminate(ctxt: &mut HtmlParserCtxt) {
+    if ctxt.instate == crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int {
+        return;
+    }
+    unsafe { push_auto_close_on_end(ctxt) };
+    let host = ctxt.host;
+    if !host.is_null() {
+        let sax = unsafe { (*host).sax };
+        if !sax.is_null() {
+            if let Some(cb) = unsafe { (*sax).endDocument } {
+                unsafe { cb((*host).userData) };
+            }
+        }
+    }
+    ctxt.ended = true;
+    set_instate(
+        ctxt,
+        crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int,
+    );
+}
+
+/// Reset the incremental push state (new document on an existing context).
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid engine; `host` must be its host context.
+pub(crate) unsafe fn push_reset(ctxt: &mut HtmlParserCtxt) {
+    if !ctxt.data_tag.is_null() {
+        unsafe { xmlFreeImpl(ctxt.data_tag as *mut c_void) };
+        ctxt.data_tag = ptr::null_mut();
+    }
+    ctxt.instate = crate::abi::types::xmlParserInputState::XML_PARSER_START as c_int;
+    ctxt.started = false;
+    ctxt.ended = false;
+    ctxt.current = ptr::null_mut();
+    ctxt.html = ptr::null_mut();
+    ctxt.head = ptr::null_mut();
+    ctxt.body = ptr::null_mut();
+    ctxt.in_head = false;
+    ctxt.in_body = false;
+    ctxt.html_created = false;
+    ctxt.head_created = false;
+    ctxt.body_created = false;
+    ctxt.seen_body_content = false;
+    if !ctxt.host.is_null() {
+        unsafe {
+            (*ctxt.host).instate = ctxt.instate;
+            (*ctxt.host).checkIndex = 0;
+            (*ctxt.host).endCheckState = 0;
+            (*ctxt.host).node = ptr::null_mut();
+            (*ctxt.host).nodeNr = 0;
+        }
+    }
 }
 
 /// Parse HTML from a memory buffer into an already-created document.
@@ -2847,6 +4448,7 @@ pub(crate) unsafe fn create_file_parser_ctxt(
     let ctxt = mem.add(size_of::<_xmlParserCtxt>()) as *mut HtmlParserCtxt;
     unsafe {
         ptr::write(ctxt, HtmlParserCtxt::new());
+        (*ctxt).host = mem as *mut _xmlParserCtxt;
         if !encoding.is_null() {
             (*ctxt).encoding = c_strdup(encoding);
         }

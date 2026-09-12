@@ -9022,15 +9022,30 @@ pub unsafe extern "C" fn xmlSAX2StartElement(
     name: *const xmlChar,
     atts: *mut *const xmlChar,
 ) {
-    // The parser core invokes startElementNs; the SAX1 shim is provided by
-    // the dispatch layer. When this entry point is installed directly on a
-    // handler, route through the internal SAX1 path.
+    // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElement): an HTML parser context
+    // routes the SAX1 start element to xmlSAX2StartHtmlElement, which is the
+    // single tree-building authority for the HTML push parser. Without this
+    // branch the SAX1 entry would re-invoke `sax.startElement` (recursion).
+    let ctxt = ctx as *mut crate::abi::structs::_xmlParserCtxt;
+    if !ctxt.is_null() && unsafe { (*ctxt).html } != 0 {
+        unsafe { crate::xml::html::sax1_start_element_html(ctxt, name, atts) };
+        return;
+    }
+    // The candidate parser core invokes startElementNs; the SAX1 shim is
+    // provided by the dispatch layer. When this entry point is installed
+    // directly on a handler, route through the internal SAX1 path.
     crate::xml::sax::dispatch::SaxDispatcher::sax1_start_element(ctx, name, atts);
 }
 
 /// Upstream SAX2.c `xmlSAX2EndElement` — SAX1 end-element entry point.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSAX2EndElement(ctx: *mut c_void, name: *const xmlChar) {
+    let ctxt = ctx as *mut crate::abi::structs::_xmlParserCtxt;
+    if !ctxt.is_null() && unsafe { (*ctxt).html } != 0 {
+        unsafe { crate::xml::html::sax1_end_element_html(ctxt) };
+        let _ = name;
+        return;
+    }
     crate::xml::sax::dispatch::SaxDispatcher::sax1_end_element(ctx, name);
 }
 

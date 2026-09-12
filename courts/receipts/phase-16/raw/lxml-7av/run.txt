@@ -1,0 +1,14 @@
+candidate_sha=WORKTREE (evidence for the commit that adds the incremental HTML push parser)
+evidence_kind=parity fix (incremental HTML push parser: SAX1 dispatch + persistent resume)
+debug_libxml2_sha256=a0de8278e21f6ac14a7da0168f9177accd182aba581bd0d296a2f3bad2785f28
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=50 raw unique ids (lxml-7au @ ab6ec036), 48 excluding the flaky group
+lxml_suite_now=34 raw unique ids, 33 excluding the flaky group
+lxml_fixed=16 (entire test_htmlparser.py cluster green: 54/54)
+lxml_regressions=0 (filtered delta vs lxml-7au)
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes

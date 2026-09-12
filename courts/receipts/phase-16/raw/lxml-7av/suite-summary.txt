@@ -1,0 +1,11 @@
+lxml test_htmlparser.py: 54 passed / 0 failed
+lxml full suite (test.py -u): 34 raw unique failing ids (33 excluding the known-flaky group)
+per-file: test_htmlparser.py 0 failed (was 16)
+fixed this slice (all in test_htmlparser.py):
+  test_html_iterparse, _broken, _broken_no_recover, _cdata, _file, _start,
+  _stop_short, _tag, test_html_pull_parser_chunky,
+  test_html_parser_target_tag, _target_doctype_empty, _target_doctype_html,
+  _target_doctype_html_full, _target_exceptions,
+  test_html_fromstring_target_exceptions,
+  test_module_parse_html_error, test_module_parse_html_norecover
+regressions: none
