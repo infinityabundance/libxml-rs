@@ -1,0 +1,14 @@
+candidate_sha=53b987dd
+evidence_kind=root-cause fixes (DTD external-subset + XInclude loading through the consumer resolver)
+debug_libxml2_sha256=2785c4c48238e80b305257b2b3ad07595f3be0d2376fb833c9851c98983e4080
+host=libxml-rs/phase14-debian:1 (rebuilt after a host reboot; containers lxml-cand,
+  lxml-oracle and phpbuild-c recreated from the checked-in sources and the repo's
+  Dockerfile.debian)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u -v
+lxml_suite_previous=109 unique ids at 883f4295
+lxml_suite_now=101 unique ids (80 failures / 26 errors = 106 raw)
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c)
+tree_clean=yes

@@ -1,0 +1,8 @@
+test_find (lxml.tests.test_elementpath.ElementTreeElementPathTestCase.test_find)
+test_find (lxml.tests.test_elementpath.EtreeElementPathEmptyNamespacesTestCase.test_find)
+test_find (lxml.tests.test_elementpath.EtreeElementPathNonEmptyNamespacesTestCase.test_find)
+test_find (lxml.tests.test_elementpath.EtreeElementPathTestCase.test_find)
+test_object_path_addattr_create_element (lxml.tests.test_objectify.ObjectifyTestCase.test_object_path_addattr_create_element)
+test_object_path_addattr_element (lxml.tests.test_objectify.ObjectifyTestCase.test_object_path_addattr_element)
+test_object_path_set_create_element (lxml.tests.test_objectify.ObjectifyTestCase.test_object_path_set_create_element)
+test_object_path_set_element (lxml.tests.test_objectify.ObjectifyTestCase.test_object_path_set_element)
