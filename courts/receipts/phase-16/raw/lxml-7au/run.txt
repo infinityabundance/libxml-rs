@@ -1,0 +1,12 @@
+candidate_sha=ab6ec036
+evidence_kind=parity fix (ISO-8859-1 output character references for unmappable characters)
+debug_libxml2_sha256=5e1267cff19220df370039c47be8bc8ca69b83955e34fb9e27de17701be1310e
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=51 raw ids at 742a6f99 (lxml-7as), 48 excluding the flaky group
+lxml_suite_now=50 raw ids, 48 excluding the flaky group (doc/api.txt: 2 failing examples -> 1)
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes
