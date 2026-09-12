@@ -1,0 +1,22 @@
+Ran 2007 tests in 84.115s
+FAILED (failures=66, errors=19)
+
+Previous (eaffc17f / lxml-7ae): Ran 2007 tests in 82.501s
+FAILED (failures=74, errors=20)
+
+Set comparison (unique ids):
+  previous unique = 89
+  now unique      = 80
+  fixed           =  9
+  new             =  0
+
+Fixed:
+  test_xpath_class_error              (lxml.tests.test_xpathevaluator)
+  test_xpath_compile_error            (lxml.tests.test_xpathevaluator)
+  test_xpath_error                    (lxml.tests.test_xpathevaluator)
+  test_xpath_document_root            (lxml.tests.test_xpathevaluator)
+  test_elementtree_getpath_partial    (lxml.tests.test_xpathevaluator)
+  test_xpath_evaluator_tree_absolute  (lxml.tests.test_xpathevaluator)
+  test_xpath_context_node             (lxml.tests.test_xpathevaluator)
+  test_xpath_text_from_other_document (lxml.tests.test_xpathevaluator)
+  test_xpath_on_foreign_context_node  (lxml.tests.test_xslt)
