@@ -677,6 +677,12 @@ pub unsafe extern "C" fn xmlTextWriterStartDocument(
                 ob.conv = io::buf_create(4000) as *mut c_void;
             }
         }
+        // UPSTREAM-PARITY (xmlwriter.c xmlTextWriterStartDocument):
+        // `xmlCharEncOutput(writer->out, 1)` initializes the converter and
+        // writes the BOM for a BOM-requiring encoding. The flush emits it on
+        // the first conversion; reset the marker so a reused writer emits the
+        // BOM again for this document.
+        io::output_buffer_reset_bom(w.output);
 
         sum += w.write_raw(b" encoding=" as *const u8, 10);
         sum += w.write_byte(w.qchar);

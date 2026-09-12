@@ -88,6 +88,54 @@ use crate::abi::types::{xmlChar, xmlCharEncoding};
 use crate::xml::encoding;
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Output-buffer BOM state (side table)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Output buffers that have already emitted their encoder's byte-order mark.
+///
+/// UPSTREAM-PARITY (xmlIO.c xmlCharEncOutput / xmlwriter.c
+/// xmlTextWriterStartDocument, xmlsave.c xmlSaveToBuffer): after installing an
+/// encoder, upstream makes one initialization call into the converter
+/// (`xmlCharEncOutput(out, 1)`, or `xmlEncOutputChunk(..., NULL, ...)`), which
+/// writes the encoding's BOM for the generic UTF-16/UCS-4 handlers. The crate's
+/// flush rebuilds the conversion buffer from scratch on every call, so the BOM
+/// cannot simply be left in it; instead the flush writes the BOM once, before
+/// the first converted chunk, and records the buffer here. The entry is removed
+/// by `output_buffer_close`.
+static OUTPUT_BOM_EMITTED: once_cell::sync::Lazy<
+    parking_lot::Mutex<std::collections::HashSet<usize>>,
+> = once_cell::sync::Lazy::new(|| parking_lot::Mutex::new(std::collections::HashSet::new()));
+
+/// Byte-order mark emitted by an encoder on its initialization call, or empty
+/// when the handler writes none.
+///
+/// UPSTREAM-PARITY (encoding.c): the generic `UTF-16` handler
+/// (XML_CHAR_ENCODING_UTF16, `UTF8ToUTF16`) emits `FF FE`; the explicit
+/// `UTF-16LE`/`UTF-16BE` handlers deliberately emit none ("UTF16LE encoding has
+/// no BOM").
+///
+/// # Safety
+///
+/// - `handler` must be NULL or a valid `_xmlCharEncodingHandler` whose `name`
+///   is NULL or a valid NUL-terminated string.
+unsafe fn encoder_bom(handler: *mut _xmlCharEncodingHandler) -> &'static [u8] {
+    if handler.is_null() {
+        return &[];
+    }
+    let name = unsafe { (*handler).name };
+    if name.is_null() {
+        return &[];
+    }
+    // SAFETY: `name` is a valid NUL-terminated C string owned by the handler.
+    let name = unsafe { CStr::from_ptr(name as *const c_char) }.to_bytes();
+    if name.eq_ignore_ascii_case(b"UTF-16") {
+        &[0xFF, 0xFE]
+    } else {
+        &[]
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Constants
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1930,6 +1978,14 @@ pub(crate) fn output_buffer_flush(out: *mut _xmlOutputBuffer) -> c_int {
         // Ensure conv buffer is empty before converting
         buf_empty(conv);
 
+        // UPSTREAM-PARITY (xmlIO.c xmlCharEncOutput / xmlwriter.c
+        // xmlTextWriterStartDocument): the encoder's initialization call writes
+        // the BOM before any converted data. Do it once per output buffer.
+        let bom = unsafe { encoder_bom(handler) };
+        if !bom.is_empty() && OUTPUT_BOM_EMITTED.lock().insert(out as usize) {
+            buf_add(conv as *mut _xmlBuffer, bom.as_ptr(), bom.len() as c_int);
+        }
+
         let ret = encoding::char_enc_out(handler, conv, buf);
         if ret < 0 {
             ob.error = 1;
@@ -1996,6 +2052,18 @@ pub(crate) fn output_buffer_flush(out: *mut _xmlOutputBuffer) -> c_int {
     written
 }
 
+/// Forget any emitted BOM marker for `out` so the next flush with a newly
+/// installed encoder emits one (an output buffer can be reused).
+///
+/// # Safety
+///
+/// - `out` must be NULL or a valid `_xmlOutputBuffer` pointer.
+pub(crate) fn output_buffer_reset_bom(out: *mut _xmlOutputBuffer) {
+    if !out.is_null() {
+        OUTPUT_BOM_EMITTED.lock().remove(&(out as usize));
+    }
+}
+
 /// Free an output buffer.
 ///
 /// Flushes any pending data, calls the close callback if set,
@@ -2016,6 +2084,9 @@ pub(crate) fn output_buffer_close(out: *mut _xmlOutputBuffer) -> c_int {
 
     // Flush any pending data
     let flush_ret = output_buffer_flush(out);
+
+    // Drop the BOM-emitted marker for this buffer (the address may be reused).
+    OUTPUT_BOM_EMITTED.lock().remove(&(out as usize));
 
     // Call the close callback
     if let Some(close_cb) = ob.closecallback {

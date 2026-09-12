@@ -5251,7 +5251,13 @@ unsafe fn node_dump_internal(
             if !n.name.is_null() {
                 io::buf_cat(buf, n.name);
             }
-            if !n.content.is_null() && unsafe { *n.content != 0 } {
+            // UPSTREAM-PARITY (xmlsave.c 2.15 xmlNodeDumpOutputInternal,
+            // `case XML_PI_NODE`): the separating space is written whenever
+            // `cur->content != NULL`, including an EMPTY ("") content — only a
+            // NULL content (a parsed `<?pi?>`) omits it. lxml's
+            // `etree.ProcessingInstruction(target)` stores `text = b''`, so it
+            // serializes as `<?target ?>`.
+            if !n.content.is_null() {
                 io::buf_ccat(buf, b' ');
                 io::buf_cat(buf, n.content);
             }
