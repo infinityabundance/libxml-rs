@@ -1,0 +1,22 @@
+Ran 2007 tests in 82.501s
+FAILED (failures=74, errors=20)
+
+Previous (2eece63c / lxml-7ad): Ran 2007 tests in 83.975s
+FAILED (failures=76, errors=22)
+
+Set comparison (unique ids):
+  previous unique = 93
+  now unique      = 89
+  fixed           =  4
+  new             =  0
+
+Fixed:
+  test_xpath_exslt_functions_date    (lxml.tests.test_xpathevaluator)
+  test_xpath_exslt_functions_strings (lxml.tests.test_xpathevaluator)
+  test_exslt_math                    (lxml.tests.test_xslt)
+  test_exslt_str                     (lxml.tests.test_xslt)
+
+Flakiness note: an identical run immediately before this one reported 98 unique
+ids. The extra nine were exactly the test_module_HTML* / test_xslt_html_output
+group, which also appears spuriously when a previous python3 test.py process
+overlaps. The repeated isolated run is stable at 89.

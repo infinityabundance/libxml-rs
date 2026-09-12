@@ -1,0 +1,17 @@
+candidate_sha=eaffc17f
+evidence_kind=root-cause fix (EXSLT per-context XPath registration; str:align and math:constant parity)
+debug_libxml2_sha256=0635279fde3cca347a55f2761164e1a5c8aa795a6a89feb2db34a270a399fad2
+host=libxml-rs/phase14-debian:1 (rebuilt after a host reboot; containers lxml-cand,
+  lxml-oracle and phpbuild-c recreated from the checked-in sources and the repo's
+  Dockerfile.debian)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u -v
+lxml_suite_previous=93 unique ids at 2eece63c
+lxml_suite_now=89 unique ids (74 failures / 20 errors = 94 raw)
+lxml_suite_run1=98 unique ids (83 failures / 20 errors) -- the known flaky
+  test_module_HTML* / test_xslt_html_output group; the immediately repeated run
+  is stable at 89 and is the recorded one
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c)
+tree_clean=yes
