@@ -558,6 +558,17 @@ fn invoke_c_extension_function(
 
     unsafe {
         let saved_function = (*c_ctxt).function;
+        // UPSTREAM-PARITY (xpath.c xmlXPathCompOpEval): `ctxt->node` is the
+        // node the current step is testing. lxml's extension-function context
+        // reads it back (`_XPathContext.context_node` asserts
+        // `node->doc == ctxt->doc`), so mirror the evaluator's live context
+        // node and document into the C context before the call. Without this
+        // an extension function always observed whatever node the consumer
+        // last set on the context.
+        (*c_ctxt).node = ctx.context_node;
+        if !ctx.document.is_null() {
+            (*c_ctxt).doc = ctx.document;
+        }
         (*c_ctxt).function = lookup_name_nul.as_ptr() as *const crate::abi::types::xmlChar;
         let pc = new_parser_context(std::ptr::null(), c_ctxt);
         if pc.is_null() {

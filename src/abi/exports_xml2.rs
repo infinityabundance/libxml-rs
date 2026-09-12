@@ -6184,16 +6184,23 @@ pub(crate) fn xpath_cfunc_cleanup(extra: *mut c_void) {
 /// signature the evaluator requires.
 fn c_func_bridge_closure(c_ctxt: SendSyncPtr, qualified: String) -> BoxedXPathFunction {
     let (local_name, ns_uri) = split_qualified(&qualified);
-    Box::new(move |_ctx: &mut XPathContext, args: &[XPathValue]| {
+    Box::new(move |xctx: &mut XPathContext, args: &[XPathValue]| {
         let cc = c_ctxt;
         unsafe {
-            c_func_call_bridge(
-                cc.0 as *mut _xmlXPathContext,
-                &qualified,
-                &local_name,
-                ns_uri.as_deref(),
-                args,
-            )
+            // UPSTREAM-PARITY (xpath.c xmlXPathCompOpEval): `ctxt->node` is
+            // the node the current step is testing. Consumers read it back
+            // during the call — lxml's extension-function context exposes
+            // `context_node` from `xpathCtxt->node` (and requires
+            // `node->doc == xpathCtxt->doc`) — so mirror the evaluator's live
+            // context node and document into the C context first.
+            let c = cc.0 as *mut _xmlXPathContext;
+            if !c.is_null() {
+                (*c).node = xctx.context_node;
+                if !xctx.document.is_null() {
+                    (*c).doc = xctx.document;
+                }
+            }
+            c_func_call_bridge(c, &qualified, &local_name, ns_uri.as_deref(), args)
         }
     })
 }
@@ -6561,6 +6568,14 @@ pub unsafe extern "C" fn xmlXPathEvalExpression(
     // code never did, so relative paths ("a", "./a", "a/@i") evaluated
     // against a NULL context node and returned an empty node-set (Phase 14
     // lxml XPath court).
+    //
+    // The DOCUMENT must be mirrored too: lxml evaluates an ElementTree's
+    // XPath against a temporary "fake" document built by _fakeRootDoc (the
+    // tree's node becomes the document root), so an absolute path such as
+    // `/c` must resolve against `ctxt->doc`, not the document the context was
+    // created with. Without this, `ElementTree(c).xpath('/c')` selected from
+    // the real document and returned an empty node-set.
+    internal.document = (*ctxt).doc;
     internal.set_context_node((*ctxt).node);
     internal.context_position = (*ctxt).proximityPosition;
     internal.context_size = (*ctxt).contextSize;

@@ -250,6 +250,10 @@ pub struct Lexer {
     /// Byte offset at which each produced token starts (parallel to the
     /// caller's token stream; feeds upstream's XPath error caret).
     token_starts: Vec<usize>,
+    /// Byte offset of the first character the scanner could not tokenize, if
+    /// any. Upstream `xmlXPathCompExpr` records a syntax error there; the
+    /// scanner never skips an unrecognised character silently.
+    invalid: Option<usize>,
 }
 
 impl Lexer {
@@ -263,6 +267,7 @@ impl Lexer {
             ch,
             at_start: true,
             token_starts: Vec::new(),
+            invalid: None,
         }
     }
 
@@ -270,6 +275,14 @@ impl Lexer {
     /// caller's token stream).
     pub fn token_starts(&self) -> &[usize] {
         &self.token_starts
+    }
+
+    /// Byte offset of the first character that starts no XPath token, if any.
+    ///
+    /// Upstream's lexer reports "Invalid expression" at this offset; the
+    /// caller must fail the compile when it is `Some`.
+    pub fn invalid_pos(&self) -> Option<usize> {
+        self.invalid
     }
 
     /// Advance to the next character.
@@ -619,7 +632,12 @@ impl Lexer {
             return Token::Name(name);
         }
 
-        // Unknown character, skip
+        // UPSTREAM-PARITY (xpath.c xmlXPathCompExpr): a character that starts
+        // no XPath token is a syntax error, recorded at its byte offset. The
+        // previous code skipped it silently, which let `\fad` compile.
+        if self.invalid.is_none() {
+            self.invalid = Some(self.pos);
+        }
         self.advance();
         self.next_token()
     }

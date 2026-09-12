@@ -215,10 +215,62 @@ fn fn_count(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, 
 }
 
 /// id(object) — select elements by ID.
-const fn fn_id(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
-    // id() is complex: requires DTD validation to know which attributes are ID.
-    // For now, return empty node-set.
-    Ok(XPathValue::NodeSet(NodeSet::new()))
+fn fn_id(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
+    // UPSTREAM-PARITY (xpath.c xmlXPathIdFunction + xmlXPathGetElementsByIds):
+    // the argument is an ID-token list — the per-node string values of a
+    // node-set argument, or the string cast of any other argument. Each
+    // blank-separated token is looked up with xmlGetID; the ELEMENT owning the
+    // ID attribute (or the element itself when xmlGetID returns an element)
+    // is added to the result. Previously a stub returning an empty node-set,
+    // so `id('k1')` never resolved and `lookup('k1')/value` chains broke.
+    let doc = ctx.document;
+    let mut ret = NodeSet::new();
+    if doc.is_null() {
+        return Ok(XPathValue::NodeSet(ret));
+    }
+
+    let mut add_ids = |text: &str, ret: &mut NodeSet| {
+        for token in text.split(|c: char| matches!(c, ' ' | '\t' | '\n' | '\r')) {
+            if token.is_empty() {
+                continue;
+            }
+            let id_c = unsafe { crate::xml::string::bytes_to_xmlstr(token.as_bytes()) };
+            if id_c.is_null() {
+                continue;
+            }
+            let attr = unsafe {
+                crate::xml::validation::get_id(doc, id_c as *const crate::abi::types::xmlChar)
+            };
+            unsafe { crate::abi::allocator::xmlFreeImpl(id_c as *mut core::ffi::c_void) };
+            if attr.is_null() {
+                continue;
+            }
+            let ty = unsafe { (*attr).type_ };
+            let elem = if ty == crate::abi::types::xmlElementType::XML_ATTRIBUTE_NODE as i32 {
+                unsafe { (*attr).parent }
+            } else if ty == crate::abi::types::xmlElementType::XML_ELEMENT_NODE as i32 {
+                attr as *mut _
+            } else {
+                core::ptr::null_mut()
+            };
+            if !elem.is_null() {
+                ret.push(elem);
+            }
+        }
+    };
+
+    match args.first() {
+        Some(XPathValue::NodeSet(ns)) => {
+            for node in ns.iter() {
+                let s = node_string_value(node);
+                add_ids(&s, &mut ret);
+            }
+        }
+        Some(v) => add_ids(&v.as_string(), &mut ret),
+        None => return Err("XPath: id() requires an argument".to_string()),
+    }
+    ret.sort();
+    Ok(XPathValue::NodeSet(ret))
 }
 
 /// local-name(node-set?) — local part of name.

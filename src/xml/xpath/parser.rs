@@ -457,12 +457,18 @@ impl Parser {
                     let path = self.parse_relative_location_path()?;
                     Ok(Expr::AbsolutePath(Box::new(path)))
                 } else {
-                    // Just "/" - root node
-                    Ok(Expr::Step(Step {
+                    // Just "/" — XPath 1.0 AbsoluteLocationPath with an
+                    // omitted RelativeLocationPath selects the document root
+                    // node, not the context node. Upstream evaluates this as
+                    // an absolute path from the document node
+                    // (xmlXPathRoot), so `tree.xpath('/')` yields the
+                    // document node (lxml maps it to []); returning
+                    // `self::node()` here made it yield the root element.
+                    Ok(Expr::AbsolutePath(Box::new(Expr::Step(Step {
                         axis: Axis::Self_,
                         node_test: NodeTest::Node,
                         predicates: vec![],
-                    }))
+                    }))))
                 }
             }
             Token::DoubleSlash => {
@@ -815,6 +821,14 @@ pub fn parse_xpath(input: &str) -> Result<Expr, ParseError> {
         if is_eof {
             break;
         }
+    }
+    // UPSTREAM-PARITY (xpath.c): a character that starts no token is a syntax
+    // error reported at its byte offset, before any grammar analysis.
+    if let Some(off) = lexer.invalid_pos() {
+        return Err(ParseError {
+            message: "Invalid expression".to_string(),
+            pos: off,
+        });
     }
     let starts = lexer.token_starts();
     let mut parser = Parser::new(tokens);

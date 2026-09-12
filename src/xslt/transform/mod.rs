@@ -1143,15 +1143,17 @@ pub(crate) unsafe fn eval_xpath(
     // the XPath context (UPSTREAM-PARITY: libxml2 xpath.h), so the mirror
     // copies from there.
     (*xpath_ctxt).node = (*ctxt).node;
-    if !(*ctxt).document.is_null() {
-        (*xpath_ctxt).doc = (*(*ctxt).document).doc;
-    }
+    // UPSTREAM-PARITY (transform.c xsltApplyTemplates / xsltForEach): the
+    // XPath context's document follows the current source node and is set by
+    // the caller (`xpctxt->doc = cur->doc`), NOT forced back to the
+    // transform's principal document. Forcing it here made an extension
+    // function evaluated on a node from a document() result observe
+    // `node->doc != xpathCtxt->doc` (lxml reports "document-external context
+    // nodes are not supported"). The initial document node is installed by
+    // xsltApplyStylesheet and xmlXPathEvalExpression mirrors `ctxt->doc`.
     let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
     if !internal.is_null() {
         (*internal).context_node = (*ctxt).node;
-        if !(*ctxt).document.is_null() {
-            (*internal).document = (*(*ctxt).document).doc;
-        }
         (*internal).context_size = (*xpath_ctxt).contextSize;
         (*internal).context_position = (*xpath_ctxt).proximityPosition;
         (*internal).proximity_position = (*xpath_ctxt).proximityPosition;
@@ -1311,6 +1313,11 @@ pub(crate) unsafe fn process_apply_templates(
         } else {
             0
         };
+        let saved_xp_doc = if !(*ctxt).xpathCtxt.is_null() {
+            (*(*ctxt).xpathCtxt).doc
+        } else {
+            ptr::null_mut()
+        };
         // Check for xsl:sort children.
         let sort = find_sort_children(ctxt, inst);
         let mut node_ptrs: Vec<*mut _xmlNode> = Vec::new();
@@ -1351,6 +1358,13 @@ pub(crate) unsafe fn process_apply_templates(
                         if !(*ctxt).xpathCtxt.is_null() {
                             (*(*ctxt).xpathCtxt).contextSize = (*sorted).nodeNr;
                             (*(*ctxt).xpathCtxt).proximityPosition = k + 1;
+                            // UPSTREAM-PARITY (transform.c xsltApplyTemplates):
+                            // `xpctxt->doc = cur->doc` — an apply-templates can
+                            // change the current context document (nodes from a
+                            // document() result).
+                            if (*n).type_ != XML_NAMESPACE_DECL as c_int && !(*n).doc.is_null() {
+                                (*(*ctxt).xpathCtxt).doc = (*n).doc;
+                            }
                         }
                         apply_templates_with_params(ctxt, n, mode, params);
                     }
@@ -1373,6 +1387,9 @@ pub(crate) unsafe fn process_apply_templates(
                     (*ctxt).node = *n;
                     if !(*ctxt).xpathCtxt.is_null() {
                         (*(*ctxt).xpathCtxt).proximityPosition = (i + 1) as c_int;
+                        if (**n).type_ != XML_NAMESPACE_DECL as c_int && !(**n).doc.is_null() {
+                            (*(*ctxt).xpathCtxt).doc = (**n).doc;
+                        }
                     }
                     apply_templates_with_params(ctxt, *n, mode, params);
                 }
@@ -1382,6 +1399,7 @@ pub(crate) unsafe fn process_apply_templates(
         if !(*ctxt).xpathCtxt.is_null() {
             (*(*ctxt).xpathCtxt).contextSize = saved_context_size;
             (*(*ctxt).xpathCtxt).proximityPosition = saved_proximity;
+            (*(*ctxt).xpathCtxt).doc = saved_xp_doc;
         }
     }
 
@@ -1829,6 +1847,11 @@ pub(crate) unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *m
     } else {
         ((*xpath_ctxt).contextSize, (*xpath_ctxt).proximityPosition)
     };
+    let saved_xp_doc = if xpath_ctxt.is_null() {
+        ptr::null_mut()
+    } else {
+        (*xpath_ctxt).doc
+    };
 
     let mut node_ptrs: Vec<*mut _xmlNode> = Vec::new();
     let mut i = 0;
@@ -1870,6 +1893,11 @@ pub(crate) unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *m
                     (*ctxt).node = n;
                     if !xpath_ctxt.is_null() {
                         (*xpath_ctxt).proximityPosition = k + 1;
+                        // UPSTREAM-PARITY (transform.c xsltForEach):
+                        // `xpctxt->doc = cur->doc`.
+                        if (*n).type_ != XML_NAMESPACE_DECL as c_int && !(*n).doc.is_null() {
+                            (*xpath_ctxt).doc = (*n).doc;
+                        }
                     }
                     execute_content(ctxt, (*inst).children);
                 }
@@ -1892,6 +1920,9 @@ pub(crate) unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *m
                 (*ctxt).node = *n;
                 if !xpath_ctxt.is_null() {
                     (*xpath_ctxt).proximityPosition = (i + 1) as c_int;
+                    if (**n).type_ != XML_NAMESPACE_DECL as c_int && !(**n).doc.is_null() {
+                        (*xpath_ctxt).doc = (**n).doc;
+                    }
                 }
                 execute_content(ctxt, (*inst).children);
             }
@@ -1903,6 +1934,7 @@ pub(crate) unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *m
     if !xpath_ctxt.is_null() {
         (*xpath_ctxt).contextSize = saved_size;
         (*xpath_ctxt).proximityPosition = saved_pos;
+        (*xpath_ctxt).doc = saved_xp_doc;
     }
     xmlXPathFreeObject(obj);
 }
