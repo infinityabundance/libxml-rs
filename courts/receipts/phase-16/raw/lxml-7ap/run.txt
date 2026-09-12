@@ -1,0 +1,12 @@
+candidate_sha=bdb8ed79
+evidence_kind=root-cause fixes (xmlCopyDtd element links; xmlValidateDtd substitution + ID table; DTD parse failure)
+debug_libxml2_sha256=2da7581d624b2c39f08203794e95dac5cc7016dcc994f2f79e56eb5a0a6698ff
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=64 unique ids at d809cdc1 (lxml-7ak)
+lxml_suite_now=58 unique ids raw (51 failures / 7 errors), 55 excluding the known-flaky group
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes

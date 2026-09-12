@@ -1,0 +1,28 @@
+lxml suite (2007 tests) run four times after the change.
+
+Known-flaky group (module-level HTML/HTML-output tests plus ElementMaker; they
+pass in isolation and fail intermittently in full-suite runs — see lxml-7ah):
+
+  test_module_HTML, test_module_HTML_broken, test_module_HTML_cdata_ignored,
+  test_module_HTML_pretty_print, test_module_HTML_unicode, test_module_parse_html,
+  test_module_parse_html_filelike, test_xslt_html_output, ElementMaker,
+  /src/lxml/doc/extensions.txt
+
+Raw unique-id counts:  7al=64  7am=67  7an=66  7ao=58
+After removing the flaky group: 7al=62  7am=55  7an=55  7ao=55
+
+So the real delta is 62 -> 55 (7 fixed, 0 new). The raw count varies only
+because 0-9 of the flaky tests appear in a given run.
+
+Fixed (7):
+  test_dtd_api_internal            (lxml.tests.test_dtd.ETreeDtdTestCase)
+  test_dtd_broken                  (lxml.tests.test_dtd.ETreeDtdTestCase)
+  test_dtd_file                    (lxml.tests.test_dtd.ETreeDtdTestCase)
+  test_dtd_file_pathlike           (lxml.tests.test_dtd.ETreeDtdTestCase)
+  test_dtd_invalid                 (lxml.tests.test_dtd.ETreeDtdTestCase)
+  test_dtd_invalid_duplicate_id    (lxml.tests.test_dtd.ETreeDtdTestCase)
+  test_internal_dtds               (lxml.tests.test_dtd.ETreeDtdTestCase)
+
+test_dtd.py: 7 failed / 31 passed -> 0 failed / 38 passed.
+
+New: none.
