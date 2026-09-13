@@ -231,16 +231,14 @@ impl NodeSet {
     /// guarantees; the oracle-observed symptom is rotated results on the
     /// second of two transforms in one process.
     pub fn sort(&mut self) {
-        // Dedup by pointer first (matching the old per-push membership check:
-        // first occurrence wins), then order by document order. `retain` keeps
-        // the first occurrence and drops subsequent duplicates before the sort,
-        // so dedup is independent of the comparator's namespace-node Equal
-        // quirk (which would otherwise fail to make identical namespace copies
-        // adjacent for `dedup()`).
-        let mut seen: HashSet<usize> = HashSet::with_capacity(self.nodes.len());
-        self.nodes.retain(|n| seen.insert(n.0 as usize));
-        self.nodes
-            .sort_by(|a, b| unsafe { compare_document_order(a.0, b.0) });
+        // UPSTREAM-PARITY (xpath.c xmlXPathNodeSetSort): dedup keep-first, then
+        // the Shell sort whose swap rule (`xmlXPathCmpNodes == -1`) leaves
+        // cross-document entries (`-2`) in insertion order. Sorting by pointer
+        // address is NOT document order and is unstable across documents — the
+        // oracle-observed symptom was reordered extension-function results.
+        //
+        // SAFETY: the node-set entries are live nodes owned by their documents.
+        unsafe { sort_nodeset_upstream(&mut self.nodes) };
     }
 
     /// Convert to raw C ABI node-set.
@@ -834,6 +832,170 @@ unsafe fn node_depth(node: *mut _xmlNode) -> usize {
         n = (*n).parent;
     }
     depth
+}
+
+/// Upstream `xmlXPathCmpNodes` (xpath.c) as a raw `int` result.
+///
+/// Returns `-1` when `node1` precedes `node2` in document order, `1` when it
+/// follows, `0` for the same node, and `-2` when the two cannot be compared
+/// (NULL, or nodes from distinct documents/entities). The distinct value
+/// matters: `xmlXPathNodeSetSort` swaps only on `== -1`, so incomparable
+/// nodes keep their insertion order — that is why a node-set built from
+/// elements of several documents (e.g. an extension function returning a
+/// Python list) is NOT reordered.
+///
+/// # SAFETY
+///
+/// - `node1`/`node2` must be valid `_xmlNode` pointers or NULL, owned by live
+///   documents.
+pub unsafe fn cmp_nodes(node1: *mut _xmlNode, node2: *mut _xmlNode) -> c_int {
+    unsafe {
+        if node1.is_null() || node2.is_null() {
+            return -2;
+        }
+        if node1 == node2 {
+            return 0;
+        }
+        let mut n1 = node1;
+        let mut n2 = node2;
+        let mut attr1 = false;
+        let mut attr2 = false;
+        let mut attr_node1: *mut _xmlNode = ptr::null_mut();
+        let mut attr_node2: *mut _xmlNode = ptr::null_mut();
+        if (*n1).type_ == xmlElementType::XML_ATTRIBUTE_NODE as c_int {
+            attr1 = true;
+            attr_node1 = n1;
+            n1 = (*n1).parent;
+        }
+        if (*n2).type_ == xmlElementType::XML_ATTRIBUTE_NODE as c_int {
+            attr2 = true;
+            attr_node2 = n2;
+            n2 = (*n2).parent;
+        }
+        if n1.is_null() || n2.is_null() {
+            return -2;
+        }
+        if n1 == n2 {
+            if attr1 == attr2 {
+                if attr1 {
+                    // Keep attributes in order (walk attr_node2's prev chain).
+                    let mut cur = (*attr_node2).prev;
+                    while !cur.is_null() {
+                        if cur == attr_node1 {
+                            return 1;
+                        }
+                        cur = (*cur).prev;
+                    }
+                    return -1;
+                }
+                return 0;
+            }
+            return if attr2 { 1 } else { -1 };
+        }
+        if (*n1).type_ == xmlElementType::XML_NAMESPACE_DECL as c_int
+            || (*n2).type_ == xmlElementType::XML_NAMESPACE_DECL as c_int
+        {
+            return 1;
+        }
+        if n1 == (*n2).prev {
+            return 1;
+        }
+        if n1 == (*n2).next {
+            return -1;
+        }
+
+        // Compute depth to root, checking the ancestor relation on the way.
+        let mut depth2 = 0i32;
+        let mut cur = n2;
+        while !(*cur).parent.is_null() {
+            if (*cur).parent == n1 {
+                return 1;
+            }
+            depth2 += 1;
+            cur = (*cur).parent;
+        }
+        let root2 = cur;
+        let mut depth1 = 0i32;
+        let mut cur = n1;
+        while !(*cur).parent.is_null() {
+            if (*cur).parent == n2 {
+                return -1;
+            }
+            depth1 += 1;
+            cur = (*cur).parent;
+        }
+        let root1 = cur;
+        // Distinct document (or distinct entities) case.
+        if root1 != root2 {
+            return -2;
+        }
+        while depth1 > depth2 {
+            depth1 -= 1;
+            n1 = (*n1).parent;
+        }
+        while depth2 > depth1 {
+            depth2 -= 1;
+            n2 = (*n2).parent;
+        }
+        while (*n1).parent != (*n2).parent {
+            n1 = (*n1).parent;
+            n2 = (*n2).parent;
+            if n1.is_null() || n2.is_null() {
+                return -2;
+            }
+        }
+        if n1 == (*n2).prev {
+            return 1;
+        }
+        if n1 == (*n2).next {
+            return -1;
+        }
+        let mut cur = (*n1).next;
+        while !cur.is_null() {
+            if cur == n2 {
+                return 1;
+            }
+            cur = (*cur).next;
+        }
+        -1
+    }
+}
+
+/// Upstream `xmlXPathNodeSetSort` (xpath.c): a Shell sort that swaps two
+/// entries only when `xmlXPathCmpNodes` says the left one follows the right
+/// (`== -1`). Incomparable entries (`-2`) therefore stay put, and duplicates
+/// are collapsed first (keep-first), the same way the node-set insert paths
+/// do.
+///
+/// # SAFETY
+///
+/// - every entry must be a valid `_xmlNode` pointer or NULL.
+pub unsafe fn sort_nodeset_upstream(nodes: &mut Vec<XPathNode>) {
+    let mut seen: HashSet<usize> = HashSet::with_capacity(nodes.len());
+    nodes.retain(|n| seen.insert(n.0 as usize));
+    let len = nodes.len();
+    if len < 2 {
+        return;
+    }
+    let mut incr = len / 2;
+    while incr > 0 {
+        let mut i = incr;
+        while i < len {
+            let mut j = i as isize - incr as isize;
+            while j >= 0 {
+                let a = nodes[j as usize].0;
+                let b = nodes[j as usize + incr].0;
+                if unsafe { cmp_nodes(a, b) } == -1 {
+                    nodes.swap(j as usize, j as usize + incr);
+                    j -= incr as isize;
+                } else {
+                    break;
+                }
+            }
+            i += 1;
+        }
+        incr /= 2;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -86,6 +86,7 @@
 
 use crate::xml::xpath::ast::*;
 use crate::xml::xpath::lexer::Token;
+use std::os::raw::c_int;
 
 /// Errors that can occur during parsing.
 #[derive(Debug, Clone, PartialEq)]
@@ -94,6 +95,11 @@ pub struct ParseError {
     pub message: String,
     /// Token index at which the error was detected
     pub pos: usize,
+    /// Upstream `xmlXPathError` code this failure maps to (xpath.h). Predicate
+    /// grammar failures carry `XPATH_INVALID_PREDICATE_ERROR`; every other
+    /// grammar failure carries `XPATH_EXPR_ERROR` (its message is folded into
+    /// the generic "Invalid expression" by the delivery layer).
+    pub error_code: c_int,
 }
 
 impl std::fmt::Display for ParseError {
@@ -190,6 +196,21 @@ impl Parser {
         ParseError {
             message: msg,
             pos: self.pos,
+            error_code: crate::abi::types::XPATH_EXPR_ERROR,
+        }
+    }
+
+    /// UPSTREAM-PARITY (xpath.c `xmlXPathCompPredicate`): the predicate
+    /// sub-expression parser is lenient about trailing content — it parses a
+    /// complete Expr and returns. The CALLER decides the error: if the next
+    /// character is not the closing `]`, upstream raises
+    /// `XPATH_INVALID_PREDICATE_ERROR` ("Invalid predicate"), regardless of
+    /// what the leftover tokens are. A failure INSIDE the sub-expression
+    /// propagates its own error ("Invalid expression").
+    fn predicate_bracket_error(&self, e: ParseError) -> ParseError {
+        ParseError {
+            error_code: crate::abi::types::XPATH_INVALID_PREDICATE_ERROR,
+            ..e
         }
     }
 
@@ -550,7 +571,8 @@ impl Parser {
         while matches!(self.current(), Token::LBracket) {
             self.advance(); // consume '['
             let pred = self.parse_or_expr()?;
-            self.expect(&Token::RBracket)?;
+            self.expect(&Token::RBracket)
+                .map_err(|e| self.predicate_bracket_error(e))?;
             predicates.push(pred);
         }
 
@@ -737,7 +759,8 @@ impl Parser {
         while matches!(self.current(), Token::LBracket) {
             self.advance(); // consume '['
             let pred = self.parse_or_expr()?;
-            self.expect(&Token::RBracket)?;
+            self.expect(&Token::RBracket)
+                .map_err(|e| self.predicate_bracket_error(e))?;
             predicates.push(pred);
         }
 
@@ -828,6 +851,7 @@ pub fn parse_xpath(input: &str) -> Result<Expr, ParseError> {
         return Err(ParseError {
             message: "Invalid expression".to_string(),
             pos: off,
+            error_code: crate::abi::types::XPATH_EXPR_ERROR,
         });
     }
     let starts = lexer.token_starts();
@@ -846,6 +870,7 @@ pub fn parse_xpath(input: &str) -> Result<Expr, ParseError> {
         ParseError {
             message: e.message,
             pos: byte_off,
+            error_code: e.error_code,
         }
     })
 }

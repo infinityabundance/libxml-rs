@@ -2024,7 +2024,8 @@ pub unsafe extern "C" fn xmlXPathEvalExpr(ctxt: *mut c_void) {
     }
     let internal = unsafe { &mut *internal };
     match crate::xml::xpath::evaluate_str(expr_str, internal) {
-        Some(val) => {
+        Some(mut val) => {
+            crate::xml::xpath::sort_result(&mut val);
             let obj = crate::abi::exports_xml2::xpath_to_object_pub(val);
             value_push(pc, obj);
         }
@@ -4737,20 +4738,25 @@ pub unsafe extern "C" fn xmlXPathCtxtCompile(
                 // ctxt->error = _receiveXPathError, so the compile failure
                 // lands in its error_log). Upstream compile failures surface
                 // as "Invalid expression" (XPATH_EXPR_ERROR) from the error
-                // table, EXCEPT the recursion-budget failure which reports
-                // "Recursion limit exceeded" (XPATH_RECURSION_LIMIT_EXCEEDED)
-                // — verified against the 2.15.3 oracle (a 500th nested '(').
-                let recursion = e.message == "Recursion limit exceeded";
-                let code = if recursion {
-                    crate::abi::types::XPATH_RECURSION_LIMIT_EXCEEDED
-                } else {
-                    crate::abi::types::XPATH_EXPR_ERROR
-                };
-                let msg = if recursion {
-                    "Recursion limit exceeded"
-                } else {
-                    "Invalid expression"
-                };
+                // table, EXCEPT the recursion-budget failure
+                // (XPATH_RECURSION_LIMIT_EXCEEDED, "Recursion limit
+                // exceeded") and the predicate grammar failure
+                // (XPATH_INVALID_PREDICATE_ERROR, "Invalid predicate") —
+                // both verified against the 2.15.3 oracle.
+                let (code, msg) =
+                    if e.error_code == crate::abi::types::XPATH_INVALID_PREDICATE_ERROR {
+                        (
+                            crate::abi::types::XPATH_INVALID_PREDICATE_ERROR,
+                            "Invalid predicate",
+                        )
+                    } else if e.error_code == crate::abi::types::XPATH_RECURSION_LIMIT_EXCEEDED {
+                        (
+                            crate::abi::types::XPATH_RECURSION_LIMIT_EXCEEDED,
+                            "Recursion limit exceeded",
+                        )
+                    } else {
+                        (crate::abi::types::XPATH_EXPR_ERROR, "Invalid expression")
+                    };
                 unsafe {
                     crate::abi::exports_xml2::raise_xpath_error(ctxt, code, msg, expr_str);
                 }
@@ -4794,7 +4800,10 @@ pub unsafe extern "C" fn xmlXPathCompiledEval(
     let map = registry.lock();
     match map.get(&(comp as u64)) {
         Some(compiled) => match crate::xml::xpath::evaluate(compiled, internal) {
-            Some(val) => crate::abi::exports_xml2::xpath_to_object_pub(val),
+            Some(mut val) => {
+                crate::xml::xpath::sort_result(&mut val);
+                crate::abi::exports_xml2::xpath_to_object_pub(val)
+            }
             None => {
                 // UPSTREAM-PARITY (xpath.c xmlXPathCompiledEvalInternal): an
                 // evaluation failure is raised through the context's error

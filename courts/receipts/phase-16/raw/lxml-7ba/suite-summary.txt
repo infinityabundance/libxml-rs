@@ -1,0 +1,6 @@
+lxml full suite (test.py -u): 17 raw unique failing ids (16 excluding the known-flaky group)
+fixed this slice:
+  doc/xpathxslt.txt (131/131 doctest examples)
+  xpath doctest in test_xpathevaluator
+also: doc/extensions.txt now deterministic (128/128)
+regressions: none

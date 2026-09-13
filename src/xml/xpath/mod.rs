@@ -122,21 +122,39 @@ pub fn evaluate(compiled: &CompiledExpr, context: &mut XPathContext) -> Option<X
     }
 }
 
+/// Apply upstream's top-level `XPATH_OP_SORT` (xpath.c `xmlXPathCompileExpr`
+/// with `sort != 0` / `XPATH_OP_SORT` evaluation): a node-set produced by a
+/// complete XPath expression is delivered in document order (XPath 1.0 §3.3).
+///
+/// The compiler emits the SORT step only for the outermost expression (it is
+/// skipped for literals), so this belongs at the whole-expression evaluation
+/// boundary, not in the shared sub-expression evaluator.
+pub fn sort_result(value: &mut XPathValue) {
+    if let XPathValue::NodeSet(ns) = value {
+        ns.sort();
+    }
+}
+
 /// Parse and evaluate in one step.
 pub fn evaluate_str(expr_str: &str, context: &mut XPathContext) -> Option<XPathValue> {
     match compile_result(expr_str) {
         Ok(compiled) => evaluate(&compiled, context),
         Err(e) => {
-            // UPSTREAM-PARITY (xpath.c xmlXPathCompileExpr): a compile
-            // failure from the recursion budget is observable as "XPath error
-            // : Recursion limit exceeded" (XPATH_RECURSION_LIMIT_EXCEEDED) —
-            // the one compile error whose message upstream does NOT fold into
-            // the generic "Invalid expression" (verified against the 2.15.3
-            // oracle: 499 nested '(' succeed, 500 fail). Every other parse
-            // error keeps the generic message for parity with the existing
-            // XPATH_EXPR_ERROR channel.
-            if e.message == "Recursion limit exceeded" {
-                context.set_error(&e.message);
+            // UPSTREAM-PARITY (xpath.c): only the errors whose upstream
+            // message is NOT the generic "Invalid expression" are recorded on
+            // the context — the recursion budget
+            // (XPATH_RECURSION_LIMIT_EXCEEDED) and a predicate grammar
+            // failure (XPATH_INVALID_PREDICATE_ERROR, "Invalid predicate").
+            // Every other parse error keeps the generic message for parity
+            // with the existing XPATH_EXPR_ERROR channel.
+            match e.error_code {
+                c if c == crate::abi::types::XPATH_RECURSION_LIMIT_EXCEEDED => {
+                    context.set_error("Recursion limit exceeded");
+                }
+                c if c == crate::abi::types::XPATH_INVALID_PREDICATE_ERROR => {
+                    context.set_error("Invalid predicate");
+                }
+                _ => {}
             }
             None
         }

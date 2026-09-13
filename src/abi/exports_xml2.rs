@@ -6591,7 +6591,10 @@ pub unsafe extern "C" fn xmlXPathEvalExpression(
     internal.clear_error();
 
     match crate::xml::xpath::evaluate_str(expr_str, internal) {
-        Some(val) => xpath_to_object(val),
+        Some(mut val) => {
+            crate::xml::xpath::sort_result(&mut val);
+            xpath_to_object(val)
+        }
         None => {
             // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt): report the failure
             // through the C context (ctxt->lastError pre-fill + ctxt->error
@@ -6619,6 +6622,10 @@ pub(crate) unsafe fn raise_internal_xpath_error(
         // oracle reports "XPath error : Recursion limit exceeded" (verified
         // against xmllint 2.15.3).
         Some(m) if m == "Recursion limit exceeded" => (XPATH_RECURSION_LIMIT_EXCEEDED, m),
+        // UPSTREAM-PARITY (xpath.c xmlXPathCompPredicate): the predicate
+        // sub-expression parsed but the closing `]` is missing/foreign, so
+        // upstream raises XPATH_INVALID_PREDICATE_ERROR ("Invalid predicate").
+        Some(m) if m == "Invalid predicate" => (XPATH_INVALID_PREDICATE_ERROR, m),
         // UPSTREAM-PARITY (xpath.c XPATH_INVALID_TYPE — FilterExpr
         // '/'-paths and unions over non-node-sets, e.g. `1/b`): the oracle
         // reports "XPath error : Invalid type" (verified against xmllint
@@ -7218,7 +7225,21 @@ pub unsafe extern "C" fn xmlXPathCompile(str_: *const xmlChar) -> *mut c_void {
             // expression and a caret at the error offset through the generic
             // channel (HOSTILE-FAILURE F3). The structured code is
             // 1200-based like upstream `code + XML_XPATH_EXPRESSION_OK`.
-            let msg_cstr = std::ffi::CString::new("Invalid expression\n").unwrap_or_default();
+            let (msg_text, code) =
+                if e.error_code == crate::abi::types::XPATH_INVALID_PREDICATE_ERROR {
+                    (
+                        "Invalid predicate\n",
+                        crate::abi::types::XPATH_INVALID_PREDICATE_ERROR,
+                    )
+                } else if e.error_code == crate::abi::types::XPATH_RECURSION_LIMIT_EXCEEDED {
+                    (
+                        "Recursion limit exceeded\n",
+                        crate::abi::types::XPATH_RECURSION_LIMIT_EXCEEDED,
+                    )
+                } else {
+                    ("Invalid expression\n", crate::abi::types::XPATH_EXPR_ERROR)
+                };
+            let msg_cstr = std::ffi::CString::new(msg_text).unwrap_or_default();
             let expr_cstr = std::ffi::CString::new(expr_str).unwrap_or_default();
             let off = e.pos;
             let window = if off < 100 && off < expr_str.len() {
@@ -7230,8 +7251,7 @@ pub unsafe extern "C" fn xmlXPathCompile(str_: *const xmlChar) -> *mut c_void {
                 crate::xml::errors::raise_error_streamed(
                     ptr::null_mut(),
                     crate::abi::types::XML_FROM_XPATH,
-                    crate::abi::types::XPATH_EXPR_ERROR
-                        + crate::abi::types::XML_XPATH_EXPRESSION_OK,
+                    code + crate::abi::types::XML_XPATH_EXPRESSION_OK,
                     crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
                     ptr::null(),
                     0,
