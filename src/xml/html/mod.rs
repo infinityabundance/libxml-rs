@@ -4541,6 +4541,15 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut c_void) {
             crate::abi::exports_xml2::xmlDictFree((*c).dict);
             (*c).dict = ptr::null_mut();
         }
+        // UPSTREAM-PARITY (parserInternals.c xmlFreeParserCtxt -> xmlResetError):
+        // release the per-context last-error strings. They are xmlMalloc'd
+        // copies owned by `ctxt->lastError`; a context freed without this leaks
+        // the final recorded message (found by the coverage fuzz smoke on
+        // `-</A`, where the end-tag error is the context's last error).
+        // `free_error_strings` is NULL-safe per field, so this is a no-op for a
+        // context that never recorded an error.
+        crate::xml::globals::free_error_strings(&(*c).lastError);
+        crate::xml::errors::reset_error(&mut (*c).lastError);
         xmlFreeImpl(ctxt);
     }
 }

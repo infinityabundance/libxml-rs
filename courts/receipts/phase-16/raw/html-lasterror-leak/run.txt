@@ -1,0 +1,13 @@
+evidence_kind=CI fuzz fix (LeakSanitizer) / parser-context teardown parity
+symptom=ci.yml fuzz html (30s) failed: AddressSanitizer 24 bytes leaked for input "-</A"; overall workflow green only because the fuzz job is continue-on-error
+root_cause=html::free_parser_ctxt freed input/filename/encoding/dict but never ctxt->lastError strings; the end-tag diagnostic recorded by handle_end_tag stayed owned by the context until the block was freed (upstream xmlFreeParserCtxt calls xmlResetError)
+fix=src/xml/html/mod.rs free_parser_ctxt: free_error_strings(&ctxt->lastError) + reset_error(&mut ctxt->lastError) before freeing the context
+reproducer_before=ASan: 24 byte(s) leaked in 1 allocation(s) (cargo +nightly fuzz run html /tmp/fuzzin/leak)
+reproducer_after=cargo +nightly fuzz run html <(-</A)> -> Executed in 0 ms, no leak report
+fuzz_html=cargo +nightly fuzz run html -- -max_total_time=60 -> 525401 runs, clean
+fuzz_xpath=cargo +nightly fuzz run xpath -- -max_total_time=60 -> 825868 runs, clean (previously never ran; CI aborted at fuzz html)
+unit_tests=cargo test --lib -> 1333 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+lxml_full_suite=Ran 2007 tests, OK (0 raw unique failing ids)
+php_six_gate=1250 passed / 0 failed (phpbuild-c)
+tree_clean=yes
