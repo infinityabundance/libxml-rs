@@ -183,15 +183,24 @@ fn get_first_node(
     args: &[XPathValue],
     index: usize,
 ) -> Option<*mut crate::abi::structs::_xmlNode> {
-    if index < args.len() {
+    let node = if index < args.len() {
         match &args[index] {
             XPathValue::NodeSet(ns) => ns.first(),
             _ => None,
         }
     } else {
-        // Default to context node
-        Some(ctx.context_node)
-    }
+        // Default to the context node — which is NULL for a context used
+        // purely to register functions (the EXSLT module path). A NULL node is
+        // not a node: returning `Some(null)` made `name()`/`local-name()`/
+        // `namespace-uri()` dereference it (fuzz `xpath` crash on `&name()`).
+        let c = ctx.context_node;
+        if c.is_null() {
+            None
+        } else {
+            Some(c)
+        }
+    };
+    node.filter(|p| !p.is_null())
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -652,6 +661,18 @@ mod tests {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
         assert!(fn_true(&mut ctx, &[]).unwrap().as_boolean());
         assert!(!fn_false(&mut ctx, &[]).unwrap().as_boolean());
+    }
+
+    /// A context with no context node (e.g. one created only to register
+    /// functions) must not make `name()`/`local-name()`/`namespace-uri()`
+    /// dereference a NULL node. Found by the `xpath` fuzzer on `&name()`.
+    #[test]
+    fn test_name_functions_with_null_context_node() {
+        let mut ctx = XPathContext::new(std::ptr::null_mut());
+        for f in [fn_name, fn_local_name, fn_namespace_uri] {
+            let v = f(&mut ctx, &[]).expect("no error");
+            assert_eq!(v.as_string(), "");
+        }
     }
 
     #[test]

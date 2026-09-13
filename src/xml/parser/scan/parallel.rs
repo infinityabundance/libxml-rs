@@ -402,16 +402,27 @@ impl StructIndex {
     }
 
     fn build_with(bytes: &[u8], cfg: &Config) -> Option<StructIndex> {
+        // §16.9: the optional GPU Stage-1 classifier, when `LIBXML_RS_ACCEL`
+        // selects it, produces the identical block table. Fail closed: any
+        // device error falls through to the CPU prepass below.
+        #[cfg(feature = "cuda")]
+        {
+            if crate::xml::parser::scan::cuda::select(bytes.len()) {
+                if let Some(cs) = crate::xml::parser::scan::cuda::struct_index(bytes) {
+                    debug_assert_eq!(cs.blocks.len(), bytes.len().div_ceil(COARSE));
+                    return Some(StructIndex {
+                        blocks: cs.blocks,
+                        len: bytes.len(),
+                        threads: 0, // device backend
+                    });
+                }
+            }
+        }
         if !cfg.engages(bytes.len()) {
             return None;
         }
-        let blocks: Vec<[u16; 4]> = if cfg.threads > 1 {
-            pool::install(|| bytes.par_chunks(COARSE).map(summarize_block).collect())
-        } else {
-            bytes.chunks(COARSE).map(summarize_block).collect()
-        };
         Some(StructIndex {
-            blocks,
+            blocks: cpu_blocks(bytes, cfg),
             len: bytes.len(),
             threads: cfg.threads,
         })
@@ -457,6 +468,17 @@ impl StructIndex {
             j += 1;
         }
         Some(data_len - off)
+    }
+}
+
+/// The CPU structural prepass (§16.8.2): per-coarse-block first terminators,
+/// in parallel when the config engages the private pool. Shared by
+/// [`StructIndex::build_with`] and the §16.9 CPU-vs-GPU measurement harness.
+pub(crate) fn cpu_blocks(bytes: &[u8], cfg: &Config) -> Vec<[u16; 4]> {
+    if cfg.threads > 1 {
+        pool::install(|| bytes.par_chunks(COARSE).map(summarize_block).collect())
+    } else {
+        bytes.chunks(COARSE).map(summarize_block).collect()
     }
 }
 

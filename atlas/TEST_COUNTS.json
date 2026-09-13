@@ -1,10 +1,10 @@
 {
  "schema": "test-counts-1",
  "generator": "tools/evidence/test_counts.py",
- "generated": "2026-09-13T10:20:10Z",
+ "generated": "2026-09-13T11:15:42Z",
  "cargo_test_lib": {
   "status": "ok",
-  "passed": 1346,
+  "passed": 1347,
   "failed": 0,
   "ignored": 4
  },
@@ -58,7 +58,7 @@
   "DTD validation": 56,
   "XML Writer": 20,
   "XInclude": 23,
-  "XPath 1.0": 129,
+  "XPath 1.0": 130,
   "XPointer": 15,
   "XSLT misc (attrs)": 1,
   "XSLT compiler": 5,

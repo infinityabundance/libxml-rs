@@ -3546,17 +3546,9 @@ unsafe extern "C" fn default_external_entity_loader(
             // UPSTREAM-PARITY (parserInternals.c xmlNewInputFromFile): a
             // failed load raises xmlCtxtErrIO(ctxt, XML_IO_ENOENT, url) —
             // "I/O warning : failed to load \"%s\": %s\n" with the
-            // strerror text (HOSTILE-FAILURE F7).
-            let errno = *libc::__errno_location();
-            let errstr = if errno == 0 {
-                String::new()
-            } else {
-                std::ffi::CStr::from_ptr(libc::strerror(errno))
-                    .to_string_lossy()
-                    .into_owned()
-            };
-            let url_str = std::ffi::CStr::from_ptr(url).to_string_lossy();
-            emit_io_warning(ctxt, format!("failed to load \"{url_str}\": {errstr}\n"));
+            // strerror text (HOSTILE-FAILURE F7). Use the single message
+            // builder so this site and the loaders agree byte-for-byte.
+            emit_io_warning(ctxt, io_load_failure_message(url));
             return ptr::null_mut();
         }
         parser_input_from_buf(buf)
@@ -3856,8 +3848,15 @@ unsafe fn input_bytes_owned(input: *mut _xmlParserInput) -> Option<Vec<u8>> {
 ///
 /// - `uri` must be NULL or a valid NUL-terminated C string live for the call.
 pub(crate) fn io_load_failure_message(uri: *const c_char) -> String {
-    // SAFETY: reads errno only.
-    let errno = unsafe { *libc::__errno_location() };
+    // Prefer the errno captured at the failed open (deterministic even if an
+    // optional accelerator clobbered the live errno); fall back to the live one.
+    let captured = crate::xml::io::last_load_errno();
+    let errno = if captured != 0 {
+        captured
+    } else {
+        // SAFETY: reads errno only.
+        unsafe { *libc::__errno_location() }
+    };
     let errstr = if errno == 0 {
         // xmlErrString(XML_IO_ENOENT) table text (error.c 2.15).
         "No such file or directory".to_string()

@@ -30,6 +30,8 @@
 //! by the §16.7.7 differential suites and the fuzzers); `auto` uses runtime
 //! feature detection with a conservative evidence-driven policy.
 
+#[cfg(feature = "cuda")]
+pub(crate) mod cuda;
 pub(crate) mod parallel;
 pub(crate) mod pool;
 pub(crate) mod scalar;

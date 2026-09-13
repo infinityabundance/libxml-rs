@@ -1,0 +1,93 @@
+{
+ "schema": "performance-matrix/1",
+ "phase": "16.9",
+ "title": "CUDA structural accelerator vs CPU prepass (end-to-end)",
+ "candidate_sha": "e525f7e20689b02ff86a71bace20c8a9becdf9af",
+ "speedup_basis": "cpu_prepass_ns / gpu_end_to_end_wall_ns",
+ "oracle_identity": "",
+ "device": "NVIDIA GeForce RTX 4080 SUPER (SM 8.9, 80 SMs, PCIe 4.0 x16)",
+ "driver": "615.71.09",
+ "cuda_toolkit": "nvcc 13.3 (PTX generation only)",
+ "auto_threshold_bytes": null,
+ "auto_decision": "CPU (CUDA loses every measured end-to-end workload)",
+ "rows": [
+  {
+   "shape": "single",
+   "units": 1,
+   "bytes": 1048576,
+   "cpu": 50003,
+   "wall": 136554,
+   "kern": 32470,
+   "h2dp": 40916,
+   "h2dpin": 53149,
+   "d2h": 4038,
+   "speedup_vs_cpu": 0.36617748290053753
+  },
+  {
+   "shape": "single",
+   "units": 4,
+   "bytes": 4194304,
+   "cpu": 176088,
+   "wall": 289328,
+   "kern": 32962,
+   "h2dp": 187308,
+   "h2dpin": 169085,
+   "d2h": 4659,
+   "speedup_vs_cpu": 0.6086102969639994
+  },
+  {
+   "shape": "single",
+   "units": 16,
+   "bytes": 16777216,
+   "cpu": 625053,
+   "wall": 883634,
+   "kern": 55013,
+   "h2dp": 768680,
+   "h2dpin": 638818,
+   "d2h": 7103,
+   "speedup_vs_cpu": 0.7073663983051807
+  },
+  {
+   "shape": "single",
+   "units": 64,
+   "bytes": 67108864,
+   "cpu": 2632096,
+   "wall": 4044894,
+   "kern": 152283,
+   "h2dp": 3646983,
+   "h2dpin": 2511120,
+   "d2h": 15850,
+   "speedup_vs_cpu": 0.6507206369314005
+  },
+  {
+   "shape": "single",
+   "units": 256,
+   "bytes": 268435456,
+   "cpu": 9970264,
+   "wall": 20878682,
+   "kern": 1025798,
+   "h2dp": 18076500,
+   "h2dpin": 10020316,
+   "d2h": 51586,
+   "speedup_vs_cpu": 0.4775332082743537
+  },
+  {
+   "shape": "batch",
+   "units": 64,
+   "bytes": 67108864,
+   "cpu": 3249203,
+   "wall": 3978730,
+   "kern": 168393,
+   "speedup_vs_cpu": 0.8166432504844511
+  },
+  {
+   "shape": "batch",
+   "units": 256,
+   "bytes": 268435456,
+   "cpu": 13556333,
+   "wall": 21774257,
+   "kern": 1122017,
+   "speedup_vs_cpu": 0.6225853309254135
+  }
+ ]
+}

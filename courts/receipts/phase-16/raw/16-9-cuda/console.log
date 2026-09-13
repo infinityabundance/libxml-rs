@@ -1,0 +1,37 @@
+wrote 100 documents
+wrote 7 constructs
+corpus: 182 documents
+PRECONDITION PASS: CUDA device initialized
+probe ref rc=0 rows=164491 err=661
+probe cpu_auto rc=0 rows=164491 err=661
+probe cpu_thr0 rc=0 rows=164491 err=661
+probe cuda_t1 rc=0 rows=164491 err=661
+probe cuda_t4 rc=0 rows=164491 err=661
+probe cuda_t8 rc=0 rows=164491 err=661
+probe cuda_thr0 rc=0 rows=164491 err=661
+probe cuda_cpu_index rc=0 rows=164491 err=661
+PASS G1 cuda-invariance ref==cpu_auto: ref == cpu_auto (stdout+stderr)
+PASS G1 cuda-invariance ref==cpu_thr0: ref == cpu_thr0 (stdout+stderr)
+PASS G1 cuda-invariance ref==cuda_t1: ref == cuda_t1 (stdout+stderr)
+PASS G1 cuda-invariance ref==cuda_t4: ref == cuda_t4 (stdout+stderr)
+PASS G1 cuda-invariance ref==cuda_t8: ref == cuda_t8 (stdout+stderr)
+PASS G1 cuda-invariance ref==cuda_thr0: ref == cuda_thr0 (stdout+stderr)
+PASS G1 cuda-invariance ref==cuda_cpu_index: ref == cuda_cpu_index (stdout+stderr)
+PASS G2 cuda==cpu_auto: cuda_t4 == cpu_auto (stdout+stderr)
+PASS G2 cuda==cpu_thr0: cuda_thr0 == cpu_thr0 (stdout+stderr)
+92fb248b5a7802d24cce56b879697ce3ad29ee2b230a97d69153c75a3d15f2c6  out-cpu_auto
+92fb248b5a7802d24cce56b879697ce3ad29ee2b230a97d69153c75a3d15f2c6  out-cpu_thr0
+92fb248b5a7802d24cce56b879697ce3ad29ee2b230a97d69153c75a3d15f2c6  out-cuda_cpu_index
+92fb248b5a7802d24cce56b879697ce3ad29ee2b230a97d69153c75a3d15f2c6  out-cuda_t1
+92fb248b5a7802d24cce56b879697ce3ad29ee2b230a97d69153c75a3d15f2c6  out-cuda_t4
+92fb248b5a7802d24cce56b879697ce3ad29ee2b230a97d69153c75a3d15f2c6  out-cuda_t8
+92fb248b5a7802d24cce56b879697ce3ad29ee2b230a97d69153c75a3d15f2c6  out-cuda_thr0
+92fb248b5a7802d24cce56b879697ce3ad29ee2b230a97d69153c75a3d15f2c6  out-ref
+c09efdfc12002d87efab8fa1691fcfa2a6532a8c50b4d70e986a8a1d1b476621  err-cpu_auto
+c09efdfc12002d87efab8fa1691fcfa2a6532a8c50b4d70e986a8a1d1b476621  err-cpu_thr0
+c09efdfc12002d87efab8fa1691fcfa2a6532a8c50b4d70e986a8a1d1b476621  err-cuda_cpu_index
+c09efdfc12002d87efab8fa1691fcfa2a6532a8c50b4d70e986a8a1d1b476621  err-cuda_t1
+c09efdfc12002d87efab8fa1691fcfa2a6532a8c50b4d70e986a8a1d1b476621  err-cuda_t4
+c09efdfc12002d87efab8fa1691fcfa2a6532a8c50b4d70e986a8a1d1b476621  err-cuda_t8
+c09efdfc12002d87efab8fa1691fcfa2a6532a8c50b4d70e986a8a1d1b476621  err-cuda_thr0
+c09efdfc12002d87efab8fa1691fcfa2a6532a8c50b4d70e986a8a1d1b476621  err-ref

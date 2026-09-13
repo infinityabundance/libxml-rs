@@ -1099,6 +1099,25 @@ unsafe extern "C" fn file_close_callback(context: *mut c_void) -> c_int {
     libc::close(fd)
 }
 
+thread_local! {
+    /// errno captured at the moment a file open failed. The diagnostic message
+    /// is composed later and, without this, an optional accelerator's driver
+    /// calls (or any intervening libc call) can clobber the live errno and make
+    /// the diagnostic nondeterministic. Capturing it here keeps the I/O warning
+    /// stable and identical across CPU/GPU configurations (§16.9.6).
+    static LAST_LOAD_ERRNO: core::cell::Cell<i32> = const { core::cell::Cell::new(0) };
+}
+
+/// Record the errno of a failed file open.
+pub(crate) fn note_load_errno(e: i32) {
+    LAST_LOAD_ERRNO.with(|c| c.set(e));
+}
+
+/// The errno captured at the most recent failed file open (0 if none).
+pub(crate) fn last_load_errno() -> i32 {
+    LAST_LOAD_ERRNO.with(|c| c.get())
+}
+
 /// Create an input buffer from a file.
 ///
 /// Opens the file, reads its contents into memory, and creates a memory-based
@@ -1116,7 +1135,6 @@ pub(crate) fn input_buffer_create_file(
     if filename.is_null() {
         return ptr::null_mut();
     }
-
     // Get filename as a Rust string
     let filename_str = unsafe {
         match CStr::from_ptr(filename).to_str() {
@@ -1155,6 +1173,10 @@ pub(crate) fn input_buffer_create_file(
     let fd = unsafe { libc::open(path_c.as_ptr(), libc::O_RDONLY) };
 
     if fd < 0 {
+        // Capture errno HERE: the diagnostic is composed later (possibly after
+        // an optional accelerator's `dlopen`/driver calls clobber the live
+        // errno), and the message must stay deterministic (§16.9.6 court).
+        note_load_errno(unsafe { *libc::__errno_location() });
         return ptr::null_mut();
     }
 
