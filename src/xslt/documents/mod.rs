@@ -193,6 +193,30 @@ pub unsafe fn xsltLoadDocument(
     if let Some(cached) = cache_lookup(ctxt, URI) {
         return cached;
     }
+    // UPSTREAM-PARITY (documents.c xsltLoadDocument): access control applies
+    // to `document()` loads (NOT to `xsl:import`/`xsl:include`, which upstream
+    // documents as unaffected). A denied read must fail the load, which the
+    // `document()` function turns into an XSLTApplyError.
+    unsafe {
+        if !(*ctxt).sec.is_null() {
+            let allowed = crate::abi::exports_xslt_util::xsltCheckRead((*ctxt).sec, ctxt, URI);
+            if allowed == 0 {
+                let uri_len = libc::strlen(URI as *const libc::c_char);
+                let mut m: Vec<u8> = Vec::new();
+                m.extend_from_slice(b"xsltLoadDocument: read rights for ");
+                m.extend_from_slice(core::slice::from_raw_parts(URI, uri_len));
+                m.extend_from_slice(b" denied\n");
+                m.push(0);
+                crate::xslt::errors::xsltTransformError(
+                    ctxt,
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    m.as_ptr() as *const libc::c_char,
+                );
+                return ptr::null_mut();
+            }
+        }
+    }
     // Resolve the URI against the source document's base.
     let base = if !(*ctxt).document.is_null()
         && !(*(*ctxt).document).doc.is_null()

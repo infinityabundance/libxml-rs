@@ -351,7 +351,7 @@ pub unsafe extern "C" fn xsltApplyStylesheetUser(
 
     // Parse the stylesheet parameters.
     if !params.is_null() {
-        crate::xslt::parameters::xsltParseStylesheetParams(style, params);
+        crate::xslt::parameters::xslt_eval_user_params(ctxt, style, params);
     }
 
     // Initialize global variables.
@@ -3592,15 +3592,38 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
         if tctxt.is_null() {
             return Ok(XPathValue::NodeSet(NodeSet::new()));
         }
-        // UPSTREAM-PARITY (functions.c xsltDocumentFunction): an empty URI
-        // (document('')) selects the STYLESHEET document itself, not a
-        // resolver/loader round-trip. Without this, lxml's test_xslt_document
-        // family (which loads document('') from a file) returns an empty
-        // result tree.
+        // UPSTREAM-PARITY (functions.c xsltDocumentFunction): `document('')`
+        // resolves through `xmlBuildURI("", base)` to the stylesheet's own URL,
+        // so upstream's `xsltLoadDocument` security check runs against that
+        // URL BEFORE the "stylesheet's doc itself" fallback selects it. The
+        // read_file/read_network denial that lxml's XSLTAccessControl tests
+        // exercise must therefore fire here too.
         if value.is_empty() {
             unsafe {
                 let style = (*tctxt).style;
                 if !style.is_null() && !(*style).doc.is_null() {
+                    let url = (*(*style).doc).URL;
+                    if !url.is_null() && !(*tctxt).sec.is_null() {
+                        let allowed =
+                            crate::abi::exports_xslt_util::xsltCheckRead((*tctxt).sec, tctxt, url);
+                        if allowed == 0 {
+                            let mut m: Vec<u8> = Vec::new();
+                            m.extend_from_slice(b"xsltLoadDocument: read rights for ");
+                            m.extend_from_slice(core::slice::from_raw_parts(
+                                url,
+                                libc::strlen(url as *const libc::c_char),
+                            ));
+                            m.extend_from_slice(b" denied\n");
+                            m.push(0);
+                            crate::xslt::errors::xsltTransformError(
+                                tctxt,
+                                ptr::null_mut(),
+                                ptr::null_mut(),
+                                m.as_ptr() as *const c_char,
+                            );
+                            return Ok(XPathValue::NodeSet(NodeSet::new()));
+                        }
+                    }
                     let mut ns = NodeSet::new();
                     ns.push((*style).doc as *mut _xmlNode);
                     return Ok(XPathValue::NodeSet(ns));

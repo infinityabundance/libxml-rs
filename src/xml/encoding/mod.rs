@@ -238,59 +238,198 @@ pub(crate) fn encoding_from_name(name: &[u8]) -> xmlCharEncoding {
     let s = core::str::from_utf8(name).unwrap_or("");
     let s = s.trim().to_ascii_lowercase();
 
+    // UPSTREAM-PARITY (encoding.c xmlEncTable): the complete case-insensitive
+    // alias table. Upstream resolves names with a case-folding bsearch; the
+    // candidate lowercases the input and matches the ported entries verbatim.
+    // `XML_CHAR_ENCODING_UTF16` is folded to `UTF16LE`, which is the value
+    // upstream's backward-compatibility shim returns.
     match s.as_str() {
-        // UTF-8
-        "utf-8" | "utf8" => xmlCharEncoding::XML_CHAR_ENCODING_UTF8,
-
-        // UTF-16
-        "utf-16" | "utf-16le" | "utf16le" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
-        "utf-16be" | "utf16be" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE,
-
-        // UTF-32/UCS-4 (upstream resolves these through its iconv/ICU fallback;
-        // the candidate maps them to the native UCS-4 handlers, R-000157)
+        "ansi_x3.4-1968" => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        "arabic" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "ascii" => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        "asmo-708" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "cp1252" => xmlCharEncoding::XML_CHAR_ENCODING_WINDOWS_1252,
+        "cp819" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "cseucpkdfmtjapanese" => xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP,
+        "csiso2022jp" => xmlCharEncoding::XML_CHAR_ENCODING_2022_JP,
+        "csiso88596e" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "csiso88596i" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "csiso88598e" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "csiso88598i" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "csisolatin1" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "csisolatin2" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "csisolatin3" => xmlCharEncoding::XML_CHAR_ENCODING_8859_3,
+        "csisolatin4" => xmlCharEncoding::XML_CHAR_ENCODING_8859_4,
+        "csisolatin5" => xmlCharEncoding::XML_CHAR_ENCODING_8859_9,
+        "csisolatin6" => xmlCharEncoding::XML_CHAR_ENCODING_8859_10,
+        "csisolatin9" => xmlCharEncoding::XML_CHAR_ENCODING_8859_15,
+        "csisolatinarabic" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "csisolatincyrillic" => xmlCharEncoding::XML_CHAR_ENCODING_8859_5,
+        "csisolatingreek" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "csisolatinhebrew" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "csshiftjis" => xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        "csunicode" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
+        "cyrillic" => xmlCharEncoding::XML_CHAR_ENCODING_8859_5,
+        "ecma-114" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "ecma-118" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "elot_928" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "euc-jp" => xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP,
+        "greek" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "greek8" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "html" => xmlCharEncoding::XML_CHAR_ENCODING_HTML,
+        "ibm819" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso latin 1" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso latin 2" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "iso-10646-ucs-2" => xmlCharEncoding::XML_CHAR_ENCODING_UCS2,
+        // Candidate-kept aliases that upstream resolves outside `xmlEncTable`
+        // (iconv/ICU fallback or the R-000157 UTF-32 mapping lxml's PEP-393
+        // path relies on). Kept so the ported table does not narrow the
+        // accepted spellings.
+        "utf16le" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
+        "utf16be" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE,
         "utf-32" | "utf-32le" | "utf32le" => xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
         "utf-32be" | "utf32be" => xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE,
-
-        // ISO-8859 variants
-        "iso-8859-1" | "iso_8859-1" | "latin1" | "latin-1" | "l1" | "cp819" | "ibm819"
-        | "iso-ir-100" | "iso_8859-1:1987" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
-        "iso-8859-2" | "iso_8859-2" | "latin2" | "latin-2" | "l2" => {
-            xmlCharEncoding::XML_CHAR_ENCODING_8859_2
-        }
-        "iso-8859-3" | "iso_8859-3" | "latin3" | "latin-3" | "l3" => {
-            xmlCharEncoding::XML_CHAR_ENCODING_8859_3
-        }
-        "iso-8859-4" | "iso_8859-4" | "latin4" | "latin-4" | "l4" => {
-            xmlCharEncoding::XML_CHAR_ENCODING_8859_4
-        }
-        "iso-8859-5" | "iso_8859-5" | "cyrillic" => xmlCharEncoding::XML_CHAR_ENCODING_8859_5,
-        "iso-8859-6" | "iso_8859-6" | "arabic" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
-        "iso-8859-7" | "iso_8859-7" | "greek" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
-        "iso-8859-8" | "iso_8859-8" | "hebrew" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
-        "iso-8859-9" | "iso_8859-9" | "latin5" | "latin-5" | "l5" | "turkish" => {
-            xmlCharEncoding::XML_CHAR_ENCODING_8859_9
-        }
-
-        // ASCII
-        "ascii" | "us-ascii" | "us" | "ansi_x3.4-1968" | "ansi_x3.4-1986" | "iso-ir-6"
-        | "iso_646.irv:1991" | "cp367" | "ibm367" => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
-
-        // East Asian
-        "iso-2022-jp" | "iso2022-jp" => xmlCharEncoding::XML_CHAR_ENCODING_2022_JP,
-        "shift_jis" | "shift-jis" | "sjis" | "cp932" => {
-            xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS
-        }
-        "euc-jp" | "eucjp" => xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP,
-
-        // UCS/Unicode variants
-        "ucs-4" | "ucs4" => xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        "latin-1" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "latin-2" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "latin-3" => xmlCharEncoding::XML_CHAR_ENCODING_8859_3,
+        "latin-4" => xmlCharEncoding::XML_CHAR_ENCODING_8859_4,
+        "latin-5" => xmlCharEncoding::XML_CHAR_ENCODING_8859_5,
+        "hebrew" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "turkish" => xmlCharEncoding::XML_CHAR_ENCODING_8859_9,
+        "us" => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        "ansi_x3.4-1986" => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        "iso-ir-6" => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        "iso_646.irv:1991" => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        "cp367" => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        "ibm367" => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        "iso2022-jp" => xmlCharEncoding::XML_CHAR_ENCODING_2022_JP,
+        "eucjp" => xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP,
+        "cp932" => xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
         "ucs-4le" | "ucs4le" => xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
         "ucs-4be" | "ucs4be" => xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE,
-        "ucs-2" | "ucs2" => xmlCharEncoding::XML_CHAR_ENCODING_UCS2,
-
-        // EBCDIC
-        "ebcdic" | "cp037" | "ibm037" => xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
-
+        "ebcdic" => xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
+        "cp037" => xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
+        "ibm037" => xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC,
+        "iso-10646-ucs-4" => xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        "iso-2022-jp" => xmlCharEncoding::XML_CHAR_ENCODING_2022_JP,
+        "iso-8859-1" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso-8859-10" => xmlCharEncoding::XML_CHAR_ENCODING_8859_10,
+        "iso-8859-11" => xmlCharEncoding::XML_CHAR_ENCODING_8859_11,
+        "iso-8859-13" => xmlCharEncoding::XML_CHAR_ENCODING_8859_13,
+        "iso-8859-14" => xmlCharEncoding::XML_CHAR_ENCODING_8859_14,
+        "iso-8859-15" => xmlCharEncoding::XML_CHAR_ENCODING_8859_15,
+        "iso-8859-16" => xmlCharEncoding::XML_CHAR_ENCODING_8859_16,
+        "iso-8859-2" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "iso-8859-3" => xmlCharEncoding::XML_CHAR_ENCODING_8859_3,
+        "iso-8859-4" => xmlCharEncoding::XML_CHAR_ENCODING_8859_4,
+        "iso-8859-5" => xmlCharEncoding::XML_CHAR_ENCODING_8859_5,
+        "iso-8859-6" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "iso-8859-6-e" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "iso-8859-6-i" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "iso-8859-7" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "iso-8859-8" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "iso-8859-8-i" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "iso-8859-9" => xmlCharEncoding::XML_CHAR_ENCODING_8859_9,
+        "iso-ir-100" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso-ir-101" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "iso-ir-109" => xmlCharEncoding::XML_CHAR_ENCODING_8859_3,
+        "iso-ir-110" => xmlCharEncoding::XML_CHAR_ENCODING_8859_4,
+        "iso-ir-126" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "iso-ir-127" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "iso-ir-138" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "iso-ir-144" => xmlCharEncoding::XML_CHAR_ENCODING_8859_5,
+        "iso-ir-148" => xmlCharEncoding::XML_CHAR_ENCODING_8859_9,
+        "iso-ir-157" => xmlCharEncoding::XML_CHAR_ENCODING_8859_10,
+        "iso-latin-1" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso-latin-2" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "iso8859-1" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso8859-10" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso8859-13" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso8859-14" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso8859-15" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso8859-2" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "iso8859-3" => xmlCharEncoding::XML_CHAR_ENCODING_8859_3,
+        "iso8859-4" => xmlCharEncoding::XML_CHAR_ENCODING_8859_4,
+        "iso8859-5" => xmlCharEncoding::XML_CHAR_ENCODING_8859_5,
+        "iso8859-6" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "iso8859-7" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "iso8859-8" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "iso8859-9" => xmlCharEncoding::XML_CHAR_ENCODING_8859_9,
+        "iso88591" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso885910" => xmlCharEncoding::XML_CHAR_ENCODING_8859_10,
+        "iso885913" => xmlCharEncoding::XML_CHAR_ENCODING_8859_13,
+        "iso885914" => xmlCharEncoding::XML_CHAR_ENCODING_8859_14,
+        "iso885915" => xmlCharEncoding::XML_CHAR_ENCODING_8859_15,
+        "iso88592" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "iso88593" => xmlCharEncoding::XML_CHAR_ENCODING_8859_3,
+        "iso88594" => xmlCharEncoding::XML_CHAR_ENCODING_8859_4,
+        "iso88595" => xmlCharEncoding::XML_CHAR_ENCODING_8859_5,
+        "iso88596" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "iso88597" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "iso88598" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "iso88599" => xmlCharEncoding::XML_CHAR_ENCODING_8859_9,
+        "iso_8859-1" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso_8859-1:1987" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "iso_8859-2" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "iso_8859-2:1987" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "iso_8859-3" => xmlCharEncoding::XML_CHAR_ENCODING_8859_3,
+        "iso_8859-3:1988" => xmlCharEncoding::XML_CHAR_ENCODING_8859_3,
+        "iso_8859-4" => xmlCharEncoding::XML_CHAR_ENCODING_8859_4,
+        "iso_8859-4:1988" => xmlCharEncoding::XML_CHAR_ENCODING_8859_4,
+        "iso_8859-5" => xmlCharEncoding::XML_CHAR_ENCODING_8859_5,
+        "iso_8859-5:1988" => xmlCharEncoding::XML_CHAR_ENCODING_8859_5,
+        "iso_8859-6" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "iso_8859-6:1987" => xmlCharEncoding::XML_CHAR_ENCODING_8859_6,
+        "iso_8859-7" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "iso_8859-7:1987" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "iso_8859-8" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "iso_8859-8:1988" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "iso_8859-9" => xmlCharEncoding::XML_CHAR_ENCODING_8859_9,
+        "iso_8859-9:1989" => xmlCharEncoding::XML_CHAR_ENCODING_8859_9,
+        "l1" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "l2" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "l3" => xmlCharEncoding::XML_CHAR_ENCODING_8859_3,
+        "l4" => xmlCharEncoding::XML_CHAR_ENCODING_8859_4,
+        "l5" => xmlCharEncoding::XML_CHAR_ENCODING_8859_9,
+        "l6" => xmlCharEncoding::XML_CHAR_ENCODING_8859_10,
+        "l9" => xmlCharEncoding::XML_CHAR_ENCODING_8859_15,
+        "latin1" => xmlCharEncoding::XML_CHAR_ENCODING_8859_1,
+        "latin2" => xmlCharEncoding::XML_CHAR_ENCODING_8859_2,
+        "latin3" => xmlCharEncoding::XML_CHAR_ENCODING_8859_3,
+        "latin4" => xmlCharEncoding::XML_CHAR_ENCODING_8859_4,
+        "latin5" => xmlCharEncoding::XML_CHAR_ENCODING_8859_9,
+        "latin6" => xmlCharEncoding::XML_CHAR_ENCODING_8859_10,
+        "logical" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "ms932" => xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        "ms_kanji" => xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        "shift-jis" => xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        "shift_jis" => xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        "sjis" => xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        "sun_eu_greek" => xmlCharEncoding::XML_CHAR_ENCODING_8859_7,
+        "ucs-2" => xmlCharEncoding::XML_CHAR_ENCODING_UCS2,
+        "ucs-4" => xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        "ucs2" => xmlCharEncoding::XML_CHAR_ENCODING_UCS2,
+        "ucs4" => xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE,
+        "unicode" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
+        "unicode-1-1-utf-8" => xmlCharEncoding::XML_CHAR_ENCODING_UTF8,
+        "unicode11utf8" => xmlCharEncoding::XML_CHAR_ENCODING_UTF8,
+        "unicode20utf8" => xmlCharEncoding::XML_CHAR_ENCODING_UTF8,
+        "unicodefffe" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE,
+        "unicodefeff" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
+        "us-ascii" => xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        "utf-16" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
+        "utf-16be" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE,
+        "utf-16le" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
+        "utf-8" => xmlCharEncoding::XML_CHAR_ENCODING_UTF8,
+        "utf16" => xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
+        "utf8" => xmlCharEncoding::XML_CHAR_ENCODING_UTF8,
+        "visual" => xmlCharEncoding::XML_CHAR_ENCODING_8859_8,
+        "windows-1252" => xmlCharEncoding::XML_CHAR_ENCODING_WINDOWS_1252,
+        "windows-31j" => xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        "x-cp1252" => xmlCharEncoding::XML_CHAR_ENCODING_WINDOWS_1252,
+        "x-euc-jp" => xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP,
+        "x-sjis" => xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        "x-unicode20utf8" => xmlCharEncoding::XML_CHAR_ENCODING_UTF8,
         _ => xmlCharEncoding::XML_CHAR_ENCODING_ERROR,
     }
 }
@@ -322,6 +461,15 @@ pub(crate) const fn encoding_name(enc: xmlCharEncoding) -> Option<&'static [u8]>
         xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS => Some(b"SHIFT_JIS" as &[u8]),
         xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP => Some(b"EUC-JP" as &[u8]),
         xmlCharEncoding::XML_CHAR_ENCODING_ASCII => Some(b"US-ASCII" as &[u8]),
+        xmlCharEncoding::XML_CHAR_ENCODING_UTF16 => Some(b"UTF-16" as &[u8]),
+        xmlCharEncoding::XML_CHAR_ENCODING_HTML => Some(b"HTML" as &[u8]),
+        xmlCharEncoding::XML_CHAR_ENCODING_8859_10 => Some(b"ISO-8859-10" as &[u8]),
+        xmlCharEncoding::XML_CHAR_ENCODING_8859_11 => Some(b"ISO-8859-11" as &[u8]),
+        xmlCharEncoding::XML_CHAR_ENCODING_8859_13 => Some(b"ISO-8859-13" as &[u8]),
+        xmlCharEncoding::XML_CHAR_ENCODING_8859_14 => Some(b"ISO-8859-14" as &[u8]),
+        xmlCharEncoding::XML_CHAR_ENCODING_8859_15 => Some(b"ISO-8859-15" as &[u8]),
+        xmlCharEncoding::XML_CHAR_ENCODING_8859_16 => Some(b"ISO-8859-16" as &[u8]),
+        xmlCharEncoding::XML_CHAR_ENCODING_WINDOWS_1252 => Some(b"windows-1252" as &[u8]),
         _ => None,
     }
 }
@@ -2998,7 +3146,24 @@ pub(crate) fn xmlFindCharEncodingHandler(name: *const c_char) -> *mut _xmlCharEn
     if name.is_null() {
         return ptr::null_mut();
     }
-    find_encoding_handler(name as *const xmlChar)
+    // UPSTREAM-PARITY (encoding.c xmlFindCharEncodingHandler): the registry is
+    // consulted by the raw name first, then the name is resolved through the
+    // alias table and its canonical spelling. Without the fallback an alias
+    // such as `iso8859-1` (a real xmlEncTable entry, and the exact spelling
+    // lxml's serializer passes) resolves to nothing even though the canonical
+    // `ISO-8859-1` handler exists.
+    let direct = find_encoding_handler(name as *const xmlChar);
+    if !direct.is_null() {
+        return direct;
+    }
+    let bytes = unsafe {
+        let len = libc::strlen(name);
+        core::slice::from_raw_parts(name as *const u8, len)
+    };
+    if let Some(canon) = encoding_name(encoding_from_name(bytes)) {
+        return find_encoding_handler(canon.as_ptr() as *const xmlChar);
+    }
+    ptr::null_mut()
 }
 
 /// `xmlGetCharEncodingName` implementation.

@@ -430,7 +430,7 @@ unsafe fn xslt_check_read(
 /// global loader function is registered it is invoked with the upstream
 /// `xsltDocLoaderFunc` contract and its document is returned; otherwise the
 /// URI is parsed as a file. Returns a parsed document or NULL.
-unsafe fn xslt_doc_default_loader(
+pub(crate) unsafe fn xslt_doc_default_loader(
     uri: *const xmlChar,
     dict: *mut c_void,
     options: c_int,

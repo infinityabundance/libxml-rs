@@ -127,6 +127,56 @@ pub unsafe fn xsltParseStylesheetParams(
     count
 }
 
+/// Evaluate the caller's `(name, value)` parameter pairs into the transform
+/// context (upstream variables.c `xsltEvalUserParams`).
+///
+/// UPSTREAM-PARITY: the parameters belong to the TRANSFORM, not the
+/// stylesheet. Prepending them to `style->variables` (as an earlier revision
+/// did) mutated the compiled stylesheet: a reused stylesheet kept the first
+/// call's parameters, so a later call without parameters still saw the stale
+/// value, and the stylesheet's own `<xsl:param>` default could never win.
+/// Upstream keeps them per-context (`ctxt->globalVars`), so a fresh call
+/// starts clean — which is exactly what `xsltInitGlobalVariables` step 1
+/// consumes.
+///
+/// # SAFETY
+///
+/// - `ctxt`/`style` must be valid; `params` NULL or a NULL-terminated
+///   `(name, value, ...)` array of NUL-terminated strings.
+pub unsafe fn xslt_eval_user_params(
+    ctxt: *mut _xsltTransformContext,
+    style: *mut _xsltStylesheet,
+    params: *mut *const c_char,
+) -> c_int {
+    if ctxt.is_null() || style.is_null() || params.is_null() {
+        return -1;
+    }
+    // A reused transform context must not carry the previous call's
+    // parameters into this one: each parameter is registered straight into
+    // the transform's variable map (upstream `xsltEvalOneUserParam` ->
+    // `xmlXPathRegisterVariableNS`) and the temporary stack element is then
+    // released, so nothing persists on the context or the stylesheet.
+    let mut i = 0;
+    let mut count = 0;
+    while !unsafe { *params.offset(i) }.is_null() {
+        let name = unsafe { *params.offset(i) };
+        let value = unsafe { *params.offset(i + 1) };
+        if value.is_null() {
+            break;
+        }
+        let parsed = unsafe { xsltParseStylesheetParam(style, name, value) };
+        if !parsed.is_null() {
+            unsafe {
+                crate::xslt::variables::register_global_value(ctxt, parsed, false);
+                xsltFreeStackElem(parsed);
+            }
+            count += 1;
+        }
+        i += 2;
+    }
+    count
+}
+
 /// Parse a single parameter (name + value) into a stack element.
 ///
 /// The name may be a QName or of the form `{uri}name`.

@@ -513,7 +513,7 @@ unsafe fn stylesheet_param_raw_key(
 ///
 /// - `ctxt` must be a valid `_xsltTransformContext`.
 /// - `var` must be a valid `_xsltStackElem`.
-unsafe fn register_global_value(
+pub(crate) unsafe fn register_global_value(
     ctxt: *mut _xsltTransformContext,
     var: *mut _xsltStackElem,
     skip_if_bound: bool,

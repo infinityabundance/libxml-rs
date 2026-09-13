@@ -1,0 +1,17 @@
+candidate_sha=WORKTREE (evidence for the commit that adds XSLT document loading + access control)
+evidence_kind=parity fix (XSLT include/import loader, document() access control, caller parameter scope)
+debug_libxml2_sha256=2d0957895bdc26e474dc6a9d62ab6e8943fb01c8931236b24f9be6e12aa988e9
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=34 raw unique ids (lxml-7av @ c3c66e08), 33 excluding the flaky group
+lxml_suite_now=29 raw unique ids, 28 excluding the flaky group
+lxml_fixed=5 (doc/extensions.txt, doc/resolvers.txt, test_xslt_default_parameters,
+  test_xslt_document_parse_deny, test_xslt_document_parse_deny_all)
+lxml_regressions=0 (filtered delta vs lxml-7av)
+detail=doc/resolvers.txt 34/34 examples pass; test_xslt.py 93 passed / 1 failed
+  (test_variable_result_tree_fragment remains, out of scope for this slice)
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes

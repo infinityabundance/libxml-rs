@@ -128,6 +128,19 @@ pub enum xmlCharEncoding {
     XML_CHAR_ENCODING_SHIFT_JIS = 20,
     XML_CHAR_ENCODING_EUC_JP = 21,
     XML_CHAR_ENCODING_ASCII = 22,
+    /// UTF-16 native (available since 2.14; `xmlParseCharEncoding` maps this
+    /// back to `UTF16LE` for backward compatibility).
+    XML_CHAR_ENCODING_UTF16 = 23,
+    /// HTML (output only), available since 2.14.
+    XML_CHAR_ENCODING_HTML = 24,
+    XML_CHAR_ENCODING_8859_10 = 25,
+    XML_CHAR_ENCODING_8859_11 = 26,
+    XML_CHAR_ENCODING_8859_13 = 27,
+    XML_CHAR_ENCODING_8859_14 = 28,
+    XML_CHAR_ENCODING_8859_15 = 29,
+    XML_CHAR_ENCODING_8859_16 = 30,
+    /// windows-1252, available since 2.15.
+    XML_CHAR_ENCODING_WINDOWS_1252 = 31,
 }
 
 // ── Node types (xmlElementType) ─────────────────────────────────────────

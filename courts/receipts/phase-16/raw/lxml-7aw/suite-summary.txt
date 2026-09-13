@@ -1,0 +1,9 @@
+lxml full suite (test.py -u): 29 raw unique failing ids (28 excluding the known-flaky group)
+fixed this slice:
+  doc/extensions.txt
+  doc/resolvers.txt (34/34 doctest examples)
+  test_xslt_default_parameters
+  test_xslt_document_parse_deny
+  test_xslt_document_parse_deny_all
+regressions: none
+per-file: test_xslt.py 93 passed / 1 failed (test_variable_result_tree_fragment)

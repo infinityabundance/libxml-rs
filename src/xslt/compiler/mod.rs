@@ -367,6 +367,57 @@ unsafe fn resolve_style_href(style: *mut _xsltStylesheet, href: *const xmlChar) 
     }
 }
 
+/// Load and compile an included/imported stylesheet through the registered
+/// `xsltDocLoaderFunc` (upstream imports.c calls `xsltDocDefaultLoader` with
+/// `XSLT_LOAD_STYLESHEET`). This is what lets a consumer's resolver and
+/// access-control machinery participate in `xsl:include`/`xsl:import`
+/// resolution — lxml installs `_xslt_doc_loader`, which reads the resolver
+/// context back out of `style->doc->_private`.
+///
+/// On failure the diagnostic is recorded through `xsltTransformError` and
+/// `style->errors` is bumped (upstream increments at the call site), so a
+/// consumer that checks `style->errors` (lxml's `XSLT.__init__`) sees the
+/// failure.
+///
+/// # SAFETY
+///
+/// - `style` must be a valid stylesheet, `uri` a NUL-terminated string.
+unsafe fn load_style_doc(
+    style: *mut _xsltStylesheet,
+    cur: *mut _xmlNode,
+    uri: *const xmlChar,
+) -> *mut _xsltStylesheet {
+    // XSLT_PARSE_OPTIONS = NOENT | DTDLOAD | DTDATTR | NOCDATA.
+    const XSLT_PARSE_OPTIONS: c_int = 16398;
+    // xsltLoadType: XSLT_LOAD_STYLESHEET.
+    const XSLT_LOAD_STYLESHEET: c_int = 1;
+    let doc = crate::abi::exports_xslt_compile::xslt_doc_default_loader(
+        uri,
+        (*style).dict,
+        XSLT_PARSE_OPTIONS,
+        style as *mut c_void,
+        XSLT_LOAD_STYLESHEET,
+    );
+    if doc.is_null() {
+        let mut m: Vec<u8> = Vec::new();
+        m.extend_from_slice(b"unable to load ");
+        m.extend_from_slice(
+            crate::abi::versioning::c_str_to_bytes(uri as *const c_char).unwrap_or(b""),
+        );
+        m.push(b'\n');
+        m.push(0);
+        crate::xslt::errors::xsltTransformError(
+            ptr::null_mut(),
+            style,
+            cur,
+            m.as_ptr() as *const c_char,
+        );
+        (*style).errors = (*style).errors.wrapping_add(1);
+        return ptr::null_mut();
+    }
+    crate::xslt::stylesheet::xsltParseStylesheetDoc(doc)
+}
+
 /// Compile the top-level elements of a stylesheet.
 ///
 /// # SAFETY
@@ -389,8 +440,7 @@ pub(crate) unsafe fn compile_top_level(
                 let resolved = resolve_style_href(style, href);
                 let mut c = resolved;
                 c.push(0);
-                let imported =
-                    crate::xslt::stylesheet::xsltParseStylesheetFile(c.as_ptr() as *const xmlChar);
+                let imported = load_style_doc(style, child, c.as_ptr() as *const xmlChar);
                 if !imported.is_null() {
                     (*imported).parent = style;
                     (*imported).next = (*style).imports;
@@ -427,9 +477,7 @@ pub(crate) unsafe fn compile_top_level(
                     let resolved = resolve_style_href(style, href);
                     let mut c = resolved;
                     c.push(0);
-                    let included = crate::xslt::stylesheet::xsltParseStylesheetFile(
-                        c.as_ptr() as *const xmlChar
-                    );
+                    let included = load_style_doc(style, child, c.as_ptr() as *const xmlChar);
                     if !included.is_null() {
                         // Compile the included stylesheet's top-level
                         // elements at the same depth.
