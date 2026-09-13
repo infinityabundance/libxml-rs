@@ -1,0 +1,16 @@
+candidate_sha=WORKTREE (evidence for the commit that fixes push recover delivery and input encoding override)
+evidence_kind=parity fix (recover-mode push finalization, xmlCtxtResetPush encoding override)
+debug_libxml2_sha256=e5d995840a957fc2a00eb4eaecaceb6d307e603ab473f41de09f8c29958ac7ad
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=11 raw unique ids (lxml-7bc @ 83fbb791)
+lxml_suite_now=8 raw unique ids
+lxml_fixed=3 (test_feed_parser_recover, test_feed_parser_recover_no_id_dict,
+  test_iterparse_encoding_8bit_override)
+lxml_regressions=0 (filtered delta vs lxml-7bc)
+detail=oracle-matching trees for both recover cases; iso-8859-1 override decodes the tail
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes

@@ -1051,7 +1051,6 @@ pub(crate) unsafe fn parse_chunk(
     } else {
         &[]
     };
-
     // UPSTREAM-PARITY (parser.c xmlParseChunk): a context whose parse was
     // stopped (disableSAX != 0 — xmlStopParser's disableSAX = 2, or the
     // disableSAX = 1 set by any non-recovery fatal error) refuses further
@@ -1208,6 +1207,20 @@ pub(crate) unsafe fn parse_chunk(
     }
 
     if terminate == 0 {
+        // UPSTREAM-PARITY (parser.c xmlParseChunk): recover-mode push input is
+        // accumulated and finalized at the terminating call. The replay
+        // engine's eager partial delivery re-parses the accumulated stream from
+        // a byte offset against live tree state, and the recovery path for a
+        // stray end tag (an ancestor closed while a descendant is open) cannot
+        // tolerate a mid-document restart — the open descendant gets reparented
+        // to the document. A recover parse is not required to deliver events
+        // before close (callers recover the tree from the final document), so
+        // defer: keep the accumulated buffer and deliver nothing until the
+        // terminating call parses everything from byte zero.
+        if unsafe { (*ctxt).options } & crate::abi::types::XML_PARSE_RECOVER != 0 {
+            stash_input_buffer(ctxt, Box::into_raw(Box::new(base)));
+            return 0;
+        }
         // Non-final call. Upstream parses each chunk eagerly: events fire as
         // soon as their construct completed, even when the document is not
         // finished (SP-14.3.1-6 — the XML_OPTION_PARSE_HUGE multi-call flow
@@ -1260,10 +1273,14 @@ pub(crate) unsafe fn parse_chunk(
             // XML_PARSER_EPILOG — the context only reaches XML_PARSER_EOF at
             // the terminating call (or an epilog fatal). Without this reset
             // the next chunk would be swallowed by the EOF gate above
-            // instead of surfacing its epilog content/errors.
-            if unsafe { (*ctxt).wellFormed } != 0
-                && unsafe { (*ctxt).instate }
-                    == crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int
+            // instead of surfacing its epilog content/errors. The reset is
+            // UNCONDITIONAL: with recover=1 a non-final call may deliver a
+            // document whose trailing construct is only an error at EOF, and
+            // the terminating call must still run to recover it (the
+            // `disableSAX` gate, not the EOF gate, is what stops later calls
+            // for a non-recoverable fatality).
+            if unsafe { (*ctxt).instate }
+                == crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int
             {
                 unsafe {
                     (*ctxt).instate =
@@ -1299,6 +1316,14 @@ pub(crate) unsafe fn parse_chunk(
             let mut parser =
                 unsafe { XmlParser::new_with_partial_resume(input_stack, ctxt, delivered) };
             parser.parse_document(); // pauses at the end of the input
+            if unsafe { (*ctxt).instate }
+                == crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int
+            {
+                unsafe {
+                    (*ctxt).instate =
+                        crate::abi::types::xmlParserInputState::XML_PARSER_EPILOG as c_int;
+                }
+            }
             push_state(ctxt).delivered_bytes = base.len();
             stash_input_buffer(ctxt, Box::into_raw(Box::new(base)));
             return 0;
@@ -1319,6 +1344,14 @@ pub(crate) unsafe fn parse_chunk(
         let mut parser =
             unsafe { XmlParser::new_with_partial_resume(input_stack, ctxt, delivered) };
         parser.parse_document(); // stops at the truncated construct
+        if unsafe { (*ctxt).instate }
+            == crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int
+        {
+            unsafe {
+                (*ctxt).instate =
+                    crate::abi::types::xmlParserInputState::XML_PARSER_EPILOG as c_int;
+            }
+        }
         let boundary = parser.truncated_offset().unwrap_or(base.len());
         if boundary > delivered {
             push_state(ctxt).delivered_bytes = boundary;

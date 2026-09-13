@@ -1834,7 +1834,17 @@ impl InputBuffer {
                 self.line = 1;
                 self.bom_consumed = false;
                 self.converted_to_utf8 = true;
-                self.encoding = Encoding::Utf8;
+                // UPSTREAM-PARITY (parser.c xmlSwitchEncoding): the caller's
+                // encoding governs the WHOLE stream, not just the bytes seen so
+                // far. Keep the native encoding identity so `append_decided`
+                // transcodes every later chunk through the same single-byte
+                // handler — a UTF-8 identity would append the raw tail and
+                // mis-decode it.
+                self.encoding = match lower.as_str() {
+                    "iso-8859-1" | "iso8859-1" | "latin1" | "latin-1" => Encoding::Iso8859_1,
+                    "windows-1252" | "cp1252" => Encoding::Other("windows-1252".to_string()),
+                    _ => Encoding::Utf8,
+                };
                 true
             }
             None => false,

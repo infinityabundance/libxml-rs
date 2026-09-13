@@ -1,0 +1,7 @@
+lxml full suite (test.py -u): 8 raw unique failing ids
+fixed this slice:
+  test_feed_parser_recover
+  test_feed_parser_recover_no_id_dict
+  test_iterparse_encoding_8bit_override
+regressions: none
+remaining clusters: HTTP IO (4), isoschematron (3), variable_result_tree_fragment (1)
