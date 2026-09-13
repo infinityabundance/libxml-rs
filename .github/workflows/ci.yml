@@ -45,6 +45,20 @@ jobs:
       - name: regression court
         run: sh tools/courts/regression.sh
 
+  corpus:
+    name: §16.10 real-world XML corpus seal
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Validates the committed artifacts of record (manifest + generated
+      # diversity report) against §16.10: exactly 100 entries, the exact
+      # category distribution, full provenance + SHA-256 on every entry, and
+      # every §16.10.6 composition dimension present. Fails closed. Needs no
+      # file cache and no network.
+      - name: corpus seal
+        run: python3 tools/bench/corpus_seal.py
+
   fuzz:
     name: coverage-guided fuzz smoke (nightly)
     runs-on: ubuntu-latest

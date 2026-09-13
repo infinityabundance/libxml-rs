@@ -1,0 +1,10 @@
+# §16.10 corpus cache. The 100 real-world XML files are retrieved from their
+# recorded sources into this cache and are NOT redistributed from the
+# repository: per-file redistribution is only committed once it has been
+# explicitly verified (manifest `redistributable` / `redistribution_verified`).
+# Committed evidence is `manifest.json` + `corpus-report.json` + the fetcher.
+downloads/
+files/
+state.json
+__pycache__/
+*.pyc
