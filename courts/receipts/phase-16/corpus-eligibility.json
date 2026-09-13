@@ -1,0 +1,5867 @@
+{
+ "schema": "corpus-eligibility/1",
+ "phase": "16.11",
+ "revision": 1,
+ "frozen_at": "2026-09-13T23:40:33Z",
+ "input_basis": {
+  "manifest_sha256": "fed7faf831bf12e09e405ced9e556de1e46e14626b99d1f5c58b6a85f7740c27",
+  "report_sha256": "cef98f4440260c4bad43e78d8d0b280918ec1a61933589587053f03b88212859",
+  "policy_sha256": "4677110ffa4b2572ba6fc814ad9d990c55369335c0990fe644919a1eac52c854",
+  "performance_data_used": false,
+  "note": "Eligibility is computed only from manifest metadata and the predeclared resource/policy tables; no candidate timing influences it (§16.11)."
+ },
+ "consumers": [
+  "xmllint",
+  "xsltproc",
+  "python3-lxml",
+  "ruby-nokogiri",
+  "php"
+ ],
+ "operations": {
+  "xmllint": [
+   "parse",
+   "stream",
+   "xpath",
+   "dtd_validate",
+   "xsd_validate",
+   "relaxng_validate",
+   "serialize"
+  ],
+  "xsltproc": [
+   "transform",
+   "stylesheet_compile",
+   "precompiled_apply"
+  ],
+  "python3-lxml": [
+   "dom_parse",
+   "iterparse",
+   "xpath_adhoc",
+   "xpath_compiled",
+   "xpath_compile",
+   "tostring",
+   "xslt",
+   "dtd_validate",
+   "xsd_validate"
+  ],
+  "ruby-nokogiri": [
+   "dom_parse",
+   "sax_parse",
+   "reader",
+   "xpath",
+   "serialize",
+   "xsd_validate",
+   "xslt"
+  ],
+  "php": [
+   "dom",
+   "xmlreader",
+   "simplexml",
+   "domxpath",
+   "xsltprocessor",
+   "serialize"
+  ]
+ },
+ "policy": {
+  "xslt_max_bytes": 67108864,
+  "simplexml_max_bytes": 33554432,
+  "xslt_max_reason": "DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+  "simplexml_max_reason": "SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate"
+ },
+ "resources": {
+  "families": {
+   "JATS-PMC": {
+    "xpath": [
+     "article_title",
+     "authors",
+     "references",
+     "section_count",
+     "descendant_text"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "jats-extract-metadata"
+    }
+   },
+   "SEC-XBRL": {
+    "xpath": [
+     "facts_by_namespace_localname",
+     "contexts",
+     "units",
+     "numeric_facts"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "xbrl-facts-extract"
+    }
+   },
+   "OSM": {
+    "xpath": [
+     "nodes",
+     "ways",
+     "tags_by_key",
+     "relation_members"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "osm-node-summary"
+    }
+   },
+   "DBLP": {
+    "xpath": [
+     "publication_counts_by_type",
+     "title_select",
+     "author_select"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "pubmed-record-summary"
+    }
+   },
+   "AOSP": {
+    "xpath": [
+     "namespace_qualified_attributes",
+     "activity_service_permission"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "android-permissions-extract"
+    }
+   },
+   "MAVEN": {
+    "xpath": [
+     "dependencies",
+     "plugins",
+     "properties"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "maven-dependencies-extract"
+    }
+   },
+   "TEI": {
+    "xpath": [
+     "sections",
+     "paragraphs",
+     "ids_xrefs"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "upstream",
+     "name": "TEIC/Stylesheets",
+     "ref": "TEIC/Stylesheets@cda7f87ead3d52629556b1d24726ffc1d042be61"
+    }
+   },
+   "DOCBOOK": {
+    "xpath": [
+     "sections",
+     "paragraphs",
+     "ids_xrefs"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "upstream",
+     "name": "docbook/xslt10-stylesheets",
+     "ref": "docbook/xslt10-stylesheets@efd62655c11cc8773708df7a843613fa1e932bf8"
+    }
+   },
+   "MUSICXML": {
+    "xpath": [
+     "measures",
+     "notes",
+     "pitch_descendants"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "musicxml-structure-extract"
+    }
+   },
+   "SVG": {
+    "xpath": [
+     "paths",
+     "groups",
+     "selected_attributes"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "svg-attribute-transform"
+    }
+   },
+   "GPX-KML": {
+    "xpath": [
+     "trkpt",
+     "placemarks",
+     "coordinates"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "gpx-track-summary"
+    }
+   },
+   "RSS-ATOM": {
+    "xpath": [
+     "items_entries",
+     "titles",
+     "links"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "feed-items-summary"
+    }
+   },
+   "SOAP-WSDL-XSD": {
+    "xpath": [
+     "porttype_operations",
+     "schema_elements",
+     "messages"
+    ],
+    "xslt": {
+     "available": true,
+     "kind": "generic-fixed",
+     "name": "wsdl-operations-extract"
+    }
+   }
+  },
+  "xsd_families": {
+   "MAVEN": {
+    "schema": "http://maven.apache.org/xsd/maven-4.0.0.xsd",
+    "target": "instance",
+    "root": "project"
+   }
+  }
+ },
+ "entries": [
+  {
+   "id": "jats-001",
+   "category": "JATS-PMC",
+   "bytes": 349039,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "JATS-archivearticle1-4-mathml3.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "jats-002",
+   "category": "JATS-PMC",
+   "bytes": 325489,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "jats-003",
+   "category": "JATS-PMC",
+   "bytes": 94004,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "jats-004",
+   "category": "JATS-PMC",
+   "bytes": 64333,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "JATS-archivearticle1-4-mathml3.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "jats-005",
+   "category": "JATS-PMC",
+   "bytes": 39091,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "JATS-archivearticle1-4-mathml3.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "jats-006",
+   "category": "JATS-PMC",
+   "bytes": 25859,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "jats-007",
+   "category": "JATS-PMC",
+   "bytes": 21098,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "JATS-archivearticle1-4-mathml3.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "jats-008",
+   "category": "JATS-PMC",
+   "bytes": 177553,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "JATS-archivearticle1-4-mathml3.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "jats-009",
+   "category": "JATS-PMC",
+   "bytes": 164293,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "jats-010",
+   "category": "JATS-PMC",
+   "bytes": 127964,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "secxbrl-001",
+   "category": "SEC-XBRL",
+   "bytes": 1319640,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "secxbrl-002",
+   "category": "SEC-XBRL",
+   "bytes": 8853334,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "secxbrl-003",
+   "category": "SEC-XBRL",
+   "bytes": 4492382,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "secxbrl-004",
+   "category": "SEC-XBRL",
+   "bytes": 2271110,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "secxbrl-005",
+   "category": "SEC-XBRL",
+   "bytes": 1526964,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "secxbrl-006",
+   "category": "SEC-XBRL",
+   "bytes": 1136477,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "secxbrl-007",
+   "category": "SEC-XBRL",
+   "bytes": 2281159,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "secxbrl-008",
+   "category": "SEC-XBRL",
+   "bytes": 20407,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "osm-001",
+   "category": "OSM",
+   "bytes": 167944732,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "xmlreader"
+    ]
+   },
+   "excluded": [
+    "php:simplexml:SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate",
+    "php:xsltprocessor:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "python3-lxml:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family",
+    "xsltproc:precompiled_apply:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:stylesheet_compile:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:transform:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "osm-002",
+   "category": "OSM",
+   "bytes": 797144886,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "xmlreader"
+    ]
+   },
+   "excluded": [
+    "php:simplexml:SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate",
+    "php:xsltprocessor:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "python3-lxml:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family",
+    "xsltproc:precompiled_apply:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:stylesheet_compile:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:transform:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "osm-003",
+   "category": "OSM",
+   "bytes": 177651387,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "xmlreader"
+    ]
+   },
+   "excluded": [
+    "php:simplexml:SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate",
+    "php:xsltprocessor:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "python3-lxml:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family",
+    "xsltproc:precompiled_apply:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:stylesheet_compile:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:transform:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "osm-004",
+   "category": "OSM",
+   "bytes": 87696466,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "xmlreader"
+    ]
+   },
+   "excluded": [
+    "php:simplexml:SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate",
+    "php:xsltprocessor:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "python3-lxml:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family",
+    "xsltproc:precompiled_apply:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:stylesheet_compile:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:transform:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "osm-005",
+   "category": "OSM",
+   "bytes": 1028793700,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "xmlreader"
+    ]
+   },
+   "excluded": [
+    "php:simplexml:SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate",
+    "php:xsltprocessor:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "python3-lxml:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family",
+    "xsltproc:precompiled_apply:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:stylesheet_compile:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:transform:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "osm-006",
+   "category": "OSM",
+   "bytes": 1440317789,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "xmlreader"
+    ]
+   },
+   "excluded": [
+    "php:simplexml:SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate",
+    "php:xsltprocessor:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "python3-lxml:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family",
+    "xsltproc:precompiled_apply:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:stylesheet_compile:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:transform:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "osm-007",
+   "category": "OSM",
+   "bytes": 2341347891,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "xmlreader"
+    ]
+   },
+   "excluded": [
+    "php:simplexml:SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate",
+    "php:xsltprocessor:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "python3-lxml:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family",
+    "xsltproc:precompiled_apply:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:stylesheet_compile:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:transform:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "osm-008",
+   "category": "OSM",
+   "bytes": 2738954768,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "xmlreader"
+    ]
+   },
+   "excluded": [
+    "php:simplexml:SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate",
+    "php:xsltprocessor:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "python3-lxml:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family",
+    "xsltproc:precompiled_apply:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:stylesheet_compile:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:transform:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "dblp-001",
+   "category": "DBLP",
+   "bytes": 195452577,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "xmlreader"
+    ]
+   },
+   "excluded": [
+    "php:simplexml:SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate",
+    "php:xsltprocessor:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "python3-lxml:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xslt:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family",
+    "xsltproc:precompiled_apply:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:stylesheet_compile:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
+    "xsltproc:transform:DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_250101.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "aosp-001",
+   "category": "AOSP",
+   "bytes": 438344,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "aosp-002",
+   "category": "AOSP",
+   "bytes": 267416,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "aosp-003",
+   "category": "AOSP",
+   "bytes": 55140,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "aosp-004",
+   "category": "AOSP",
+   "bytes": 483491,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "aosp-005",
+   "category": "AOSP",
+   "bytes": 242992,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "aosp-006",
+   "category": "AOSP",
+   "bytes": 3160,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "aosp-007",
+   "category": "AOSP",
+   "bytes": 1776,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "aosp-008",
+   "category": "AOSP",
+   "bytes": 966608,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "aosp-009",
+   "category": "AOSP",
+   "bytes": 1608,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "aosp-010",
+   "category": "AOSP",
+   "bytes": 900,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "maven-001",
+   "category": "MAVEN",
+   "bytes": 30894,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath",
+     "xsd_validate"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xsd_validate",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xsd_validate",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://maven.apache.org/maven-v4_0_0.xsd",
+     "http://maven.apache.org/xsd/maven-4.0.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "maven-002",
+   "category": "MAVEN",
+   "bytes": 18529,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath",
+     "xsd_validate"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xsd_validate",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xsd_validate",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://maven.apache.org/xsd/maven-4.0.0.xsd",
+     "https://maven.apache.org/xsd/maven-4.0.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "maven-003",
+   "category": "MAVEN",
+   "bytes": 12547,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath",
+     "xsd_validate"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xsd_validate",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xsd_validate",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://maven.apache.org/maven-v4_0_0.xsd",
+     "http://maven.apache.org/xsd/maven-4.0.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "maven-004",
+   "category": "MAVEN",
+   "bytes": 2015,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath",
+     "xsd_validate"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xsd_validate",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xsd_validate",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://maven.apache.org/xsd/maven-4.0.0.xsd",
+     "https://maven.apache.org/xsd/maven-4.0.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "maven-005",
+   "category": "MAVEN",
+   "bytes": 21362,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath",
+     "xsd_validate"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xsd_validate",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xsd_validate",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://maven.apache.org/xsd/maven-4.0.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "maven-006",
+   "category": "MAVEN",
+   "bytes": 3205,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath",
+     "xsd_validate"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xsd_validate",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xsd_validate",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://maven.apache.org/xsd/maven-4.0.0.xsd",
+     "https://maven.apache.org/xsd/maven-4.0.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "maven-007",
+   "category": "MAVEN",
+   "bytes": 7535,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath",
+     "xsd_validate"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xsd_validate",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xsd_validate",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://maven.apache.org/xsd/maven-4.0.0.xsd",
+     "https://maven.apache.org/xsd/maven-4.0.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "maven-008",
+   "category": "MAVEN",
+   "bytes": 3184,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath",
+     "xsd_validate"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xsd_validate",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xsd_validate",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://maven.apache.org/xsd/maven-4.0.0.xsd",
+     "https://maven.apache.org/xsd/maven-4.0.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "maven-009",
+   "category": "MAVEN",
+   "bytes": 2826,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath",
+     "xsd_validate"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xsd_validate",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xsd_validate",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://maven.apache.org/xsd/maven-4.0.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "maven-010",
+   "category": "MAVEN",
+   "bytes": 1816,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath",
+     "xsd_validate"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xsd_validate",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xsd_validate",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://maven.apache.org/xsd/maven-4.0.0.xsd",
+     "https://maven.apache.org/xsd/maven-4.0.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "tei-001",
+   "category": "TEI",
+   "bytes": 561358,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "tei-002",
+   "category": "TEI",
+   "bytes": 357305,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "tei-003",
+   "category": "TEI",
+   "bytes": 181374,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "tei-004",
+   "category": "TEI",
+   "bytes": 104923,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "tei-005",
+   "category": "TEI",
+   "bytes": 81989,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "tei-006",
+   "category": "TEI",
+   "bytes": 73926,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "tei-007",
+   "category": "TEI",
+   "bytes": 53705,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "tei-008",
+   "category": "TEI",
+   "bytes": 45987,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "tei-009",
+   "category": "TEI",
+   "bytes": 32526,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "tei-010",
+   "category": "TEI",
+   "bytes": 326009,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "musicxml-001",
+   "category": "MUSICXML",
+   "bytes": 675006,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.musicxml.org/dtds/partwise.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "musicxml-002",
+   "category": "MUSICXML",
+   "bytes": 931062,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.musicxml.org/dtds/partwise.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "musicxml-003",
+   "category": "MUSICXML",
+   "bytes": 888238,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.musicxml.org/dtds/partwise.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "musicxml-004",
+   "category": "MUSICXML",
+   "bytes": 808790,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.musicxml.org/dtds/partwise.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "musicxml-005",
+   "category": "MUSICXML",
+   "bytes": 371211,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.musicxml.org/dtds/partwise.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "musicxml-006",
+   "category": "MUSICXML",
+   "bytes": 226438,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.musicxml.org/dtds/partwise.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "musicxml-007",
+   "category": "MUSICXML",
+   "bytes": 102397,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.musicxml.org/dtds/partwise.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "musicxml-008",
+   "category": "MUSICXML",
+   "bytes": 871224,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.musicxml.org/dtds/partwise.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "musicxml-009",
+   "category": "MUSICXML",
+   "bytes": 1216993,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.musicxml.org/dtds/partwise.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "musicxml-010",
+   "category": "MUSICXML",
+   "bytes": 1139536,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.musicxml.org/dtds/partwise.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "svg-001",
+   "category": "SVG",
+   "bytes": 153,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "svg-002",
+   "category": "SVG",
+   "bytes": 160,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "svg-003",
+   "category": "SVG",
+   "bytes": 3744,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "svg-004",
+   "category": "SVG",
+   "bytes": 5948,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "svg-005",
+   "category": "SVG",
+   "bytes": 19553,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "svg-006",
+   "category": "SVG",
+   "bytes": 101277,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "svg-007",
+   "category": "SVG",
+   "bytes": 146290,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "svg-008",
+   "category": "SVG",
+   "bytes": 262874,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "docbook-001",
+   "category": "DOCBOOK",
+   "bytes": 1198279,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "docbook-002",
+   "category": "DOCBOOK",
+   "bytes": 196880,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "docbook-003",
+   "category": "DOCBOOK",
+   "bytes": 83043,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "docbook-004",
+   "category": "DOCBOOK",
+   "bytes": 44033,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "docbook-005",
+   "category": "DOCBOOK",
+   "bytes": 32466,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "docbook-006",
+   "category": "DOCBOOK",
+   "bytes": 20030,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "docbook-007",
+   "category": "DOCBOOK",
+   "bytes": 10372,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "docbook-008",
+   "category": "DOCBOOK",
+   "bytes": 27697,
+   "eligible": {
+    "xmllint": [
+     "dtd_validate",
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "dtd_validate",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [
+     "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd"
+    ],
+    "xsd": []
+   }
+  },
+  {
+   "id": "gpxkml-001",
+   "category": "GPX-KML",
+   "bytes": 130,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "gpxkml-002",
+   "category": "GPX-KML",
+   "bytes": 7366,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "gpxkml-003",
+   "category": "GPX-KML",
+   "bytes": 36766,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "gpxkml-004",
+   "category": "GPX-KML",
+   "bytes": 160310,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "gpxkml-005",
+   "category": "GPX-KML",
+   "bytes": 12826,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "gpxkml-006",
+   "category": "GPX-KML",
+   "bytes": 1714132,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "gpxkml-007",
+   "category": "GPX-KML",
+   "bytes": 12499169,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "rssatom-001",
+   "category": "RSS-ATOM",
+   "bytes": 10191,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "rssatom-002",
+   "category": "RSS-ATOM",
+   "bytes": 9501,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "rssatom-003",
+   "category": "RSS-ATOM",
+   "bytes": 157701,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "rssatom-004",
+   "category": "RSS-ATOM",
+   "bytes": 1940,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "rssatom-005",
+   "category": "RSS-ATOM",
+   "bytes": 1615,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "soapwsdl-001",
+   "category": "SOAP-WSDL-XSD",
+   "bytes": 13641,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://www.springframework.org/schema/beans/spring-beans-3.0.xsd",
+     "http://www.springframework.org/schema/tool/spring-tool-3.0.xsd"
+    ]
+   }
+  },
+  {
+   "id": "soapwsdl-002",
+   "category": "SOAP-WSDL-XSD",
+   "bytes": 2824,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "soapwsdl-003",
+   "category": "SOAP-WSDL-XSD",
+   "bytes": 3407,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "../schemas/configuration/bar.xsd"
+    ]
+   }
+  },
+  {
+   "id": "soapwsdl-004",
+   "category": "SOAP-WSDL-XSD",
+   "bytes": 19500,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": []
+   }
+  },
+  {
+   "id": "soapwsdl-005",
+   "category": "SOAP-WSDL-XSD",
+   "bytes": 78544,
+   "eligible": {
+    "xmllint": [
+     "parse",
+     "serialize",
+     "stream",
+     "xpath"
+    ],
+    "xsltproc": [
+     "precompiled_apply",
+     "stylesheet_compile",
+     "transform"
+    ],
+    "python3-lxml": [
+     "dom_parse",
+     "iterparse",
+     "tostring",
+     "xpath_adhoc",
+     "xpath_compile",
+     "xpath_compiled",
+     "xslt"
+    ],
+    "ruby-nokogiri": [
+     "dom_parse",
+     "reader",
+     "sax_parse",
+     "serialize",
+     "xpath",
+     "xslt"
+    ],
+    "php": [
+     "dom",
+     "domxpath",
+     "serialize",
+     "simplexml",
+     "xmlreader",
+     "xsltprocessor"
+    ]
+   },
+   "excluded": [
+    "python3-lxml:dtd_validate:no DOCTYPE present",
+    "python3-lxml:xsd_validate:no available instance schema target for this family",
+    "ruby-nokogiri:xsd_validate:no available instance schema target for this family",
+    "xmllint:dtd_validate:no DOCTYPE present",
+    "xmllint:relaxng_validate:no RelaxNG schema resource available",
+    "xmllint:xsd_validate:no available instance schema target for this family"
+   ],
+   "dependencies": {
+    "dtd": [],
+    "xsd": [
+     "http://www.w3.org/2001/xml.xsd",
+     "http://www.w3.org/XML/2008/06/xlink.xsd"
+    ]
+   }
+  }
+ ],
+ "summary": {
+  "files": 100,
+  "per_consumer_operation_counts": {
+   "xmllint": {
+    "parse": 100,
+    "stream": 100,
+    "xpath": 100,
+    "dtd_validate": 22,
+    "xsd_validate": 10,
+    "relaxng_validate": 0,
+    "serialize": 100
+   },
+   "xsltproc": {
+    "transform": 91,
+    "stylesheet_compile": 91,
+    "precompiled_apply": 91
+   },
+   "python3-lxml": {
+    "dom_parse": 100,
+    "iterparse": 100,
+    "xpath_adhoc": 100,
+    "xpath_compiled": 100,
+    "xpath_compile": 100,
+    "tostring": 100,
+    "xslt": 91,
+    "dtd_validate": 22,
+    "xsd_validate": 10
+   },
+   "ruby-nokogiri": {
+    "dom_parse": 100,
+    "sax_parse": 100,
+    "reader": 100,
+    "xpath": 100,
+    "serialize": 100,
+    "xsd_validate": 10,
+    "xslt": 91
+   },
+   "php": {
+    "dom": 100,
+    "xmlreader": 100,
+    "simplexml": 91,
+    "domxpath": 100,
+    "xsltprocessor": 91,
+    "serialize": 100
+   }
+  },
+  "files_with_dtd_validation": 22,
+  "files_with_xsd_validation": 10,
+  "files_with_xslt": 91,
+  "files_with_simplexml": 91
+ },
+ "amendments": []
+}

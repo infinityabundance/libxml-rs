@@ -59,6 +59,13 @@ jobs:
       - name: corpus seal
         run: python3 tools/bench/corpus_seal.py
 
+      # §16.11: eligibility was frozen before any candidate timing. This
+      # recomputes the matrix from the manifest + policy and fails on drift; a
+      # deliberate change must go through `--amend "<rationale>"` (an explicit
+      # amendment receipt).
+      - name: consumer-eligibility freeze
+        run: python3 tools/bench/corpus_eligibility.py --check
+
   fuzz:
     name: coverage-guided fuzz smoke (nightly)
     runs-on: ubuntu-latest
