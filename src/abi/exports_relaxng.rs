@@ -834,11 +834,12 @@ pub const unsafe extern "C" fn xmlRelaxNGValidatePushCData(
 pub(crate) unsafe fn dispatch_relaxng_valid_errors(
     ctxt_addr: usize,
     msgs: &[String],
+    meta: &[(i32, i32)],
     node: *mut c_void,
 ) {
     let state = VALID_CTXT_STATE.lock().get(&ctxt_addr).copied();
     if let Some(st) = state {
-        for m in msgs {
+        for (i, m) in msgs.iter().enumerate() {
             // UPSTREAM-PARITY: upstream relaxng validity messages end with a
             // newline; PHP's libxml error handler only RAISES messages with a
             // trailing newline (php_libxml_internal_error_handler_ex).
@@ -857,13 +858,14 @@ pub(crate) unsafe fn dispatch_relaxng_valid_errors(
                 unsafe { cb(st.ctx.0, cstr.as_ptr()) };
             }
             if let Some(cb) = st.serror {
+                let (code, line) = meta.get(i).copied().unwrap_or((0, 0));
                 let err_rec = _xmlError {
                     domain: XML_FROM_RELAXNGV,
-                    code: 0,
+                    code,
                     message: cstr.as_ptr() as *mut c_char,
                     level: XML_ERR_ERROR as c_int,
                     file: ptr::null_mut(),
-                    line: 0,
+                    line,
                     str1: ptr::null_mut(),
                     str2: ptr::null_mut(),
                     str3: ptr::null_mut(),
@@ -976,9 +978,10 @@ pub unsafe extern "C" fn xmlRelaxNGValidatePopElement(
     // SAFETY: ctxt is a live Box<RelaxNgValidCtxt> from the ABI layer.
     let valid = unsafe { &mut *(ctxt as *mut RelaxNgValidCtxt) };
     let msgs: Vec<String> = std::mem::take(&mut valid.errors);
+    let meta = std::mem::take(&mut valid.error_meta);
     valid.nb_errors = 0;
 
-    unsafe { dispatch_relaxng_valid_errors(ctxt as usize, &msgs, elem as *mut c_void) };
+    unsafe { dispatch_relaxng_valid_errors(ctxt as usize, &msgs, &meta, elem as *mut c_void) };
     0
 }
 

@@ -2791,19 +2791,26 @@ impl XmlParser {
             } else {
                 // Internal: quoted value.
                 let value = read_quoted(tail);
-                // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): the raw
-                // value text is kept as the entity's `orig`, so dumps print
-                // it verbatim (bug67081: a parameter-entity reference such
-                // as `%coreattrs;` inside the value stays raw instead of
-                // being %-escaped by the no-orig fallback path).
-                let v = value.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+                // UPSTREAM-PARITY (parser.c xmlParseEntityValue): the VALUE is
+                // decoded for character references (`&#x40;` -> `@`) while the
+                // raw literal is kept as the entity's `orig`; general entity
+                // references are deliberately NOT expanded here. lxml's
+                // `entity.content` reads the decoded value and `entity.orig`
+                // the raw one.
+                let raw = value.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+                let decoded: Option<Vec<u8>> = value.as_ref().map(|b| decode_entity_charrefs(b));
+                let v = raw;
+                let content = decoded
+                    .as_ref()
+                    .map(|b| Self::vec_to_cstr_null(b.as_slice()))
+                    .unwrap_or(ptr::null());
                 crate::xml::entities::add_entity_with_orig(
                     dtd,
                     name_cstr,
                     etype,
                     ptr::null(),
                     ptr::null(),
-                    v,
+                    content,
                     v,
                 );
                 self.fire_entity_decl(
@@ -2811,11 +2818,14 @@ impl XmlParser {
                     etype,
                     ptr::null(),
                     ptr::null(),
-                    v as *mut xmlChar,
+                    content as *mut xmlChar,
                     decl_end_abs,
                 );
                 if !v.is_null() {
                     crate::abi::allocator::xmlFreeImpl(v as *mut c_void);
+                }
+                if !content.is_null() {
+                    crate::abi::allocator::xmlFreeImpl(content as *mut c_void);
                 }
             }
             crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
@@ -8625,5 +8635,55 @@ unsafe fn snprintf_children_list(first: *mut crate::abi::structs::_xmlNode) -> S
         cur = c.next;
     }
     out.push(')');
+    out
+}
+
+/// Decode `&#NNN;` / `&#xHH;` character references inside an entity declaration
+/// value.
+///
+/// UPSTREAM-PARITY (parser.c `xmlParseEntityValue` -> `xmlStringLenDecodeEntities`
+/// with `XML_SUBSTITUTE_REF`): only character references are decoded; general
+/// entity references (`&name;`) are deliberately left verbatim ("an entity of
+/// the form `&foo;%bar;` is handled as a string, not a mix of entity refs").
+/// The decoded text becomes `xmlEntity->content`, while the raw literal is kept
+/// as `xmlEntity->orig`.
+fn decode_entity_charrefs(input: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(input.len());
+    let mut i = 0;
+    while i < input.len() {
+        if input[i] == b'&' && i + 1 < input.len() && input[i + 1] == b'#' {
+            let mut j = i + 2;
+            let hex = j < input.len() && (input[j] == b'x' || input[j] == b'X');
+            if hex {
+                j += 1;
+            }
+            let digits_start = j;
+            while j < input.len()
+                && if hex {
+                    input[j].is_ascii_hexdigit()
+                } else {
+                    input[j].is_ascii_digit()
+                }
+            {
+                j += 1;
+            }
+            if j > digits_start && j < input.len() && input[j] == b';' {
+                let s = core::str::from_utf8(&input[digits_start..j]).unwrap_or("");
+                let cp = if hex {
+                    u32::from_str_radix(s, 16).ok()
+                } else {
+                    s.parse::<u32>().ok()
+                };
+                if let Some(ch) = cp.filter(|c| *c != 0).and_then(char::from_u32) {
+                    let mut buf = [0u8; 4];
+                    out.extend_from_slice(ch.encode_utf8(&mut buf).as_bytes());
+                    i = j + 1;
+                    continue;
+                }
+            }
+        }
+        out.push(input[i]);
+        i += 1;
+    }
     out
 }

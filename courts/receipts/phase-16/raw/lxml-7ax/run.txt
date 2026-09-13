@@ -1,0 +1,15 @@
+candidate_sha=WORKTREE (evidence for the commit that implements xmlSchemaSAXPlug interception)
+evidence_kind=parity fix (XML Schema parse-time validation plug + datatype diagnostics)
+debug_libxml2_sha256=c3c8a91cdbe376137f33bc126f16c2d5acb8917abefb68d8a36a22cf35435e80
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=29 raw unique ids (lxml-7aw @ 7012eeb0), 28 excluding the flaky group
+lxml_suite_now=25 raw unique ids, 24 excluding the flaky group
+lxml_fixed=4 (doc/validation.txt, test_xmlschema_parse, test_xmlschema_stringio,
+  test_xmlschema_iterparse_fail)
+lxml_regressions=0 (filtered delta vs lxml-7aw)
+detail=doc/validation.txt 91/91 examples pass; test_xmlschema.py 27 passed / 0 failed
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+tree_clean=yes

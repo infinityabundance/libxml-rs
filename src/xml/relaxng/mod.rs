@@ -349,6 +349,16 @@ pub struct RelaxNgValidCtxt {
     pub schema: Option<RelaxNgSchema>,
     /// Accumulated validation errors.
     pub errors: Vec<String>,
+    /// Per-error metadata `(code, source line)`, parallel to `errors`. The
+    /// message list alone cannot carry the `xmlRelaxNGValidError` code or the
+    /// node's line, both of which consumers observe through the structured
+    /// error channel (lxml renders
+    /// `<string>:<line>:0:ERROR:RELAXNGV:<CODE>:<message>`).
+    pub error_meta: Vec<(i32, i32)>,
+    /// `xmlRelaxNGValidError` code applied to the next `record_error`.
+    pub cur_code: i32,
+    /// Source line applied to the next `record_error`.
+    pub cur_line: i32,
     /// Number of validation errors.
     pub nb_errors: i32,
     /// Current element path (stack of element names).
@@ -364,6 +374,9 @@ impl RelaxNgValidCtxt {
         Self {
             schema: None,
             errors: Vec::new(),
+            error_meta: Vec::new(),
+            cur_code: 0,
+            cur_line: 0,
             nb_errors: 0,
             path: Vec::new(),
             depth_max: 256,
@@ -373,8 +386,16 @@ impl RelaxNgValidCtxt {
 
     /// Record a validation error.
     pub fn record_error(&mut self, msg: String) {
+        self.error_meta.push((self.cur_code, self.cur_line));
         self.errors.push(msg);
         self.nb_errors += 1;
+    }
+
+    /// Set the context for subsequent `record_error` calls (upstream
+    /// `xmlRelaxNGAddValidError` reports against `ctxt->node`).
+    pub fn set_error_context(&mut self, code: i32, line: i32) {
+        self.cur_code = code;
+        self.cur_line = line;
     }
 
     /// Get the current path as a string (e.g., "/root/child").
@@ -2017,6 +2038,11 @@ fn rng_validate_element_pattern(
             return false;
         }
 
+        // UPSTREAM-PARITY (relaxng.c xmlRelaxNGAddValidError): errors are
+        // reported against `ctxt->node`, so record the element's source line
+        // for the diagnostics raised while matching this element.
+        ctxt.cur_line = (*node).line as i32;
+
         let node_name = get_node_qname(node);
 
         // Name class check against the LOCAL name (a prefixed document must
@@ -2059,6 +2085,7 @@ fn rng_validate_element_pattern(
         let attrs_ok = attr_ends.iter().any(|&e| e == attrs.len());
         if !attrs_ok {
             ctxt.errors.truncate(saved_err);
+            ctxt.error_meta.truncate(saved_err);
             ctxt.nb_errors = saved_nb;
             ctxt.record_error(format!(
                 "Element '{}': attribute content does not match the schema",
@@ -2115,6 +2142,7 @@ fn rng_validate_element_pattern(
         let content_ok = ends.iter().any(|&e| e == children.len());
         if !content_ok {
             ctxt.errors.truncate(saved_err2);
+            ctxt.error_meta.truncate(saved_err2);
             ctxt.nb_errors = saved_nb2;
             // UPSTREAM-PARITY (relaxng.c XML_RELAXNG_ERR_ELEMWRONG): report the
             // first child the content model could not consume. The message is
@@ -2122,6 +2150,7 @@ fn rng_validate_element_pattern(
             // DOMDocument_relaxNGValidate_error1 matches it verbatim).
             let max_end = ends.iter().copied().max().unwrap_or(0);
             if max_end < children.len() {
+                ctxt.cur_code = 38; // XML_RELAXNG_ERR_ELEMWRONG
                 ctxt.record_error(format!(
                     "Did not expect element {} there",
                     get_local_name(children[max_end])
@@ -2264,6 +2293,7 @@ fn rng_validate_content(
             let extra_name = get_node_qname(child_nodes[child_idx]);
             // UPSTREAM-PARITY (relaxng.c xmlRelaxNGValidateElement, error
             // XML_RELAXNG_ERR_ELEMWRONG): "Did not expect element %s there".
+            ctxt.cur_code = 38; // XML_RELAXNG_ERR_ELEMWRONG
             ctxt.record_error(format!("Did not expect element {} there", extra_name));
             valid = false;
         }
@@ -2470,6 +2500,7 @@ fn rng_validate_choice_pattern(
 
             // Restore error state (choice means at least one alternative must pass)
             ctxt.errors.truncate(saved_errors);
+            ctxt.error_meta.truncate(saved_errors);
             ctxt.nb_errors = saved_nb;
         }
 
@@ -2608,6 +2639,7 @@ fn rng_validate_interleave_pattern(
 
                     // Restore errors for this attempt
                     ctxt.errors.truncate(saved_errors);
+                    ctxt.error_meta.truncate(saved_errors);
                     ctxt.nb_errors = saved_nb;
                 }
                 child = (*child).next;
@@ -2666,6 +2698,7 @@ fn rng_validate_zero_or_more(
                     // This child doesn't match the zeroOrMore pattern
                     // Restore errors and stop
                     ctxt.errors.truncate(saved_errors);
+                    ctxt.error_meta.truncate(saved_errors);
                     ctxt.nb_errors = saved_nb;
                     break;
                 }
@@ -2714,6 +2747,7 @@ fn rng_validate_one_or_more(
                 } else {
                     // Restore errors and stop
                     ctxt.errors.truncate(saved_errors);
+                    ctxt.error_meta.truncate(saved_errors);
                     ctxt.nb_errors = saved_nb;
                     break;
                 }
@@ -2759,6 +2793,7 @@ fn rng_validate_optional_pattern(
         if !result {
             // Restore errors — it's okay that optional didn't match
             ctxt.errors.truncate(saved_errors);
+            ctxt.error_meta.truncate(saved_errors);
             ctxt.nb_errors = saved_nb;
         }
 
@@ -3324,6 +3359,7 @@ pub unsafe extern "C" fn xmlRelaxNGValidateDoc(ctxt: *mut c_void, doc: *mut _xml
             0
         } else {
             valid_ctxt.errors = temp_ctxt.errors;
+            valid_ctxt.error_meta = temp_ctxt.error_meta;
             valid_ctxt.nb_errors = temp_ctxt.nb_errors;
             // UPSTREAM-PARITY: forward each recorded error to the context's
             // registered handlers (xmlRelaxNGSetValidErrors /
@@ -3333,6 +3369,7 @@ pub unsafe extern "C" fn xmlRelaxNGValidateDoc(ctxt: *mut c_void, doc: *mut _xml
             crate::abi::exports_relaxng::dispatch_relaxng_valid_errors(
                 ctxt as usize,
                 &valid_ctxt.errors,
+                &valid_ctxt.error_meta,
                 ptr::null_mut(),
             );
             temp_ctxt.nb_errors
@@ -3388,6 +3425,7 @@ pub unsafe extern "C" fn xmlRelaxNGValidateFullElement(
             0
         } else {
             valid_ctxt.errors = temp_ctxt.errors;
+            valid_ctxt.error_meta = temp_ctxt.error_meta;
             valid_ctxt.nb_errors = temp_ctxt.nb_errors;
             temp_ctxt.nb_errors
         }

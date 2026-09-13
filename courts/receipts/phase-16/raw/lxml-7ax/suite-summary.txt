@@ -1,0 +1,8 @@
+lxml full suite (test.py -u): 25 raw unique failing ids (24 excluding the known-flaky group)
+fixed this slice:
+  doc/validation.txt (91/91 doctest examples)
+  test_xmlschema_parse
+  test_xmlschema_stringio
+  test_xmlschema_iterparse_fail
+regressions: none
+per-file: test_xmlschema.py 27 passed / 0 failed

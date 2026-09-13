@@ -108,11 +108,16 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int, c_ulong};
+use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
 use crate::abi::allocator::{xmlFreeImpl, xmlMemStrdupImpl};
-use crate::abi::callbacks::{xmlStructuredErrorFunc, xmlValidityErrorFunc, xmlValidityWarningFunc};
-use crate::abi::structs::{_xmlDoc, _xmlError, _xmlNode, _xmlParserInputBuffer, _xmlSAXHandler};
+use crate::abi::callbacks::{
+    _xmlSAXLocator, xmlStructuredErrorFunc, xmlValidityErrorFunc, xmlValidityWarningFunc,
+};
+use crate::abi::structs::{
+    _xmlDoc, _xmlElementContent, _xmlEntity, _xmlEnumeration, _xmlError, _xmlNode, _xmlParserCtxt,
+    _xmlParserInput, _xmlParserInputBuffer, _xmlSAXHandler,
+};
 use crate::abi::types::{
     xmlChar, xmlCharEncoding, xmlErrorLevel, XML_FROM_SCHEMASP, XML_FROM_SCHEMASV,
 };
@@ -212,11 +217,542 @@ struct SchematronValidState {
     sctx: usize,
 }
 
+/// Magic marker stored in a live SAX plug.
+const XML_SAX_PLUG_MAGIC: c_uint = 0x5a17_f00d;
+
 /// The SAX plug allocated by `xmlSchemaSAXPlug`.
+///
+/// Mirrors upstream `struct _xmlSchemaSAXPlug` (xmlschemas.c): it keeps the
+/// caller's original SAX table and user pointer, exposes a wrapper table
+/// (`schemas_sax`) whose callbacks forward to the originals, and validates the
+/// document once it is complete.
+///
+/// Upstream streams events into a validation state machine
+/// (`xmlSchemaSAXHandleStartElementNs` &c.). This engine validates a
+/// materialized tree, so the plug installs the forwarding table and validates
+/// `ctxt->myDoc` when `endDocument` fires — the first point at which the whole
+/// tree exists. The observable contract consumers depend on is preserved:
+/// `xmlSchemaIsValid` turns 0 and the registered structured-error callback
+/// receives the schema errors.
 #[repr(C)]
 struct XsdSaxPlug {
-    sax: *const _xmlSAXHandler,
+    magic: c_uint,
+    /// `xmlSAXHandler **` handed to `xmlSchemaSAXPlug` (upstream `user_sax_ptr`).
+    sax_ptr: *mut *mut _xmlSAXHandler,
+    /// The caller's original table (upstream `user_sax`).
+    user_sax: *mut _xmlSAXHandler,
+    /// `void **` handed to `xmlSchemaSAXPlug` (upstream `user_data_ptr`).
+    user_data_ptr: *mut *mut c_void,
+    /// The caller's original user data (upstream `user_data`).
     user_data: *mut c_void,
+    /// The forwarding table installed into `*sax` (upstream `schemas_sax`).
+    schemas_sax: _xmlSAXHandler,
+    /// The validation context (upstream `ctxt`).
+    vctxt: *mut xmlSchemaValidCtxt,
+    /// The parser context. `sax` is field 0 of `_xmlParserCtxt`, so the
+    /// address of `ctxt->sax` reported by the caller *is* the context address.
+    pctxt: *mut _xmlParserCtxt,
+    /// Whether `pctxt->myDoc` has already been validated.
+    validated: bool,
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Split callbacks (upstream `*Split` in xmlschemas.c)
+//
+// Each one forwards to the caller's original handler with the caller's
+// original user data. `xmlSchemaSAXPlug` rewrites `*user_data` to point at the
+// plug precisely so these callbacks can recover it from `ctx`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Recover the plug from a split callback's `ctx`.
+///
+/// # SAFETY
+///
+/// - `ctx` must be NULL or a pointer installed by `xmlSchemaSAXPlug`.
+unsafe fn plug_from_ctx(ctx: *mut c_void) -> Option<&'static XsdSaxPlug> {
+    if ctx.is_null() {
+        return None;
+    }
+    // SAFETY: ctx was installed as a Box<XsdSaxPlug> by xmlSchemaSAXPlug and
+    // outlives every callback it receives; the magic check rejects foreign
+    // pointers before any field is read.
+    let p = unsafe { &*(ctx as *const XsdSaxPlug) };
+    if p.magic != XML_SAX_PLUG_MAGIC {
+        return None;
+    }
+    Some(p)
+}
+
+unsafe extern "C" fn plug_internal_subset(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    external_id: *const xmlChar,
+    system_id: *const xmlChar,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).internalSubset {
+                    cb(p.user_data, name, external_id, system_id);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_is_standalone(ctx: *mut c_void) -> c_int {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).isStandalone {
+                    return cb(p.user_data);
+                }
+            }
+        }
+    }
+    0
+}
+
+unsafe extern "C" fn plug_has_internal_subset(ctx: *mut c_void) -> c_int {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).hasInternalSubset {
+                    return cb(p.user_data);
+                }
+            }
+        }
+    }
+    0
+}
+
+unsafe extern "C" fn plug_has_external_subset(ctx: *mut c_void) -> c_int {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).hasExternalSubset {
+                    return cb(p.user_data);
+                }
+            }
+        }
+    }
+    0
+}
+
+unsafe extern "C" fn plug_resolve_entity(
+    ctx: *mut c_void,
+    public_id: *const xmlChar,
+    system_id: *const xmlChar,
+) -> *mut _xmlParserInput {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).resolveEntity {
+                    return cb(p.user_data, public_id, system_id);
+                }
+            }
+        }
+    }
+    ptr::null_mut()
+}
+
+unsafe extern "C" fn plug_get_entity(ctx: *mut c_void, name: *const xmlChar) -> *mut _xmlEntity {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).getEntity {
+                    return cb(p.user_data, name);
+                }
+            }
+        }
+    }
+    ptr::null_mut()
+}
+
+unsafe extern "C" fn plug_entity_decl(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    type_: c_int,
+    public_id: *const xmlChar,
+    system_id: *const xmlChar,
+    content: *mut xmlChar,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).entityDecl {
+                    cb(p.user_data, name, type_, public_id, system_id, content);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_notation_decl(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    public_id: *const xmlChar,
+    system_id: *const xmlChar,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).notationDecl {
+                    cb(p.user_data, name, public_id, system_id);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_attribute_decl(
+    ctx: *mut c_void,
+    elem: *const xmlChar,
+    name: *const xmlChar,
+    type_: c_int,
+    def: c_int,
+    default_value: *const xmlChar,
+    tree: *mut _xmlEnumeration,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).attributeDecl {
+                    cb(p.user_data, elem, name, type_, def, default_value, tree);
+                    return;
+                }
+            }
+        }
+    }
+    // Upstream `attributeDeclSplit` frees an enumeration the user handler
+    // would otherwise have consumed when there is no handler installed.
+    if !tree.is_null() {
+        unsafe { crate::abi::exports_tree::xmlFreeEnumeration(tree) };
+    }
+}
+
+unsafe extern "C" fn plug_element_decl(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    type_: c_int,
+    content: *mut _xmlElementContent,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).elementDecl {
+                    cb(p.user_data, name, type_, content);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_unparsed_entity_decl(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    public_id: *const xmlChar,
+    system_id: *const xmlChar,
+    notation_name: *const xmlChar,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).unparsedEntityDecl {
+                    cb(p.user_data, name, public_id, system_id, notation_name);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_set_document_locator(ctx: *mut c_void, loc: *mut _xmlSAXLocator) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).setDocumentLocator {
+                    cb(p.user_data, loc);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_start_document(ctx: *mut c_void) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).startDocument {
+                    cb(p.user_data);
+                }
+            }
+        }
+    }
+}
+
+/// `endDocument` split: forward, then run the schema validation over the
+/// now-complete tree.
+unsafe extern "C" fn plug_end_document(ctx: *mut c_void) {
+    let Some(p) = (unsafe { plug_from_ctx(ctx) }) else {
+        return;
+    };
+    unsafe {
+        if !p.user_sax.is_null() {
+            if let Some(cb) = (*p.user_sax).endDocument {
+                cb(p.user_data);
+            }
+        }
+    }
+    unsafe { validate_plugged_document(p) };
+}
+
+/// Run `xmlSchemaValidateDoc` over the tree built by the plugged parser once.
+///
+/// # SAFETY
+///
+/// - `p` must be a live plug with valid `pctxt`/`vctxt` pointers.
+unsafe fn validate_plugged_document(p: &XsdSaxPlug) {
+    if p.validated || p.pctxt.is_null() || p.vctxt.is_null() {
+        return;
+    }
+    // SAFETY: pctxt is the live parser context the plug was attached to.
+    let doc = unsafe { (*p.pctxt).myDoc };
+    if doc.is_null() {
+        return;
+    }
+    // A parse that already failed well-formedness is reported by the parser
+    // itself; running the schema engine over a partial tree would only add
+    // noise. Upstream's streaming vstate behaves the same way.
+    if unsafe { (*p.pctxt).wellFormed } == 0 {
+        return;
+    }
+    unsafe {
+        reset_valid_ctxt(p.vctxt);
+        // SAFETY: vctxt is a live XsdValidCtxt; doc is a live _xmlDoc.
+        let _ = crate::xml::schemas::xmlSchemaValidateDoc(p.vctxt as *mut c_void, doc);
+    }
+}
+
+unsafe extern "C" fn plug_start_element(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    atts: *mut *const xmlChar,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).startElement {
+                    cb(p.user_data, name, atts);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_end_element(ctx: *mut c_void, name: *const xmlChar) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).endElement {
+                    cb(p.user_data, name);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_reference(ctx: *mut c_void, name: *const xmlChar) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).reference {
+                    cb(p.user_data, name);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_characters(ctx: *mut c_void, ch: *const xmlChar, len: c_int) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).characters {
+                    cb(p.user_data, ch, len);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_ignorable_whitespace(ctx: *mut c_void, ch: *const xmlChar, len: c_int) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).ignorableWhitespace {
+                    cb(p.user_data, ch, len);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_processing_instruction(
+    ctx: *mut c_void,
+    target: *const xmlChar,
+    data: *const xmlChar,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).processingInstruction {
+                    cb(p.user_data, target, data);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_comment(ctx: *mut c_void, value: *const xmlChar) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).comment {
+                    cb(p.user_data, value);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_warning(ctx: *mut c_void, msg: *const c_char) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).warning {
+                    cb(p.user_data, msg);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_error(ctx: *mut c_void, msg: *const c_char) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).error {
+                    cb(p.user_data, msg);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_fatal_error(ctx: *mut c_void, msg: *const c_char) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).fatalError {
+                    cb(p.user_data, msg);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_get_parameter_entity(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+) -> *mut _xmlEntity {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).getParameterEntity {
+                    return cb(p.user_data, name);
+                }
+            }
+        }
+    }
+    ptr::null_mut()
+}
+
+unsafe extern "C" fn plug_cdata_block(ctx: *mut c_void, value: *const xmlChar, len: c_int) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).cdataBlock {
+                    cb(p.user_data, value, len);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_external_subset(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    external_id: *const xmlChar,
+    system_id: *const xmlChar,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).externalSubset {
+                    cb(p.user_data, name, external_id, system_id);
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_start_element_ns(
+    ctx: *mut c_void,
+    localname: *const xmlChar,
+    prefix: *const xmlChar,
+    uri: *const xmlChar,
+    nb_namespaces: c_int,
+    namespaces: *mut *const xmlChar,
+    nb_attributes: c_int,
+    nb_defaulted: c_int,
+    attributes: *mut *const xmlChar,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).startElementNs {
+                    cb(
+                        p.user_data,
+                        localname,
+                        prefix,
+                        uri,
+                        nb_namespaces,
+                        namespaces,
+                        nb_attributes,
+                        nb_defaulted,
+                        attributes,
+                    );
+                }
+            }
+        }
+    }
+}
+
+unsafe extern "C" fn plug_end_element_ns(
+    ctx: *mut c_void,
+    localname: *const xmlChar,
+    prefix: *const xmlChar,
+    uri: *const xmlChar,
+) {
+    if let Some(p) = unsafe { plug_from_ctx(ctx) } {
+        unsafe {
+            if !p.user_sax.is_null() {
+                if let Some(cb) = (*p.user_sax).endElementNs {
+                    cb(p.user_data, localname, prefix, uri);
+                }
+            }
+        }
+    }
 }
 
 static PARSER_STATES: Lazy<Mutex<HashMap<usize, ParserState>>> =
@@ -764,7 +1300,14 @@ pub(crate) unsafe fn dispatch_valid_errors(
             e.message = cmsg.as_ptr() as *mut c_char;
             e.level = xmlErrorLevel::XML_ERR_ERROR as c_int;
             e.file = state.filename as *mut c_char;
-            e.line = 0;
+            // UPSTREAM-PARITY (xmlschemas.c xmlSchemaErr -> xmlSchemaVErr):
+            // the diagnostic carries the offending node's source line, which
+            // lxml appends to the exception message (", line N").
+            e.line = if err.node.is_null() {
+                0
+            } else {
+                (unsafe { (*err.node).line }) as c_int
+            };
             // UPSTREAM-PARITY: the offending instance node lets consumers
             // (lxml's _LogEntry.path) compute an XPath location.
             e.node = err.node as *mut c_void;
@@ -2877,16 +3420,24 @@ pub unsafe extern "C" fn xmlSchemaValidateStream(
 ///                                           xmlSAXHandler **sax, void **user_data);
 /// ```
 ///
-/// Upstream replaces the caller's SAX handler with the validator's own and
-/// returns a plug to restore it later. The internal engine performs DOM
-/// validation and cannot intercept SAX events, so the plug is a pass-through:
-/// `*sax` and `*user_data` are left untouched and a plug is returned so the
-/// call sequence (plug → validate → unplug) still works. Returns NULL when
-/// `ctxt` or `sax` is NULL.
+/// Upstream replaces the caller's SAX handler with a forwarding table whose
+/// callbacks first deliver the event to the caller's original handler and then
+/// feed the schema validator, and returns a plug to restore the original table
+/// on `xmlSchemaSAXUnplug`.
+///
+/// This engine validates a materialized tree rather than a streaming event
+/// sequence, so the forwarding table delivers every event to the original
+/// handler and the schema engine is driven over `ctxt->myDoc` when
+/// `endDocument` fires. The externally observable behaviour is the same as
+/// upstream: `xmlSchemaIsValid` reports 0 for an invalid document and the
+/// structured-error callback registered with
+/// `xmlSchemaSetValidStructuredErrors` receives the schema errors.
+///
+/// Returns NULL when `ctxt`, `sax` or `user_data` is NULL, mirroring upstream.
 ///
 /// # SAFETY
 ///
-/// - `ctxt` must be a validation context created by this crate; `sax`/
+/// - `ctxt` must be a validation context created by this crate; `sax` and
 ///   `user_data` must be writable or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSchemaSAXPlug(
@@ -2894,28 +3445,95 @@ pub unsafe extern "C" fn xmlSchemaSAXPlug(
     sax: *mut *mut _xmlSAXHandler,
     user_data: *mut *mut c_void,
 ) -> *mut xmlSchemaSAXPlugStruct {
-    if ctxt.is_null() || sax.is_null() {
+    if ctxt.is_null() || sax.is_null() || user_data.is_null() {
         return ptr::null_mut();
     }
-    // SAFETY: sax/user_data are caller-guaranteed writable when non-NULL.
-    let original_sax = unsafe {
-        if sax.is_null() {
-            ptr::null_mut()
-        } else {
-            *sax
-        }
-    };
-    let original_ud = unsafe {
-        if user_data.is_null() {
-            ptr::null_mut()
-        } else {
-            *user_data
-        }
-    };
-    let plug = Box::new(XsdSaxPlug {
-        sax: original_sax as *const _xmlSAXHandler,
+    // SAFETY: sax/user_data are caller-guaranteed writable.
+    let original_sax = unsafe { *sax };
+    let original_ud = unsafe { *user_data };
+    // `sax` is field 0 of `_xmlParserCtxt`, so the address the caller passes is
+    // exactly the parser context address. That is how the plug recovers the
+    // tree to validate without depending on a second API surface.
+    let pctxt = sax as *mut _xmlParserCtxt;
+
+    // With no original table there is nothing to forward to. Upstream installs
+    // its streaming handler directly; this engine cannot reconstruct a tree
+    // from events alone, so keep the historical pass-through behaviour for that
+    // (unused by real consumers) shape rather than producing a table that drops
+    // the caller's events.
+    if original_sax.is_null() {
+        let plug = Box::new(XsdSaxPlug {
+            magic: XML_SAX_PLUG_MAGIC,
+            sax_ptr: sax,
+            user_sax: ptr::null_mut(),
+            user_data_ptr: user_data,
+            user_data: original_ud,
+            // SAFETY: zeroed handler is a valid empty table.
+            schemas_sax: unsafe { core::mem::zeroed() },
+            vctxt: ctxt,
+            pctxt,
+            validated: true,
+        });
+        return Box::into_raw(plug) as *mut xmlSchemaSAXPlugStruct;
+    }
+
+    // Copy the caller's table wholesale, then replace every callback with a
+    // forwarding split. Replacing all of them (not only the schema-relevant
+    // ones) is required because `*user_data` is rewritten to the plug: any
+    // verbatim-copied callback would then receive the plug instead of the
+    // caller's own user data.
+    // SAFETY: original_sax is a live table owned by the caller's parser.
+    let mut schemas_sax = unsafe { ptr::read(original_sax) };
+    schemas_sax.internalSubset = Some(plug_internal_subset);
+    schemas_sax.isStandalone = Some(plug_is_standalone);
+    schemas_sax.hasInternalSubset = Some(plug_has_internal_subset);
+    schemas_sax.hasExternalSubset = Some(plug_has_external_subset);
+    schemas_sax.resolveEntity = Some(plug_resolve_entity);
+    schemas_sax.getEntity = Some(plug_get_entity);
+    schemas_sax.entityDecl = Some(plug_entity_decl);
+    schemas_sax.notationDecl = Some(plug_notation_decl);
+    schemas_sax.attributeDecl = Some(plug_attribute_decl);
+    schemas_sax.elementDecl = Some(plug_element_decl);
+    schemas_sax.unparsedEntityDecl = Some(plug_unparsed_entity_decl);
+    schemas_sax.setDocumentLocator = Some(plug_set_document_locator);
+    schemas_sax.startDocument = Some(plug_start_document);
+    schemas_sax.endDocument = Some(plug_end_document);
+    schemas_sax.startElement = Some(plug_start_element);
+    schemas_sax.endElement = Some(plug_end_element);
+    schemas_sax.reference = Some(plug_reference);
+    schemas_sax.characters = Some(plug_characters);
+    schemas_sax.ignorableWhitespace = Some(plug_ignorable_whitespace);
+    schemas_sax.processingInstruction = Some(plug_processing_instruction);
+    schemas_sax.comment = Some(plug_comment);
+    schemas_sax.warning = Some(plug_warning);
+    schemas_sax.error = Some(plug_error);
+    schemas_sax.fatalError = Some(plug_fatal_error);
+    schemas_sax.getParameterEntity = Some(plug_get_parameter_entity);
+    schemas_sax.cdataBlock = Some(plug_cdata_block);
+    schemas_sax.externalSubset = Some(plug_external_subset);
+    schemas_sax.startElementNs = Some(plug_start_element_ns);
+    schemas_sax.endElementNs = Some(plug_end_element_ns);
+
+    let mut plug = Box::new(XsdSaxPlug {
+        magic: XML_SAX_PLUG_MAGIC,
+        sax_ptr: sax,
+        user_sax: original_sax,
+        user_data_ptr: user_data,
         user_data: original_ud,
+        schemas_sax,
+        vctxt: ctxt,
+        pctxt,
+        validated: false,
     });
+    let plug_ptr = (&mut *plug) as *mut XsdSaxPlug;
+    // The forwarding table lives inside the (heap-stable) plug.
+    // SAFETY: plug_ptr is stable for the lifetime of the plug.
+    let schemas_sax_ptr = unsafe { ptr::addr_of_mut!((*plug_ptr).schemas_sax) };
+    // SAFETY: sax/user_data are writable caller pointers.
+    unsafe {
+        *sax = schemas_sax_ptr;
+        *user_data = plug_ptr as *mut c_void;
+    }
     Box::into_raw(plug) as *mut xmlSchemaSAXPlugStruct
 }
 
@@ -2927,7 +3545,9 @@ pub unsafe extern "C" fn xmlSchemaSAXPlug(
 /// int xmlSchemaSAXUnplug(xmlSchemaSAXPlugStruct *plug);
 /// ```
 ///
-/// Frees the plug. Returns 0 on success, -1 if `plug` is NULL.
+/// Restores the caller's original SAX table and user data, runs any pending
+/// validation (`xmlSchemaPostRun` upstream), frees the plug. Returns 0 on
+/// success, -1 if `plug` is NULL or not a live plug.
 ///
 /// # SAFETY
 ///
@@ -2937,8 +3557,27 @@ pub unsafe extern "C" fn xmlSchemaSAXUnplug(plug: *mut xmlSchemaSAXPlugStruct) -
     if plug.is_null() {
         return -1;
     }
-    // SAFETY: plug is a Box created by xmlSchemaSAXPlug.
-    unsafe { drop(Box::from_raw(plug as *mut XsdSaxPlug)) };
+    let plug_ptr = plug as *mut XsdSaxPlug;
+    // SAFETY: plug_ptr was produced by xmlSchemaSAXPlug; verify the magic
+    // before touching any other field.
+    if unsafe { (*plug_ptr).magic } != XML_SAX_PLUG_MAGIC {
+        return -1;
+    }
+    // SAFETY: the plug is live; run the pending validation before restoring.
+    unsafe {
+        validate_plugged_document(&*plug_ptr);
+        (*plug_ptr).magic = 0;
+        let sax_ptr = (*plug_ptr).sax_ptr;
+        let user_data_ptr = (*plug_ptr).user_data_ptr;
+        if !sax_ptr.is_null() {
+            *sax_ptr = (*plug_ptr).user_sax;
+        }
+        if !user_data_ptr.is_null() {
+            *user_data_ptr = (*plug_ptr).user_data;
+        }
+    }
+    // SAFETY: plug_ptr is a Box created by xmlSchemaSAXPlug.
+    unsafe { drop(Box::from_raw(plug_ptr)) };
     0
 }
 

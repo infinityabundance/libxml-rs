@@ -2453,8 +2453,10 @@ fn xsd_validate_element(
                             ctxt.push_error(
                                 node,
                                 format!(
-                                    "Element '{}' has invalid value '{}' for type '{:?}'",
-                                    node_name, text, dt
+                                    "Element '{}': '{}' is not a valid value of the atomic type '{}'.",
+                                    node_name,
+                                    text,
+                                    datatype_kind_qname(dt)
                                 ),
                             );
                             valid = false;
@@ -2470,8 +2472,10 @@ fn xsd_validate_element(
                 ctxt.push_error(
                     node,
                     format!(
-                        "Element '{}' has invalid value '{}' for type '{:?}'",
-                        node_name, text, dt
+                        "Element '{}': '{}' is not a valid value of the atomic type '{}'.",
+                        node_name,
+                        text,
+                        datatype_kind_qname(dt)
                     ),
                 );
                 valid = false;
@@ -2505,7 +2509,7 @@ fn xsd_validate_element(
                                 ctxt.push_error(
                                     node,
                                     format!(
-                                        "Element '{}' has invalid value '{}' for type '{}'",
+                                        "Element '{}': '{}' is not a valid value of the atomic type '{}'.",
                                         node_name, text, base_name
                                     ),
                                 );
@@ -2930,8 +2934,10 @@ fn xsd_validate_restriction_extension(
                 ctxt.push_error(
                     node,
                     format!(
-                        "Element '{}' has invalid value '{}' for type '{:?}'",
-                        node_name, text, dt
+                        "Element '{}': '{}' is not a valid value of the atomic type '{}'.",
+                        node_name,
+                        text,
+                        datatype_kind_qname(dt)
                     ),
                 );
                 valid = false;
@@ -2969,11 +2975,19 @@ fn xsd_validate_attribute(
                 // Validate attribute value against its datatype
                 if let Some(ref dt) = component.datatype {
                     if !xsd_validate_datatype(dt, val, &component.facets) {
+                        // UPSTREAM-PARITY (xmlschemas.c xmlSchemaFormatNodeForError
+                        // + xmlSchemaSimpleTypeErr): an attribute value failure is
+                        // "Element 'e', attribute 'a': 'v' is not a valid value of
+                        // the atomic type 'T'."
+                        let elem_name = get_node_qname(node);
                         ctxt.push_error(
                             node,
                             format!(
-                                "Attribute '{}' has invalid value '{}' for type '{:?}'",
-                                attr_name, val, dt
+                                "Element '{}', attribute '{}': '{}' is not a valid value of the atomic type '{}'.",
+                                elem_name,
+                                attr_name,
+                                val,
+                                datatype_kind_qname(dt)
                             ),
                         );
                         return false;
@@ -3070,8 +3084,10 @@ fn xsd_validate_element_inline(
                                         ctxt.push_error(
                                             child,
                                             format!(
-                                                "Element '{}' has invalid value '{}'",
-                                                child_name, text
+                                                "Element '{}': '{}' is not a valid value of the atomic type '{}'.",
+                                                child_name,
+                                                text,
+                                                datatype_kind_qname(dt)
                                             ),
                                         );
                                         valid = false;
@@ -3103,8 +3119,8 @@ fn xsd_validate_element_inline(
                                             ctxt.push_error(
                                                 child,
                                                 format!(
-                                                    "Element '{}' has invalid value '{}'",
-                                                    child_name, text
+                                                    "Element '{}': '{}' is not a valid value of the atomic type '{}'.",
+                                                    child_name, text, base_name
                                                 ),
                                             );
                                             valid = false;

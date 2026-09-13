@@ -1111,10 +1111,18 @@ pub unsafe fn validate_element(
                     valid = 0;
                     let name_str = string::xmlstr_to_string(elem_name);
                     let err_msg = format!(
-                        "Element '{}' is declared EMPTY but has child elements\0",
+                        "Element {} was declared EMPTY this one has content\0",
                         name_str
                     );
-                    vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
+                    // UPSTREAM-PARITY (valid.c xmlValidateOneElement):
+                    // xmlErrValidNode(ctxt, elem, XML_DTD_NOT_EMPTY, ...).
+                    const XML_DTD_NOT_EMPTY: c_int = 528;
+                    vctxt_error_node_code(
+                        ctxt,
+                        e as *const _xmlNode as *mut _xmlNode,
+                        XML_DTD_NOT_EMPTY,
+                        err_msg.as_ptr() as *const c_char,
+                    );
                     break;
                 }
                 child = (*child).next;
@@ -3092,6 +3100,65 @@ pub unsafe fn get_dtd_attr_desc(
 /// code is not stored — the message text matches upstream byte-for-byte.
 unsafe fn vctxt_error_node(ctxt: *mut _xmlValidCtxt, _node: *mut _xmlNode, msg: *const c_char) {
     vctxt_error(ctxt, msg);
+}
+
+/// Upstream `xmlErrValidNode(ctxt, node, error, msg, ...)`: a validation error
+/// that carries its `xmlParserErrors` code and the offending node, so the
+/// raised diagnostic gets the node's source line and the file of its document.
+/// lxml's error log renders
+/// `<string>:<line>:0:ERROR:VALID:<CODE>:<message>`, so both the code and the
+/// line are observable.
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL; `node` must be NULL or a valid node reachable from a
+///   document; `msg` a valid NUL-terminated string.
+unsafe fn vctxt_error_node_code(
+    ctxt: *mut _xmlValidCtxt,
+    node: *mut _xmlNode,
+    code: c_int,
+    msg: *const c_char,
+) {
+    if ctxt.is_null() {
+        return;
+    }
+    unsafe {
+        let c = &mut *ctxt;
+        c.valid = 0;
+        if let Some(err) = c.error {
+            err(c.userData, msg);
+        }
+        let has_structured = crate::xml::globals::with_structured_error(|h, _| h.is_some());
+        if has_structured {
+            let mut line: c_int = 0;
+            let mut file: *const c_char = ptr::null();
+            if !node.is_null() {
+                line = (*node).line as c_int;
+                let doc = (*node).doc;
+                if !doc.is_null() && !(*doc).URL.is_null() {
+                    file = (*doc).URL as *const c_char;
+                }
+            }
+            crate::xml::errors::raise_error(
+                ctxt as *mut c_void,
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                crate::abi::types::XML_FROM_VALID,
+                code,
+                crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
+                file,
+                line,
+                ptr::null(),
+                ptr::null(),
+                ptr::null(),
+                0,
+                0,
+                msg,
+            );
+        }
+    }
 }
 
 /// Upstream `xmlValidateElementDecl(ctxt, doc, elem)`: verifies the
