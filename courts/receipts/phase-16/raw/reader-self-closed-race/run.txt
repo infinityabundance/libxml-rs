@@ -1,0 +1,11 @@
+evidence_kind=flaky-CI fix (reader self-closed marker lifecycle / address reuse)
+symptom=regression court `cargo test --lib` intermittently failed xml::reader::tests::test_read_simple_document (event count 4 != 5, missing END_ELEMENT child)
+reproduction=libxml_rs unit binary --test-threads=3, ~1/90 runs before the fix
+root_cause=helpers::SELF_CLOSED_NODES is a process-global map keyed by raw doc/node addresses; Drop/xmlTextReaderCurrentDoc released the document without dropping its markers, so a later document at a reused address could be misread as `<a/>` and lose an END_ELEMENT event
+fix=src/xml/reader/mod.rs: drop_self_closed(doc) in Drop, plus after build_events/build_events_with
+verification_unit_binary=150 runs at each of --test-threads=2,3,4,8 (600 total) -> 0 failures
+regression_gate=sh tools/courts/regression.sh PASSED (cargo test --lib 1333 passed / 0 failed / 3 ignored; release DSO links)
+fmt=cargo fmt --check clean
+lxml_full_suite=Ran 2007 tests, OK (0 raw unique failing ids)
+php_six_gate=1250 passed / 0 failed (phpbuild-c)
+tree_clean=yes

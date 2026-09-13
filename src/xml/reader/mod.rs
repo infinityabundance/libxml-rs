@@ -569,6 +569,11 @@ impl XmlTextReader {
 
             // Build traversal events from the tree.
             self.build_events();
+            // The walk consumed every self-closed marker it needed; drop the
+            // document's (now empty) registry entry so a long-lived process
+            // parsing many documents through readers does not accumulate one
+            // global-map key per parse.
+            crate::xml::parser::helpers::drop_self_closed(self.doc);
 
             self.parsed = true;
             0
@@ -591,6 +596,9 @@ impl XmlTextReader {
                     }
                 }
                 self.build_events_with(&open);
+                // Consumed markers are gone; release the (now empty) entry so
+                // the global registry cannot accumulate per-parse keys.
+                crate::xml::parser::helpers::drop_self_closed(self.doc);
             } else {
                 self.events.clear();
             }
@@ -2436,6 +2444,20 @@ impl Drop for XmlTextReader {
             // SAFETY: URL was allocated by xmlMalloc.
             unsafe { xmlFreeImpl(self.URL as *mut c_void) };
             self.URL = ptr::null_mut();
+        }
+
+        // Drop any unconsumed self-closed markers for this document. The
+        // registry is keyed by raw doc/node ADDRESSES in a process-global map
+        // (`helpers::SELF_CLOSED_NODES`); a successful event walk consumes the
+        // markers it visits, but a reader freed (or a document handed to a
+        // caller via xmlTextReaderCurrentDoc) before that leaves entries behind.
+        // Once the document is gone the addresses can be reused by a later
+        // parse, and a stale marker would make that document's element look
+        // like `<a/>` and suppress its END_ELEMENT event. Drop the document's
+        // markers unconditionally at reader teardown (also releases the now
+        // empty per-document entry recorded by a completed walk).
+        if !self.doc.is_null() {
+            crate::xml::parser::helpers::drop_self_closed(self.doc);
         }
 
         // Free the document if we own it (walker readers borrow the doc).
