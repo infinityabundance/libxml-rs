@@ -668,8 +668,27 @@ unsafe fn process_xml_include(
         let xptr_utf8 = unsafe { std::str::from_utf8_unchecked(xptr_str) };
         unsafe { include_via_xpointer(include_node, doc, included_doc, xptr_utf8, visited) }
     } else {
-        // Include the document element (root element of the referenced doc).
-        unsafe { include_document_element(include_node, doc, included_doc, visited) }
+        // UPSTREAM-PARITY (xinclude.c xmlXIncludeAddNode): the xml:base fixup
+        // is armed unless XML_PARSE_NOBASEFIX is set on the process flags or
+        // on the including document. `target_base` is the base of the
+        // xi:include node (empty when the including document has no URL);
+        // NULL disables the fixup entirely.
+        let target_base = if flags & XML_PARSE_NOBASEFIX == 0
+            && (unsafe { (*doc).parseFlags } & XML_PARSE_NOBASEFIX == 0)
+        {
+            Some(unsafe { crate::abi::exports_tree::xmlNodeGetBase(doc, include_node) })
+        } else {
+            None
+        };
+        let r = unsafe {
+            include_document_element(include_node, doc, included_doc, visited, target_base)
+        };
+        if let Some(b) = target_base {
+            if !b.is_null() {
+                allocator::xmlFreeImpl(b as *mut c_void);
+            }
+        }
+        r
     };
 
     // Recursively process includes in the included document.
@@ -692,6 +711,7 @@ unsafe fn include_document_element(
     doc: *mut _xmlDoc,
     included_doc: *mut _xmlDoc,
     _visited: &mut Vec<Vec<u8>>,
+    target_base: Option<*mut xmlChar>,
 ) -> Result<c_int, ()> {
     let root = unsafe { find_root_element(included_doc) };
     if root.is_null() {
@@ -707,10 +727,93 @@ unsafe fn include_document_element(
     // Set the document pointer on the copy.
     unsafe { set_doc_recursive(copy, doc) };
 
+    // UPSTREAM-PARITY (xinclude.c xmlXIncludeDoProcess loaded: branch): the
+    // copied root gets an xml:base relative to the including node's base when
+    // the included document's base differs, so relative references inside the
+    // included content keep resolving against the included document.
+    if let Some(tb) = target_base {
+        unsafe { xinclude_base_fixup(root, copy, included_doc, tb) };
+    }
+
     // Replace the include node with the copied content.
     unsafe { replace_node_with_content(include_node, copy, doc) };
 
     Ok(1)
+}
+
+/// Upstream `xmlXIncludeBaseFixup` (xinclude.c): set or drop the copy's
+/// `xml:base` so it is relative to the including node's base.
+///
+/// # SAFETY
+///
+/// - `source_root`/`copy` must be valid element nodes; `target_base` a valid
+///   NUL-terminated string or NULL.
+unsafe fn xinclude_base_fixup(
+    source_root: *mut _xmlNode,
+    copy: *mut _xmlNode,
+    included_doc: *mut _xmlDoc,
+    target_base: *const xmlChar,
+) {
+    // Upstream XML_MAX_URI_LENGTH.
+    const XML_MAX_URI_LENGTH: usize = 100_000;
+    let xml_ns = c"http://www.w3.org/XML/1998/namespace";
+    let mut base: *mut xmlChar = ptr::null_mut();
+    // SAFETY: source_root/included_doc are valid; base is an out-param.
+    let _ = unsafe {
+        crate::abi::exports_tree::xmlNodeGetBaseSafe(included_doc, source_root, &mut base)
+    };
+    let mut set_ok = false;
+    if !base.is_null() {
+        let equal = unsafe { crate::abi::exports_xml2::xmlStrEqual(base, target_base) != 0 };
+        if !equal {
+            let blen = unsafe { crate::xml::string::xml_strlen(base) };
+            let tlen = unsafe { crate::xml::string::xml_strlen(target_base) };
+            let rel = if blen > XML_MAX_URI_LENGTH || tlen > XML_MAX_URI_LENGTH {
+                unsafe { crate::abi::exports_xml2::xmlStrdup(base) }
+            } else {
+                // SAFETY: both are valid NUL-terminated strings.
+                unsafe {
+                    crate::abi::exports_uri::xmlBuildRelativeURI(
+                        base as *const c_char,
+                        target_base as *const c_char,
+                    )
+                }
+            };
+            if !rel.is_null() {
+                // Upstream: a relative base without a slash can be omitted.
+                let mut has_slash = false;
+                let mut p = rel;
+                unsafe {
+                    while *p != 0 {
+                        if *p == b'/' {
+                            has_slash = true;
+                            break;
+                        }
+                        p = p.add(1);
+                    }
+                }
+                if has_slash {
+                    unsafe { crate::abi::exports_tree::xmlNodeSetBase(copy, rel) };
+                    set_ok = true;
+                }
+                allocator::xmlFreeImpl(rel as *mut c_void);
+            }
+        }
+    }
+    if !set_ok {
+        // UPSTREAM-PARITY: delete an existing xml:base when the bases match (or
+        // no relative base was produced).
+        unsafe {
+            crate::abi::exports_xml2::xmlUnsetNsProp(
+                copy,
+                xml_ns.as_ptr() as *const xmlChar,
+                c"base".as_ptr() as *const xmlChar,
+            );
+        }
+    }
+    if !base.is_null() {
+        allocator::xmlFreeImpl(base as *mut c_void);
+    }
 }
 
 /// Include content selected by an XPointer expression.

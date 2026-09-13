@@ -3009,6 +3009,29 @@ pub unsafe fn get_ns_prop(
     ptr::null_mut()
 }
 
+/// Intern an attribute name in `doc`'s dictionary when there is one, else
+/// duplicate it (upstream `xmlNewPropInternal`).
+///
+/// # SAFETY
+///
+/// - `doc` may be NULL; `name` must be a valid NUL-terminated string.
+unsafe fn intern_attr_name(doc: *mut _xmlDoc, name: *const xmlChar) -> *mut xmlChar {
+    let dict = if doc.is_null() {
+        ptr::null_mut()
+    } else {
+        unsafe { (*doc).dict }
+    };
+    if !dict.is_null() {
+        let interned = unsafe {
+            crate::xml::dictionary::dict_lookup(dict as *mut crate::xml::dictionary::Dict, name, -1)
+        };
+        if !interned.is_null() {
+            return interned as *mut xmlChar;
+        }
+    }
+    dup_xml_str(name)
+}
+
 /// Set a namespaced attribute.
 ///
 /// # UPSTREAM-PARITY
@@ -3129,7 +3152,15 @@ pub unsafe fn set_ns_prop(
     }
     unsafe {
         (*attr).type_ = XML_ATTRIBUTE_NODE as c_int;
-        (*attr).name = dup_xml_str(name);
+        // UPSTREAM-PARITY (tree.c xmlNewPropInternal): when the node belongs to
+        // a document with a dictionary, the attribute name is interned there.
+        // Consumers compare names by POINTER after resolving them through the
+        // dict (lxml's `_mapTagsToQnameMatchArray` uses xmlDictExists and
+        // `_tagMatchesExactly` then compares addresses), so a plain strdup here
+        // makes the attribute invisible to lxml's tag/attribute matchers even
+        // though `attrib` reads work. `free_prop`'s dict-ownership guard keeps
+        // teardown from freeing the shared entry.
+        (*attr).name = intern_attr_name(n.doc, name);
         (*attr).ns = ns;
         (*attr).parent = node;
         (*attr).doc = n.doc;

@@ -1,0 +1,15 @@
+candidate_sha=WORKTREE (evidence for the commit that interns attribute names and fixes XInclude xml:base)
+evidence_kind=parity fix (xmlSetNsProp dict interning, xinclude xml:base fixup)
+debug_libxml2_sha256=c5d6ce0323993e279807117671727ad090d11f374349cfc3931cdb6de10858bf
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=22 raw unique ids (lxml-7ay @ b155cbbd), 21 excluding the flaky group
+lxml_suite_now=19 raw unique ids, 18 excluding the flaky group
+lxml_fixed=3 (doc/objectify.txt, doc/api.txt, test_pytype_deannotate)
+lxml_regressions=0 (filtered delta vs lxml-7ay)
+detail=doc/objectify.txt 288/288; doc/api.txt 92/92
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes
