@@ -1,0 +1,10 @@
+lxml full suite (test.py -u): 12 raw unique failing ids (12 excluding the known-flaky group)
+fixed this slice:
+  doc/test_forms.txt
+  doc/test_rewritelinks.txt
+  test_parse_fromstring
+  test_tags_upper_lower_case_html
+  test_xml_mode_write_inside_html
+regressions: none
+remaining clusters: HTTP IO (4), isoschematron (3), push recover/encoding (3),
+  relaxng_generic_error (1), variable_result_tree_fragment (1)

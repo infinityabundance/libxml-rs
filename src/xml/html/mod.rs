@@ -1518,7 +1518,12 @@ fn parse_entity(ctxt: &mut HtmlParserCtxt) -> Vec<u8> {
 ///
 /// - `name` is a valid byte slice for the call.
 unsafe fn new_element_node(ns: *mut _xmlNs, name: &[u8]) -> *mut _xmlNode {
-    let name_c = bytes_to_xmlstr(name);
+    // UPSTREAM-PARITY (HTMLparser.c htmlParseHTMLName): HTML element names are
+    // case-insensitive and stored lower-cased. Docstring upstream: "parse an
+    // HTML tag or attribute name, note that we convert it to lowercase since
+    // HTML names are not case-sensitive."
+    let lower: Vec<u8> = name.iter().map(|b| b.to_ascii_lowercase()).collect();
+    let name_c = bytes_to_xmlstr(&lower);
     let node = tree::new_node(ns, name_c);
     if !name_c.is_null() {
         xmlFreeImpl(name_c as *mut c_void);
@@ -1612,7 +1617,10 @@ unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
 ///   attributes.
 unsafe fn attach_attrs(node: *mut _xmlNode, attrs: &[HtmlAttr]) {
     for attr in attrs {
-        let name_c = bytes_to_xmlstr(&attr.name);
+        // UPSTREAM-PARITY (HTMLparser.c htmlParseHTMLName): attribute names are
+        // case-insensitive too (lower-cased on read).
+        let lower: Vec<u8> = attr.name.iter().map(|b| b.to_ascii_lowercase()).collect();
+        let name_c = bytes_to_xmlstr(&lower);
         if name_c.is_null() {
             continue;
         }
@@ -2327,9 +2335,22 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
         return;
     }
 
+    // UPSTREAM-PARITY (HTMLparser.c htmlCheckImplied): <frame>, <frameset> and
+    // <noframes> imply neither <head> nor <body>; in a frameset document they
+    // attach directly under <html>.
+    let frame_container = tag_str == "frame" || tag_str == "frameset" || tag_str == "noframes";
+
     // Body content - transition from head if needed
     if !is_head_tag || ctxt.seen_body_content {
-        if !ctxt.seen_body_content {
+        if frame_container && !ctxt.seen_body_content && ctxt.options & HTML_PARSE_NOIMPLIED == 0 {
+            // Only materialise <html> when nothing else is open; a <frame>
+            // inside an open <frameset> keeps that frameset as its parent.
+            if ctxt.current.is_null() || ctxt.current == ctxt.html || ctxt.html.is_null() {
+                unsafe { ensure_html(ctxt) };
+                ctxt.current = ctxt.html;
+            }
+            ctxt.in_head = false;
+        } else if !ctxt.seen_body_content {
             ctxt.seen_body_content = true;
             ctxt.in_head = false;
             // UPSTREAM-PARITY (HTML_PARSE_NOIMPLIED): body content at the top
@@ -2917,8 +2938,20 @@ unsafe fn html_parse_buffer_into(
                 if !raw_node.is_null() {
                     attach_attrs(raw_node, &attrs);
 
+                    // UPSTREAM-PARITY (HTMLparser.c htmlCheckImplied): the head/
+                    // body inference runs for raw-text elements BEFORE the
+                    // element is created, so a leading <style>/<script> lands
+                    // in the implicit <head>, not <body>. Both are HTML_HEAD
+                    // tags; the old code only consulted `in_head`, which is
+                    // false before any head content, and therefore always
+                    // created <body>.
+                    let is_head_tag =
+                        html_tag_lookup(tag_str).is_some_and(|i| i.flags & HTML_HEAD != 0);
                     let insertion_point = if ctxt.current.is_null() {
-                        if ctxt.in_head {
+                        if is_head_tag && !ctxt.seen_body_content {
+                            ensure_head(ctxt);
+                            ctxt.head
+                        } else if ctxt.in_head {
                             ensure_head(ctxt);
                             ctxt.head
                         } else {
@@ -4838,8 +4871,13 @@ pub(crate) unsafe fn serialize_node_enc(
                     io::buf_cat(buf, a.name);
                 }
 
-                // Write attribute value if present
-                if !a.children.is_null() {
+                // Write attribute value if present. UPSTREAM-PARITY (HTMLtree.c
+                // htmlAttrDumpOutput): a boolean attribute is output in
+                // minimized form (`checked`), never `checked="..."` — XSLT 1.0
+                // 16.2's HTML output method.
+                if !a.children.is_null()
+                    && unsafe { crate::abi::exports_html::htmlIsBooleanAttr(a.name) } == 0
+                {
                     let child = unsafe { &*a.children };
                     if child.type_ == XML_TEXT_NODE as c_int && !child.content.is_null() {
                         io::buf_ccat(buf, b'=');
@@ -5543,11 +5581,12 @@ mod tests {
             assert!(!doc.is_null());
 
             let s = html_doc_to_string(doc);
-            // Tag names are case-preserved
-            assert!(s.contains("<HTML>"));
-            assert!(s.contains("<HEAD>"));
-            assert!(s.contains("<BODY>"));
-            assert!(s.contains("<P>Hello</P>"));
+            // UPSTREAM-PARITY (HTMLparser.c htmlParseHTMLName): HTML tag names
+            // are case-insensitive and lower-cased on read.
+            assert!(s.contains("<html>"));
+            assert!(s.contains("<head>"));
+            assert!(s.contains("<body>"));
+            assert!(s.contains("<p>Hello</p>"));
 
             tree::free_doc(doc);
         }

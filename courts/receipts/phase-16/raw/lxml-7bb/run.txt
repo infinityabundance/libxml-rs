@@ -1,0 +1,16 @@
+candidate_sha=WORKTREE (evidence for the commit that fixes HTML name case, head placement, frameset and boolean attributes)
+evidence_kind=parity fix (htmlParseHTMLName lower-casing, raw-text head inference, htmlCheckImplied frameset, htmlAttrDumpOutput boolean attrs)
+debug_libxml2_sha256=808024f4863207d232bc9b442609be4296f7bc24d8a7b878f249ae1d8c76394a
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=17 raw unique ids (lxml-7ba @ 090fd463), 16 excluding the flaky group
+lxml_suite_now=12 raw unique ids, 12 excluding the flaky group
+lxml_fixed=5 (doc/test_forms.txt, doc/test_rewritelinks.txt, test_parse_fromstring,
+  test_tags_upper_lower_case_html, test_xml_mode_write_inside_html)
+lxml_regressions=0 (filtered delta vs lxml-7ba)
+detail=all 4 HTML doctest/unit clusters green
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes
