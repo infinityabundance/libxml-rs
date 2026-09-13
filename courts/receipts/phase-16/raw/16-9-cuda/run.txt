@@ -1,5 +1,5 @@
-candidate_sha=e525f7e20689b02ff86a71bace20c8a9becdf9af
-worktree_dirty=yes
+candidate_sha=2d20f346d8c8a23639844e1a8265d71912af7a11
+worktree_dirty=no
 features=cuda
 Linux vanir 7.2.4-1-cachyos #1 SMP PREEMPT_DYNAMIC Thu, 10 Sep 2026 17:19:37 +0000 x86_64 GNU/Linux
 model name	: AMD Ryzen 7 9800X3D 8-Core Processor
