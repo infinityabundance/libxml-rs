@@ -1,0 +1,7 @@
+test_http_client (lxml.tests.test_http_io.HttpIOTestCase.test_http_client)
+test_http_client_gzip (lxml.tests.test_http_io.HttpIOTestCase.test_http_client_gzip)
+test_network_dtd (lxml.tests.test_http_io.HttpIOTestCase.test_network_dtd)
+test_parser_input_mix (lxml.tests.test_http_io.HttpIOTestCase.test_parser_input_mix)
+test_schematron_phases (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_phases)
+test_schematron_phases_kwarg (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_phases_kwarg)
+test_schematron_relaxng_embedded (lxml.tests.test_isoschematron.ETreeISOSchematronTestCase.test_schematron_relaxng_embedded)

@@ -1,0 +1,15 @@
+candidate_sha=WORKTREE (evidence for the commit that passes RTFs to C extension functions correctly)
+evidence_kind=parity fix (XPATH_XSLT_TREE argument conversion for C XPath functions)
+debug_libxml2_sha256=06898474dd4456d3e7bd0c6ca3180ab2ef7e2a612b6316c13b374667ae9479bb
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=8 raw unique ids (lxml-7bd @ 1cff0e63)
+lxml_suite_now=7 raw unique ids
+lxml_fixed=1 (test_variable_result_tree_fragment)
+lxml_regressions=0 (filtered delta vs lxml-7bd)
+detail=oracle-matching result <A>bXb</A> (extension function receives the fragment elements)
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes

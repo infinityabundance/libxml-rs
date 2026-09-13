@@ -1,0 +1,5 @@
+lxml full suite (test.py -u): 7 raw unique failing ids
+fixed this slice:
+  test_variable_result_tree_fragment
+regressions: none
+remaining: HTTP IO (4), isoschematron (3)

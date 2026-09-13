@@ -6116,6 +6116,34 @@ pub unsafe fn xpath_to_object_pub(val: XPathValue) -> *mut _xmlXPathObject {
     xpath_to_object(val)
 }
 
+/// Convert an argument value for a C-level XPath function call.
+///
+/// UPSTREAM-PARITY (transform.c xsltEvalXPathObject / xpath.c
+/// xmlXPathNewValueTree): a result tree fragment crosses into a C function as
+/// an `XPATH_XSLT_TREE` object whose node-set holds the fragment's document
+/// node. lxml unwraps such an object by descending into the document node's
+/// children, so a variable bound to inline content arrives as the fragment's
+/// top-level elements; a plain `XPATH_NODESET` holding the document node is
+/// dropped instead (document nodes are not elements).
+///
+/// # SAFETY
+///
+/// - `val` owns only valid node pointers for the duration of the call.
+pub unsafe fn xpath_arg_to_object(val: XPathValue) -> *mut _xmlXPathObject {
+    if let XPathValue::NodeSet(ns) = &val {
+        let nodes: Vec<*mut crate::abi::structs::_xmlNode> = ns.iter().collect();
+        if nodes.len() == 1 && !nodes[0].is_null() {
+            let is_doc = unsafe {
+                (*nodes[0]).type_ == crate::abi::types::xmlElementType::XML_DOCUMENT_NODE as c_int
+            };
+            if is_doc {
+                return unsafe { crate::xml::xpath::exports::xmlXPathNewValueTree(nodes[0]) };
+            }
+        }
+    }
+    xpath_to_object(val)
+}
+
 /// Public wrapper for `object_to_xpathvalue` (used by the XSLT engine).
 ///
 /// # Safety
@@ -6382,7 +6410,7 @@ pub(crate) unsafe fn call_xslt_ext_function(
         }
         let mut push_ok = true;
         for v in args {
-            let obj = xpath_to_object(v.clone());
+            let obj = crate::abi::exports_xml2::xpath_arg_to_object(v.clone());
             if obj.is_null() || crate::xml::xpath::parser_context::value_push(pc, obj).is_null() {
                 push_ok = false;
                 break;

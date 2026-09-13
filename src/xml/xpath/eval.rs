@@ -581,7 +581,7 @@ fn invoke_c_extension_function(
         // first, so the first argument sits on top of the stack).
         let mut ok = true;
         for val in args.iter().rev() {
-            let obj = crate::abi::exports_xml2::xpath_to_object_pub(val.clone());
+            let obj = crate::abi::exports_xml2::xpath_arg_to_object(val.clone());
             if obj.is_null() {
                 ok = false;
                 break;
