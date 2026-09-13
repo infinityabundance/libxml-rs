@@ -1,4 +1,4 @@
-candidate_sha=2670f4566e56bb4cad67545279ffc39c028aed15
+candidate_sha=009bb247f2800dd2af5d1d486f1baa04fc9c1d5f
 worktree_dirty=yes
 image=libxml-rs/phase14-debian:1
 Linux vanir 7.2.4-1-cachyos #1 SMP PREEMPT_DYNAMIC Thu, 10 Sep 2026 17:19:37 +0000 x86_64 GNU/Linux

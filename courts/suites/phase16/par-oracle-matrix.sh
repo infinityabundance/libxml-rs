@@ -84,3 +84,29 @@ for op in $OPS; do
   done
 done
 echo "matrix written: $OUT/par-oracle-matrix.csv"
+
+# Derived summary (median wall ns per cell + oracle-relative speedup) so the
+# compact evidence survives the next run's cleanup sweep.
+python3 - "$OUT/par-oracle-matrix.csv" "$OUT/summary.json" <<'PY'
+import csv, json, statistics, collections, sys
+rows = list(csv.DictReader(open(sys.argv[1])))
+g = collections.defaultdict(list)
+for r in rows:
+    g[(r["op"], int(r["bytes"]), r["provider"])].append(float(r["wall_ns_per_iter"]))
+def med(op, b, p):
+    v = g.get((op, b, p), [])
+    return statistics.median(v) if v else None
+out = []
+for (op, b) in sorted({(o, bb) for (o, bb, _) in g}):
+    o = med(op, b, "oracle")
+    if o is None:
+        continue
+    row = {"op": op, "bytes": b, "oracle_ns": o}
+    for p in ("cand-off", "cand-auto8", "cand-auto16", "cand-on8"):
+        c = med(op, b, p)
+        row[p + "_ns"] = c
+        row["speedup_" + p] = (o / c) if c else None
+    out.append(row)
+json.dump(out, open(sys.argv[2], "w"), indent=1)
+print("summary written:", sys.argv[2])
+PY
