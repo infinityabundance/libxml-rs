@@ -96,6 +96,25 @@ def main() -> int:
     if len(ids) != len(entries):
         failures.append("duplicate ids in manifest")
 
+    # 2b. per-file licence/attribution and substitution documentation.
+    for e in entries:
+        eid = e.get("id", "?")
+        if not str(e.get("license") or "").strip():
+            failures.append("%s: empty licence" % eid)
+        if not str(e.get("attribution") or "").strip():
+            failures.append("%s: empty attribution" % eid)
+        if e["category"] == "JATS-PMC":
+            if not e.get("article_pmcid"):
+                failures.append("%s: JATS entry lacks article_pmcid" % eid)
+            if not str(e.get("license_note") or "").strip():
+                failures.append("%s: JATS per-article licence not recorded" % eid)
+            if not str(e.get("spdx") or "").startswith("CC-"):
+                failures.append("%s: JATS licence not resolved to a CC identifier" % eid)
+        if e["category"] == "MAVEN" and not str(e.get("license_note") or "").strip():
+            failures.append("%s: Maven per-artifact licence not recorded" % eid)
+        if e["category"] in ("SEC-XBRL", "DBLP", "OSM") and not str(e.get("notes") or "").strip():
+            failures.append("%s: required provenance substitution is not documented" % eid)
+
     # 3-4. report coverage and size buckets
     with open(REPORT, encoding="utf-8") as f:
         report = json.load(f)
