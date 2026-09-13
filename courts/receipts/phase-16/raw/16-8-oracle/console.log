@@ -1,18 +1,18 @@
-  parse_comment_many @ 1048576: oracle single 722246.0 ns -> iters=41
-  parse_comment_many @ 4194304: oracle single 3179806.0 ns -> iters=9
-  parse_comment_many @ 16777216: oracle single 12810796.0 ns -> iters=2
-  parse_comment_many @ 67108864: oracle single 58061439.0 ns -> iters=1
-  parse_comment_one @ 1048576: oracle single 919894.0 ns -> iters=32
-  parse_comment_one @ 4194304: oracle single 3346537.0 ns -> iters=8
-  parse_cdata_many @ 1048576: oracle single 2469272.0 ns -> iters=12
-  parse_cdata_many @ 4194304: oracle single 9976904.0 ns -> iters=3
-  parse_cdata_many @ 16777216: oracle single 44153039.0 ns -> iters=1
-  parse_cdata_many @ 67108864: oracle single 166673994.0 ns -> iters=1
-  parse_cdata_one @ 1048576: oracle single 3176740.0 ns -> iters=9
-  parse_cdata_one @ 4194304: oracle single 11222456.0 ns -> iters=2
-  parse_e2e @ 1048576: oracle single 8366443.0 ns -> iters=3
-  parse_e2e @ 4194304: oracle single 40225029.0 ns -> iters=1
-  parse_e2e @ 16777216: oracle single 170342638.0 ns -> iters=1
-  parse_e2e @ 67108864: oracle single 650301297.0 ns -> iters=1
+  parse_comment_many @ 1048576: oracle single 686139.0 ns -> iters=43
+  parse_comment_many @ 4194304: oracle single 3106191.0 ns -> iters=9
+  parse_comment_many @ 16777216: oracle single 12402801.0 ns -> iters=2
+  parse_comment_many @ 67108864: oracle single 55683447.0 ns -> iters=1
+  parse_comment_one @ 1048576: oracle single 1022126.0 ns -> iters=29
+  parse_comment_one @ 4194304: oracle single 3308277.0 ns -> iters=9
+  parse_cdata_many @ 1048576: oracle single 2416245.0 ns -> iters=12
+  parse_cdata_many @ 4194304: oracle single 10823337.0 ns -> iters=2
+  parse_cdata_many @ 16777216: oracle single 43035538.0 ns -> iters=1
+  parse_cdata_many @ 67108864: oracle single 164342112.0 ns -> iters=1
+  parse_cdata_one @ 1048576: oracle single 2899946.0 ns -> iters=10
+  parse_cdata_one @ 4194304: oracle single 11183659.0 ns -> iters=2
+  parse_e2e @ 1048576: oracle single 7581544.0 ns -> iters=3
+  parse_e2e @ 4194304: oracle single 39373873.0 ns -> iters=1
+  parse_e2e @ 16777216: oracle single 169171249.0 ns -> iters=1
+  parse_e2e @ 67108864: oracle single 654660581.0 ns -> iters=1
 matrix written: /out/par-oracle-matrix.csv
 summary written: /out/summary.json

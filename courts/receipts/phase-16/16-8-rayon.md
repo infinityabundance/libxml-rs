@@ -1,11 +1,10 @@
 # Phase 16.8 — Rayon multicore parallel blocking: seal receipt
 
-Commit: (this commit)
+Commit: `803823b2` (§16.8 implementation) — sealed court evidence regenerated at
+`065581f1` with `worktree_dirty=no` (`raw/16-8-differential/run.txt`,
+`raw/16-8-oracle/run.txt`).
 Date: 2026-09-13
-Phase: 16.8 (§16.8.1–§16.8.8). Candidate SHA at measurement time:
-`2670f456` + this change set (working tree; the differential and oracle
-matrices record `worktree_dirty=yes` for the exploratory run — the clean-seal
-re-run is recorded in `raw/16-8-differential/run.txt` after the commit).
+Phase: 16.8 (§16.8.1–§16.8.8).
 
 This receipt follows the §16.4 discipline (before / patch / after / semantic
 gates / delta, `PHASE-16-4-PROFILING.md`) and the
@@ -264,16 +263,17 @@ provider per atlas §2). `speedup = oracle_time / candidate_time`:
 
 | operation | 1 MiB | 4 MiB | 16 MiB | 64 MiB |
 |---|---|---|---|---|
-| `parse_comment_many` | 2.18× | 2.26× | 2.13× | 2.70× |
-| `parse_comment_one` | 1.35× | 1.99× | — | — |
-| `parse_cdata_many` | 15.9× | 17.4× | 16.9× | 19.5× |
-| `parse_cdata_one` | 24.7× | 30.1× | — | — |
-| `parse_e2e` (dense) | 0.35× | 0.45× | 0.44× | 0.41× |
+| `parse_comment_many` | 2.31× | 2.57× | 2.47× | 2.94× |
+| `parse_comment_one` | 1.45× | 2.23× | — | — |
+| `parse_cdata_many` | 16.2× | 17.6× | 20.6× | 20.9× |
+| `parse_cdata_one` | 25.9× | 27.6× | — | — |
+| `parse_e2e` (dense) | 0.36× | 0.40× | 0.42× | 0.41× |
 
-(Values are the 8-thread `auto` column; `—` = omitted because upstream
-`XML_MAX_TEXT_LENGTH` rejects a single >10 MB run, see §10.)
+(Values are the 8-thread `auto` column of the sealed
+`raw/16-8-oracle/summary.json`; `—` = omitted because upstream
+`XML_MAX_TEXT_LENGTH` rejects a single >10 MB run, see §10.1.)
 
-The candidate now leads the oracle on every scan-bound shape, by 1.35×–30×. The
+The candidate now leads the oracle on every scan-bound shape, by 1.45×–27.6×. The
 `parse_e2e` (dense markup) row is a **pre-existing, out-of-§16.8 tokenizer-bound
 gap** (DOM construction), not a parallel-blocking result; it is recorded here so
 it is not hidden.
