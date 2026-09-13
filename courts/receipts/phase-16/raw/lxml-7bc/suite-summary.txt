@@ -1,0 +1,6 @@
+lxml full suite (test.py -u): 11 raw unique failing ids
+fixed this slice:
+  test_relaxng_generic_error
+regressions: none
+remaining clusters: HTTP IO (4), isoschematron (3), push recover/encoding (3),
+  variable_result_tree_fragment (1)

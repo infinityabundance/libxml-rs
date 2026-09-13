@@ -1,0 +1,16 @@
+candidate_sha=WORKTREE (evidence for the commit that fixes DTD/RELAX NG IDREF resolution)
+evidence_kind=parity fix (xmlValidateDocumentFinal IDREF walk, RELAX NG ID/IDREF registration)
+debug_libxml2_sha256=d4da26edce5439f37e1bbd2e10ff495da6a9c38747eb9cda3573a4cae5811356
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=12 raw unique ids (lxml-7bb @ 107513de)
+lxml_suite_now=11 raw unique ids
+lxml_fixed=1 (test_relaxng_generic_error)
+lxml_regressions=0 (filtered delta vs lxml-7bb)
+detail=test_relaxng.py 13 passed / 3 skipped; oracle message byte-identical
+  (IDREF attribute ref references an unknown ID "myref")
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes

@@ -1487,36 +1487,71 @@ pub unsafe fn validate_document_final(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDo
             return c.valid;
         }
 
-        // Check each IDREF against the IDs table
+        // Check each IDREF against the IDs table. UPSTREAM-PARITY (valid.c
+        // xmlValidateDocumentFinal -> xmlValidateRef): `doc->refs` maps a
+        // reference value to the list of xmlRef entries that use it; every
+        // entry whose value has no entry in `doc->ids` is reported. The
+        // attribute name and line come from the xmlRef (or its attribute).
         struct IdRefCheckContext {
             ctxt: *mut _xmlValidCtxt,
             doc: *mut _xmlDoc,
         }
 
-        extern "C" fn check_idref(
-            _payload: *mut c_void,
-            data: *mut c_void,
-            _name: *const xmlChar,
-            name2: *const xmlChar,
-            _name3: *const xmlChar,
-        ) {
-            if data.is_null() || name2.is_null() {
-                return;
+        extern "C" fn check_ref_entry(ref_ptr: *mut c_void, data: *mut c_void) -> c_int {
+            if ref_ptr.is_null() || data.is_null() {
+                return 1;
             }
-
-            // SAFETY: Called from hash_scan_full.
-            let cx = unsafe { &*(data as *mut IdRefCheckContext) };
+            // SAFETY: called by list_walk over a doc->refs list of xmlRef.
+            let r = unsafe { &*(ref_ptr as *const _xmlRef) };
+            let cx = unsafe { &*(data as *const IdRefCheckContext) };
             unsafe {
                 let doc_ref = &*cx.doc;
-
-                // Look up the IDREF value in the IDs table
-                if doc_ref.ids.is_null()
-                    || hash::hash_lookup(doc_ref.ids as *mut hash::HashTable, name2).is_null()
-                {
-                    let ref_str = string::xmlstr_to_string(name2);
-                    let err_msg = format!("IDREF '{}' does not reference a declared ID\0", ref_str);
+                if r.value.is_null() {
+                    return 1;
+                }
+                let missing = doc_ref.ids.is_null()
+                    || hash::hash_lookup(doc_ref.ids as *mut hash::HashTable, r.value).is_null();
+                if missing {
+                    let ref_str = string::xmlstr_to_string(r.value);
+                    let attr_name = if !r.attr.is_null() && !(*r.attr).name.is_null() {
+                        string::xmlstr_to_string((*r.attr).name)
+                    } else if !r.name.is_null() {
+                        string::xmlstr_to_string(r.name)
+                    } else {
+                        String::new()
+                    };
+                    let kind =
+                        if !r.attr.is_null() && (*r.attr).atype == XML_ATTRIBUTE_IDREFS as c_int {
+                            "IDREFS"
+                        } else {
+                            "IDREF"
+                        };
+                    let err_msg = format!(
+                        "{kind} attribute {attr_name} references an unknown ID \"{ref_str}\"\0"
+                    );
                     vctxt_error(cx.ctxt, err_msg.as_ptr() as *const c_char);
                 }
+            }
+            1
+        }
+
+        extern "C" fn check_idref(
+            payload: *mut c_void,
+            data: *mut c_void,
+            _name: *const xmlChar,
+            _name2: *const xmlChar,
+            _name3: *const xmlChar,
+        ) {
+            if payload.is_null() || data.is_null() {
+                return;
+            }
+            // SAFETY: payload is the xmlList stored under the ref value.
+            unsafe {
+                crate::xml::list::list_walk(
+                    payload as *mut crate::xml::list::List,
+                    Some(check_ref_entry),
+                    data,
+                );
             }
         }
 

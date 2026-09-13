@@ -86,6 +86,7 @@ use core::ptr;
 use std::os::raw::{c_char, c_int};
 
 use crate::abi::structs::*;
+use crate::abi::types::xmlChar;
 use crate::abi::types::xmlElementType::*;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -316,6 +317,10 @@ pub struct RelaxNgSchema {
     /// structurally invalid — e.g. `xmlRelaxNGParseElement` on an `<element>`
     /// with no content — while plain warnings keep the schema usable.
     pub fatal: bool,
+    /// Whether the schema uses `IDREF`/`IDREFS` from the XML Schema datatype
+    /// library (upstream `xmlRelaxNGParserCtxt->idref`). When set, validation
+    /// runs the final ID/IDREF check so an unresolved reference is reported.
+    pub idref: bool,
 }
 
 impl RelaxNgSchema {
@@ -324,6 +329,7 @@ impl RelaxNgSchema {
             grammar: RelaxNgGrammar::new(),
             errors: Vec::new(),
             fatal: false,
+            idref: false,
         }
     }
 }
@@ -1318,12 +1324,25 @@ unsafe fn rng_parse_unary_pattern(
 /// - `node` must be a valid pointer to a `<data>` element node.
 unsafe fn rng_parse_data_pattern(
     node: *mut _xmlNode,
-    _schema: &mut RelaxNgSchema,
+    schema: &mut RelaxNgSchema,
 ) -> RelaxNgPattern {
     unsafe {
         let mut pattern = RelaxNgPattern::new(RelaxNgPatternType::Data);
         pattern.datatype = get_attr(node, "type");
         pattern.datatype_library = get_attr(node, "datatypeLibrary");
+
+        // UPSTREAM-PARITY (relaxng.c xmlRelaxNGParseData): an IDREF/IDREFS
+        // data pattern from the XML Schema datatype library arms the final
+        // ID/IDREF check (`xmlValidateDocumentFinal`).
+        if let Some(dt) = pattern.datatype.as_deref() {
+            let xsd_lib = matches!(
+                pattern.datatype_library.as_deref(),
+                None | Some("http://www.w3.org/2001/XMLSchema-datatypes")
+            );
+            if xsd_lib && (dt == "IDREF" || dt == "IDREFS") {
+                schema.idref = true;
+            }
+        }
 
         // For basic support, we store the type and don't process params in detail
         pattern
@@ -1738,6 +1757,21 @@ unsafe fn rng_match_ends(
                         let val = get_node_text(node);
                         let mut d = 0;
                         if rng_attr_value_valid(pattern, &val, schema, &mut d) {
+                            // UPSTREAM-PARITY (xmlschemastypes.c
+                            // xmlSchemaValAtomicType): an ID/IDREF attribute
+                            // registers in the document's tables, which
+                            // xmlValidateDocumentFinal then walks.
+                            if let Some(dt) =
+                                unsafe { rng_pattern_idref_datatype(pattern, schema, 0) }
+                            {
+                                unsafe {
+                                    rng_register_attr_id_ref(
+                                        node as *mut crate::abi::structs::_xmlAttr,
+                                        dt,
+                                        &val,
+                                    )
+                                };
+                            }
                             out.push(start + 1);
                         }
                     }
@@ -2390,7 +2424,24 @@ fn rng_validate_attribute_pattern(
                     let valid = match content.pattern_type {
                         RelaxNgPatternType::Text => true,
                         RelaxNgPatternType::Data => {
-                            rng_validate_datatype_value(content.datatype.as_deref(), &val)
+                            let ok = rng_validate_datatype_value(content.datatype.as_deref(), &val);
+                            if ok {
+                                // UPSTREAM-PARITY (xmlschemastypes.c
+                                // xmlSchemaValAtomicType): validating an ID/
+                                // IDREF attribute against the XSD library
+                                // registers it in the document's ID/ref
+                                // tables, which xmlValidateDocumentFinal
+                                // (relaxng.c xmlRelaxNGValidateDoc) then walks.
+                                unsafe {
+                                    rng_register_id_ref(
+                                        node,
+                                        &attr_name,
+                                        content.datatype.as_deref(),
+                                        &val,
+                                    )
+                                };
+                            }
+                            ok
                         }
                         RelaxNgPatternType::Value => content.value.as_deref() == Some(&val),
                         _ => true,
@@ -2961,6 +3012,171 @@ fn rng_validate_ref_pattern(
 // Datatype Validation for RELAX NG
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/// Register an ID/IDREF attribute value in the document's ID/ref tables given
+/// the attribute node itself.
+///
+/// UPSTREAM-PARITY (xmlschemastypes.c `xmlSchemaValAtomicType`): validating an
+/// attribute declared `ID` calls `xmlAddIDSafe`, and `IDREF`/`IDREFS` call
+/// `xmlAddRef`. libxml2's RELAX NG validator relies on those tables: when the
+/// schema uses IDREF/IDREFS it runs `xmlValidateDocumentFinal`, which reports
+/// every reference that resolves to no declared ID.
+///
+/// # SAFETY
+///
+/// - `attr` must be a valid attribute node (or NULL).
+unsafe fn rng_register_attr_id_ref(
+    attr: *mut crate::abi::structs::_xmlAttr,
+    datatype: &str,
+    value: &str,
+) {
+    unsafe {
+        if attr.is_null() {
+            return;
+        }
+        let doc = (*(attr as *mut _xmlNode)).doc;
+        if doc.is_null() {
+            return;
+        }
+        if datatype == "ID" {
+            let c = std::ffi::CString::new(value).unwrap_or_default();
+            // Register each attribute at most once: the content matcher may
+            // revisit the same attribute across alternate match states.
+            if !(*doc).ids.is_null() {
+                let existing = crate::xml::hash::hash_lookup(
+                    (*doc).ids as *mut crate::xml::hash::HashTable,
+                    c.as_ptr() as *const xmlChar,
+                );
+                if !existing.is_null()
+                    && (*(existing as *const crate::abi::structs::_xmlID)).attr == attr
+                {
+                    return;
+                }
+            }
+            crate::xml::validation::add_id_safe(attr, c.as_ptr() as *const xmlChar);
+        } else if datatype == "IDREF" || datatype == "IDREFS" {
+            for token in value.split_whitespace() {
+                let c = std::ffi::CString::new(token).unwrap_or_default();
+                // Skip a reference this attribute already registered.
+                if !(*doc).refs.is_null() {
+                    let list = crate::xml::hash::hash_lookup(
+                        (*doc).refs as *mut crate::xml::hash::HashTable,
+                        c.as_ptr() as *const xmlChar,
+                    ) as *mut crate::xml::list::List;
+                    if !list.is_null() && ref_list_has_attr(list, attr) {
+                        continue;
+                    }
+                }
+                crate::xml::validation::add_ref(
+                    ptr::null_mut(),
+                    doc,
+                    c.as_ptr() as *const xmlChar,
+                    attr,
+                );
+            }
+        }
+    }
+}
+
+/// Whether a `doc->refs` list already holds a reference for `attr`.
+unsafe fn ref_list_has_attr(
+    list: *mut crate::xml::list::List,
+    attr: *mut crate::abi::structs::_xmlAttr,
+) -> bool {
+    struct Ctx {
+        attr: *mut crate::abi::structs::_xmlAttr,
+        found: bool,
+    }
+    extern "C" fn walk(ref_ptr: *mut c_void, data: *mut c_void) -> c_int {
+        if ref_ptr.is_null() || data.is_null() {
+            return 1;
+        }
+        // SAFETY: entries of doc->refs lists are xmlRef pointers.
+        let cx = unsafe { &mut *(data as *mut Ctx) };
+        let r = unsafe { &*(ref_ptr as *const crate::abi::structs::_xmlRef) };
+        if r.attr == cx.attr {
+            cx.found = true;
+            return 0;
+        }
+        1
+    }
+    let mut cx = Ctx { attr, found: false };
+    unsafe { crate::xml::list::list_walk(list, Some(walk), &mut cx as *mut Ctx as *mut c_void) };
+    cx.found
+}
+
+/// Find the ID/IDREF/IDREFS datatype declared inside an attribute pattern
+/// (recursively through `ref`, `choice` and wrappers).
+///
+/// # SAFETY
+///
+/// - `pattern` and the grammar it references must be live.
+unsafe fn rng_pattern_idref_datatype<'a>(
+    pattern: &'a RelaxNgPattern,
+    schema: &'a RelaxNgSchema,
+    depth: i32,
+) -> Option<&'a str> {
+    if depth > 64 {
+        return None;
+    }
+    match pattern.pattern_type {
+        RelaxNgPatternType::Data => match pattern.datatype.as_deref() {
+            Some(d @ ("ID" | "IDREF" | "IDREFS")) => Some(d),
+            _ => None,
+        },
+        RelaxNgPatternType::Ref => {
+            match schema.grammar.lookup(pattern.name.as_deref().unwrap_or("")) {
+                Some(def) => unsafe { rng_pattern_idref_datatype(def, schema, depth + 1) },
+                None => None,
+            }
+        }
+        _ => pattern
+            .children
+            .iter()
+            .find_map(|c| unsafe { rng_pattern_idref_datatype(c, schema, depth + 1) }),
+    }
+}
+
+/// Register an ID/IDREF element attribute value (element + attribute name).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid element node (or NULL); `value` a `&str`.
+unsafe fn rng_register_id_ref(
+    node: *mut _xmlNode,
+    attr_name: &str,
+    datatype: Option<&str>,
+    value: &str,
+) {
+    unsafe {
+        let dt = match datatype {
+            Some(d) => d,
+            None => return,
+        };
+        if dt != "ID" && dt != "IDREF" && dt != "IDREFS" {
+            return;
+        }
+        if node.is_null() || (*node).doc.is_null() {
+            return;
+        }
+        // Locate the attribute node (XSD registration happens on the attribute).
+        let mut prop = (*node).properties;
+        while !prop.is_null() {
+            if !(*prop).name.is_null()
+                && unsafe {
+                    crate::abi::exports_xml2::xmlStrEqual(
+                        (*prop).name,
+                        attr_name.as_ptr() as *const xmlChar,
+                    )
+                } != 0
+            {
+                rng_register_attr_id_ref(prop as *mut crate::abi::structs::_xmlAttr, dt, value);
+                return;
+            }
+            prop = (*prop).next;
+        }
+    }
+}
+
 /// Validate a value against a RELAX NG datatype.
 ///
 /// RELAX NG supports a subset of XML Schema datatypes. This function
@@ -3353,7 +3569,37 @@ pub unsafe extern "C" fn xmlRelaxNGValidateDoc(ctxt: *mut c_void, doc: *mut _xml
 
         let mut temp_ctxt = RelaxNgValidCtxt::new();
 
-        let valid = rng_validate_doc(schema, doc, &mut temp_ctxt);
+        let mut valid = rng_validate_doc(schema, doc, &mut temp_ctxt);
+
+        // UPSTREAM-PARITY (relaxng.c xmlRelaxNGValidateDoc): when the schema
+        // uses IDREF/IDREFS, libxml2 runs xmlValidateDocumentFinal over the
+        // whole document so an unresolved IDREF is reported as a RELAX NG
+        // validation error (`test_relaxng_generic_error`).
+        if valid && schema.idref {
+            /// Collect `xmlValidCtxt` diagnostics into the RELAX NG context.
+            extern "C" fn rng_idref_error(ctx: *mut c_void, msg: *const c_char) {
+                if ctx.is_null() || msg.is_null() {
+                    return;
+                }
+                // SAFETY: ctx is the RelaxNgValidCtxt passed as userData below.
+                let ctxt = unsafe { &mut *(ctx as *mut RelaxNgValidCtxt) };
+                // SAFETY: msg is a valid NUL-terminated string.
+                let text = unsafe { std::ffi::CStr::from_ptr(msg) }
+                    .to_string_lossy()
+                    .trim_end()
+                    .to_string();
+                ctxt.record_error(text);
+            }
+            // SAFETY: zeroed _xmlValidCtxt is a valid empty validation context.
+            let mut vctxt: crate::abi::structs::_xmlValidCtxt = unsafe { core::mem::zeroed() };
+            vctxt.userData = &mut temp_ctxt as *mut RelaxNgValidCtxt as *mut c_void;
+            vctxt.error = Some(rng_idref_error);
+            vctxt.valid = 1;
+            let ok = unsafe { crate::xml::validation::validate_document_final(&mut vctxt, doc) };
+            if ok == 0 {
+                valid = false;
+            }
+        }
 
         if valid {
             0
