@@ -20,8 +20,11 @@ IMAGE="${BENCH_IMAGE:-libxml-rs/phase14-debian:1}"
 
 rm -rf "$OUT" 2>/dev/null || true
 # Files created by earlier docker runs are root-owned; clean through docker.
+# The tracked `.gitignore` is PRESERVED (deleting it would un-ignore the raw
+# per-cell outputs and the next `git add -A` would commit the large dumps).
 if [ -d "$OUT" ] && [ -n "$(ls -A "$OUT" 2>/dev/null)" ]; then
-  docker run --rm -v "$OUT":/scanout "$IMAGE" bash -lc 'rm -rf /scanout/* /scanout/.[!.]* 2>/dev/null; exit 0' >/dev/null 2>&1 || true
+  docker run --rm -v "$OUT":/scanout "$IMAGE" bash -lc \
+    'cd /scanout; for f in * .[!.]*; do [ "$f" = ".gitignore" ] || rm -rf -- "$f"; done; exit 0' >/dev/null 2>&1 || true
 fi
 mkdir -p "$OUT"
 OUT="$(cd "$OUT" && pwd)"
