@@ -15,6 +15,11 @@ ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 OUT="${1:-$ROOT/courts/receipts/phase-16/raw/16-8-differential}"
 IMAGE="${BENCH_IMAGE:-libxml-rs/phase14-debian:1}"
 
+# Capture the source state BEFORE the cleanup below deletes tracked evidence
+# files (their absence would otherwise make the tree look dirty).
+CANDIDATE_SHA="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
+WORKTREE_DIRTY="$( [ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" ] && echo yes || echo no )"
+
 # Files created by earlier docker runs are root-owned; clean through docker.
 # The tracked `.gitignore` is PRESERVED (deleting it would un-ignore the raw
 # per-cell outputs and the next `git add -A` would commit the large dumps).
@@ -26,8 +31,8 @@ mkdir -p "$OUT"
 OUT="$(cd "$OUT" && pwd)"
 
 {
-  echo "candidate_sha=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
-  echo "worktree_dirty=$( [ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" ] && echo yes || echo no )"
+  echo "candidate_sha=$CANDIDATE_SHA"
+  echo "worktree_dirty=$WORKTREE_DIRTY"
   echo "image=$IMAGE"
   uname -a
   grep -m1 'model name' /proc/cpuinfo || true
