@@ -1,0 +1,6 @@
+lxml full suite (test.py -u): 22 raw unique failing ids (21 excluding the known-flaky group)
+fixed this slice:
+  doc/tutorial.txt (265/265 doctest examples)
+  doc/parsing.txt (167/167 doctest examples)
+  test_iterparse_strip
+regressions: none

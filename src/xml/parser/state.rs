@@ -4243,9 +4243,15 @@ impl XmlParser {
                 }
                 if attr_name == b"xmlns" {
                     // Default namespace declaration: xmlns="uri"
+                    if self.ns_decl_is_redundant(b"", &attr_value) {
+                        continue;
+                    }
                     ns_decls.push((Vec::new(), attr_value.clone()));
                 } else if let Some(prefix) = attr_name.strip_prefix(b"xmlns:") {
                     // Prefixed namespace declaration: xmlns:prefix="uri"
+                    if self.ns_decl_is_redundant(prefix, &attr_value) {
+                        continue;
+                    }
                     ns_decls.push((prefix.to_vec(), attr_value.clone()));
                 } else {
                     // Regular attribute
@@ -6910,6 +6916,125 @@ impl XmlParser {
             .all(|&x| x == b' ' || x == b'\t' || x == b'\n' || x == b'\r')
     }
 
+    /// The two raw bytes at and immediately after the base input's cursor
+    /// (NUL past the materialized end, matching libxml2's NUL sentinel).
+    fn raw_at_cursor(&self) -> (u8, u8) {
+        let pos = self.base_input().pos().2;
+        let len = self.base_input().len();
+        let byte = |k: usize| -> u8 {
+            if k < len {
+                self.base_input().raw_range(k, k + 1)[0]
+            } else {
+                0
+            }
+        };
+        (byte(pos), byte(pos + 1))
+    }
+
+    /// Upstream `areBlanks` (parser.c 2.15.3): whether a whitespace-only run is
+    /// IGNORABLE under `XML_PARSE_NOBLANKS`.
+    ///
+    /// `raw`/`nxt1` are the bytes at and immediately after the input cursor —
+    /// the run has already been consumed, so `raw` is the byte that follows
+    /// it. The decisive case is a leaf element such as `<b>  </b>`: the run has
+    /// no element siblings, so it is the element's character content and must
+    /// be KEPT even though it is all whitespace. Dropping it (the pre-`areBlanks`
+    /// behaviour) turned `<b>  </b>` into `<b/>`.
+    ///
+    /// The `xml:space` stack is consulted when the C context exposes it; with
+    /// no `xml:space` declaration upstream's slot is `-1` (undefined) and the
+    /// heuristic applies.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `node` and
+    ///   the node links it reaches must be valid or NULL.
+    fn blanks_ignorable(&self, raw: u8, nxt1: u8) -> bool {
+        unsafe {
+            let space = (*self.ctxt).space;
+            if !space.is_null() && (*space == 1 || *space == -2) {
+                return false;
+            }
+            let node = (*self.ctxt).node;
+            if node.is_null() {
+                return false;
+            }
+            // The run must end at a tag boundary (or a CR) for the heuristic
+            // to apply at all.
+            if raw != b'<' && raw != b'\r' {
+                return false;
+            }
+            // `<b>  </b>`: no children yet and the run is the leaf content.
+            if (*node).children.is_null() && raw == b'<' && nxt1 == b'/' {
+                return false;
+            }
+            let last = crate::abi::exports_misc::xmlGetLastChild(node);
+            if last.is_null() {
+                if (*node).type_ != XML_ELEMENT_NODE as c_int && !(*node).content.is_null() {
+                    return false;
+                }
+            } else if (*last).type_ == XML_TEXT_NODE as c_int {
+                return false;
+            } else {
+                let first = (*node).children;
+                if !first.is_null() && (*first).type_ == XML_TEXT_NODE as c_int {
+                    return false;
+                }
+            }
+            true
+        }
+    }
+
+    /// Upstream `xmlParserNsPush` under `XML_PARSE_NSCLEAN` (parser.c): a
+    /// namespace declaration whose prefix is already in scope with the SAME
+    /// URI is redundant and is dropped rather than creating a new `xmlNs`.
+    ///
+    /// Scope is the ancestor chain: the parser-scoped `ns_scope` stack (used
+    /// by pure-SAX parses, where there are no tree nodes) plus the `nsDef`
+    /// lists of the open tree ancestors. Declarations on the current element
+    /// are not consulted here — upstream treats those as duplicate-attribute
+    /// errors, a separate path.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `node` and
+    ///   the `nsDef` links it reaches must be valid or NULL.
+    fn ns_decl_is_redundant(&self, prefix: &[u8], uri: &[u8]) -> bool {
+        if unsafe { (*self.ctxt).options } & XML_PARSE_NSCLEAN == 0 {
+            return false;
+        }
+        if self
+            .ns_scope
+            .iter()
+            .any(|(p, u)| p.as_slice() == prefix && u.as_slice() == uri)
+        {
+            return true;
+        }
+        unsafe {
+            let cstr = |p: *const xmlChar| -> Vec<u8> {
+                if p.is_null() {
+                    Vec::new()
+                } else {
+                    std::ffi::CStr::from_ptr(p as *const c_char)
+                        .to_bytes()
+                        .to_vec()
+                }
+            };
+            let mut n = (*self.ctxt).node;
+            while !n.is_null() {
+                let mut ns = (*n).nsDef;
+                while !ns.is_null() {
+                    if cstr((*ns).prefix) == prefix && cstr((*ns).href) == uri {
+                        return true;
+                    }
+                    ns = (*ns).next;
+                }
+                n = (*n).parent;
+            }
+        }
+        false
+    }
+
     /// Fire `characters` SAX event from a token payload (§16.5.3). A pure
     /// base-input run dispatches with a pointer into the input data — no
     /// C-string copy — exactly like upstream, which hands the SAX
@@ -6950,7 +7075,10 @@ impl XmlParser {
             )
         };
         if all_ws {
-            return;
+            let (raw, nxt1) = self.raw_at_cursor();
+            if self.blanks_ignorable(raw, nxt1) {
+                return;
+            }
         }
         self.sax_characters_parts(ch, len);
     }
@@ -6983,7 +7111,10 @@ impl XmlParser {
                 .iter()
                 .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
         {
-            return false;
+            let (raw, nxt1) = self.raw_at_cursor();
+            if self.blanks_ignorable(raw, nxt1) {
+                return false;
+            }
         }
         self.sax_characters(data);
         true

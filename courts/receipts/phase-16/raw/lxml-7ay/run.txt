@@ -1,0 +1,15 @@
+candidate_sha=WORKTREE (evidence for the commit that implements areBlanks and NSCLEAN)
+evidence_kind=parity fix (XML_PARSE_NOBLANKS areBlanks heuristic, XML_PARSE_NSCLEAN)
+debug_libxml2_sha256=07a687058abc5d2a448de509b21633f771f9d504ffee882c72b1269e6ac8b010
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=25 raw unique ids (lxml-7ax @ c0c96cad), 24 excluding the flaky group
+lxml_suite_now=22 raw unique ids, 21 excluding the flaky group
+lxml_fixed=3 (doc/tutorial.txt, doc/parsing.txt, test_iterparse_strip)
+lxml_regressions=0 (filtered delta vs lxml-7ax)
+detail=doc/tutorial.txt 265/265; doc/parsing.txt 167/167
+unit_tests=cargo test --lib -> 1325 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes
