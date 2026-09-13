@@ -16,9 +16,10 @@ OUT="${1:-$ROOT/courts/receipts/phase-16/raw/16-8-differential}"
 IMAGE="${BENCH_IMAGE:-libxml-rs/phase14-debian:1}"
 
 # Capture the source state BEFORE the cleanup below deletes tracked evidence
-# files (their absence would otherwise make the tree look dirty).
+# files. The raw evidence tree is excluded from the seal: it is the *output*
+# of the court, so regenerating it must not mark the source under test dirty.
 CANDIDATE_SHA="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
-WORKTREE_DIRTY="$( [ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" ] && echo yes || echo no )"
+WORKTREE_DIRTY="$( [ -n "$(git -C "$ROOT" status --porcelain -- . ':(exclude)courts/receipts/phase-16/raw' 2>/dev/null)" ] && echo yes || echo no )"
 
 # Files created by earlier docker runs are root-owned; clean through docker.
 # The tracked `.gitignore` is PRESERVED (deleting it would un-ignore the raw
