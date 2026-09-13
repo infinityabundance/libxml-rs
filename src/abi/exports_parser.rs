@@ -841,6 +841,10 @@ pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
             xmlFreeImpl(c.encoding as *mut c_void);
             c.encoding = ptr::null_mut();
         }
+        if !c.intSubName.is_null() {
+            xmlFreeImpl(c.intSubName as *mut c_void);
+            c.intSubName = ptr::null();
+        }
         if !c.extSubURI.is_null() {
             xmlFreeImpl(c.extSubURI as *mut c_void);
             c.extSubURI = ptr::null_mut();

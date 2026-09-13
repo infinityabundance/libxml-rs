@@ -661,6 +661,25 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
         (*ctxt).encoding = ptr::null_mut();
         (*ctxt).directory = ptr::null_mut();
 
+        // The DOCTYPE declaration strings are also context-owned: `intSubName`
+        // (xmlSAX2InternalSubset / xmlParseDocTypeDecl) alongside the external
+        // id pair. Reclaiming only the external pair leaked `intSubName` on
+        // every document with a DOCTYPE (Phase 16 ASan fuzz finding on
+        // `<!DOCTYPE a<0xbc>`); the three are freed together and nulled so the
+        // next `parse_doctype_decl` cannot double-free them.
+        if !(*ctxt).intSubName.is_null() {
+            xmlFreeImpl((*ctxt).intSubName as *mut c_void);
+            (*ctxt).intSubName = ptr::null();
+        }
+        if !(*ctxt).extSubURI.is_null() {
+            xmlFreeImpl((*ctxt).extSubURI as *mut c_void);
+            (*ctxt).extSubURI = ptr::null_mut();
+        }
+        if !(*ctxt).extSubSystem.is_null() {
+            xmlFreeImpl((*ctxt).extSubSystem as *mut c_void);
+            (*ctxt).extSubSystem = ptr::null_mut();
+        }
+
         // Free the stored InputBuffer (stashed in the side table by
         // setup_parser_input). `ctxt._private` is application data and is
         // NEVER touched here (11.1-X).

@@ -1,0 +1,38 @@
+#!/bin/sh
+# par-run.sh — §16.8 parallel-blocking differential launcher (host side).
+#
+# Runs courts/suites/phase16/par-differential.sh inside the oracle court VM
+# against the release candidate DSOs, writing raw outputs + console log to
+# courts/receipts/phase-16/raw/16-8-differential/.
+#
+# Requires a release build: cargo build --release --lib &&
+# sh tools/packaging/facade-gen.sh target/release
+#
+# Usage: sh courts/suites/phase16/par-run.sh [out-dir] [image]
+# Env: BENCH_IMAGE default libxml-rs/phase14-debian:1.
+set -eu
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+OUT="${1:-$ROOT/courts/receipts/phase-16/raw/16-8-differential}"
+IMAGE="${BENCH_IMAGE:-libxml-rs/phase14-debian:1}"
+
+if [ -d "$OUT" ] && [ -n "$(ls -A "$OUT" 2>/dev/null)" ]; then
+  docker run --rm -v "$OUT":/scanout "$IMAGE" bash -lc \
+    'rm -rf /scanout/* /scanout/.[!.]* 2>/dev/null; exit 0' >/dev/null 2>&1 || true
+fi
+mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"
+
+{
+  echo "candidate_sha=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
+  echo "worktree_dirty=$( [ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" ] && echo yes || echo no )"
+  echo "image=$IMAGE"
+  uname -a
+  grep -m1 'model name' /proc/cpuinfo || true
+} > "$OUT/run.txt"
+
+docker run --rm \
+  -v "$ROOT/courts":/court:ro \
+  -v "$ROOT/target/release":/candidate:ro \
+  -v "$OUT":/parout \
+  "$IMAGE" \
+  bash /court/suites/phase16/par-differential.sh 2>&1 | tee "$OUT/console.log"

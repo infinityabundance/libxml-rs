@@ -1,0 +1,17 @@
+  parse_comment_many @ 1048576: oracle single 740250.0 ns -> iters=40
+  parse_comment_many @ 4194304: oracle single 3556107.0 ns -> iters=8
+  parse_comment_many @ 16777216: oracle single 12655125.0 ns -> iters=2
+  parse_comment_many @ 67108864: oracle single 60931167.0 ns -> iters=1
+  parse_comment_one @ 1048576: oracle single 924873.0 ns -> iters=32
+  parse_comment_one @ 4194304: oracle single 3179987.0 ns -> iters=9
+  parse_cdata_many @ 1048576: oracle single 3272910.0 ns -> iters=9
+  parse_cdata_many @ 4194304: oracle single 10722744.0 ns -> iters=2
+  parse_cdata_many @ 16777216: oracle single 47179669.0 ns -> iters=1
+  parse_cdata_many @ 67108864: oracle single 167777519.0 ns -> iters=1
+  parse_cdata_one @ 1048576: oracle single 3138108.0 ns -> iters=9
+  parse_cdata_one @ 4194304: oracle single 12876138.0 ns -> iters=2
+  parse_e2e @ 1048576: oracle single 7546314.0 ns -> iters=3
+  parse_e2e @ 4194304: oracle single 41147428.0 ns -> iters=1
+  parse_e2e @ 16777216: oracle single 171244955.0 ns -> iters=1
+  parse_e2e @ 67108864: oracle single 767858139.0 ns -> iters=1
+matrix written: /out/par-oracle-matrix.csv

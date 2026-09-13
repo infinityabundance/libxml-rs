@@ -1009,7 +1009,7 @@ pub const unsafe extern "C" fn xmlUTF8Size(utf: *const xmlChar) -> c_int {
 /// int xmlCheckUTF8(const unsigned char *utf);
 /// ```
 #[no_mangle]
-pub const unsafe extern "C" fn xmlCheckUTF8(utf: *const xmlChar) -> c_int {
+pub unsafe extern "C" fn xmlCheckUTF8(utf: *const xmlChar) -> c_int {
     crate::xml::string::check_utf8(utf)
 }
 

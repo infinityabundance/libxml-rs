@@ -433,47 +433,25 @@ pub const unsafe fn utf8_size(utf: *const xmlChar) -> c_int {
 /// Check that a byte string is valid UTF-8 (upstream `xmlCheckUTF8`):
 /// returns 1 when valid, 0 otherwise.
 ///
+/// §16.8.3 Level B: the string length is measured (`strlen`) and the bytes are
+/// handed to the shared validator, which runs the parallel lead-byte-aligned
+/// pass for a long string and the identical scalar walk otherwise. The answer is
+/// byte-for-byte the same as the previous byte-at-a-time loop (upstream's lax
+/// *shape* semantics: `xmlCheckUTF8` does not reject overlong forms, surrogates,
+/// or out-of-range code points).
+///
 /// # Safety
 ///
 /// - `utf` must be a valid null-terminated byte string.
-pub const unsafe fn check_utf8(utf: *const xmlChar) -> c_int {
+pub unsafe fn check_utf8(utf: *const xmlChar) -> c_int {
     if utf.is_null() {
         return 0;
     }
-    unsafe {
-        let mut cur = utf;
-        while *cur != 0 {
-            let c = *cur;
-            if c & 0x80 == 0 {
-                cur = cur.add(1);
-            } else if c & 0xe0 == 0xc0 {
-                // 2-byte: 110xxxxx 10xxxxxx
-                let c1 = *cur.add(1);
-                if c1 & 0xc0 != 0x80 {
-                    return 0;
-                }
-                cur = cur.add(2);
-            } else if c & 0xf0 == 0xe0 {
-                let c1 = *cur.add(1);
-                let c2 = *cur.add(2);
-                if c1 & 0xc0 != 0x80 || c2 & 0xc0 != 0x80 {
-                    return 0;
-                }
-                cur = cur.add(3);
-            } else if c & 0xf8 == 0xf0 {
-                let c1 = *cur.add(1);
-                let c2 = *cur.add(2);
-                let c3 = *cur.add(3);
-                if c1 & 0xc0 != 0x80 || c2 & 0xc0 != 0x80 || c3 & 0xc0 != 0x80 {
-                    return 0;
-                }
-                cur = cur.add(4);
-            } else {
-                return 0;
-            }
-        }
-        1
-    }
+    // SAFETY: the caller guarantees a NUL-terminated string, so `strlen` stays
+    // in bounds; the slice then covers exactly its bytes.
+    let len = unsafe { libc::strlen(utf as *const core::ffi::c_char) };
+    let bytes = unsafe { core::slice::from_raw_parts(utf, len) };
+    crate::xml::parser::scan::parallel::utf8_is_valid_lax(bytes) as c_int
 }
 #[inline]
 pub(crate) const unsafe fn xml_str_starts_with(

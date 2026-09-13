@@ -30,6 +30,8 @@
 //! by the §16.7.7 differential suites and the fuzzers); `auto` uses runtime
 //! feature detection with a conservative evidence-driven policy.
 
+pub(crate) mod parallel;
+pub(crate) mod pool;
 pub(crate) mod scalar;
 #[cfg(target_arch = "x86_64")]
 pub(crate) mod x86;

@@ -1,0 +1,65 @@
+wrote 100 documents
+corpus: 175 documents
+probe ref rc=0 rows=162479 err=49
+probe avx2 rc=0 rows=162479 err=49
+probe avx512 rc=0 rows=162479 err=49
+probe auto_t1 rc=0 rows=162479 err=49
+probe on_t1 rc=0 rows=162479 err=49
+probe auto_t2 rc=0 rows=162479 err=49
+probe on_t2 rc=0 rows=162479 err=49
+probe auto_t4 rc=0 rows=162479 err=49
+probe on_t4 rc=0 rows=162479 err=49
+probe auto_t8 rc=0 rows=162479 err=49
+probe on_t8 rc=0 rows=162479 err=49
+probe auto_t16 rc=0 rows=162479 err=49
+probe on_t16 rc=0 rows=162479 err=49
+probe auto_thr0_t2 rc=0 rows=162479 err=49
+probe auto_thr0_t8 rc=0 rows=162479 err=49
+probe auto_thr0_t16 rc=0 rows=162479 err=49
+PASS G1 backend-invariance ref==avx2: ref == avx2 (stdout+stderr)
+PASS G1 backend-invariance ref==avx512: ref == avx512 (stdout+stderr)
+PASS G2 parallel-invariance ref==auto_t1: ref == auto_t1 (stdout+stderr)
+PASS G2 parallel-invariance ref==auto_t2: ref == auto_t2 (stdout+stderr)
+PASS G2 parallel-invariance ref==auto_t4: ref == auto_t4 (stdout+stderr)
+PASS G2 parallel-invariance ref==auto_t8: ref == auto_t8 (stdout+stderr)
+PASS G2 parallel-invariance ref==auto_t16: ref == auto_t16 (stdout+stderr)
+PASS G2 parallel-invariance ref==on_t1: ref == on_t1 (stdout+stderr)
+PASS G2 parallel-invariance ref==on_t2: ref == on_t2 (stdout+stderr)
+PASS G2 parallel-invariance ref==on_t4: ref == on_t4 (stdout+stderr)
+PASS G2 parallel-invariance ref==on_t8: ref == on_t8 (stdout+stderr)
+PASS G2 parallel-invariance ref==on_t16: ref == on_t16 (stdout+stderr)
+PASS G2 parallel-invariance ref==auto_thr0_t2: ref == auto_thr0_t2 (stdout+stderr)
+PASS G2 parallel-invariance ref==auto_thr0_t8: ref == auto_thr0_t8 (stdout+stderr)
+PASS G2 parallel-invariance ref==auto_thr0_t16: ref == auto_thr0_t16 (stdout+stderr)
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-auto_t1
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-auto_t16
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-auto_t2
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-auto_t4
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-auto_t8
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-auto_thr0_t16
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-auto_thr0_t2
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-auto_thr0_t8
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-avx2
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-avx512
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-on_t1
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-on_t16
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-on_t2
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-on_t4
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-on_t8
+eaf938c9b381e4c90631bfefd869721239f5dffd2cc4aa1b3086f258a324bc94  out-ref
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-auto_t1
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-auto_t16
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-auto_t2
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-auto_t4
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-auto_t8
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-auto_thr0_t16
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-auto_thr0_t2
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-auto_thr0_t8
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-avx2
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-avx512
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-on_t1
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-on_t16
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-on_t2
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-on_t4
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-on_t8
+fe67ce152b7b90fe205fdc941f7c2ca7e00627795140bd73269fe033c5841060  err-ref

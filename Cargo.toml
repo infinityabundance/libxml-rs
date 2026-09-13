@@ -1,6 +1,6 @@
 [package]
 name = "libxml-rs"
-version = "0.1.0-alpha.52"
+version = "0.1.0-alpha.53"
 edition = "2021"
 description = "Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Cross-version oracle matrix (libxml2 2.7.8-2.15.3, libxslt 1.1.26-1.1.45) with semantic epochs; full xmllint/xmlcatalog/xsltproc CLIs; differential-court-verified C API closure; three-DSO ELF packaging (libxml2.so.16 core + libxslt.so.1/libexslt.so.0 facades, upstream NEEDED chain); fail-closed oracle-isolated ABI-FUNCTION-SIGNATURE plane (SOURCE_PROTOTYPE + MACHINE_ABI fingerprints, zero silent omissions); Phase-12 real downstream substitution (binary/static/docker substitution, export-surface disposition, ELF version graphs); Phase-13 hostile audit courts (ABI/ownership/allocator/callbacks/failure/threads/oracle-contamination) byte-identical vs the system oracle incl. the upstream thread-local globals model; Phase-14 downstream custodian validation courts (lxml/Nokogiri/PHP/Debian). Test counts live in atlas/TEST_COUNTS.json, residuals in atlas/RESIDUAL_LEDGER.json (generated evidence)."
 license = "MIT OR Apache-2.0"
@@ -53,6 +53,19 @@ path = "src/bin/xsltproc.rs"
 [[example]]
 name = "abi_mirror"
 path = "examples/abi_mirror.rs"
+
+# §16.8 measurement harness (candidate parse throughput across scan backends and
+# Rayon parallel modes). Diagnostics only.
+[[example]]
+name = "scanbench"
+path = "examples/scanbench.rs"
+
+# §16.8.7/§16.8.8 Rayon size × thread matrix harness. Generates its shapes in
+# memory and re-execs per cell (the parallel config is resolved once per
+# process). Diagnostics only.
+[[example]]
+name = "parbench"
+path = "examples/parbench.rs"
 
 # §16.5.2 allocation probe (courts/receipts/phase-16): a counting global
 # allocator measures the Rust-side bytes a parse allocates, isolating the
@@ -118,6 +131,11 @@ encoding_rs_io = "0.1"
 # Upstream libxml2 links zlib for exactly this; flate2 (miniz_oxide, pure Rust)
 # is the self-contained equivalent and avoids a system-zlib link requirement.
 flate2 = "1.0"
+# §16.8 Rayon multicore parallel blocking. The library builds its OWN private
+# pool (src/xml/parser/scan/pool.rs); it never touches a host application's
+# global Rayon pool. `rayon` (via `once_cell`/`parking_lot`, already deps) is
+# the work-stealing substrate Phase 16 explicitly investigates.
+rayon = "1.10"
 # For URI/IRI handling - we implement our own matching libxml2's behavior.
 # libxml2's URI parser is its own implementation, NOT a general URI library.
 # We will implement native Rust URI/IRI handling in src/xml/uri.

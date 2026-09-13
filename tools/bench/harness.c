@@ -134,6 +134,35 @@ static char *make_dtd_xml(size_t target, size_t *out_len) {
     return buf;
 }
 
+/* §16.8 scan-bound shapes: comment / CDATA content runs. `runs` adjacent runs
+ * of near-equal length fill the document; `runs == 1` is the single-long-run
+ * case and the default 64 is the many-medium-run amortisation case. Identical
+ * bytes in both providers (same generator), so an oracle/candidate ratio is
+ * meaningful. */
+static char *make_run_doc(size_t target, int is_cdata, size_t runs, size_t *out_len) {
+    if (runs == 0) runs = 1;
+    size_t cap = target + 128;
+    char *buf = malloc(cap);
+    if (!buf) return NULL;
+    const char *open = is_cdata ? "<![CDATA[" : "<!--";
+    const char *close = is_cdata ? "]]>" : "-->";
+    size_t olen = strlen(open), clen = strlen(close);
+    size_t n = 0;
+    memcpy(buf + n, "<root>", 6); n += 6;
+    size_t fixed = n + 7 /* </root> */ + runs * (olen + clen);
+    size_t body = (target > fixed) ? (target - fixed) : 0;
+    size_t per = body / runs;
+    char filler = is_cdata ? 'x' : 'c';
+    for (size_t r = 0; r < runs; r++) {
+        memcpy(buf + n, open, olen); n += olen;
+        memset(buf + n, filler, per); n += per;
+        memcpy(buf + n, close, clen); n += clen;
+    }
+    memcpy(buf + n, "</root>", 7); n += 7;
+    *out_len = n;
+    return buf;
+}
+
 static const char XSLT_DOC[] =
     "<?xml version=\"1.0\"?>"
     "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
@@ -507,6 +536,10 @@ static void sax_push_run(const char *buf, size_t len, void *state) {
 
 static const bench_op OPS[] = {
     {"parse_e2e", NULL, parse_e2e_run, NULL},
+    {"parse_comment_many", NULL, parse_e2e_run, NULL},
+    {"parse_comment_one", NULL, parse_e2e_run, NULL},
+    {"parse_cdata_many", NULL, parse_e2e_run, NULL},
+    {"parse_cdata_one", NULL, parse_e2e_run, NULL},
     {"parse_ctx_create", parse_ctx_create_prepare, parse_ctx_create_run, parse_ctx_create_cleanup},
     {"parse_ctx_reuse", parse_ctx_reuse_prepare, parse_ctx_reuse_run, parse_ctx_reuse_cleanup},
     {"tree_destroy", tree_destroy_prepare, tree_destroy_run, tree_destroy_cleanup},
@@ -569,6 +602,14 @@ int main(int argc, char **argv) {
     if (strcmp(op, "html_e2e") == 0 || strcmp(op, "html_malformed") == 0) {
         buf = (strcmp(op, "html_malformed") == 0) ? make_malformed_html(target, &len)
                                                   : make_html(target, &len);
+    } else if (strcmp(op, "parse_comment_many") == 0) {
+        buf = make_run_doc(target, 0, 64, &len);
+    } else if (strcmp(op, "parse_comment_one") == 0) {
+        buf = make_run_doc(target, 0, 1, &len);
+    } else if (strcmp(op, "parse_cdata_many") == 0) {
+        buf = make_run_doc(target, 1, 64, &len);
+    } else if (strcmp(op, "parse_cdata_one") == 0) {
+        buf = make_run_doc(target, 1, 1, &len);
     } else if (strcmp(op, "validate_e2e") == 0 || strcmp(op, "validate_only") == 0 ||
                strcmp(op, "dtd_parse_compile") == 0) {
         buf = make_dtd_xml(target, &len);

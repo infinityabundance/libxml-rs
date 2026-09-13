@@ -1,12 +1,12 @@
 {
  "schema": "test-counts-1",
  "generator": "tools/evidence/test_counts.py",
- "generated": "2026-09-12T03:01:30Z",
+ "generated": "2026-09-13T10:20:10Z",
  "cargo_test_lib": {
   "status": "ok",
-  "passed": 1325,
+  "passed": 1346,
   "failed": 0,
-  "ignored": 3
+  "ignored": 4
  },
  "subsystems": {
   "ABI allocator": 13,
@@ -41,10 +41,10 @@
   "Globals": 7,
   "Hash": 9,
   "HTML": 33,
-  "I/O": 45,
+  "I/O": 53,
   "List": 8,
   "Memory": 2,
-  "XML parser + SAX": 142,
+  "XML parser + SAX": 156,
   "XML Reader": 38,
   "Regex": 44,
   "RELAX NG": 56,

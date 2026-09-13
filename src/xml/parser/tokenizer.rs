@@ -366,6 +366,18 @@ pub(crate) struct XmlTokenizer {
     /// "Couldn't find end of Start Tag %s line %d\n" and `int1 = line`. The
     /// tokenizer models the pull variant by default.
     push_start_tag: bool,
+    /// §16.8 whole-input structural index for base-input pull parses (built
+    /// lazily; see `maybe_build_scan_index`). `None` falls back to the per-call
+    /// scalar/SIMD scanners.
+    scan_index: Option<crate::xml::parser::scan::parallel::StructIndex>,
+    /// Whether the lazy index build has been attempted for this parse (so a
+    /// non-engaging/short input does not retry on every long-looking run).
+    scan_index_attempted: bool,
+    /// §16.8.7 cumulative bytes of comment/CDATA content already classified by
+    /// the per-call scanner. Once this reaches the evidence-driven break-even
+    /// (see `note_class_run`) the whole-input index is built even though no
+    /// *single* run reached the per-run crossover — the many-medium-run case.
+    class_run_bytes: usize,
 }
 
 impl XmlTokenizer {
@@ -394,6 +406,9 @@ impl XmlTokenizer {
             last_token_start: 0,
             sax2: true,
             push_start_tag: false,
+            scan_index: None,
+            scan_index_attempted: false,
+            class_run_bytes: 0,
         }
     }
 
@@ -433,6 +448,139 @@ impl XmlTokenizer {
     /// Set whether XML_PARSE_OLD10 is in force (see `old10`).
     pub const fn set_old10(&mut self, on: bool) {
         self.old10 = on;
+    }
+
+    /// §16.8.4 conservative eligibility for the whole-input structural index.
+    ///
+    /// The index is a *semantics-preserving* acceleration of the byte scanner
+    /// (the differential court pins scalar == avx2 == avx512 == parallel byte
+    /// for byte), so it needs no gate on the consumer, the parser options, or
+    /// the SAX/DOM delivery mode. The two conditions that *are* load-bearing:
+    ///
+    /// - **base input** — the index describes exactly the base document byte
+    ///   range; a pushed (entity-content) input is a different buffer with its
+    ///   own positions, so it never uses the base index;
+    /// - **not incremental/push** — in push mode the base buffer is refilled
+    ///   and grown across calls (`xmlParseChunk`), so an index built over a
+    ///   partial buffer would be stale. Push parsing therefore falls back to the
+    ///   per-call scanners, which is also what keeps §16.8.5 exact: the index
+    ///   never influences when a callback is delivered, only how fast the bytes
+    ///   preceding it are classified.
+    pub(crate) fn scan_index_eligible(&self) -> bool {
+        !self.silent_truncated && self.input.at_base_input()
+    }
+
+    /// §16.8: lazily build the whole-input structural index when the scanner
+    /// observes a comment/CDATA run that reaches the measured crossover — the
+    /// class where the sequential scan is per-character and the parallel
+    /// prepass pays for itself. No-op when the index already exists, when the
+    /// build was already attempted, or when [`Self::scan_index_eligible`] is
+    /// false.
+    pub(crate) fn maybe_build_scan_index(&mut self) {
+        if self.scan_index.is_some() || self.scan_index_attempted || !self.scan_index_eligible() {
+            return;
+        }
+        self.scan_index_attempted = true;
+        let base_len = self.input.base_ref().len();
+        if base_len == 0 {
+            return;
+        }
+        let idx = {
+            let data = self.input.base_input_range(0, base_len);
+            crate::xml::parser::scan::parallel::StructIndex::build(data)
+        };
+        self.scan_index = idx;
+    }
+
+    /// §16.8 Level A: resolve a comment / CDATA content run at the current base
+    /// position.
+    ///
+    /// Once the whole-input [`crate::xml::parser::scan::parallel::StructIndex`]
+    /// exists it answers every run (see `run_len_indexed`). Until then a run is
+    /// probed only as far as the input-proportional break-even
+    /// (`clamp(len / INDEX_BREAKEVEN_RATIO, BLOCK, threshold)`); a shorter run
+    /// resolves exactly with no pool dispatch, and only a run that reaches the
+    /// break-even triggers the one-time parallel prepass and is then
+    /// re-resolved through the index. The returned length is byte-for-byte the
+    /// same as the sequential classifier in every case.
+    fn class_content_run(
+        &mut self,
+        class: crate::xml::parser::scan::parallel::RunClass,
+        clean: crate::xml::parser::scan::parallel::CleanClass,
+    ) -> usize {
+        use crate::xml::parser::scan::parallel::{self, ClassProbe};
+        use crate::xml::parser::scan::pool::{self, ParallelMode};
+
+        if let Some(idx) = self.scan_index.as_ref() {
+            if self.input.at_base_input() {
+                let remaining = self.input.current_ref().remaining();
+                let pos = self.input.current_pos().2;
+                return parallel::run_len_indexed(idx, class, remaining, pos);
+            }
+        }
+
+        let cfg = pool::config();
+        if cfg.mode != ParallelMode::Off && self.scan_index_eligible() && !self.scan_index_attempted
+        {
+            // §16.8.7: probe exactly the input-proportional break-even
+            // (`len / INDEX_BREAKEVEN_RATIO`, capped at `threshold` and floored
+            // at one block). A run that ends inside the probe is resolved
+            // exactly with no prepass; only a run that reaches it has enough
+            // class-scanner work left to amortise the prepass.
+            let base_len = self.input.base_ref().len();
+            let cap = cfg.threshold.max(pool::BLOCK);
+            let budget = (base_len / pool::INDEX_BREAKEVEN_RATIO).clamp(pool::BLOCK, cap);
+            let probe = {
+                let remaining = self.input.current_ref().remaining();
+                parallel::probe_class_run(remaining, clean, budget)
+            };
+            match probe {
+                ClassProbe::Exact(run) => {
+                    self.note_class_run(run);
+                    return run;
+                }
+                ClassProbe::Long => {
+                    self.maybe_build_scan_index();
+                    if let Some(idx) = self.scan_index.as_ref() {
+                        let remaining = self.input.current_ref().remaining();
+                        let pos = self.input.current_pos().2;
+                        return parallel::run_len_indexed(idx, class, remaining, pos);
+                    }
+                }
+            }
+        }
+
+        let remaining = self.input.current_ref().remaining();
+        parallel::clean_run_len_class(remaining, clean)
+    }
+
+    /// §16.8.7 many-medium-run escalation.
+    ///
+    /// A per-run crossover alone never fires for a document made of many runs
+    /// each shorter than the crossover (e.g. hundreds of 64 KiB comments), even
+    /// though the *total* class-scanner work is large and the same one-time
+    /// prepass would replace it. Model the trade directly: the sequential class
+    /// scanner runs at roughly `S` bytes/s and the prepass at roughly `I`
+    /// bytes/s with `I >> S` (measured §16.8.7: `S ~ 2.4 GB/s` scalar,
+    /// `I ~ 27 GB/s` one-load-per-byte), so prepaying `base_len/I` is worth it
+    /// once the class-run bytes still to come exceed `(S/I) * base_len`. Because
+    /// the future is unknown, build once the bytes *already* classified reach
+    /// `max(base_len/8, 2 * BLOCK)` — comfortably past the `base_len * S/I ~
+    /// base_len/11` break-even — so a document whose runs stop early has already
+    /// paid for most of the prepass with work it had to do anyway.
+    fn note_class_run(&mut self, run: usize) {
+        if run == 0 {
+            return;
+        }
+        self.class_run_bytes = self.class_run_bytes.saturating_add(run);
+        if self.scan_index.is_some() || self.scan_index_attempted || !self.scan_index_eligible() {
+            return;
+        }
+        let base_len = self.input.base_ref().len();
+        let floor = (base_len / 8).max(2 * crate::xml::parser::scan::pool::BLOCK);
+        if self.class_run_bytes >= floor {
+            self.maybe_build_scan_index();
+        }
     }
 
     /// Get a mutable reference to the input stack.
@@ -1712,8 +1860,19 @@ impl XmlTokenizer {
     }
 
     /// `NEXT` (`xmlNextChar`): consume one whole UTF-8 character.
+    ///
+    /// `NEXT` never fails to make progress: `xmlNextChar`'s encoding-error path
+    /// consumes a malformed or truncated multibyte byte (advancing to the input
+    /// end when the sequence is incomplete there). `read_char` can instead
+    /// decline to advance an incomplete sequence, which would spin the
+    /// declaration's `?>`-drain loop forever (fuzz `parse` timeout on
+    /// `3c 3f 78 6d 6c 09 f0`); consume one raw byte when that happens.
     fn decl_advance(&mut self) {
+        let before = self.input.current_pos().2;
         self.input.read_char();
+        if self.input.current_pos().2 == before {
+            self.input.current().skip_raw_bytes(1);
+        }
     }
 
     /// Record `xmlFatalErr(ctxt, code, NULL)` — the default message for the
@@ -2238,6 +2397,22 @@ impl XmlTokenizer {
                     continue;
                 }
             }
+            // §16.8 Level A: bulk-consume the verbatim comment-content run
+            // (printable ASCII except '-'; CR/LF and non-ASCII are excluded, so
+            // no line/column or encoding bookkeeping is skipped). The structural
+            // index resolves it in O(1) when present; otherwise a bounded probe
+            // either answers exactly or escalates to the parallel prepass. The
+            // per-char loop resumes at the first byte needing a decision.
+            {
+                let run = self.class_content_run(
+                    crate::xml::parser::scan::parallel::RunClass::Comment,
+                    crate::xml::parser::scan::parallel::CleanClass::Comment,
+                );
+                if run > 0 {
+                    self.input.skip_linebreak_free(run);
+                    continue;
+                }
+            }
             let c = match self.input.peek_char() {
                 Some(c) => c,
                 None => break,
@@ -2426,6 +2601,21 @@ impl XmlTokenizer {
                         v.extend_from_slice(b"\xEF\xBF\xBD");
                     }
                     seg_start = self.input.current_pos().2;
+                    continue;
+                }
+            }
+            // §16.8 Level A: bulk-consume the verbatim CDATA-content run
+            // (printable ASCII except ']'; CR/LF and non-ASCII excluded). The
+            // structural index resolves it in O(1) when present; otherwise a
+            // bounded probe answers exactly or escalates to the parallel
+            // prepass.
+            {
+                let run = self.class_content_run(
+                    crate::xml::parser::scan::parallel::RunClass::Cdata,
+                    crate::xml::parser::scan::parallel::CleanClass::Cdata,
+                );
+                if run > 0 {
+                    self.input.skip_linebreak_free(run);
                     continue;
                 }
             }
@@ -3025,7 +3215,21 @@ impl XmlTokenizer {
             // it is active.
             if self.split_chars_at.is_none() {
                 let remaining = self.input.current_ref().remaining();
-                let run = crate::xml::parser::scan::text_run_len_auto(remaining);
+                // §16.8: use the structural index if a long comment/CDATA run
+                // already caused it to be built; otherwise the sequential text
+                // scanner (text content is not scan-bound — §16.8.7 evidence).
+                let run = match self.scan_index.as_ref() {
+                    Some(idx) if self.input.at_base_input() => {
+                        let pos = self.input.current_pos().2;
+                        crate::xml::parser::scan::parallel::run_len_indexed(
+                            idx,
+                            crate::xml::parser::scan::parallel::RunClass::Text,
+                            remaining,
+                            pos,
+                        )
+                    }
+                    _ => crate::xml::parser::scan::parallel::content_run_len(remaining),
+                };
                 if run > 0 {
                     self.input.skip_linebreak_free(run);
                     continue;

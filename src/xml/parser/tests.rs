@@ -2173,6 +2173,34 @@ fn test_push_tree_text_merge_grows_geometrically() {
     }
 }
 
+/// A truncated/malformed multibyte byte at EOF inside an XML declaration must
+/// not spin the declaration's `?>`-drain loop. Upstream `NEXT` (`xmlNextChar`)
+/// always advances — its encoding-error path consumes the bad byte — so the
+/// drain terminates; `read_char` can decline to advance an incomplete sequence,
+/// so `decl_advance` force-consumes one raw byte. Found by the coverage-guided
+/// `parse` fuzzer (`3c 3f 78 6d 6c 09 f0` hung forever); every variant must
+/// terminate and yield no document (the declaration is fatal).
+#[test]
+fn test_xml_decl_truncated_multibyte_terminates() {
+    for tail in [
+        &b"<?xml\t\xf0"[..],
+        &b"<?xml\t\xe2"[..],
+        &b"<?xml\t\xc3"[..],
+        &b"<?xml\t\xff"[..],
+        &b"<?xml\t\xf0\x9f"[..],
+        &b"<?xml\t"[..],
+        &b"<?xml "[..],
+    ] {
+        unsafe {
+            let doc = parse_bytes(tail);
+            assert!(
+                doc.is_null(),
+                "a malformed declaration must not produce a document: {tail:?}"
+            );
+        }
+    }
+}
+
 /// Feeding more than `XML_MAX_TEXT_LENGTH` (10 000 000) bytes of character data
 /// into one tree text node is a fatal `XML_ERR_RESOURCE_LIMIT`, exactly as
 /// upstream `xmlSAX2Text` reports it (code 114, `disableSAX = 2`).
