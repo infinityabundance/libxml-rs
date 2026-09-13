@@ -860,6 +860,14 @@ pub(crate) unsafe fn input_from_file(filename: *const c_char) -> Result<InputBuf
     } else {
         path_str
     };
+    // UPSTREAM-PARITY: cleartext http URLs are served by the built-in HTTP
+    // loader rather than a filesystem open.
+    if crate::xml::io::is_http_url(path_str) {
+        return match crate::xml::io::http::fetch(path_str) {
+            Ok(data) => Ok(InputBuffer::from_memory(&data, Some(path_str))),
+            Err(_) => Err(()),
+        };
+    }
     InputBuffer::from_file(path_str).map_err(|_| ())
 }
 

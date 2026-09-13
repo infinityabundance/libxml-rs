@@ -3126,8 +3126,16 @@ pub unsafe extern "C" fn htmlCtxtParseDocument(
         return ptr::null_mut();
     }
     let st = unsafe { html_state(ctxt) };
-    let doc =
-        unsafe { html::parse_memory_enc(cur as *const c_char, len, (*st).encoding, (*st).options) };
+    let doc = unsafe {
+        html::parse_memory_enc_hosted(
+            ctxt as *mut _xmlParserCtxt,
+            cur as *const c_char,
+            len,
+            (*st).encoding,
+            (*st).options,
+            unsafe { html_sax_is_custom(ctxt as *mut _xmlParserCtxt) },
+        )
+    };
     let c = ctxt as *mut _xmlParserCtxt;
     unsafe {
         (*st).doc = doc;
@@ -3234,7 +3242,19 @@ pub unsafe extern "C" fn htmlCtxtReadDoc(
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
     let st = unsafe { html_state(ctxt) };
-    let doc = unsafe { html::parse_doc(str, encoding, (*st).options) };
+    // Route through the hosted path so the SAX `startDocument` hook fires and
+    // the document adopts the parser dictionary (upstream htmlParseDocument).
+    let len = unsafe { crate::abi::exports_xml2::xmlStrlen(str) };
+    let doc = unsafe {
+        html::parse_memory_enc_hosted(
+            ctxt as *mut _xmlParserCtxt,
+            str as *const c_char,
+            len,
+            encoding,
+            (*st).options,
+            unsafe { html_sax_is_custom(ctxt as *mut _xmlParserCtxt) },
+        )
+    };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }
 }
 
@@ -3275,11 +3295,13 @@ pub unsafe extern "C" fn htmlCtxtReadFile(
         return ptr::null_mut();
     };
     let doc = unsafe {
-        html::parse_memory_enc(
+        html::parse_memory_enc_hosted(
+            ctxt as *mut _xmlParserCtxt,
             bytes.as_ptr() as *const c_char,
             bytes.len() as c_int,
             encoding,
             (*st).options,
+            unsafe { html_sax_is_custom(ctxt as *mut _xmlParserCtxt) },
         )
     };
     unsafe { html_ctxt_finish_read(ctxt, doc, filename) }
@@ -3339,11 +3361,13 @@ pub unsafe extern "C" fn htmlCtxtReadFd(
     let data = unsafe { html_read_fd(fd) };
     let st = unsafe { html_state(ctxt) };
     let doc = unsafe {
-        html::parse_memory_enc(
+        html::parse_memory_enc_hosted(
+            ctxt as *mut _xmlParserCtxt,
             data.as_ptr() as *const c_char,
             data.len() as c_int,
             encoding,
             (*st).options,
+            unsafe { html_sax_is_custom(ctxt as *mut _xmlParserCtxt) },
         )
     };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }
@@ -3376,11 +3400,13 @@ pub unsafe extern "C" fn htmlCtxtReadIO(
     let data = unsafe { html_read_io(ioread, ioctx) };
     let st = unsafe { html_state(ctxt) };
     let doc = unsafe {
-        html::parse_memory_enc(
+        html::parse_memory_enc_hosted(
+            ctxt as *mut _xmlParserCtxt,
             data.as_ptr() as *const c_char,
             data.len() as c_int,
             encoding,
             (*st).options,
+            unsafe { html_sax_is_custom(ctxt as *mut _xmlParserCtxt) },
         )
     };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }

@@ -1,0 +1,22 @@
+candidate_sha=WORKTREE (evidence for the commit that takes lxml to zero failures and removes the HTML teardown corruption)
+evidence_kind=parity fix (HTTP input loader; isoschematron XSLT document()/current(); HTML hosted reads adopt the parser dict)
+debug_libxml2_sha256=1c526228e53727c637e2f12bd911b30dcd615c502bd64c703ebb5c33d4612b1a
+host=libxml-rs/phase14-debian:1 (containers lxml-cand, lxml-oracle, phpbuild-c)
+oracle_libxml2=2.15.3
+lxml_suite_command=cd /src/lxml && python3 test.py -u
+lxml_suite_previous=7 raw unique ids (lxml-7be @ 67f8180f)
+lxml_suite_now=0 raw unique ids (Ran 2007 tests, OK; suite-verbose.log)
+lxml_fixed=7 (test_http_client, test_http_client_gzip, test_network_dtd,
+  test_parser_input_mix, test_schematron_phases, test_schematron_phases_kwarg,
+  test_schematron_relaxng_embedded)
+lxml_regressions=0 (filtered delta vs lxml-7be)
+detail=HTTP(S) GET loader with redirects, gzip/deflate Content-Encoding and chunked
+  transfer-decoding (pure-Rust flate2/miniz_oxide); XSLT document() treats an empty
+  node-set argument as an empty document and current() resolves the transform context
+  node; HTML hosted reads now fire setDocumentLocator+startDocument before parsing
+  (upstream htmlParseDocument), so the document adopts ctxt->dict and teardown never
+  frees live dictionary strings (libxml2.free_node DICT_FREE guard holds).
+unit_tests=cargo test --lib -> 1333 passed / 0 failed / 3 ignored
+fmt=cargo fmt --check clean
+php_six_gate=1250 passed / 0 failed (phpbuild-c, rc=0)
+tree_clean=yes

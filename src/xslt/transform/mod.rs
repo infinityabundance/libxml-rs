@@ -3583,15 +3583,18 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
 
     // document() — loads an external document (first argument) and returns
     // its root node-set.
-    internal.register_function("document", |ctx, args| {
-        let value = match args.first() {
-            Some(v) => v.as_string(),
-            None => return Err("document() requires an argument".to_string()),
-        };
-        let tctxt = ctx.func_lookup_data as *mut _xsltTransformContext;
-        if tctxt.is_null() {
-            return Ok(XPathValue::NodeSet(NodeSet::new()));
-        }
+    //
+    // UPSTREAM-PARITY (functions.c xsltDocumentFunction): a NODE-SET argument
+    // resolves document() against each node's string value; an EMPTY node-set
+    // yields an empty node-set and must not fall back to `document('')` (the
+    // stylesheet itself). Treating an empty node-set's string value as `''`
+    // made RNG2Schtrn's `$schemas | document(<no-includes>)` pull the
+    // stylesheet into `$schemas`.
+    /// Load one `document()` URI target (the string form of the argument).
+    unsafe fn xslt_document_load(
+        tctxt: *mut _xsltTransformContext,
+        value: &str,
+    ) -> Result<XPathValue, String> {
         // UPSTREAM-PARITY (functions.c xsltDocumentFunction): `document('')`
         // resolves through `xmlBuildURI("", base)` to the stylesheet's own URL,
         // so upstream's `xsltLoadDocument` security check runs against that
@@ -3688,6 +3691,40 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
             ns.push(doc as *mut _xmlNode);
             Ok(XPathValue::NodeSet(ns))
         }
+    }
+
+    internal.register_function("document", |ctx, args| {
+        let arg = match args.first() {
+            Some(v) => v.clone(),
+            None => return Err("document() requires an argument".to_string()),
+        };
+        let tctxt = ctx.func_lookup_data as *mut _xsltTransformContext;
+        if tctxt.is_null() {
+            return Ok(XPathValue::NodeSet(NodeSet::new()));
+        }
+        // A node-set argument contributes one URI per node (each node's string
+        // value). An EMPTY node-set contributes NONE — the result is the empty
+        // node-set, never document('').
+        let uris: Vec<String> = match &arg {
+            XPathValue::NodeSet(ns) => {
+                if ns.iter().count() == 0 {
+                    return Ok(XPathValue::NodeSet(NodeSet::new()));
+                }
+                ns.iter()
+                    .map(|n| crate::xml::xpath::types::node_string_value(n))
+                    .collect()
+            }
+            other => vec![other.as_string()],
+        };
+        let mut out = NodeSet::new();
+        for uri in uris {
+            if let Ok(XPathValue::NodeSet(ns)) = unsafe { xslt_document_load(tctxt, &uri) } {
+                for n in ns.iter() {
+                    out.push(n);
+                }
+            }
+        }
+        Ok(XPathValue::NodeSet(out))
     });
 
     // key() — looks up the key tables built by xsltInitKeys. The value is
@@ -3998,9 +4035,21 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
         ))
     });
 
-    // current() — returns the current node.
+    // current() — returns the TRANSFORM context's current node (upstream
+    // functions.c xsltCurrentFunction pushes `tctxt->node`). It is NOT the
+    // XPath context node: inside a predicate the XPath context node is the
+    // predicate's node, while `current()` keeps returning the node the
+    // enclosing instruction was applied to. Using `ctx.context_node` made
+    // `active[@pattern=current()/@id]` compare against the `active` node
+    // (empty `@id`) instead of the matched pattern node, so ISO Schematron
+    // phase selection silently deactivated every pattern.
     internal.register_function("current", |ctx, _args| {
-        let node = ctx.context_node;
+        let tctxt = ctx.func_lookup_data as *mut _xsltTransformContext;
+        let node = if tctxt.is_null() {
+            ctx.context_node
+        } else {
+            (*tctxt).node
+        };
         if node.is_null() {
             return Ok(XPathValue::NodeSet(NodeSet::new()));
         }

@@ -75,6 +75,8 @@ use std::ffi::CStr;
 use std::os::raw::{c_char, c_int, c_uint, c_void};
 use std::ptr;
 
+pub(crate) mod http;
+
 use libc;
 
 use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlReallocImpl};
@@ -1062,6 +1064,11 @@ pub(crate) fn input_buffer_create_empty() -> *mut _xmlParserInputBuffer {
 
 // ── File I/O callbacks ──────────────────────────────────────────────────────
 
+/// True for a cleartext `http://` URL (scheme is case-insensitive).
+pub(crate) fn is_http_url(url: &str) -> bool {
+    url.len() >= 7 && url.as_bytes()[..7].eq_ignore_ascii_case(b"http://")
+}
+
 /// Read callback for file descriptor-based input.
 #[allow(dead_code)]
 unsafe extern "C" fn file_read_callback(
@@ -1117,6 +1124,21 @@ pub(crate) fn input_buffer_create_file(
             Err(_) => return ptr::null_mut(),
         }
     };
+
+    // UPSTREAM-PARITY (xmlIO.c xmlParserInputBufferCreateFilename -> the
+    // default input-callback table's xmlIOHTTPMatch/xmlIOHTTPOpen): a
+    // cleartext `http://` URL is fetched over the network and buffered in
+    // memory. Without this the URL fell through to `open(2)` and failed
+    // with ENOENT.
+    if is_http_url(filename_str) {
+        return match http::fetch(filename_str) {
+            Ok(data) if data.is_empty() => input_buffer_create_empty(),
+            Ok(data) => {
+                input_buffer_create_mem(data.as_ptr() as *const c_char, data.len() as c_int, enc)
+            }
+            Err(_) => ptr::null_mut(),
+        };
+    }
 
     // UPSTREAM-PARITY (xmlIO.c xmlFdOpen -> xmlConvertUriToPath): a `file:` URI
     // is converted to a local path (percent-unescaped) before opening. lxml's

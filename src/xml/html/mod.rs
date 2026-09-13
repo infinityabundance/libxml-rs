@@ -3372,7 +3372,20 @@ pub(crate) unsafe fn parse_memory_enc_hosted(
     if !encoding.is_null() {
         ctxt.encoding = unsafe { c_strdup(encoding) };
     }
-    let doc = unsafe { html_parse_buffer_into(&mut ctxt, ptr::null_mut(), buffer, size) };
+    // UPSTREAM-PARITY (HTMLparser.c htmlParseDocument): the SAX
+    // `setDocumentLocator` + `startDocument` hooks fire BEFORE the tree is
+    // parsed, and the document created by that hook is the parse target. For
+    // lxml this is `_initSaxDocument`, which adopts `ctxt->dict` as
+    // `doc->dict` (and references it); without the hook the document would keep
+    // `dict == NULL` while lxml's `_fixHtmlDictNames` interns element/attribute
+    // names into `ctxt->dict`, so teardown would free live dictionary strings.
+    unsafe { push_start_document(&mut ctxt) };
+    let pre_doc = if ctxt.doc.is_null() {
+        ptr::null_mut()
+    } else {
+        ctxt.doc
+    };
+    let doc = unsafe { html_parse_buffer_into(&mut ctxt, pre_doc, buffer, size) };
     // The engine's `input` borrows the caller's buffer (or a local Vec), so
     // only the duplicated encoding string is owned here.
     if !ctxt.encoding.is_null() {

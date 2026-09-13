@@ -625,7 +625,14 @@ pub unsafe extern "C" fn xsltDocumentFunction(ctxt: *mut c_void, nargs: c_int) {
         let mut newobj: *mut _xmlXPathObject = ptr::null_mut();
         obj = value_pop(pc);
         let ret = crate::abi::exports_xml2::xmlXPathNewNodeSet(ptr::null_mut());
-        if !obj.is_null() && !(*obj).nodesetval.is_null() && !ret.is_null() {
+        // UPSTREAM-PARITY (functions.c xsltDocumentFunction): an EMPTY
+        // node-set argument yields an empty node-set — upstream computes `ret`
+        // and pushes it whether or not `nodesetval` is non-NULL. Treating a
+        // NULL nodesetval as "not a node-set" fell through to the string
+        // branch, where the empty string resolves to document('') (the
+        // stylesheet itself) — the RNG2Schtrn gatherSchema union then pulled
+        // the stylesheet's own instructions into `$schemas`.
+        if !obj.is_null() && !ret.is_null() && !(*obj).nodesetval.is_null() {
             let ns = (*obj).nodesetval as *mut _xmlNodeSet;
             while i < (*ns).nodeNr {
                 let node = *(*ns).nodeTab.offset(i as isize);

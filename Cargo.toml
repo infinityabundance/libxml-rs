@@ -114,6 +114,10 @@ parking_lot = "0.12"
 # For encoding support - we need to control this behavior ourselves for parity
 encoding_rs = "0.8"
 encoding_rs_io = "0.1"
+# For HTTP Content-Encoding: gzip/deflate support in the default input loader.
+# Upstream libxml2 links zlib for exactly this; flate2 (miniz_oxide, pure Rust)
+# is the self-contained equivalent and avoids a system-zlib link requirement.
+flate2 = "1.0"
 # For URI/IRI handling - we implement our own matching libxml2's behavior.
 # libxml2's URI parser is its own implementation, NOT a general URI library.
 # We will implement native Rust URI/IRI handling in src/xml/uri.

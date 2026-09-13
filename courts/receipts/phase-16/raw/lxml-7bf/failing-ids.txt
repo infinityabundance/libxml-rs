@@ -1,0 +1,2 @@
+# zero candidate-driven failures: the raw unique failing id set is empty.
+# Evidence: suite-verbose.log (python3 test.py -u -v -v -> Ran 2007 tests, OK).

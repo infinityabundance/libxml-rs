@@ -1,0 +1,16 @@
+lxml full suite (test.py -u -v -v): Ran 2007 tests, OK -- 0 raw unique failing ids
+fixed this slice:
+  test_http_client, test_http_client_gzip, test_network_dtd, test_parser_input_mix
+    (HTTP/HTTPS input loader, gzip Content-Encoding, network DTD subset)
+  test_schematron_phases, test_schematron_phases_kwarg,
+  test_schematron_relaxng_embedded
+    (isoschematron: XSLT document() empty node-set, current() transform node)
+stability (no failing id, but a hard blocker for drop-in use):
+  fixed intermittent glibc abort ("double free"/"unaligned fastbin") in the HTML
+  iterparse/fromstring paths. Root cause: the hosted whole-document HTML read
+  entry points (htmlCtxtReadMemory/ReadDoc/ReadFile/ReadFd/ReadIO and
+  htmlCtxtParseDocument) created the document without firing the SAX
+  `startDocument` hook, so doc->dict stayed NULL while lxml's
+  `_fixHtmlDictNames` interned element/attribute names into `ctxt->dict`;
+  teardown then freed live dictionary strings.
+regressions: none
