@@ -1,0 +1,5 @@
+# §16.12 offline validation-resource cache. Bytes are fetched by fetch_schemas.py
+# and are NOT redistributed from the repository; `manifest.json` records their
+# provenance and SHA-256.
+*.xsd
+*.dtd

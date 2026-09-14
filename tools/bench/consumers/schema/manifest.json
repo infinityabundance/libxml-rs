@@ -1,0 +1,36 @@
+{
+ "schema": "consumer-schema/1",
+ "phase": "16.12",
+ "resources": [
+  {
+   "file": "maven-4.0.0.xsd",
+   "url": "https://maven.apache.org/xsd/maven-4.0.0.xsd",
+   "for": "MAVEN (xsi:schemaLocation instance target)",
+   "license": "Apache-2.0",
+   "spdx": "Apache-2.0",
+   "license_url": "https://www.apache.org/licenses/LICENSE-2.0",
+   "bytes": 129748,
+   "sha256": "e6db81560ddcf5aa096a604cb334b25e0f68eeb2b6e4f7565858e2eba889611e"
+  },
+  {
+   "file": "svg10.dtd",
+   "url": "https://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd",
+   "for": "SVG (DOCTYPE system id)",
+   "license": "W3C Document License",
+   "spdx": "W3C",
+   "license_url": "https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document",
+   "bytes": 55654,
+   "sha256": "c43b7eae157c1b9c85d53ff7f509283cd4be3f1eb96c90ccafed054874a649c0"
+  },
+  {
+   "file": "partwise.dtd",
+   "url": "https://raw.githubusercontent.com/w3c-cg/musicxml/252062733f58677eb6cb0b30047fa097fe6c80e2/schema/partwise.dtd",
+   "for": "MUSICXML (DOCTYPE system id)",
+   "license": "MusicXML DTD (MakeMusic/W3C-cg musicxml)",
+   "spdx": null,
+   "license_url": "https://github.com/w3c-cg/musicxml/blob/main/LICENSE",
+   "bytes": 4524,
+   "sha256": "4d246581920518ce39188f673f2e2fc0f6e26cdf26b52c2a522938b082139d30"
+  }
+ ]
+}

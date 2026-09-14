@@ -1,0 +1,403 @@
+{
+ "schema": "consumer-findings/1",
+ "phase": "16.12",
+ "matrix_counts": {
+  "asymmetric_error": 242,
+  "equivalent": 2123,
+  "invalid_result": 142,
+  "not_expressible": 104,
+  "serialization_byte_checked": 95,
+  "serialization_byte_identical": 21,
+  "total": 2611
+ },
+ "findings": [
+  {
+   "id": "F1-attribute-ampersand-decoding",
+   "severity": "correctness",
+   "summary": "In an ATTRIBUTE value, `&amp;` is decoded to the literal four/five characters `&#38;` instead of `&` (text nodes are correct).",
+   "repro": "printf '<a b=\"x&amp;y\">t&amp;u</a>' > /tmp/a.xml; xmllint --xpath 'string(//a/@b)' /tmp/a.xml",
+   "oracle": "x&y",
+   "candidate": "x&#38;y",
+   "evidence": {
+    "invalid_cells": 114,
+    "invalid_files": [
+     "aosp-008",
+     "jats-002",
+     "jats-003",
+     "jats-006",
+     "jats-009",
+     "jats-010",
+     "osm-001",
+     "osm-002",
+     "osm-003",
+     "osm-004",
+     "osm-005",
+     "osm-006",
+     "svg-007",
+     "tei-002",
+     "tei-004",
+     "tei-005",
+     "tei-010"
+    ]
+   }
+  },
+  {
+   "id": "F2-repeat-serialization-empty",
+   "severity": "correctness",
+   "summary": "Serializing the SAME parsed document twice returns an empty string on the second and later calls (first call is correct).",
+   "repro": "python3 -c 'from lxml import etree; t=etree.parse(\"/corpus/maven-001.pom.xml\"); print(len(etree.tostring(t,encoding=\"unicode\"))); print(len(etree.tostring(t,encoding=\"unicode\")))'",
+   "oracle": "30837 then 30837",
+   "candidate": "30837 then 0",
+   "evidence": {
+    "asymmetric_cells": 80,
+    "files": [
+     "aosp-001",
+     "aosp-002",
+     "aosp-003",
+     "aosp-004",
+     "aosp-005",
+     "aosp-006",
+     "aosp-008",
+     "aosp-009",
+     "aosp-010",
+     "docbook-001",
+     "docbook-002",
+     "docbook-003",
+     "docbook-004",
+     "docbook-005",
+     "docbook-006",
+     "docbook-007",
+     "docbook-008",
+     "gpxkml-001",
+     "gpxkml-002",
+     "gpxkml-003",
+     "gpxkml-004",
+     "gpxkml-005",
+     "gpxkml-006",
+     "jats-002",
+     "jats-003",
+     "jats-004",
+     "jats-005",
+     "jats-007",
+     "jats-008",
+     "jats-010",
+     "maven-001",
+     "maven-002",
+     "maven-003",
+     "maven-004",
+     "maven-005",
+     "maven-006",
+     "maven-007",
+     "maven-008",
+     "maven-009",
+     "maven-010",
+     "musicxml-001",
+     "musicxml-002",
+     "musicxml-003",
+     "musicxml-004",
+     "musicxml-005",
+     "musicxml-006",
+     "musicxml-007",
+     "musicxml-008",
+     "musicxml-009",
+     "musicxml-010",
+     "rssatom-001",
+     "rssatom-002",
+     "rssatom-003",
+     "rssatom-004",
+     "rssatom-005",
+     "secxbrl-001",
+     "secxbrl-004",
+     "secxbrl-005",
+     "secxbrl-006",
+     "secxbrl-007",
+     "secxbrl-008",
+     "soapwsdl-001",
+     "soapwsdl-002",
+     "soapwsdl-003",
+     "soapwsdl-004",
+     "soapwsdl-005",
+     "svg-004",
+     "svg-005",
+     "svg-006",
+     "svg-007",
+     "tei-001",
+     "tei-002",
+     "tei-003",
+     "tei-004",
+     "tei-005",
+     "tei-006",
+     "tei-007",
+     "tei-008",
+     "tei-009",
+     "tei-010"
+    ]
+   }
+  },
+  {
+   "id": "F3-xmllint-format-indentation",
+   "severity": "serialization",
+   "summary": "`xmllint --format` output differs from upstream (extra blank lines / different indentation depth for some elements).",
+   "repro": "xmllint --format /corpus/svg-001.svg",
+   "oracle": "3-space-nested <text> indented 2 spaces",
+   "candidate": "indented 4 spaces (and extra blank lines on larger docs)",
+   "evidence": {
+    "byte_checked": 95,
+    "byte_differing": 74,
+    "files": [
+     "aosp-001",
+     "aosp-002",
+     "aosp-003",
+     "aosp-004",
+     "aosp-005",
+     "aosp-006",
+     "aosp-007",
+     "aosp-008",
+     "aosp-009",
+     "aosp-010",
+     "docbook-001",
+     "docbook-002",
+     "docbook-003",
+     "docbook-004",
+     "docbook-005",
+     "docbook-006",
+     "docbook-007",
+     "docbook-008",
+     "gpxkml-001",
+     "gpxkml-002",
+     "gpxkml-003",
+     "jats-001",
+     "jats-002",
+     "jats-003",
+     "jats-004",
+     "jats-005",
+     "jats-006",
+     "jats-007",
+     "jats-008",
+     "jats-009",
+     "jats-010",
+     "maven-001",
+     "maven-002",
+     "maven-003",
+     "maven-005",
+     "maven-007",
+     "maven-009",
+     "musicxml-001",
+     "musicxml-002",
+     "musicxml-004",
+     "musicxml-008",
+     "osm-001",
+     "osm-003",
+     "osm-004",
+     "rssatom-001",
+     "rssatom-002",
+     "rssatom-003",
+     "rssatom-005",
+     "secxbrl-001",
+     "secxbrl-002",
+     "secxbrl-003",
+     "secxbrl-005",
+     "secxbrl-006",
+     "secxbrl-008",
+     "soapwsdl-001",
+     "soapwsdl-002",
+     "soapwsdl-003",
+     "soapwsdl-004",
+     "soapwsdl-005",
+     "svg-001",
+     "svg-002",
+     "svg-005",
+     "svg-007",
+     "svg-008",
+     "tei-001",
+     "tei-002",
+     "tei-003",
+     "tei-004",
+     "tei-005",
+     "tei-006",
+     "tei-007",
+     "tei-008",
+     "tei-009",
+     "tei-010"
+    ]
+   }
+  },
+  {
+   "id": "F4-xpath-superlinear",
+   "severity": "performance",
+   "summary": "Candidate XPath evaluation does not complete within a generous budget on documents larger than ~1 MiB (oracle: sub-second).",
+   "repro": "timeout 60 xmllint --xpath 'count(//*[local-name()=\"node\"])' /corpus/gpxkml-007.gpx",
+   "oracle": "completes <1s",
+   "candidate": "times out (>60s)",
+   "evidence": {
+    "candidate_timeout_cells": 37,
+    "files": [
+     "aosp-008",
+     "docbook-001",
+     "gpxkml-006",
+     "gpxkml-007",
+     "musicxml-002",
+     "musicxml-003",
+     "musicxml-004",
+     "musicxml-008",
+     "musicxml-009",
+     "musicxml-010",
+     "secxbrl-003"
+    ]
+   }
+  },
+  {
+   "id": "F5-xslt-timeout",
+   "severity": "performance",
+   "summary": "Candidate XSLT application does not complete within budget on files where the oracle transform finishes quickly.",
+   "repro": "see raw/16-12/*/xsltproc|python3-lxml|ruby-nokogiri|php",
+   "evidence": {
+    "candidate_timeout_cells": 41,
+    "files": [
+     "aosp-008",
+     "docbook-001",
+     "gpxkml-006",
+     "gpxkml-007",
+     "musicxml-001",
+     "musicxml-002",
+     "musicxml-003",
+     "musicxml-004",
+     "musicxml-008",
+     "musicxml-009",
+     "musicxml-010",
+     "secxbrl-003"
+    ]
+   }
+  },
+  {
+   "id": "F6-cdata-divergence",
+   "severity": "correctness",
+   "summary": "Canonical form differs for a KML document whose descriptions contain CDATA sections (entity/section handling).",
+   "repro": "xmllint --c14n /corpus/gpxkml-003.kml | wc -c",
+   "oracle": "37286",
+   "candidate": "38051",
+   "evidence": {
+    "invalid_cells": 22
+   }
+  },
+  {
+   "id": "F7-internal-subset-entity",
+   "severity": "correctness",
+   "summary": "Canonical form differs for an SVG document with an internal DTD subset (defaulted attributes / entity expansion).",
+   "repro": "xmllint --c14n /corpus/svg-006.svg | wc -c",
+   "oracle": "108562",
+   "candidate": "101061",
+   "evidence": {
+    "invalid_cells": 3
+   }
+  },
+  {
+   "id": "F8-lxml-dtd-parse",
+   "severity": "correctness",
+   "summary": "lxml DTD validation fails to parse the (valid) DTD under the candidate where the oracle parses it.",
+   "repro": "lxml etree.DTD('/bench/schema/partwise.dtd') under candidate",
+   "evidence": {
+    "asymmetric_cells": 15,
+    "files": [
+     "musicxml-001",
+     "musicxml-002",
+     "musicxml-003",
+     "musicxml-004",
+     "musicxml-005",
+     "musicxml-006",
+     "musicxml-007",
+     "musicxml-008",
+     "musicxml-009",
+     "musicxml-010",
+     "svg-004",
+     "svg-005",
+     "svg-006",
+     "svg-007",
+     "svg-008"
+    ]
+   }
+  }
+ ],
+ "summary_by_error": [
+  [
+   "?",
+   142
+  ],
+  [
+   "timeout after 15s",
+   109
+  ],
+  [
+   "serialization_instability: repeated etree.tostri",
+   80
+  ],
+  [
+   "timeout after 51s",
+   15
+  ],
+  [
+   "timeout after 72s",
+   15
+  ],
+  [
+   "RuntimeError: xmllint failed rc=4: /bench/schema",
+   15
+  ],
+  [
+   "DTDParseError: error parsing DTD",
+   15
+  ],
+  [
+   "not_expressible: no offline DTD resource",
+   14
+  ],
+  [
+   "timeout after 39s",
+   14
+  ],
+  [
+   "TimeoutExpired: Command '['/out/xsltperf-candida",
+   11
+  ],
+  [
+   "not_expressible: no offline XSD resolver",
+   10
+  ],
+  [
+   "TimeoutExpired: Command '['xmllint', '--xpath', ",
+   8
+  ],
+  [
+   "timeout after 90s",
+   6
+  ],
+  [
+   "RuntimeError: Could not parse document",
+   6
+  ],
+  [
+   "DOMDocument::load failed: unknown libxml error",
+   6
+  ],
+  [
+   "OSError: Error reading file '/corpus/osm-007.osm",
+   5
+  ],
+  [
+   "OSError: Error reading file '/corpus/osm-008.osm",
+   5
+  ],
+  [
+   "TimeoutExpired: Command '['xsltproc', '--nonet',",
+   4
+  ],
+  [
+   "RuntimeError: xmllint failed rc=4: I/O warning :",
+   4
+  ],
+  [
+   "RuntimeError: couldn't create a parser",
+   2
+  ]
+ ]
+}

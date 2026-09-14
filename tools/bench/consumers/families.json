@@ -1,0 +1,96 @@
+{
+  "_comment": "§16.12/§16.13 predeclared per-family query and transform resources. XPath uses local-name() so it is namespace-registration-agnostic across all five consumers; the XSLT structural-extraction stylesheets are generated deterministically from xslt_names by gen_families.py and committed under xslt/. Fixed before any timing.",
+  "families": {
+    "JATS-PMC": {
+      "xpath": ["(//*[local-name()='article-meta']//*[local-name()='article-title'])[1]",
+                "//*[local-name()='contrib-group']/*[local-name()='contrib']",
+                "count(//*[local-name()='ref-list']/*[local-name()='ref'])",
+                "count(//*[local-name()='sec'])"],
+      "xslt_names": ["article", "sec", "ref", "fig", "contrib", "p"]
+    },
+    "SEC-XBRL": {
+      "xpath": ["count(//*[local-name()='nonFraction'])",
+                "//*[local-name()='context']",
+                "//*[local-name()='unit']",
+                "count(//*[local-name()='fact'])"],
+      "xslt_names": ["nonFraction", "context", "unit", "hidden", "continuation"]
+    },
+    "OSM": {
+      "xpath": ["count(//*[local-name()='node'])",
+                "count(//*[local-name()='way'])",
+                "//*[local-name()='tag'][@k='name']",
+                "count(//*[local-name()='relation'])"],
+      "xslt_names": ["node", "way", "relation", "tag", "nd", "member"]
+    },
+    "DBLP": {
+      "xpath": ["count(//*[local-name()='PubmedArticle'])",
+                "//*[local-name()='ArticleTitle']",
+                "//*[local-name()='Author']",
+                "count(//*[local-name()='PubmedData'])"],
+      "xslt_names": ["PubmedArticle", "ArticleTitle", "Author", "Abstract", "Journal"]
+    },
+    "AOSP": {
+      "xpath": ["//*[local-name()='uses-permission']",
+                "//*[local-name()='activity']",
+                "count(//*[local-name()='service'])",
+                "count(//*[local-name()='string'])"],
+      "xslt_names": ["manifest", "application", "activity", "service", "uses-permission", "string"]
+    },
+    "MAVEN": {
+      "xpath": ["//*[local-name()='dependency']",
+                "//*[local-name()='plugin']",
+                "//*[local-name()='properties']/*",
+                "count(//*[local-name()='artifactId'])"],
+      "xslt_names": ["project", "dependency", "plugin", "properties", "artifactId", "groupId"]
+    },
+    "TEI": {
+      "xpath": ["count(//*[local-name()='div'])",
+                "//*[local-name()='p']",
+                "//*[local-name()='ptr'] | //*[local-name()='ref']",
+                "count(//*[local-name()='head'])"],
+      "xslt_names": ["div", "p", "head", "ref", "ptr", "note"]
+    },
+    "DOCBOOK": {
+      "xpath": ["count(//*[local-name()='section'])",
+                "//*[local-name()='para']",
+                "//*[local-name()='xref']",
+                "count(//*[local-name()='chapter'])"],
+      "xslt_names": ["section", "para", "xref", "chapter", "formalpara", "itemizedlist"]
+    },
+    "MUSICXML": {
+      "xpath": ["count(//*[local-name()='measure'])",
+                "//*[local-name()='note']",
+                "//*[local-name()='pitch']",
+                "count(//*[local-name()='part'])"],
+      "xslt_names": ["measure", "note", "pitch", "part", "backup", "direction"]
+    },
+    "SVG": {
+      "xpath": ["//*[local-name()='path']",
+                "//*[local-name()='g']",
+                "count(//*[local-name()='rect'])",
+                "count(//*[local-name()='text'])"],
+      "xslt_names": ["svg", "g", "path", "rect", "text", "use"]
+    },
+    "GPX-KML": {
+      "xpath": ["//*[local-name()='trkpt']",
+                "//*[local-name()='Placemark']",
+                "count(//*[local-name()='coordinates'])",
+                "count(//*[local-name()='wpt'])"],
+      "xslt_names": ["gpx", "trk", "trkpt", "wpt", "Placemark", "coordinates"]
+    },
+    "RSS-ATOM": {
+      "xpath": ["//*[local-name()='item'] | //*[local-name()='entry']",
+                "//*[local-name()='title']",
+                "//*[local-name()='link']",
+                "count(//*[local-name()='description']) + count(//*[local-name()='summary'])"],
+      "xslt_names": ["rss", "channel", "item", "title", "link", "description"]
+    },
+    "SOAP-WSDL-XSD": {
+      "xpath": ["//*[local-name()='operation']",
+                "//*[local-name()='element']",
+                "//*[local-name()='message']",
+                "count(//*[local-name()='complexType'])"],
+      "xslt_names": ["definitions", "portType", "operation", "message", "schema", "element"]
+    }
+  }
+}
