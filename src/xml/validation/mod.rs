@@ -1182,14 +1182,43 @@ pub unsafe fn validate_element(
                 let attr_ref = &*attr_prop;
                 let attr_name = attr_ref.name;
 
-                // Look up the attribute declaration (keyed by name, prefix,
-                // elem — upstream xmlHashLookup3).
-                let attr_decl = hash::hash_lookup3(
-                    dtd_ref.attributes as *mut hash::HashTable,
-                    attr_name,
-                    ptr::null(),
-                    elem_name,
-                );
+                // Look up the attribute declaration. UPSTREAM-PARITY (valid.c
+                // `xmlValidateOneAttribute`): the attribute table is keyed
+                // `(name, prefix, elem)`; `prefix` is the ATTRIBUTE's namespace
+                // prefix (`xml` for `xml:space`), and a namespaced ELEMENT is
+                // first tried under its QName. Passing a NULL prefix is what
+                // made `xml:space` on `<svg>` report "No declaration for
+                // attribute space of element svg".
+                let aprefix: *const xmlChar = if attr_ref.ns.is_null() {
+                    ptr::null()
+                } else {
+                    (*attr_ref.ns).prefix
+                };
+                let mut attr_decl = ptr::null_mut();
+                let mut qname_buf: Option<Vec<u8>> = None;
+                if !e.ns.is_null() && !(*e.ns).prefix.is_null() {
+                    let p = string::xmlstr_to_string((*e.ns).prefix);
+                    let n = string::xmlstr_to_string(e.name);
+                    let mut q = format!("{p}:{n}").into_bytes();
+                    q.push(0);
+                    qname_buf = Some(q);
+                    attr_decl = hash::hash_lookup3(
+                        dtd_ref.attributes as *mut hash::HashTable,
+                        attr_name,
+                        aprefix,
+                        qname_buf.as_ref().unwrap().as_ptr() as *const xmlChar,
+                    );
+                    let _ = p;
+                }
+                if attr_decl.is_null() {
+                    attr_decl = hash::hash_lookup3(
+                        dtd_ref.attributes as *mut hash::HashTable,
+                        attr_name,
+                        aprefix,
+                        elem_name,
+                    );
+                }
+                drop(qname_buf);
 
                 if attr_decl.is_null() {
                     // UPSTREAM-PARITY (valid.c xmlValidateElement): an
@@ -1424,6 +1453,18 @@ pub unsafe fn validate_document(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDoc) -> 
             return 0;
         }
 
+        // UPSTREAM-PARITY (valid.c xmlValidateDocumentInternal):
+        //
+        //     ret = xmlValidateDtdFinal(vctxt, doc);
+        //     if (!xmlValidateRoot(vctxt, doc)) return(0);
+        //     root = xmlDocGetRootElement(doc);
+        //     ret &= xmlValidateElement(vctxt, doc, root);
+        //     ret &= xmlValidateDocumentFinal(vctxt, doc);
+        //
+        // The declaration walk comes first (it validates the DTD the document
+        // carries), then the element tree, then the ID/REF consistency pass.
+        let mut ret = validate_dtd_final(ctxt, doc);
+
         // Find the root element (first child that's an element node)
         let mut root = d.children;
         while !root.is_null() {
@@ -1442,11 +1483,15 @@ pub unsafe fn validate_document(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDoc) -> 
         }
 
         // Validate the root element
+        if validate_root(ctxt, doc) == 0 {
+            return 0;
+        }
         if validate_element(ctxt, doc, root) == 0 {
             return 0;
         }
+        ret &= validate_document_final(ctxt, doc);
 
-        c.valid
+        ret & c.valid
     }
 }
 
@@ -1851,7 +1896,26 @@ pub unsafe fn validate_dtd(
     doc: *mut _xmlDoc,
     dtd: *mut _xmlDtd,
 ) -> c_int {
-    if ctxt.is_null() || dtd.is_null() {
+    // UPSTREAM-PARITY (valid.c 2.15.3 `xmlValidateDtd`): validate the DOCUMENT
+    // against a separately-parsed DTD. The document's own subsets are replaced
+    // for the duration of the walk (`extSubset = dtd`, `intSubset = NULL`) and
+    // the id/ref tables are dropped so ID uniqueness is re-derived from this
+    // walk.
+    //
+    //     oldExt = doc->extSubset; oldInt = doc->intSubset;
+    //     doc->extSubset = dtd; doc->intSubset = NULL;
+    //     ret = xmlValidateRoot(ctxt, doc);
+    //     if (ret != 0) {
+    //         root = xmlDocGetRootElement(doc);
+    //         ret = xmlValidateElement(ctxt, doc, root);
+    //         ret &= xmlValidateDocumentFinal(ctxt, doc);
+    //     }
+    //
+    // Note what upstream does NOT do here: validate the DTD's own declarations.
+    // That is `xmlValidateDtdFinal`, which the document path
+    // (`xmlValidateDocumentInternal`) calls and this entry point does not —
+    // running it here marked perfectly valid documents invalid.
+    if ctxt.is_null() || dtd.is_null() || doc.is_null() {
         return 0;
     }
 
@@ -1859,126 +1923,49 @@ pub unsafe fn validate_dtd(
     c.doc = doc;
     c.valid = 1;
 
-    struct ValidateDtdCtx {
-        ctxt: *mut _xmlValidCtxt,
-        doc: *mut _xmlDoc,
-    }
-
-    extern "C" fn validate_attr_decl_cb(
-        payload: *mut c_void,
-        data: *mut c_void,
-        _name: *const xmlChar,
-        _name2: *const xmlChar,
-        _name3: *const xmlChar,
-    ) {
-        if payload.is_null() || data.is_null() {
-            return;
-        }
-
-        // SAFETY: Called from hash_scan_full with a ValidateDtdCtx as data.
-        let ctx = unsafe { &*(data as *mut ValidateDtdCtx) };
-        unsafe {
-            let attr = payload as *mut _xmlAttribute;
-            validate_attribute_decl(ctx.ctxt, ctx.doc, attr);
-        }
-    }
-
-    extern "C" fn validate_elem_content_cb(
-        payload: *mut c_void,
-        data: *mut c_void,
-        _name: *const xmlChar,
-        _name2: *const xmlChar,
-        _name3: *const xmlChar,
-    ) {
-        if payload.is_null() || data.is_null() {
-            return;
-        }
-
-        // SAFETY: Called from hash_scan_full with a ValidateDtdCtx as data.
-        let ctx = unsafe { &*(data as *mut ValidateDtdCtx) };
-        unsafe {
-            let elem = &*(payload as *mut _xmlElement);
-            if !elem.content.is_null() {
-                validate_content_model_refs(ctx.ctxt, ctx.doc, elem.content);
-            }
-        }
-    }
-
     unsafe {
-        let dtd_ref = &*dtd;
-
-        // Validate all attribute declarations
-        if !dtd_ref.attributes.is_null() {
-            let ctx = ValidateDtdCtx { ctxt, doc };
-            hash::hash_scan_full(
-                dtd_ref.attributes as *mut hash::HashTable,
-                Some(validate_attr_decl_cb),
-                &ctx as *const ValidateDtdCtx as *mut c_void,
-            );
+        let d = &mut *doc;
+        let old_ext = d.extSubset;
+        let old_int = d.intSubset;
+        d.extSubset = dtd;
+        d.intSubset = ptr::null_mut();
+        if !d.ids.is_null() {
+            free_id_table(d.ids as *mut hash::HashTable);
+            d.ids = ptr::null_mut();
+        }
+        if !d.refs.is_null() {
+            free_ref_table(d.refs as *mut hash::HashTable);
+            d.refs = ptr::null_mut();
         }
 
-        // Validate that element content models reference declared elements
-        if !dtd_ref.elements.is_null() {
-            let ctx = ValidateDtdCtx { ctxt, doc };
-            hash::hash_scan_full(
-                dtd_ref.elements as *mut hash::HashTable,
-                Some(validate_elem_content_cb),
-                &ctx as *const ValidateDtdCtx as *mut c_void,
-            );
+        let mut root = d.children;
+        while !root.is_null() {
+            if (*root).type_ == XML_ELEMENT_NODE as c_int {
+                break;
+            }
+            root = (*root).next;
         }
 
-        // UPSTREAM-PARITY (valid.c xmlValidateDtd): substitute the passed DTD
-        // for the document's own subsets while validating, and clear the
-        // id/ref tables so ID uniqueness is re-derived from this walk. The
-        // doc is passed explicitly so a DTD loaded separately can validate a
-        // document that has none (or a different one).
-        if !doc.is_null() {
-            let d = unsafe { &mut *doc };
-            let old_ext = d.extSubset;
-            let old_int = d.intSubset;
-            d.extSubset = dtd;
-            d.intSubset = ptr::null_mut();
-            if !d.ids.is_null() {
-                free_id_table(d.ids as *mut hash::HashTable);
-                d.ids = ptr::null_mut();
-            }
-            if !d.refs.is_null() {
-                free_ref_table(d.refs as *mut hash::HashTable);
-                d.refs = ptr::null_mut();
-            }
-
-            let mut root = d.children;
-            while !root.is_null() {
-                if (*root).type_ == XML_ELEMENT_NODE as c_int {
-                    break;
-                }
-                root = (*root).next;
-            }
-
-            let mut ret = validate_root(ctxt, doc);
-            if ret != 0 && !root.is_null() {
-                // validate_element recurses; a 0 return marks the doc invalid
-                // but all errors are still reported via vctxt_error handlers.
-                ret = validate_element(ctxt, doc, root);
-                ret &= validate_document_final(ctxt, doc);
-            }
-            if ret == 0 {
-                c.valid = 0;
-            }
-
-            d.extSubset = old_ext;
-            d.intSubset = old_int;
-            if !d.ids.is_null() {
-                free_id_table(d.ids as *mut hash::HashTable);
-                d.ids = ptr::null_mut();
-            }
-            if !d.refs.is_null() {
-                free_ref_table(d.refs as *mut hash::HashTable);
-                d.refs = ptr::null_mut();
-            }
+        let mut ret = validate_root(ctxt, doc);
+        if ret != 0 && !root.is_null() {
+            // validate_element recurses; a 0 return marks the doc invalid but
+            // all errors are still reported through the vctxt handlers.
+            ret = validate_element(ctxt, doc, root);
+            ret &= validate_document_final(ctxt, doc);
         }
 
-        c.valid
+        d.extSubset = old_ext;
+        d.intSubset = old_int;
+        if !d.ids.is_null() {
+            free_id_table(d.ids as *mut hash::HashTable);
+            d.ids = ptr::null_mut();
+        }
+        if !d.refs.is_null() {
+            free_ref_table(d.refs as *mut hash::HashTable);
+            d.refs = ptr::null_mut();
+        }
+
+        ret
     }
 }
 
@@ -2052,7 +2039,94 @@ unsafe fn validate_content_model_refs(
 ///
 /// - `ctxt`, `doc` may be NULL.
 pub unsafe fn validate_dtd_final(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDoc) -> c_int {
-    unsafe { validate_document_final(ctxt, doc) }
+    // UPSTREAM-PARITY (valid.c 2.15.3 `xmlValidateDtdFinal`): validate the
+    // DTD's OWN declarations — every `<!ATTLIST>` declaration (default value,
+    // enumeration members, notation references) and every element content
+    // model's references to declared elements. The document path
+    // (`xmlValidateDocumentInternal`) calls this before walking the elements;
+    // `xmlValidateDtd` deliberately does not.
+    if ctxt.is_null() || doc.is_null() {
+        return 0;
+    }
+
+    let c = unsafe { &mut *ctxt };
+    c.doc = doc;
+    c.valid = 1;
+
+    struct ValidateDtdCtx {
+        ctxt: *mut _xmlValidCtxt,
+        doc: *mut _xmlDoc,
+    }
+
+    extern "C" fn validate_attr_decl_cb(
+        payload: *mut c_void,
+        data: *mut c_void,
+        _name: *const xmlChar,
+        _name2: *const xmlChar,
+        _name3: *const xmlChar,
+    ) {
+        if payload.is_null() || data.is_null() {
+            return;
+        }
+
+        // SAFETY: Called from hash_scan_full with a ValidateDtdCtx as data.
+        let ctx = unsafe { &*(data as *mut ValidateDtdCtx) };
+        unsafe {
+            let attr = payload as *mut _xmlAttribute;
+            validate_attribute_decl(ctx.ctxt, ctx.doc, attr);
+        }
+    }
+
+    extern "C" fn validate_elem_content_cb(
+        payload: *mut c_void,
+        data: *mut c_void,
+        _name: *const xmlChar,
+        _name2: *const xmlChar,
+        _name3: *const xmlChar,
+    ) {
+        if payload.is_null() || data.is_null() {
+            return;
+        }
+
+        // SAFETY: Called from hash_scan_full with a ValidateDtdCtx as data.
+        let ctx = unsafe { &*(data as *mut ValidateDtdCtx) };
+        unsafe {
+            let elem = &*(payload as *mut _xmlElement);
+            if !elem.content.is_null() {
+                validate_content_model_refs(ctx.ctxt, ctx.doc, elem.content);
+            }
+        }
+    }
+
+    unsafe {
+        let dtd = get_valid_dtd(doc);
+        if dtd.is_null() {
+            return 1;
+        }
+        let dtd_ref = &*dtd;
+
+        // Validate all attribute declarations.
+        if !dtd_ref.attributes.is_null() {
+            let ctx = ValidateDtdCtx { ctxt, doc };
+            hash::hash_scan_full(
+                dtd_ref.attributes as *mut hash::HashTable,
+                Some(validate_attr_decl_cb),
+                &ctx as *const ValidateDtdCtx as *mut c_void,
+            );
+        }
+
+        // Validate that element content models reference declared elements.
+        if !dtd_ref.elements.is_null() {
+            let ctx = ValidateDtdCtx { ctxt, doc };
+            hash::hash_scan_full(
+                dtd_ref.elements as *mut hash::HashTable,
+                Some(validate_elem_content_cb),
+                &ctx as *const ValidateDtdCtx as *mut c_void,
+            );
+        }
+
+        c.valid
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

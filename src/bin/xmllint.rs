@@ -717,27 +717,72 @@ unsafe fn validate_doc(cli: &mut Cli, doc: *mut _xmlDoc, filename: &str) -> c_in
         libxml_rs::xml::validation::free_valid_ctxt(vctxt);
         return ret;
     }
-    if let Some(dtd) = &cli.dtdvalid {
-        let cname = cstr_alloc(dtd);
-        let dtd_doc = xmlReadFile(cname as *const c_char, ptr::null(), 0);
-        free_cstr(cname);
-        if dtd_doc.is_null() {
-            cli.return_code = 4;
+    if cli.dtdvalid.is_some() || cli.dtdvalidfpi.is_some() {
+        // UPSTREAM-PARITY (xmllint.c 2.15.3, LIBXML_VALID_ENABLED):
+        //
+        //     if (lint->dtdvalid != NULL)
+        //         dtd = xmlParseDTD(NULL, BAD_CAST lint->dtdvalid);
+        //     else
+        //         dtd = xmlParseDTD(BAD_CAST lint->dtdvalidfpi, NULL);
+        //     if (dtd == NULL) { "Could not parse DTD %s\n"; XMLLINT_ERR_DTD; }
+        //     else if (!xmlValidateDtd(cvp, doc, dtd))
+        //         "Document %s does not validate against %s\n"; XMLLINT_ERR_VALID;
+        //
+        // The DTD is parsed as a DTD (`xmlParseDTD`), NOT as a document: these
+        // schema files open with a long comment then `<!ENTITY ...>`
+        // declarations, which a document parse rejects with "StartTag: invalid
+        // element name".
+        let (dtd_fpi, dtd_sys): (Option<&String>, Option<&String>) =
+            match (&cli.dtdvalid, &cli.dtdvalidfpi) {
+                (Some(s), _) => (None, Some(s)),
+                (None, Some(f)) => (Some(f), None),
+                (None, None) => (None, None),
+            };
+        let shown = dtd_sys.or(dtd_fpi).map(|s| s.as_str()).unwrap_or("");
+        let dtd = match (dtd_fpi, dtd_sys) {
+            (Some(fpi), _) => {
+                let c = cstr_alloc(fpi);
+                let d = libxml_rs::abi::exports_parserint::xmlParseDTD(
+                    c as *const xmlChar,
+                    ptr::null(),
+                );
+                free_cstr(c);
+                d
+            }
+            (None, Some(sys)) => {
+                let c = cstr_alloc(sys);
+                let d = libxml_rs::abi::exports_parserint::xmlParseDTD(
+                    ptr::null(),
+                    c as *const xmlChar,
+                );
+                free_cstr(c);
+                d
+            }
+            (None, None) => ptr::null_mut(),
+        };
+        if dtd.is_null() {
+            eprintln!("Could not parse DTD {shown}");
+            cli.return_code = 4; // XMLLINT_ERR_DTD
             return -1;
         }
         let vctxt = xmlNewValidCtxt();
         if vctxt.is_null() {
+            xmlFreeDtd(dtd);
+            // XMLLINT_ERR_MEM.
+            cli.return_code = 5;
             return -1;
         }
-        let dtd_ptr = (*dtd_doc).intSubset;
-        let ret = if dtd_ptr.is_null() {
-            xmlValidateDocument(vctxt, doc)
-        } else {
-            xmlValidateDtd(vctxt, doc, dtd_ptr)
-        };
+        let ok = xmlValidateDtd(vctxt, doc, dtd) != 0;
+        if !ok {
+            eprintln!("Document {filename} does not validate against {shown}");
+            cli.return_code = 3; // XMLLINT_ERR_VALID
+        }
         libxml_rs::xml::validation::free_valid_ctxt(vctxt);
-        libxml_rs::xml::tree::free_doc(dtd_doc);
-        return ret;
+        xmlFreeDtd(dtd);
+        // Return the upstream `xmlValidateDtd` verdict: 1 when the document is
+        // valid. The caller maps `ret == 0` to XMLLINT_ERR_VALID, so returning
+        // 0 for SUCCESS marked every valid document invalid.
+        return if ok { 1 } else { 0 };
     }
     0
 }

@@ -747,6 +747,110 @@ unsafe fn pi_skip_blanks(ctxt: *mut _xmlParserCtxt) -> c_int {
     res
 }
 
+/// `PARSER_IN_PE` (upstream `include/private/parser.h`): the current input
+/// holds the replacement text of a parameter entity.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid context whose input/entity links are valid.
+unsafe fn pi_in_pe(ctxt: *mut _xmlParserCtxt) -> bool {
+    unsafe {
+        let input = (*ctxt).input;
+        if input.is_null() {
+            return false;
+        }
+        let ent = (*input).entity;
+        if ent.is_null() {
+            return false;
+        }
+        (*ent).etype == XML_INTERNAL_PARAMETER_ENTITY
+            || (*ent).etype == XML_EXTERNAL_PARAMETER_ENTITY
+    }
+}
+
+/// `PARSER_EXTERNAL` (upstream `include/private/parser.h`): the external
+/// subset, or an external parameter entity, is being parsed.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid context whose input/entity links are valid.
+unsafe fn pi_external(ctxt: *mut _xmlParserCtxt) -> bool {
+    unsafe {
+        if (*ctxt).inSubset == 2 {
+            return true;
+        }
+        let input = (*ctxt).input;
+        if input.is_null() {
+            return false;
+        }
+        let ent = (*input).entity;
+        if ent.is_null() {
+            return false;
+        }
+        (*ent).etype == XML_EXTERNAL_PARAMETER_ENTITY
+    }
+}
+
+/// Upstream `xmlSkipBlankCharsPE` (parser.c): `SKIP_BLANKS_PE`. Outside the
+/// external subset (and outside a parameter entity) this is plain
+/// `SKIP_BLANKS`; otherwise it also expands `%name;` references and pops
+/// exhausted parameter-entity inputs.
+///
+/// This is what gives a DTD such as SVG 1.0's its content models: the
+/// declarations read `<!ELEMENT svg %SVG.svg.content; >`, so the reference
+/// after the element name has to be expanded before the content model (which
+/// then arrives as `( ... )*`) can be parsed.
+///
+/// The upstream `XML_INPUT_MARKUP_DECL` guard on the end-of-input pop is not
+/// reproduced: the candidate never marks an input as a markup declaration
+/// (upstream sets it only from `xmlParsePERefInternal(ctxt, 1)` call sites,
+/// which this port does not use).
+///
+/// Returns the number of characters consumed.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid context whose input stack is valid.
+unsafe fn pi_skip_blanks_pe(ctxt: *mut _xmlParserCtxt) -> c_int {
+    unsafe {
+        let mut res: c_int = 0;
+        loop {
+            if pi_stopped(ctxt) {
+                break;
+            }
+            let input = pi_input(ctxt);
+            if input.is_null() {
+                break;
+            }
+            // End of the current input. A parameter-entity input carries one
+            // trailing space that `end` deliberately excludes (see
+            // `pi_parse_pe_reference`), so `cur >= end` — not just a NUL byte —
+            // marks the end here. Without the bound test the caller would read
+            // that trailing space through `CUR`, fail to advance, and spin.
+            let at_end = (*input).cur >= (*input).end || *(*input).cur == 0;
+            if at_end {
+                if !pi_in_pe(ctxt) {
+                    break;
+                }
+                pi_pop_pe(ctxt);
+            } else if pi_is_blank_ch(*(*input).cur) {
+                pi_next_char(ctxt);
+            } else if *(*input).cur == b'%' {
+                if !pi_external(ctxt) || pi_is_blank_ch(pi_nxt(ctxt, 1)) || pi_nxt(ctxt, 1) == 0 {
+                    break;
+                }
+                pi_parse_pe_reference(ctxt);
+            } else {
+                break;
+            }
+            if res < c_int::MAX {
+                res += 1;
+            }
+        }
+        res
+    }
+}
+
 /// Compare six bytes at the current position against a literal.
 #[inline]
 unsafe fn pi_cmp6(ctxt: *mut _xmlParserCtxt, s: &[u8; 6]) -> bool {
@@ -2348,7 +2452,7 @@ unsafe fn pi_parse_notation_decl(ctxt: *mut _xmlParserCtxt) {
         pi_skip(ctxt, 2);
         if pi_cmp8(ctxt, b"NOTATION") {
             pi_skip(ctxt, 8);
-            if pi_skip_blanks(ctxt) == 0 {
+            if pi_skip_blanks_pe(ctxt) == 0 {
                 pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                 return;
             }
@@ -2357,14 +2461,14 @@ unsafe fn pi_parse_notation_decl(ctxt: *mut _xmlParserCtxt) {
                 pi_fatal_err(ctxt, XML_ERR_NOTATION_NOT_STARTED);
                 return;
             }
-            if pi_skip_blanks(ctxt) == 0 {
+            if pi_skip_blanks_pe(ctxt) == 0 {
                 pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                 xmlFreeImpl(name as *mut c_void);
                 return;
             }
             let mut pubid: *mut xmlChar = ptr::null_mut();
             let systemid = pi_parse_external_id(ctxt, &mut pubid, 0);
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             if pi_raw(ctxt) == b'>' {
                 pi_next1(ctxt);
                 let c = &*ctxt;
@@ -2394,13 +2498,13 @@ unsafe fn pi_parse_entity_decl(ctxt: *mut _xmlParserCtxt) {
         pi_skip(ctxt, 2);
         if pi_cmp6(ctxt, b"ENTITY") {
             pi_skip(ctxt, 6);
-            if pi_skip_blanks(ctxt) == 0 {
+            if pi_skip_blanks_pe(ctxt) == 0 {
                 pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
             }
             let mut is_parameter = false;
             if pi_raw(ctxt) == b'%' {
                 pi_next1(ctxt);
-                if pi_skip_blanks(ctxt) == 0 {
+                if pi_skip_blanks_pe(ctxt) == 0 {
                     pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                 }
                 is_parameter = true;
@@ -2410,7 +2514,7 @@ unsafe fn pi_parse_entity_decl(ctxt: *mut _xmlParserCtxt) {
                 pi_fatal_err(ctxt, XML_ERR_NAME_REQUIRED);
                 return;
             }
-            if pi_skip_blanks(ctxt) == 0 {
+            if pi_skip_blanks_pe(ctxt) == 0 {
                 pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
             }
 
@@ -2538,12 +2642,12 @@ unsafe fn pi_parse_entity_decl(ctxt: *mut _xmlParserCtxt) {
                     }
                 } else {
                     uri = pi_parse_external_id(ctxt, &mut literal, 1);
-                    if pi_raw(ctxt) != b'>' && pi_skip_blanks(ctxt) == 0 {
+                    if pi_raw(ctxt) != b'>' && pi_skip_blanks_pe(ctxt) == 0 {
                         pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                     }
                     if pi_cmp5(ctxt, b"NDATA") {
                         pi_skip(ctxt, 5);
-                        if pi_skip_blanks(ctxt) == 0 {
+                        if pi_skip_blanks_pe(ctxt) == 0 {
                             pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                         }
                         ndata = pi_parse_name(ctxt);
@@ -2573,7 +2677,7 @@ unsafe fn pi_parse_entity_decl(ctxt: *mut _xmlParserCtxt) {
                 }
             }
 
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             if pi_raw(ctxt) != b'>' {
                 pi_fatal_err(ctxt, XML_ERR_ENTITY_NOT_FINISHED);
             } else {
@@ -2632,7 +2736,7 @@ unsafe fn pi_parse_default_decl(ctxt: *mut _xmlParserCtxt, value: *mut *mut xmlC
         if pi_cmp6(ctxt, b"#FIXED") {
             pi_skip(ctxt, 6);
             val = XML_ATTRIBUTE_FIXED;
-            if pi_skip_blanks(ctxt) == 0 {
+            if pi_skip_blanks_pe(ctxt) == 0 {
                 pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
             }
         }
@@ -2693,7 +2797,7 @@ unsafe fn pi_parse_notation_type(ctxt: *mut _xmlParserCtxt) -> *mut _xmlEnumerat
         let mut last: *mut _xmlEnumeration = ptr::null_mut();
         loop {
             pi_next1(ctxt);
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             let name = pi_parse_name(ctxt);
             if name.is_null() {
                 pi_fatal_err(ctxt, XML_ERR_NAME_REQUIRED);
@@ -2714,7 +2818,7 @@ unsafe fn pi_parse_notation_type(ctxt: *mut _xmlParserCtxt) -> *mut _xmlEnumerat
                 (*last).next = cur;
             }
             last = cur;
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             if pi_raw(ctxt) != b'|' {
                 break;
             }
@@ -2740,7 +2844,7 @@ unsafe fn pi_parse_enumeration_type(ctxt: *mut _xmlParserCtxt) -> *mut _xmlEnume
         let mut last: *mut _xmlEnumeration = ptr::null_mut();
         loop {
             pi_next1(ctxt);
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             let name = pi_parse_nmtoken(ctxt);
             if name.is_null() {
                 pi_fatal_err(ctxt, XML_ERR_NMTOKEN_REQUIRED);
@@ -2760,7 +2864,7 @@ unsafe fn pi_parse_enumeration_type(ctxt: *mut _xmlParserCtxt) -> *mut _xmlEnume
                 (*last).next = cur;
             }
             last = cur;
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             if pi_raw(ctxt) != b'|' {
                 break;
             }
@@ -2782,7 +2886,7 @@ unsafe fn pi_parse_enumerated_type(
     unsafe {
         if pi_cmp8(ctxt, b"NOTATION") {
             pi_skip(ctxt, 8);
-            if pi_skip_blanks(ctxt) == 0 {
+            if pi_skip_blanks_pe(ctxt) == 0 {
                 pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                 return 0;
             }
@@ -2809,7 +2913,7 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
         pi_skip(ctxt, 2);
         if pi_cmp7(ctxt, b"ATTLIST") {
             pi_skip(ctxt, 7);
-            if pi_skip_blanks(ctxt) == 0 {
+            if pi_skip_blanks_pe(ctxt) == 0 {
                 pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
             }
             let elem_name = pi_parse_name(ctxt);
@@ -2817,7 +2921,7 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
                 pi_fatal_err(ctxt, XML_ERR_NAME_REQUIRED);
                 return;
             }
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             while pi_raw(ctxt) != b'>' && !pi_stopped(ctxt) {
                 let mut tree: *mut _xmlEnumeration = ptr::null_mut();
                 let attr_name = pi_parse_name(ctxt);
@@ -2825,7 +2929,7 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
                     pi_fatal_err(ctxt, XML_ERR_NAME_REQUIRED);
                     break;
                 }
-                if pi_skip_blanks(ctxt) == 0 {
+                if pi_skip_blanks_pe(ctxt) == 0 {
                     pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                     xmlFreeImpl(attr_name as *mut c_void);
                     break;
@@ -2835,7 +2939,7 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
                     xmlFreeImpl(attr_name as *mut c_void);
                     break;
                 }
-                if pi_skip_blanks(ctxt) == 0 {
+                if pi_skip_blanks_pe(ctxt) == 0 {
                     pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                     if !tree.is_null() {
                         pi_free_enumeration(tree);
@@ -2855,7 +2959,7 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
                     xmlFreeImpl(attr_name as *mut c_void);
                     break;
                 }
-                if pi_raw(ctxt) != b'>' && pi_skip_blanks(ctxt) == 0 {
+                if pi_raw(ctxt) != b'>' && pi_skip_blanks_pe(ctxt) == 0 {
                     pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                     if !default_value.is_null() {
                         xmlFreeImpl(default_value as *mut c_void);
@@ -2897,19 +3001,51 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
                     );
                 }
                 if !dtd.is_null() {
+                    // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeDecl):
+                    //
+                    //     name = xmlSplitQName4(fullname, &prefix);
+                    //     xmlAddAttributeDecl(vctxt, subset, elem, name,
+                    //                         prefix, type, def, ...);
+                    //
+                    // The attribute table is keyed (name, PREFIX, elem), so
+                    // `xml:space` must be recorded as ("space", "xml") —
+                    // recording the raw QName under a NULL prefix made every
+                    // `xml:space`/`xml:lang` attribute come back undeclared
+                    // ("No declaration for attribute space of element svg").
+                    let mut attr_local: *mut xmlChar = attr_name as *mut xmlChar;
+                    let mut attr_prefix: *mut xmlChar = ptr::null_mut();
+                    {
+                        let bytes =
+                            core::ffi::CStr::from_ptr(attr_name as *const c_char).to_bytes();
+                        if let Some(pos) = bytes.iter().position(|&b| b == b':') {
+                            attr_prefix =
+                                crate::xml::string::xml_strndup(attr_name as *const xmlChar, pos)
+                                    as *mut xmlChar;
+                            attr_local = crate::xml::string::xml_strndup(
+                                attr_name.add(pos + 1),
+                                bytes.len() - pos - 1,
+                            ) as *mut xmlChar;
+                        }
+                    }
                     // `add_attribute_decl` takes ownership of `tree` (attaches
                     // it, or frees it for a duplicate declaration).
                     let elem_decl = crate::xml::dtd::get_element_decl_created(dtd, elem_name);
                     crate::xml::dtd::add_attribute_decl(
                         dtd,
                         elem_decl,
-                        attr_name,
-                        ptr::null(),
+                        attr_local,
+                        attr_prefix,
                         type_,
                         def,
                         default_value,
                         tree,
                     );
+                    if !attr_prefix.is_null() {
+                        xmlFreeImpl(attr_prefix as *mut c_void);
+                    }
+                    if attr_local != attr_name as *mut xmlChar {
+                        xmlFreeImpl(attr_local as *mut c_void);
+                    }
                 } else if !tree.is_null() {
                     pi_free_enumeration(tree);
                 }
@@ -2961,7 +3097,7 @@ unsafe fn pi_parse_element_mixed_content_decl(
     unsafe {
         if pi_cmp7(ctxt, b"#PCDATA") {
             pi_skip(ctxt, 7);
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             if pi_raw(ctxt) == b')' {
                 pi_next1(ctxt);
                 let ret = create_content_model(ptr::null(), XML_ELEMENT_CONTENT_PCDATA as c_int);
@@ -3003,14 +3139,14 @@ unsafe fn pi_parse_element_mixed_content_decl(
                     }
                     cur = n;
                 }
-                pi_skip_blanks(ctxt);
+                pi_skip_blanks_pe(ctxt);
                 elem = pi_parse_name(ctxt);
                 if elem.is_null() {
                     pi_fatal_err(ctxt, XML_ERR_NAME_REQUIRED);
                     free_content_model(ret);
                     return ptr::null_mut();
                 }
-                pi_skip_blanks(ctxt);
+                pi_skip_blanks_pe(ctxt);
             }
             if pi_raw(ctxt) == b')' && pi_nxt(ctxt, 1) == b'*' {
                 if !elem.is_null() {
@@ -3058,7 +3194,7 @@ unsafe fn pi_parse_element_children_content_decl_priv(
             pi_fatal_err(ctxt, XML_ERR_RESOURCE_LIMIT);
             return ptr::null_mut();
         }
-        pi_skip_blanks(ctxt);
+        pi_skip_blanks_pe(ctxt);
         let mut ret: *mut _xmlElementContent = ptr::null_mut();
         let mut cur: *mut _xmlElementContent = ptr::null_mut();
         let mut last: *mut _xmlElementContent = ptr::null_mut();
@@ -3099,7 +3235,7 @@ unsafe fn pi_parse_element_children_content_decl_priv(
         }
 
         while !pi_stopped(ctxt) {
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             if pi_raw(ctxt) == b')' {
                 break;
             }
@@ -3147,7 +3283,7 @@ unsafe fn pi_parse_element_children_content_decl_priv(
                 return ptr::null_mut();
             }
 
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             if pi_raw(ctxt) == b'(' {
                 pi_next1(ctxt);
                 last =
@@ -3236,7 +3372,7 @@ unsafe fn pi_parse_element_content_decl(
         }
         let open_input_nr = (*ctxt).inputNr;
         pi_next1(ctxt);
-        pi_skip_blanks(ctxt);
+        pi_skip_blanks_pe(ctxt);
 
         let (tree, res) = if pi_cmp7(ctxt, b"#PCDATA") {
             (
@@ -3252,7 +3388,7 @@ unsafe fn pi_parse_element_content_decl(
         if tree.is_null() {
             return -1;
         }
-        pi_skip_blanks(ctxt);
+        pi_skip_blanks_pe(ctxt);
         *result = tree;
         res
     }
@@ -3268,7 +3404,7 @@ unsafe fn pi_parse_element_decl(ctxt: *mut _xmlParserCtxt) -> c_int {
         pi_skip(ctxt, 2);
         if pi_cmp7(ctxt, b"ELEMENT") {
             pi_skip(ctxt, 7);
-            if pi_skip_blanks(ctxt) == 0 {
+            if pi_skip_blanks_pe(ctxt) == 0 {
                 pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                 return -1;
             }
@@ -3277,7 +3413,7 @@ unsafe fn pi_parse_element_decl(ctxt: *mut _xmlParserCtxt) -> c_int {
                 pi_fatal_err(ctxt, XML_ERR_NAME_REQUIRED);
                 return -1;
             }
-            if pi_skip_blanks(ctxt) == 0 {
+            if pi_skip_blanks_pe(ctxt) == 0 {
                 pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
             }
             let mut content: *mut _xmlElementContent = ptr::null_mut();
@@ -3299,7 +3435,7 @@ unsafe fn pi_parse_element_decl(ctxt: *mut _xmlParserCtxt) -> c_int {
                 return -1;
             }
 
-            pi_skip_blanks(ctxt);
+            pi_skip_blanks_pe(ctxt);
             if pi_raw(ctxt) != b'>' {
                 pi_fatal_err(ctxt, XML_ERR_GT_REQUIRED);
                 if !content.is_null() {
@@ -3395,13 +3531,13 @@ unsafe fn pi_parse_text_decl(ctxt: *mut _xmlParserCtxt) {
             pi_fatal_err(ctxt, XML_ERR_XMLDECL_NOT_STARTED);
             return;
         }
-        if pi_skip_blanks(ctxt) == 0 {
+        if pi_skip_blanks_pe(ctxt) == 0 {
             pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
         }
         let mut version = pi_parse_version_info(ctxt);
         if version.is_null() {
             version = crate::abi::exports_xml2::xmlStrdup(c"1.0".as_ptr() as *const xmlChar);
-        } else if pi_skip_blanks(ctxt) == 0 {
+        } else if pi_skip_blanks_pe(ctxt) == 0 {
             pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
         }
         let input = pi_input(ctxt);
@@ -3411,7 +3547,7 @@ unsafe fn pi_parse_text_decl(ctxt: *mut _xmlParserCtxt) {
             xmlFreeImpl(version as *mut c_void);
         }
         pi_parse_encoding_decl(ctxt);
-        pi_skip_blanks(ctxt);
+        pi_skip_blanks_pe(ctxt);
         if pi_raw(ctxt) == b'?' && pi_nxt(ctxt, 1) == b'>' {
             pi_skip(ctxt, 2);
         } else if pi_raw(ctxt) == b'>' {

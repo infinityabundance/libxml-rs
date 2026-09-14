@@ -1451,249 +1451,158 @@ pub unsafe fn valid_content_model(
     if model.is_null() {
         return ContentModelResult::Invalid;
     }
-
-    unsafe {
-        let m = &*model;
-
-        // Handle occurrence indicators at this level first
-        match m.ocur as u32 {
-            o if o == XML_ELEMENT_CONTENT_OPT as u32 => {
-                // Optional: zero or one occurrence
-                if names.is_empty() {
-                    return ContentModelResult::Valid;
-                }
-                return valid_content_model_inner(model, names);
-            }
-            o if o == XML_ELEMENT_CONTENT_MULT as u32 => {
-                // Zero or more
-                if names.is_empty() {
-                    return ContentModelResult::Valid;
-                }
-                return valid_content_model_zero_or_more(model, names);
-            }
-            o if o == XML_ELEMENT_CONTENT_PLUS as u32 => {
-                // One or more
-                if names.is_empty() {
-                    return ContentModelResult::Invalid;
-                }
-                return valid_content_model_one_or_more(model, names);
-            }
-            _ => {}
-        }
-
-        valid_content_model_inner(model, names)
+    let mut memo: std::collections::HashMap<(usize, usize), std::collections::BTreeSet<usize>> =
+        std::collections::HashMap::new();
+    let ends = unsafe { cm_match(model, names, 0, &mut memo) };
+    if ends.contains(&names.len()) {
+        ContentModelResult::Valid
+    } else {
+        ContentModelResult::Invalid
     }
 }
 
-/// Validate content against a content model without considering occurrence.
+/// `match(model, i)` — the set of end positions `j` for which `names[i..j]` is
+/// accepted by `model`.
 ///
-/// # Safety
+/// # UPSTREAM-PARITY / COMPLEXITY
 ///
-/// - `model` must be a valid pointer to an `_xmlElementContent`; it is
-///   dereferenced to read `type_` and `name`, and its `c1`/`c2` children are
-///   followed when non-NULL.
-/// - Each entry in `names` must be NULL or a valid pointer to a
-///   NUL-terminated `xmlChar` element name; non-NULL entries are compared
-///   with `xml_strcmp`.
-unsafe fn valid_content_model_inner(
+/// Upstream validates content with a compiled deterministic automaton
+/// (`xmlRegExecPushString`), which is linear in the number of children. The
+/// candidate used to re-parse the content-model TREE with backtracking, which
+/// is exponential on the ambiguous models a real DTD contains: SVG 1.0's
+/// `<g>` accepts ~20 element types in any order, so a document with thirty
+/// children under one `<g>` blew the stack (Phase 16 F8: `xmllint --dtdvalid
+/// svg10.dtd` on svg-004 aborted with "has overflowed its stack").
+///
+/// This is the classic position-set algorithm instead: the result is the
+/// SET of reachable end positions, sequences extend one sub-result with the
+/// next, choices union, repetitions iterate to a fixed point, and every
+/// `(model, i)` pair is memoized. The recursion depth is the model's depth
+/// (not the child count), so it cannot blow the stack, and the whole match is
+/// polynomial in `|model| x |children|`.
+///
+/// # SAFETY
+///
+/// - `model` must be a valid `_xmlElementContent` (or NULL, which matches
+///   nothing); its `c1`/`c2` links must be valid or NULL.
+/// - Each entry in `names` must be NULL or a valid NUL-terminated name.
+unsafe fn cm_match(
     model: *mut _xmlElementContent,
     names: &[*const xmlChar],
-) -> ContentModelResult {
+    i: usize,
+    memo: &mut std::collections::HashMap<(usize, usize), std::collections::BTreeSet<usize>>,
+) -> std::collections::BTreeSet<usize> {
+    use std::collections::BTreeSet;
     unsafe {
+        let mut out = BTreeSet::new();
+        if model.is_null() {
+            return out;
+        }
+        if let Some(hit) = memo.get(&(model as usize, i)) {
+            return hit.clone();
+        }
+        let m = &*model;
+
+        // The node's own occurrence indicator applies to the base match.
+        let base = |ptr: *mut _xmlElementContent,
+                    memo: &mut std::collections::HashMap<(usize, usize), BTreeSet<usize>>|
+         -> BTreeSet<usize> { unsafe { cm_match_base(ptr, names, i, memo) } };
+
+        match m.ocur as u32 {
+            o if o == XML_ELEMENT_CONTENT_OPT as u32 => {
+                out.insert(i);
+                out.extend(base(model, memo));
+            }
+            o if o == XML_ELEMENT_CONTENT_MULT as u32 => {
+                out.insert(i);
+                // Fixed-point closure: each iteration must consume at least one
+                // child, so the position set strictly grows and terminates.
+                let mut stack: Vec<usize> = vec![i];
+                while let Some(p) = stack.pop() {
+                    let next = unsafe { cm_match_base(model, names, p, memo) };
+                    for q in next {
+                        if q > p && out.insert(q) {
+                            stack.push(q);
+                        }
+                    }
+                }
+            }
+            o if o == XML_ELEMENT_CONTENT_PLUS as u32 => {
+                let first = base(model, memo);
+                for p in &first {
+                    out.insert(*p);
+                }
+                let mut stack: Vec<usize> = first.iter().copied().collect();
+                while let Some(p) = stack.pop() {
+                    let next = unsafe { cm_match_base(model, names, p, memo) };
+                    for q in next {
+                        if q > p && out.insert(q) {
+                            stack.push(q);
+                        }
+                    }
+                }
+            }
+            _ => {
+                out = base(model, memo);
+            }
+        }
+
+        memo.insert((model as usize, i), out.clone());
+        out
+    }
+}
+
+/// The match of `model`'s own structure, ignoring its occurrence indicator.
+///
+/// # SAFETY
+///
+/// - See [`cm_match`].
+unsafe fn cm_match_base(
+    model: *mut _xmlElementContent,
+    names: &[*const xmlChar],
+    i: usize,
+    memo: &mut std::collections::HashMap<(usize, usize), std::collections::BTreeSet<usize>>,
+) -> std::collections::BTreeSet<usize> {
+    use std::collections::BTreeSet;
+    unsafe {
+        let mut out = BTreeSet::new();
+        if model.is_null() {
+            return out;
+        }
         let m = &*model;
 
         match m.type_ as u32 {
             t if t == XML_ELEMENT_CONTENT_PCDATA as u32 => {
-                // PCDATA: content must be empty (just text)
-                if names.is_empty() {
-                    ContentModelResult::Valid
-                } else {
-                    ContentModelResult::Invalid
-                }
+                // A `#PCDATA` position matches no element child.
+                out.insert(i);
             }
             t if t == XML_ELEMENT_CONTENT_ELEMENT as u32 => {
-                // Single element: must match exactly one element
-                if names.len() != 1 {
-                    return ContentModelResult::Invalid;
+                if i < names.len() && !names[i].is_null() && !m.name.is_null() {
+                    if string::xml_strcmp(names[i], m.name) == 0 {
+                        out.insert(i + 1);
+                    }
                 }
-                if names[0].is_null() {
-                    return ContentModelResult::Invalid;
-                }
-                // Compare with model name
-                if string::xml_strcmp(names[0], m.name) != 0 {
-                    return ContentModelResult::Invalid;
-                }
-                ContentModelResult::Valid
             }
             t if t == XML_ELEMENT_CONTENT_SEQ as u32 => {
-                // Sequence: validate children in order
-                valid_content_model_seq(m, names)
+                if m.c1.is_null() {
+                    out.extend(unsafe { cm_match(m.c2, names, i, memo) });
+                } else if m.c2.is_null() {
+                    out.extend(unsafe { cm_match(m.c1, names, i, memo) });
+                } else {
+                    let first = unsafe { cm_match(m.c1, names, i, memo) };
+                    for p in first {
+                        out.extend(unsafe { cm_match(m.c2, names, p, memo) });
+                    }
+                }
             }
             t if t == XML_ELEMENT_CONTENT_OR as u32 => {
-                // Choice: one of the alternatives must match all names
-                valid_content_model_or(m, names)
+                out.extend(unsafe { cm_match(m.c1, names, i, memo) });
+                out.extend(unsafe { cm_match(m.c2, names, i, memo) });
             }
-            _ => ContentModelResult::Invalid,
+            _ => {}
         }
+        out
     }
-}
-
-/// Validate content for zero-or-more occurrence.
-///
-/// # Safety
-///
-/// - `model` must be a valid pointer to an `_xmlElementContent`; it is
-///   forwarded to `valid_content_model_inner`, which dereferences it.
-/// - Each entry in `names` must be NULL or a valid pointer to a
-///   NUL-terminated `xmlChar` element name.
-unsafe fn valid_content_model_zero_or_more(
-    model: *mut _xmlElementContent,
-    names: &[*const xmlChar],
-) -> ContentModelResult {
-    // Zero or more: try each possible split
-    let mut i = 0;
-    while i <= names.len() {
-        let consumed = &names[..i];
-        let remaining = &names[i..];
-
-        let consumed_valid = unsafe { valid_content_model_inner(model, consumed) };
-        if consumed_valid == ContentModelResult::Valid {
-            if remaining.is_empty() {
-                return ContentModelResult::Valid;
-            }
-            // Try to match remaining with same model
-            let remaining_valid = unsafe { valid_content_model_zero_or_more(model, remaining) };
-            if remaining_valid == ContentModelResult::Valid {
-                return ContentModelResult::Valid;
-            }
-        }
-
-        i += 1;
-    }
-    ContentModelResult::Invalid
-}
-
-/// Validate content for one-or-more occurrence.
-///
-/// # Safety
-///
-/// - `model` must be a valid pointer to an `_xmlElementContent`; it is
-///   forwarded to `valid_content_model_inner`, which dereferences it.
-/// - Each entry in `names` must be NULL or a valid pointer to a
-///   NUL-terminated `xmlChar` element name.
-unsafe fn valid_content_model_one_or_more(
-    model: *mut _xmlElementContent,
-    names: &[*const xmlChar],
-) -> ContentModelResult {
-    // One or more: must match at least once
-    let mut i = 1;
-    while i <= names.len() {
-        let consumed = &names[..i];
-        let remaining = &names[i..];
-
-        let consumed_valid = unsafe { valid_content_model_inner(model, consumed) };
-        if consumed_valid == ContentModelResult::Valid {
-            if remaining.is_empty() {
-                return ContentModelResult::Valid;
-            }
-            let remaining_valid = unsafe { valid_content_model_zero_or_more(model, remaining) };
-            if remaining_valid == ContentModelResult::Valid {
-                return ContentModelResult::Valid;
-            }
-        }
-
-        i += 1;
-    }
-    ContentModelResult::Invalid
-}
-
-/// Validate content against a sequence content model.
-///
-/// # Safety
-///
-/// - The `model` reference must point to a live `_xmlElementContent`.
-/// - Non-NULL `c1`/`c2` children must be valid pointers to
-///   `_xmlElementContent`; they are passed to `valid_content_model`.
-/// - Each entry in `names` must be NULL or a valid pointer to a
-///   NUL-terminated `xmlChar` element name.
-unsafe fn valid_content_model_seq(
-    model: &_xmlElementContent,
-    names: &[*const xmlChar],
-) -> ContentModelResult {
-    // For a sequence, we need to split the names between c1 and c2
-    // This is a simplified validation - full automata-based validation
-    // would be more complex.
-
-    let c1 = model.c1;
-    let c2 = model.c2;
-
-    if c1.is_null() && c2.is_null() {
-        return ContentModelResult::Valid;
-    }
-
-    if c1.is_null() {
-        return unsafe { valid_content_model(c2, names) };
-    }
-
-    if c2.is_null() {
-        return unsafe { valid_content_model(c1, names) };
-    }
-
-    // Try to split the names at each possible position
-    // This implements a simple backtracking validator
-    for split in 0..=names.len() {
-        let left = &names[..split];
-        let right = &names[split..];
-
-        let left_valid = unsafe { valid_content_model(c1, left) };
-        if left_valid != ContentModelResult::Valid {
-            continue;
-        }
-
-        let right_valid = unsafe { valid_content_model(c2, right) };
-        if right_valid == ContentModelResult::Valid {
-            return ContentModelResult::Valid;
-        }
-    }
-
-    ContentModelResult::Invalid
-}
-
-/// Validate content against a choice content model.
-///
-/// # Safety
-///
-/// - The `model` reference must point to a live `_xmlElementContent`.
-/// - Non-NULL `c1`/`c2` children must be valid pointers to
-///   `_xmlElementContent`; they are passed to `valid_content_model`.
-/// - Each entry in `names` must be NULL or a valid pointer to a
-///   NUL-terminated `xmlChar` element name.
-unsafe fn valid_content_model_or(
-    model: &_xmlElementContent,
-    names: &[*const xmlChar],
-) -> ContentModelResult {
-    let c1 = model.c1;
-    let c2 = model.c2;
-
-    if c1.is_null() && c2.is_null() {
-        return ContentModelResult::Invalid;
-    }
-
-    if !c1.is_null() {
-        let result = unsafe { valid_content_model(c1, names) };
-        if result == ContentModelResult::Valid {
-            return ContentModelResult::Valid;
-        }
-    }
-
-    if !c2.is_null() {
-        let result = unsafe { valid_content_model(c2, names) };
-        if result == ContentModelResult::Valid {
-            return ContentModelResult::Valid;
-        }
-    }
-
-    ContentModelResult::Invalid
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
