@@ -22,8 +22,10 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import sys
 import xml.parsers.expat
 
@@ -49,6 +51,7 @@ REQUIRED_DIMENSIONS = [
     "predominantly_ascii",
     "western_latin_unicode",
     "non_latin_script",
+    "cjk",
     "mixed_script",
     "markup_heavy",
     "text_heavy",
@@ -61,6 +64,18 @@ REQUIRED_DIMENSIONS = [
     "tiny_configuration",
     "huge_dataset",
 ]
+
+# Keys corpus_report itself derives from the file bytes. Excluded from the
+# manifest-core projection so the report's cryptographic binding to the
+# manifest is stable regardless of whether enrichment has already run.
+ANALYSIS_KEYS = {
+    "encoding", "xml_version", "doctype", "internal_subset", "external_subset",
+    "namespaces", "distinct_elements", "distinct_attributes", "elements",
+    "attributes", "max_depth", "text_fraction", "attribute_fraction",
+    "non_ascii_fraction", "entity_declarations", "entity_references",
+    "prefixed_element_fraction", "comments", "cdata", "pis", "schema_deps",
+    "suitability", "bucket", "parse_ok", "scripts", "entities",
+}
 
 
 def script_class(ch: str) -> str:
@@ -75,6 +90,8 @@ def script_class(ch: str) -> str:
 
 
 _HI = bytes(range(0x80, 0x100))
+_PREDEFINED_ENTITIES = {b"amp", b"lt", b"gt", b"quot", b"apos"}
+_ENTITY_REF_RE = re.compile(rb"&([A-Za-z_][A-Za-z0-9_.:-]*);")
 
 
 def byte_stats(path: str) -> tuple[int, int]:
@@ -90,6 +107,31 @@ def byte_stats(path: str) -> tuple[int, int]:
             total += len(chunk)
             non_ascii += len(chunk) - len(chunk.translate(None, _HI))
     return total, non_ascii
+
+
+def count_entity_references(path: str) -> int:
+    """Lexically count `&name;` references excluding the five predefined
+    entities and numeric character references (`&#...;`).
+
+    Expat expands internal entity references into character data, so the parser
+    cannot be used for this; the count is an explicit byte-level scan (a
+    reference occurring textually inside a comment or CDATA section is counted
+    as the lexical reference it is). Chunk boundaries are handled by carrying a
+    short tail and only counting matches that end inside the new region."""
+    total = 0
+    carry = b""
+    with open(path, "rb") as f:
+        while True:
+            chunk = f.read(1 << 23)
+            if not chunk:
+                break
+            data = carry + chunk
+            base = len(carry)
+            for m in _ENTITY_REF_RE.finditer(data):
+                if m.end() > base and m.group(1) not in _PREDEFINED_ENTITIES:
+                    total += 1
+            carry = data[-64:]
+    return total
 
 
 def utf8len(s: str) -> int:
@@ -116,7 +158,8 @@ def analyze(path: str) -> dict:
         "max_depth": 0,
         "text_bytes": 0,
         "attr_value_bytes": 0,
-        "entities": 0,
+        "entity_declarations": 0,
+        "prefixed_elements": 0,
         "comments": 0,
         "cdata": 0,
         "pis": 0,
@@ -150,6 +193,8 @@ def analyze(path: str) -> dict:
     def start(name, attrs):
         st["elements"] += 1
         elem_names.add(name)
+        if ":" in name:
+            st["prefixed_elements"] += 1
         depth = len(stack) + 1
         if depth > st["max_depth"]:
             st["max_depth"] = depth
@@ -190,7 +235,7 @@ def analyze(path: str) -> dict:
         st["pis"] += 1
 
     def entity(*_a):
-        st["entities"] += 1
+        st["entity_declarations"] += 1
 
     p.XmlDeclHandler = xml_decl
     p.StartDoctypeDeclHandler = doctype
@@ -234,7 +279,10 @@ def analyze(path: str) -> dict:
         "text_fraction": round(st["text_bytes"] / total, 6) if total else 0.0,
         "attribute_fraction": round(st["attr_value_bytes"] / total, 6) if total else 0.0,
         "namespaces": st["namespaces"],
-        "entities": st["entities"],
+        "prefixed_element_fraction": (round(st["prefixed_elements"] / st["elements"], 6)
+                                      if st["elements"] else 0.0),
+        "entity_declarations": st["entity_declarations"],
+        "entity_references": count_entity_references(path),
         "comments": st["comments"],
         "cdata": st["cdata"],
         "pis": st["pis"],
@@ -270,12 +318,15 @@ def suitability(m: dict) -> list[str]:
     if m["attributes"] and m["attribute_fraction"] > 0.15:
         s.append("attribute_heavy")
     if m["namespaces"]:
+        s.append("has_namespace_declarations")
+    # namespace-heavy is quantitative: most elements are namespace-qualified.
+    if m["namespaces"] and m["prefixed_element_fraction"] >= 0.5:
         s.append("namespace_heavy")
     if m["max_depth"] >= 10:
         s.append("deep_tree")
     if m["elements"] >= 10000 and m["max_depth"] <= 8:
         s.append("broad_tree")
-    if m["doctype"] or m["entities"]:
+    if m["doctype"] or m["entity_declarations"] or m["entity_references"]:
         s.append("dtd_or_entity")
     if m["cdata"] or m["comments"] or m["pis"]:
         s.append("cdata_or_comment_or_pi")
@@ -293,6 +344,22 @@ def bucket_of(nbytes: int) -> str:
     return BUCKETS[-1][0]
 
 
+def manifest_core(doc: dict) -> dict:
+    """The provenance projection of a manifest entry: everything except the
+    characterization keys that corpus_report itself derives. Hashing this makes
+    the report's binding to the manifest stable across enrichment order."""
+    entries = [{k: v for k, v in e.items() if k not in ANALYSIS_KEYS}
+               for e in doc["entries"]]
+    return {"schema": doc.get("schema"), "phase": doc.get("phase"),
+            "retrieved_at": doc.get("retrieved_at"), "entries": entries}
+
+
+def manifest_core_sha256(doc: dict) -> str:
+    payload = json.dumps(manifest_core(doc), sort_keys=True,
+                         separators=(",", ":"), ensure_ascii=False).encode()
+    return hashlib.sha256(payload).hexdigest()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--update-manifest", action="store_true")
@@ -303,6 +370,7 @@ def main() -> int:
     with open(MANIFEST, "r", encoding="utf-8") as f:
         doc = json.load(f)
     entries = doc["entries"]
+    core_sha = manifest_core_sha256(doc)
 
     report_rows = []
     missing = []
@@ -314,11 +382,13 @@ def main() -> int:
         m = analyze(path)
         m["bucket"] = bucket_of(m["bytes"])
         m["suitability"] = suitability(m)
+        e.pop("entities", None)  # legacy name for entity_declarations
         e.update({k: m[k] for k in (
             "bytes", "encoding", "xml_version", "doctype", "internal_subset",
             "external_subset", "namespaces", "distinct_elements", "distinct_attributes",
             "elements", "attributes", "max_depth", "text_fraction",
-            "attribute_fraction", "non_ascii_fraction", "entities", "comments",
+            "attribute_fraction", "non_ascii_fraction", "entity_declarations",
+            "entity_references", "prefixed_element_fraction", "comments",
             "cdata", "pis", "schema_deps", "suitability")})
         e["bucket"] = m["bucket"]
         e["parse_ok"] = m["parse_ok"]
@@ -326,7 +396,9 @@ def main() -> int:
         if not m["parse_ok"]:
             e["suitability"].append("well-formedness_gap")
         report_rows.append({"id": e["id"], "category": e["category"],
-                            "filename": e["filename"], **m})
+                            "filename": e["filename"],
+                            "uncompressed_sha256": e.get("uncompressed_sha256"),
+                            **m})
 
     bucket_counts = {name: 0 for name, *_ in BUCKETS}
     for r in report_rows:
@@ -342,6 +414,9 @@ def main() -> int:
     report = {
         "schema": "corpus-report/1",
         "phase": "16.10",
+        "manifest_core_sha256": core_sha,
+        "manifest_core_projection": "manifest entries excluding ANALYSIS_KEYS "
+                                    "(report-derived characterization fields)",
         "total_files": len(entries),
         "fetched_files": len(report_rows),
         "missing_files": missing,

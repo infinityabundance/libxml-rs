@@ -45,9 +45,12 @@ as one file; the whole PubMed baseline counts as one file.
 
 Retrieval discipline (`fetch_corpus.py`): approved sources only, polite
 `User-Agent`, per-host rate limiting (`rate_limit_ms`, default 1000 ms),
-streamed downloads, SHA-256 of the compressed **and** decoded bytes, and a
-**hard failure on any hash/provenance change — the fetcher never silently
-replaces a changed file**. The corpus is stored in a gitignored cache
+streamed downloads, SHA-256 of the compressed **and** decoded bytes, a
+**same-host redirect guard** (a redirect whose target hostname differs from the
+request is refused, via a custom `HTTPRedirectHandler` — urllib's default would
+follow it), and a **hard failure on any hash/provenance change — the fetcher
+never silently replaces a changed file**. The corpus is stored in a gitignored
+cache
 (`downloads/`, `files/`, `state.json`); redistribution stays off until an entry
 is explicitly marked `redistributable` + `redistribution_verified` (all 100
 entries are currently `false`, so no bytes are redistributed from the repo).
@@ -161,7 +164,19 @@ The statistics are extracted by a **provider-neutral streaming parser** —
 Python's Expat, deliberately not the candidate under test — so the corpus
 metadata is independent of the implementation being benchmarked. Analysis
 streams gigabyte-scale files and classifies scripts in both character data and
-attribute values (OSM/XBRL/SVG carry Unicode in attributes).
+attribute values (OSM/XBRL/SVG carry Unicode in attributes). Two counts are
+reported separately and precisely: `entity_declarations` (Expat's entity-
+declaration callbacks) and `entity_references` (a lexical `&name;` scan
+excluding the five predefined entities and numeric character references; 462
+references across 4 files). `namespace_heavy` is quantitative — the majority of
+elements are namespace-qualified — and `has_namespace_declarations` records mere
+presence, so the two are no longer conflated.
+
+The generated report cryptographically binds to the manifest: it records
+`manifest_core_sha256` (a digest over the provenance projection of every entry)
+and, per row, the entry's sealed `uncompressed_sha256`. `corpus_seal.py`
+recomputes the digest and field-compares every row against its manifest entry,
+so report and manifest cannot drift apart (verified by a tamper test).
 
 ## 5. §16.10.5 — size distribution (actual vs target)
 
@@ -192,12 +207,13 @@ are present:
 | Dimension | Files | Dimension | Files |
 |---|---|---|---|
 | predominantly ASCII | 73 | broad trees | 20 |
-| Western Latin Unicode | 42 | DTD/entity documents | 22 |
+| Western Latin Unicode | 42 | DTD/entity documents | 25 |
 | non-Latin scripts | 35 | CDATA/comments/PIs | 67 |
 | mixed-script Unicode | 32 | tiny configuration XML | 26 |
 | markup-heavy | 82 | huge dataset XML | 9 |
-| text-heavy | 27 | namespace-heavy | 79 |
-| attribute-heavy | 35 | deep trees | 22 |
+| text-heavy | 27 | namespace-heavy (quantitative) | 11 |
+| attribute-heavy | 35 | has namespace declarations | 79 |
+| deep trees | 22 | CJK (required) | 12 |
 
 CJK appears (TEI + OSM Tokyo), as do Arabic, Cyrillic, Thai, Khmer and Devanagari
 script content. `absent_required_dimensions: []`.
@@ -221,3 +237,39 @@ script content. `absent_required_dimensions: []`.
 `courts/receipts/phase-16/corpus-eligibility.json`, derived from the manifest's
 `consumer_eligibility`/`suitability` labels. The corpus stays separate from the
 correctness/oracle corpus.
+
+---
+
+## 9. Post-review corrections (revision note)
+
+A methodological review of `c8319885` raised four points; three were corrections
+to this phase and are applied here (the fourth constrains 16.12 and is frozen
+into the 16.11 eligibility file as an aggregation contract).
+
+1. **Redirect provenance bug (fixed).** The fetcher documented a same-host
+   redirect rule but `urllib.request.urlopen` follows redirects by default.
+   `fetch_corpus.py` and `build_manifest.py` now install a custom
+   `HTTPRedirectHandler` that raises `HTTPError` when a redirect changes the
+   hostname.
+2. **Manifest↔report binding (fixed).** `corpus-report.json` now records
+   `manifest_core_sha256` and each row carries the entry's sealed
+   `uncompressed_sha256`; `corpus_seal.py` recomputes the digest and
+   field-compares every row against its manifest entry (bytes, bucket, all
+   characterization, and the hash). A tamper test (one byte changed in a report
+   row) is caught: `FAIL: row/manifest mismatch`.
+3. **Characterization vocabulary (fixed).** `entities` (which counted Expat
+   entity *declarations*) is split into `entity_declarations` and a real
+   `entity_references` lexical count; `namespace_heavy` is now quantitative
+   (majority of elements namespace-qualified) with `has_namespace_declarations`
+   recording presence; `prefixed_element_fraction` is recorded; and `cjk` is
+   promoted to a **required** diversity dimension (12 files). The diversity seal
+   now covers 15 dimensions.
+4. **Aggregation contract (frozen for 16.12).** Frozen into
+   `corpus-eligibility.json` as `aggregation_policy`: the required outputs are
+   the full per-cell distribution plus macro (per-file) and micro
+   (byte-weighted) summaries with category- and size-bucket stratifications; a
+   single unstratified overall speedup may not be the primary evidence.
+
+The manifest changed, so this receipt's headline figures were regenerated. The
+sealed corpus manifest is
+`5bb81e3e9334bb8e58ea12eaeb92ac2c58369aa8dfab722cbe221699a864a75b`.

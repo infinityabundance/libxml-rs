@@ -25,6 +25,7 @@ Usage: python3 tools/bench/corpus_seal.py [--allow-absent DIM]...
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -52,11 +53,44 @@ REQUIRED_KEYS = [
     "xml_version", "doctype", "internal_subset", "external_subset",
     "namespaces", "distinct_elements", "distinct_attributes", "elements",
     "attributes", "max_depth", "text_fraction", "attribute_fraction",
-    "non_ascii_fraction", "entities", "comments", "cdata", "pis",
-    "schema_deps", "suitability",
+    "non_ascii_fraction", "entity_declarations", "entity_references",
+    "prefixed_element_fraction",
+    "comments", "cdata", "pis", "schema_deps", "suitability",
 ]
 
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
+
+# Characterization keys derived by corpus_report; excluded from the
+# manifest-core projection. Kept in sync with corpus_report.ANALYSIS_KEYS so the
+# seal independently recomputes the report's own binding.
+ANALYSIS_KEYS = {
+    "encoding", "xml_version", "doctype", "internal_subset", "external_subset",
+    "namespaces", "distinct_elements", "distinct_attributes", "elements",
+    "attributes", "max_depth", "text_fraction", "attribute_fraction",
+    "non_ascii_fraction", "entity_declarations", "entity_references",
+    "prefixed_element_fraction", "comments", "cdata", "pis", "schema_deps",
+    "suitability", "bucket", "parse_ok", "scripts", "entities",
+}
+
+# Fields that must agree between each manifest entry and its report row.
+ROW_FIELDS = [
+    "bytes", "encoding", "xml_version", "doctype", "internal_subset",
+    "external_subset", "namespaces", "distinct_elements", "distinct_attributes",
+    "elements", "attributes", "max_depth", "text_fraction", "attribute_fraction",
+    "non_ascii_fraction", "entity_declarations", "entity_references",
+    "prefixed_element_fraction", "comments", "cdata", "pis", "schema_deps",
+    "suitability", "bucket",
+]
+
+
+def manifest_core_sha256(doc: dict) -> str:
+    entries = [{k: v for k, v in e.items() if k not in ANALYSIS_KEYS}
+               for e in doc["entries"]]
+    payload = json.dumps(
+        {"schema": doc.get("schema"), "phase": doc.get("phase"),
+         "retrieved_at": doc.get("retrieved_at"), "entries": entries},
+        sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return hashlib.sha256(payload).hexdigest()
 
 
 def main() -> int:
@@ -132,6 +166,25 @@ def main() -> int:
     bucket_total = sum(b["count"] for b in report.get("size_buckets", {}).values())
     if bucket_total != 100:
         failures.append("size buckets sum to %d, not 100" % bucket_total)
+
+    # 3b. cryptographic binding: the report pins the manifest it describes, and
+    # every row must field-match its manifest entry (including the sealed
+    # uncompressed SHA-256), so report and manifest cannot drift apart.
+    want_core = manifest_core_sha256(manifest)
+    if report.get("manifest_core_sha256") != want_core:
+        failures.append("report manifest_core_sha256 %r != manifest core %r"
+                        % (report.get("manifest_core_sha256"), want_core))
+    by_id = {e["id"]: e for e in entries}
+    for r in report.get("rows", []):
+        e = by_id.get(r["id"])
+        if e is None:
+            continue
+        for f in ROW_FIELDS:
+            if r.get(f) != e.get(f):
+                failures.append("row/manifest mismatch %s.%s: %r != %r"
+                                % (r["id"], f, r.get(f), e.get(f)))
+        if r.get("uncompressed_sha256") != e.get("uncompressed_sha256"):
+            failures.append("row/manifest sha256 mismatch for %s" % r["id"])
 
     # 5. diversity seal
     absent = report.get("absent_required_dimensions", [])

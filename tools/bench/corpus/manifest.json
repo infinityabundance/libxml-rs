@@ -44,7 +44,6 @@
    "text_fraction": 0.416587,
    "attribute_fraction": 0.078859,
    "non_ascii_fraction": 0.006008,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 117,
@@ -56,6 +55,7 @@
     "non_latin_script",
     "mixed_script",
     "markup_heavy",
+    "has_namespace_declarations",
     "namespace_heavy",
     "deep_tree",
     "dtd_or_entity",
@@ -66,7 +66,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.516507
   },
   {
    "id": "jats-002",
@@ -109,7 +112,6 @@
    "text_fraction": 0.415719,
    "attribute_fraction": 0.128035,
    "non_ascii_fraction": 0.007254,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 235,
@@ -119,6 +121,7 @@
     "non_latin_script",
     "mixed_script",
     "markup_heavy",
+    "has_namespace_declarations",
     "namespace_heavy",
     "deep_tree",
     "cdata_or_comment_or_pi"
@@ -128,7 +131,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.672046
   },
   {
    "id": "jats-003",
@@ -171,7 +177,6 @@
    "text_fraction": 0.416397,
    "attribute_fraction": 0.267084,
    "non_ascii_fraction": 0.00734,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 70,
@@ -182,7 +187,7 @@
     "mixed_script",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
@@ -190,7 +195,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "jats-004",
@@ -233,7 +241,6 @@
    "text_fraction": 0.425054,
    "attribute_fraction": 0.066311,
    "non_ascii_fraction": 0.002876,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 22,
@@ -245,7 +252,7 @@
     "non_latin_script",
     "mixed_script",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "dtd_or_entity",
     "cdata_or_comment_or_pi"
    ],
@@ -254,7 +261,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.000848
   },
   {
    "id": "jats-005",
@@ -297,7 +307,6 @@
    "text_fraction": 0.445218,
    "attribute_fraction": 0.051239,
    "non_ascii_fraction": 0.008288,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 21,
@@ -309,7 +318,7 @@
     "non_latin_script",
     "mixed_script",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "dtd_or_entity",
     "cdata_or_comment_or_pi"
@@ -319,7 +328,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.001332
   },
   {
    "id": "jats-006",
@@ -362,7 +374,6 @@
    "text_fraction": 0.393441,
    "attribute_fraction": 0.201091,
    "non_ascii_fraction": 0.001856,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 43,
@@ -373,7 +384,7 @@
     "mixed_script",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
@@ -381,7 +392,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "jats-007",
@@ -424,7 +438,6 @@
    "text_fraction": 0.481799,
    "attribute_fraction": 0.046355,
    "non_ascii_fraction": 0.004835,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 37,
@@ -434,7 +447,7 @@
    "suitability": [
     "western_latin_unicode",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "dtd_or_entity",
     "cdata_or_comment_or_pi"
    ],
@@ -442,7 +455,10 @@
    "parse_ok": true,
    "scripts": [
     "latin"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.002874
   },
   {
    "id": "jats-008",
@@ -485,7 +501,6 @@
    "text_fraction": 0.39582,
    "attribute_fraction": 0.077323,
    "non_ascii_fraction": 0.012295,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 102,
@@ -497,7 +512,7 @@
     "non_latin_script",
     "mixed_script",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "dtd_or_entity",
     "cdata_or_comment_or_pi"
@@ -507,7 +522,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.000308
   },
   {
    "id": "jats-009",
@@ -550,7 +568,6 @@
    "text_fraction": 0.2264,
    "attribute_fraction": 0.307749,
    "non_ascii_fraction": 0.001729,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 10,
@@ -561,7 +578,7 @@
     "mixed_script",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
@@ -570,7 +587,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.001096
   },
   {
    "id": "jats-010",
@@ -613,7 +633,6 @@
    "text_fraction": 0.436873,
    "attribute_fraction": 0.193492,
    "non_ascii_fraction": 0.015012,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 36,
@@ -624,7 +643,7 @@
     "mixed_script",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
@@ -633,7 +652,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.043662
   },
   {
    "id": "secxbrl-001",
@@ -673,7 +695,6 @@
    "text_fraction": 0.560936,
    "attribute_fraction": 0.125133,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 5,
    "cdata": 0,
    "pis": 0,
@@ -681,12 +702,16 @@
    "suitability": [
     "predominantly_ascii",
     "text_heavy",
+    "has_namespace_declarations",
     "namespace_heavy",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.591921
   },
   {
    "id": "secxbrl-002",
@@ -726,7 +751,6 @@
    "text_fraction": 0.811569,
    "attribute_fraction": 0.024839,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -737,14 +761,17 @@
     "non_latin_script",
     "mixed_script",
     "text_heavy",
-    "namespace_heavy"
+    "has_namespace_declarations"
    ],
    "bucket": "t3_4m_32m",
    "parse_ok": true,
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.469542
   },
   {
    "id": "secxbrl-003",
@@ -784,7 +811,6 @@
    "text_fraction": 0.471915,
    "attribute_fraction": 0.095546,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -795,6 +821,7 @@
     "non_latin_script",
     "mixed_script",
     "markup_heavy",
+    "has_namespace_declarations",
     "namespace_heavy",
     "broad_tree"
    ],
@@ -803,7 +830,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.579297
   },
   {
    "id": "secxbrl-004",
@@ -843,7 +873,6 @@
    "text_fraction": 0.79374,
    "attribute_fraction": 0.065347,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 5,
    "cdata": 0,
    "pis": 0,
@@ -851,12 +880,15 @@
    "suitability": [
     "predominantly_ascii",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.437231
   },
   {
    "id": "secxbrl-005",
@@ -896,7 +928,6 @@
    "text_fraction": 0.552204,
    "attribute_fraction": 0.259153,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -908,6 +939,7 @@
     "mixed_script",
     "text_heavy",
     "attribute_heavy",
+    "has_namespace_declarations",
     "namespace_heavy"
    ],
    "bucket": "t2_256k_4m",
@@ -915,7 +947,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.505088
   },
   {
    "id": "secxbrl-006",
@@ -955,7 +990,6 @@
    "text_fraction": 0.732732,
    "attribute_fraction": 0.02683,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -966,14 +1000,17 @@
     "non_latin_script",
     "mixed_script",
     "text_heavy",
-    "namespace_heavy"
+    "has_namespace_declarations"
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.431878
   },
   {
    "id": "secxbrl-007",
@@ -1013,7 +1050,6 @@
    "text_fraction": 0.682733,
    "attribute_fraction": 0.091232,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 0,
    "pis": 0,
@@ -1021,12 +1057,16 @@
    "suitability": [
     "predominantly_ascii",
     "text_heavy",
+    "has_namespace_declarations",
     "namespace_heavy",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 1.0
   },
   {
    "id": "secxbrl-008",
@@ -1066,7 +1106,6 @@
    "text_fraction": 0.425785,
    "attribute_fraction": 0.0,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -1077,7 +1116,10 @@
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "osm-001",
@@ -1117,7 +1159,6 @@
    "text_fraction": 0.055631,
    "attribute_fraction": 0.463967,
    "non_ascii_fraction": 0.013675,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -1138,7 +1179,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "osm-002",
@@ -1178,7 +1222,6 @@
    "text_fraction": 0.07525,
    "attribute_fraction": 0.513247,
    "non_ascii_fraction": 0.077859,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -1199,7 +1242,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "osm-003",
@@ -1239,7 +1285,6 @@
    "text_fraction": 0.050897,
    "attribute_fraction": 0.456445,
    "non_ascii_fraction": 0.002698,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -1260,7 +1305,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "osm-004",
@@ -1300,7 +1348,6 @@
    "text_fraction": 0.054137,
    "attribute_fraction": 0.461735,
    "non_ascii_fraction": 0.00543,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -1321,7 +1368,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "osm-005",
@@ -1361,7 +1411,6 @@
    "text_fraction": 0.056026,
    "attribute_fraction": 0.46303,
    "non_ascii_fraction": 0.01637,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -1382,7 +1431,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "osm-006",
@@ -1422,7 +1474,6 @@
    "text_fraction": 0.063779,
    "attribute_fraction": 0.446061,
    "non_ascii_fraction": 0.018269,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -1443,7 +1494,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "osm-007",
@@ -1483,7 +1537,6 @@
    "text_fraction": 0.056557,
    "attribute_fraction": 0.457105,
    "non_ascii_fraction": 0.005846,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -1504,7 +1557,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "osm-008",
@@ -1544,7 +1600,6 @@
    "text_fraction": 0.061874,
    "attribute_fraction": 0.450781,
    "non_ascii_fraction": 0.001027,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -1565,7 +1620,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "dblp-001",
@@ -1605,7 +1663,6 @@
    "text_fraction": 0.426185,
    "attribute_fraction": 0.037657,
    "non_ascii_fraction": 0.00015,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -1624,7 +1681,10 @@
    "parse_ok": true,
    "scripts": [
     "latin"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "aosp-001",
@@ -1664,7 +1724,6 @@
    "text_fraction": 0.040719,
    "attribute_fraction": 0.249391,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1097,
    "cdata": 0,
    "pis": 0,
@@ -1672,12 +1731,16 @@
    "suitability": [
     "predominantly_ascii",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
+    "dtd_or_entity",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 1,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "aosp-002",
@@ -1717,7 +1780,6 @@
    "text_fraction": 0.133997,
    "attribute_fraction": 0.385856,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 55,
    "cdata": 0,
    "pis": 0,
@@ -1726,12 +1788,15 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "aosp-003",
@@ -1771,7 +1836,6 @@
    "text_fraction": 0.08074,
    "attribute_fraction": 0.334748,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 104,
    "cdata": 0,
    "pis": 0,
@@ -1780,12 +1844,15 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "aosp-004",
@@ -1825,7 +1892,6 @@
    "text_fraction": 0.215456,
    "attribute_fraction": 0.134755,
    "non_ascii_fraction": 0.000176,
-   "entities": 0,
    "comments": 2272,
    "cdata": 0,
    "pis": 0,
@@ -1834,14 +1900,17 @@
     "predominantly_ascii",
     "non_latin_script",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
    "scripts": [
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.117953
   },
   {
    "id": "aosp-005",
@@ -1881,7 +1950,6 @@
    "text_fraction": 0.193204,
    "attribute_fraction": 0.160306,
    "non_ascii_fraction": 0.000502,
-   "entities": 0,
    "comments": 1206,
    "cdata": 0,
    "pis": 0,
@@ -1893,7 +1961,7 @@
     "mixed_script",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
@@ -1901,7 +1969,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.148905
   },
   {
    "id": "aosp-006",
@@ -1941,7 +2012,6 @@
    "text_fraction": 0.045886,
    "attribute_fraction": 0.213291,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 0,
    "pis": 0,
@@ -1949,13 +2019,16 @@
    "suitability": [
     "predominantly_ascii",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "aosp-007",
@@ -1995,7 +2068,6 @@
    "text_fraction": 0.006194,
    "attribute_fraction": 0.209459,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 0,
    "pis": 0,
@@ -2003,13 +2075,16 @@
    "suitability": [
     "predominantly_ascii",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "aosp-008",
@@ -2049,7 +2124,6 @@
    "text_fraction": 0.216469,
    "attribute_fraction": 0.157225,
    "non_ascii_fraction": 0.000294,
-   "entities": 0,
    "comments": 4811,
    "cdata": 5,
    "pis": 0,
@@ -2061,7 +2135,7 @@
     "mixed_script",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t2_256k_4m",
@@ -2069,7 +2143,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.087375
   },
   {
    "id": "aosp-009",
@@ -2109,7 +2186,6 @@
    "text_fraction": 0.016791,
    "attribute_fraction": 0.25,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 0,
    "pis": 0,
@@ -2117,13 +2193,16 @@
    "suitability": [
     "predominantly_ascii",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "aosp-010",
@@ -2163,20 +2242,22 @@
    "text_fraction": 0.017778,
    "attribute_fraction": 0.094444,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 0,
    "pis": 0,
    "schema_deps": [],
    "suitability": [
     "predominantly_ascii",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "maven-001",
@@ -2217,7 +2298,6 @@
    "text_fraction": 0.446171,
    "attribute_fraction": 0.012656,
    "non_ascii_fraction": 6.5e-05,
-   "entities": 0,
    "comments": 18,
    "cdata": 0,
    "pis": 0,
@@ -2229,7 +2309,7 @@
     "predominantly_ascii",
     "western_latin_unicode",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
@@ -2237,7 +2317,10 @@
    "parse_ok": true,
    "scripts": [
     "latin"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "maven-002",
@@ -2278,7 +2361,6 @@
    "text_fraction": 0.447461,
    "attribute_fraction": 0.021318,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 11,
    "cdata": 0,
    "pis": 0,
@@ -2289,13 +2371,16 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "maven-003",
@@ -2336,7 +2421,6 @@
    "text_fraction": 0.434606,
    "attribute_fraction": 0.011796,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 19,
    "cdata": 0,
    "pis": 0,
@@ -2347,14 +2431,17 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "maven-004",
@@ -2395,7 +2482,6 @@
    "text_fraction": 0.376675,
    "attribute_fraction": 0.075434,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 5,
    "cdata": 0,
    "pis": 0,
@@ -2406,13 +2492,16 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "maven-005",
@@ -2453,7 +2542,6 @@
    "text_fraction": 0.439332,
    "attribute_fraction": 0.007349,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 61,
    "cdata": 0,
    "pis": 0,
@@ -2464,13 +2552,16 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "maven-006",
@@ -2511,7 +2602,6 @@
    "text_fraction": 0.416225,
    "attribute_fraction": 0.047426,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 5,
    "cdata": 0,
    "pis": 0,
@@ -2522,13 +2612,16 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "maven-007",
@@ -2569,7 +2662,6 @@
    "text_fraction": 0.404645,
    "attribute_fraction": 0.020969,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 4,
    "cdata": 0,
    "pis": 0,
@@ -2580,13 +2672,16 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "maven-008",
@@ -2627,7 +2722,6 @@
    "text_fraction": 0.413631,
    "attribute_fraction": 0.047739,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 5,
    "cdata": 0,
    "pis": 0,
@@ -2638,13 +2732,16 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "maven-009",
@@ -2685,7 +2782,6 @@
    "text_fraction": 0.476999,
    "attribute_fraction": 0.053432,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 2,
    "pis": 0,
@@ -2696,13 +2792,16 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "maven-010",
@@ -2743,7 +2842,6 @@
    "text_fraction": 0.344714,
    "attribute_fraction": 0.0837,
    "non_ascii_fraction": 0.001652,
-   "entities": 0,
    "comments": 5,
    "cdata": 0,
    "pis": 0,
@@ -2754,7 +2852,7 @@
    "suitability": [
     "non_latin_script",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
@@ -2762,7 +2860,10 @@
    "parse_ok": true,
    "scripts": [
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "tei-001",
@@ -2802,7 +2903,6 @@
    "text_fraction": 0.776864,
    "attribute_fraction": 0.073778,
    "non_ascii_fraction": 0.000365,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -2815,7 +2915,7 @@
     "mixed_script",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree"
    ],
    "bucket": "t2_256k_4m",
@@ -2824,7 +2924,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "tei-002",
@@ -2864,7 +2967,6 @@
    "text_fraction": 0.678345,
    "attribute_fraction": 0.075969,
    "non_ascii_fraction": 0.032079,
-   "entities": 0,
    "comments": 2,
    "cdata": 0,
    "pis": 0,
@@ -2876,7 +2978,7 @@
     "mixed_script",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
@@ -2886,7 +2988,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "tei-003",
@@ -2926,7 +3031,6 @@
    "text_fraction": 0.91957,
    "attribute_fraction": 0.003242,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -2935,11 +3039,14 @@
     "predominantly_ascii",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy"
+    "has_namespace_declarations"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "tei-004",
@@ -2979,7 +3086,6 @@
    "text_fraction": 0.541712,
    "attribute_fraction": 0.038952,
    "non_ascii_fraction": 0.017518,
-   "entities": 0,
    "comments": 37,
    "cdata": 0,
    "pis": 0,
@@ -2990,8 +3096,9 @@
     "mixed_script",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
+    "dtd_or_entity",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
@@ -2999,7 +3106,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 26,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "tei-005",
@@ -3039,7 +3149,6 @@
    "text_fraction": 0.451524,
    "attribute_fraction": 0.054605,
    "non_ascii_fraction": 0.009867,
-   "entities": 0,
    "comments": 28,
    "cdata": 0,
    "pis": 0,
@@ -3049,7 +3158,7 @@
     "non_latin_script",
     "mixed_script",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
@@ -3058,7 +3167,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "tei-006",
@@ -3098,7 +3210,6 @@
    "text_fraction": 0.314707,
    "attribute_fraction": 0.10359,
    "non_ascii_fraction": 0.021048,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 1,
@@ -3108,7 +3219,7 @@
     "non_latin_script",
     "mixed_script",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
@@ -3116,7 +3227,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "tei-007",
@@ -3156,7 +3270,6 @@
    "text_fraction": 0.517159,
    "attribute_fraction": 0.058207,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 8,
    "cdata": 2,
    "pis": 0,
@@ -3165,13 +3278,16 @@
     "predominantly_ascii",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.016667
   },
   {
    "id": "tei-008",
@@ -3211,7 +3327,6 @@
    "text_fraction": 0.795138,
    "attribute_fraction": 0.028312,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 2,
    "cdata": 5,
    "pis": 1,
@@ -3220,13 +3335,16 @@
     "predominantly_ascii",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.154176
   },
   {
    "id": "tei-009",
@@ -3266,7 +3384,6 @@
    "text_fraction": 0.712722,
    "attribute_fraction": 0.092664,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 5,
    "pis": 0,
@@ -3275,13 +3392,16 @@
     "predominantly_ascii",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.002513
   },
   {
    "id": "tei-010",
@@ -3321,7 +3441,6 @@
    "text_fraction": 0.67611,
    "attribute_fraction": 0.086832,
    "non_ascii_fraction": 0.00261,
-   "entities": 0,
    "comments": 107,
    "cdata": 2,
    "pis": 2,
@@ -3333,7 +3452,7 @@
     "mixed_script",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
@@ -3343,7 +3462,10 @@
     "cjk",
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "musicxml-001",
@@ -3383,7 +3505,6 @@
    "text_fraction": 0.388051,
    "attribute_fraction": 0.049007,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -3398,7 +3519,10 @@
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "musicxml-002",
@@ -3438,7 +3562,6 @@
    "text_fraction": 0.39272,
    "attribute_fraction": 0.048874,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -3453,7 +3576,10 @@
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "musicxml-003",
@@ -3493,7 +3619,6 @@
    "text_fraction": 0.394187,
    "attribute_fraction": 0.023598,
    "non_ascii_fraction": 5e-06,
-   "entities": 0,
    "comments": 241,
    "cdata": 0,
    "pis": 0,
@@ -3512,7 +3637,10 @@
    "parse_ok": true,
    "scripts": [
     "latin"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "musicxml-004",
@@ -3552,7 +3680,6 @@
    "text_fraction": 0.247033,
    "attribute_fraction": 0.055998,
    "non_ascii_fraction": 2e-06,
-   "entities": 0,
    "comments": 164,
    "cdata": 0,
    "pis": 0,
@@ -3571,7 +3698,10 @@
    "parse_ok": true,
    "scripts": [
     "latin"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "musicxml-005",
@@ -3611,7 +3741,6 @@
    "text_fraction": 0.334015,
    "attribute_fraction": 0.033768,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 379,
    "cdata": 0,
    "pis": 0,
@@ -3626,7 +3755,10 @@
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "musicxml-006",
@@ -3666,7 +3798,6 @@
    "text_fraction": 0.370287,
    "attribute_fraction": 0.023304,
    "non_ascii_fraction": 9e-06,
-   "entities": 0,
    "comments": 193,
    "cdata": 0,
    "pis": 0,
@@ -3684,7 +3815,10 @@
    "parse_ok": true,
    "scripts": [
     "latin"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "musicxml-007",
@@ -3724,7 +3858,6 @@
    "text_fraction": 0.37422,
    "attribute_fraction": 0.029874,
    "non_ascii_fraction": 0.000391,
-   "entities": 0,
    "comments": 58,
    "cdata": 0,
    "pis": 0,
@@ -3742,7 +3875,10 @@
    "parse_ok": true,
    "scripts": [
     "latin"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "musicxml-008",
@@ -3782,7 +3918,6 @@
    "text_fraction": 0.389726,
    "attribute_fraction": 0.032025,
    "non_ascii_fraction": 7e-06,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -3800,7 +3935,10 @@
    "parse_ok": true,
    "scripts": [
     "cjk"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "musicxml-009",
@@ -3840,7 +3978,6 @@
    "text_fraction": 0.363022,
    "attribute_fraction": 0.026911,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 549,
    "cdata": 0,
    "pis": 0,
@@ -3856,7 +3993,10 @@
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "musicxml-010",
@@ -3896,7 +4036,6 @@
    "text_fraction": 0.366848,
    "attribute_fraction": 0.024719,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 565,
    "cdata": 0,
    "pis": 0,
@@ -3912,7 +4051,10 @@
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "svg-001",
@@ -3952,7 +4094,6 @@
    "text_fraction": 0.065359,
    "attribute_fraction": 0.352941,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -3961,12 +4102,15 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "svg-002",
@@ -4006,7 +4150,6 @@
    "text_fraction": 0.0375,
    "attribute_fraction": 0.4375,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -4015,12 +4158,15 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "svg-003",
@@ -4060,7 +4206,6 @@
    "text_fraction": 0.023771,
    "attribute_fraction": 0.835737,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -4069,12 +4214,15 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "svg-004",
@@ -4114,7 +4262,6 @@
    "text_fraction": 0.168628,
    "attribute_fraction": 0.271688,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 16,
    "cdata": 0,
    "pis": 1,
@@ -4125,14 +4272,17 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "dtd_or_entity",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "svg-005",
@@ -4172,7 +4322,6 @@
    "text_fraction": 0.861095,
    "attribute_fraction": 0.023168,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 10,
    "cdata": 1,
    "pis": 0,
@@ -4182,13 +4331,16 @@
    "suitability": [
     "predominantly_ascii",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "dtd_or_entity",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "svg-006",
@@ -4228,7 +4380,6 @@
    "text_fraction": 0.027548,
    "attribute_fraction": 0.910305,
    "non_ascii_fraction": 0.0,
-   "entities": 24,
    "comments": 8,
    "cdata": 0,
    "pis": 0,
@@ -4238,13 +4389,16 @@
    "suitability": [
     "predominantly_ascii",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "dtd_or_entity",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 24,
+   "entity_references": 152,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "svg-007",
@@ -4284,7 +4438,6 @@
    "text_fraction": 0.00419,
    "attribute_fraction": 0.886834,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 8,
    "cdata": 0,
    "pis": 0,
@@ -4297,7 +4450,7 @@
     "non_latin_script",
     "mixed_script",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "dtd_or_entity",
     "cdata_or_comment_or_pi"
    ],
@@ -4306,7 +4459,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "svg-008",
@@ -4346,7 +4502,6 @@
    "text_fraction": 0.105629,
    "attribute_fraction": 0.698742,
    "non_ascii_fraction": 6.8e-05,
-   "entities": 0,
    "comments": 16,
    "cdata": 1,
    "pis": 0,
@@ -4358,7 +4513,7 @@
     "western_latin_unicode",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "dtd_or_entity",
     "cdata_or_comment_or_pi"
    ],
@@ -4366,7 +4521,10 @@
    "parse_ok": true,
    "scripts": [
     "latin"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "docbook-001",
@@ -4406,7 +4564,6 @@
    "text_fraction": 0.495418,
    "attribute_fraction": 0.008318,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -4414,12 +4571,15 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "broad_tree"
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "docbook-002",
@@ -4459,7 +4619,6 @@
    "text_fraction": 0.560936,
    "attribute_fraction": 0.017782,
    "non_ascii_fraction": 0.005567,
-   "entities": 0,
    "comments": 6,
    "cdata": 3,
    "pis": 9,
@@ -4470,7 +4629,7 @@
     "mixed_script",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
@@ -4479,7 +4638,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.002028
   },
   {
    "id": "docbook-003",
@@ -4519,7 +4681,6 @@
    "text_fraction": 0.658057,
    "attribute_fraction": 0.03839,
    "non_ascii_fraction": 0.006864,
-   "entities": 0,
    "comments": 2,
    "cdata": 7,
    "pis": 10,
@@ -4528,14 +4689,17 @@
     "non_latin_script",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
    "scripts": [
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.001555
   },
   {
    "id": "docbook-004",
@@ -4575,7 +4739,6 @@
    "text_fraction": 0.927373,
    "attribute_fraction": 0.00293,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -4583,11 +4746,14 @@
    "suitability": [
     "predominantly_ascii",
     "text_heavy",
-    "namespace_heavy"
+    "has_namespace_declarations"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "docbook-005",
@@ -4627,7 +4793,6 @@
    "text_fraction": 0.967566,
    "attribute_fraction": 0.001201,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -4635,11 +4800,14 @@
    "suitability": [
     "predominantly_ascii",
     "text_heavy",
-    "namespace_heavy"
+    "has_namespace_declarations"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "docbook-006",
@@ -4679,7 +4847,6 @@
    "text_fraction": 0.537244,
    "attribute_fraction": 0.052072,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 4,
    "cdata": 0,
    "pis": 0,
@@ -4688,12 +4855,15 @@
     "predominantly_ascii",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "docbook-007",
@@ -4733,7 +4903,6 @@
    "text_fraction": 0.909468,
    "attribute_fraction": 0.01533,
    "non_ascii_fraction": 0.000386,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -4742,14 +4911,17 @@
     "predominantly_ascii",
     "western_latin_unicode",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
    "scripts": [
     "latin"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.023256
   },
   {
    "id": "docbook-008",
@@ -4789,7 +4961,6 @@
    "text_fraction": 0.249052,
    "attribute_fraction": 0.148789,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -4803,7 +4974,10 @@
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "gpxkml-001",
@@ -4843,7 +5017,6 @@
    "text_fraction": 0.215385,
    "attribute_fraction": 0.230769,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -4852,12 +5025,15 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "gpxkml-002",
@@ -4897,7 +5073,6 @@
    "text_fraction": 0.377274,
    "attribute_fraction": 0.036519,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 23,
    "cdata": 0,
    "pis": 0,
@@ -4905,13 +5080,16 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.465278
   },
   {
    "id": "gpxkml-003",
@@ -4951,7 +5129,6 @@
    "text_fraction": 0.66178,
    "attribute_fraction": 0.021134,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 4,
    "pis": 0,
@@ -4960,12 +5137,15 @@
     "predominantly_ascii",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "gpxkml-004",
@@ -5005,7 +5185,6 @@
    "text_fraction": 0.451943,
    "attribute_fraction": 0.121564,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 0,
    "pis": 0,
@@ -5013,12 +5192,15 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "gpxkml-005",
@@ -5058,7 +5240,6 @@
    "text_fraction": 0.481054,
    "attribute_fraction": 0.123421,
    "non_ascii_fraction": 0.00078,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -5067,14 +5248,17 @@
     "predominantly_ascii",
     "western_latin_unicode",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
    "scripts": [
     "latin"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "gpxkml-006",
@@ -5114,7 +5298,6 @@
    "text_fraction": 0.470926,
    "attribute_fraction": 0.117032,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -5122,12 +5305,15 @@
    "suitability": [
     "predominantly_ascii",
     "markup_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "broad_tree"
    ],
    "bucket": "t2_256k_4m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "gpxkml-007",
@@ -5167,7 +5353,6 @@
    "text_fraction": 0.394609,
    "attribute_fraction": 0.219916,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -5176,12 +5361,15 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "broad_tree"
    ],
    "bucket": "t3_4m_32m",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "rssatom-001",
@@ -5221,7 +5409,6 @@
    "text_fraction": 0.786478,
    "attribute_fraction": 0.005397,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 3,
    "cdata": 0,
    "pis": 0,
@@ -5230,13 +5417,16 @@
     "predominantly_ascii",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.050847
   },
   {
    "id": "rssatom-002",
@@ -5276,7 +5466,6 @@
    "text_fraction": 0.590464,
    "attribute_fraction": 0.024734,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 0,
    "pis": 0,
@@ -5285,13 +5474,16 @@
     "predominantly_ascii",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.00641
   },
   {
    "id": "rssatom-003",
@@ -5331,7 +5523,6 @@
    "text_fraction": 0.869532,
    "attribute_fraction": 0.066442,
    "non_ascii_fraction": 0.200417,
-   "entities": 0,
    "comments": 1,
    "cdata": 29,
    "pis": 0,
@@ -5341,7 +5532,8 @@
     "non_latin_script",
     "mixed_script",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
+    "dtd_or_entity",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
@@ -5349,7 +5541,10 @@
    "scripts": [
     "latin",
     "other"
-   ]
+   ],
+   "entity_declarations": 0,
+   "entity_references": 283,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "rssatom-004",
@@ -5389,7 +5584,6 @@
    "text_fraction": 0.337113,
    "attribute_fraction": 0.23866,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -5398,12 +5592,15 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.0
   },
   {
    "id": "rssatom-005",
@@ -5443,7 +5640,6 @@
    "text_fraction": 0.362229,
    "attribute_fraction": 0.22291,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 1,
    "pis": 0,
@@ -5452,13 +5648,17 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
+    "has_namespace_declarations",
     "namespace_heavy",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.590909
   },
   {
    "id": "soapwsdl-001",
@@ -5498,7 +5698,6 @@
    "text_fraction": 0.524448,
    "attribute_fraction": 0.135694,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 7,
    "pis": 0,
@@ -5510,6 +5709,7 @@
     "predominantly_ascii",
     "markup_heavy",
     "text_heavy",
+    "has_namespace_declarations",
     "namespace_heavy",
     "deep_tree",
     "cdata_or_comment_or_pi",
@@ -5517,7 +5717,10 @@
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 1.0
   },
   {
    "id": "soapwsdl-002",
@@ -5557,7 +5760,6 @@
    "text_fraction": 0.088173,
    "attribute_fraction": 0.348088,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 0,
    "cdata": 0,
    "pis": 0,
@@ -5566,12 +5768,16 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
+    "has_namespace_declarations",
     "namespace_heavy",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 1.0
   },
   {
    "id": "soapwsdl-003",
@@ -5611,7 +5817,6 @@
    "text_fraction": 0.178456,
    "attribute_fraction": 0.237452,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 0,
    "pis": 0,
@@ -5622,13 +5827,17 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
+    "has_namespace_declarations",
     "namespace_heavy",
     "cdata_or_comment_or_pi",
     "tiny_configuration"
    ],
    "bucket": "t0_lt_16k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 1.0
   },
   {
    "id": "soapwsdl-004",
@@ -5668,7 +5877,6 @@
    "text_fraction": 0.481128,
    "attribute_fraction": 0.152769,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 1,
    "cdata": 0,
    "pis": 0,
@@ -5677,13 +5885,17 @@
     "predominantly_ascii",
     "markup_heavy",
     "attribute_heavy",
+    "has_namespace_declarations",
     "namespace_heavy",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.995327
   },
   {
    "id": "soapwsdl-005",
@@ -5723,7 +5935,6 @@
    "text_fraction": 0.638597,
    "attribute_fraction": 0.065785,
    "non_ascii_fraction": 0.0,
-   "entities": 0,
    "comments": 8,
    "cdata": 2,
    "pis": 1,
@@ -5735,13 +5946,16 @@
     "predominantly_ascii",
     "markup_heavy",
     "text_heavy",
-    "namespace_heavy",
+    "has_namespace_declarations",
     "deep_tree",
     "cdata_or_comment_or_pi"
    ],
    "bucket": "t1_16k_256k",
    "parse_ok": true,
-   "scripts": []
+   "scripts": [],
+   "entity_declarations": 0,
+   "entity_references": 0,
+   "prefixed_element_fraction": 0.261692
   }
  ]
 }

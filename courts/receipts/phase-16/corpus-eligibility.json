@@ -1,12 +1,12 @@
 {
  "schema": "corpus-eligibility/1",
  "phase": "16.11",
- "revision": 1,
- "frozen_at": "2026-09-13T23:40:33Z",
+ "revision": 2,
+ "frozen_at": "2026-09-14T00:37:24Z",
  "input_basis": {
-  "manifest_sha256": "fed7faf831bf12e09e405ced9e556de1e46e14626b99d1f5c58b6a85f7740c27",
-  "report_sha256": "cef98f4440260c4bad43e78d8d0b280918ec1a61933589587053f03b88212859",
-  "policy_sha256": "4677110ffa4b2572ba6fc814ad9d990c55369335c0990fe644919a1eac52c854",
+  "manifest_sha256": "5bb81e3e9334bb8e58ea12eaeb92ac2c58369aa8dfab722cbe221699a864a75b",
+  "report_sha256": "85b92697cb9759fb1732fdb58cf7fe61c6a037e738c9d5e81385b13fda285661",
+  "policy_sha256": "2c852ea6d3082e5ee7ac43f0529c0e16357ec4e53884a516f6517ef266ae6168",
   "performance_data_used": false,
   "note": "Eligibility is computed only from manifest metadata and the predeclared resource/policy tables; no candidate timing influences it (§16.11)."
  },
@@ -66,6 +66,19 @@
   "simplexml_max_bytes": 33554432,
   "xslt_max_reason": "DOM-bound XSLT on a multi-hundred-MiB document is not document-appropriate work",
   "simplexml_max_reason": "SimpleXML builds a full PHP tree; multi-hundred-MiB documents are not memory-appropriate"
+ },
+ "aggregation_policy": {
+  "required_outputs": [
+   "per_cell_distribution",
+   "macro_average_by_file",
+   "micro_byte_weighted_throughput",
+   "category_stratified",
+   "size_bucket_stratified"
+  ],
+  "primary_evidence": "the complete per-cell distribution together with both macro (per-file) and micro (byte-weighted) summaries and the category/size-bucket stratifications",
+  "forbidden": "a single unstratified overall speedup presented as the primary evidence",
+  "equivalence_prerequisite": true,
+  "rationale": "size buckets are 26/37/25/3/4/5 files; per-file and byte-weighted means answer different questions and neither is sufficient alone"
  },
  "resources": {
   "families": {
@@ -5863,5 +5876,14 @@
   "files_with_xslt": 91,
   "files_with_simplexml": 91
  },
- "amendments": []
+ "amendments": [
+  {
+   "revision": 2,
+   "at": "2026-09-14T00:37:24Z",
+   "rationale": "Pre-16.12 correction: (a) add the frozen §16.12 aggregation contract (macro-by-file + micro/byte-weighted + category- and size-bucket-stratified + full per-cell distribution; a single overall speedup may not be the primary evidence), and (b) bind eligibility to the corrected corpus characterization (entity_declarations/entity_references split, quantitative namespace_heavy, prefixed_element_fraction, cjk promoted to a required dimension). No eligibility outcome is candidate-driven; no measurement has begun.",
+   "manifest_sha256": "5bb81e3e9334bb8e58ea12eaeb92ac2c58369aa8dfab722cbe221699a864a75b",
+   "report_sha256": "85b92697cb9759fb1732fdb58cf7fe61c6a037e738c9d5e81385b13fda285661",
+   "policy_sha256": "2c852ea6d3082e5ee7ac43f0529c0e16357ec4e53884a516f6517ef266ae6168"
+  }
+ ]
 }

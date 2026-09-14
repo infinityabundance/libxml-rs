@@ -23,6 +23,7 @@ import re
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -32,6 +33,23 @@ MANIFEST = os.path.join(CORPUS, "manifest.json")
 UA = ("libxml-rs-bench-corpus/0.1 (+https://github.com/infinityabundance/libxml-rs; "
       "research corpus retrieval)")
 RETRIEVED = "2026-09-13"
+
+
+class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
+    """Refuse a redirect whose target hostname differs from the request."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        old = urllib.parse.urlsplit(req.full_url)
+        new = urllib.parse.urlsplit(newurl)
+        if (new.hostname or "").lower() != (old.hostname or "").lower():
+            raise urllib.error.HTTPError(
+                newurl, code,
+                "cross-host redirect refused: %s -> %s" % (old.netloc, new.netloc),
+                headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+OPENER = urllib.request.build_opener(_SameHostRedirect)
 
 # Pinned source revisions (immutable tags/commits).
 REV = {
@@ -452,7 +470,7 @@ def build():
 
 def http_get(url: str, timeout=60) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with OPENER.open(req, timeout=timeout) as r:
         return r.read()
 
 
@@ -592,12 +610,18 @@ def main():
             u = e["source_url"]
             try:
                 req = urllib.request.Request(u, headers={"User-Agent": UA}, method="HEAD")
-                with urllib.request.urlopen(req, timeout=45) as r:
+                with OPENER.open(req, timeout=45) as r:
                     cl = r.headers.get("Content-Length")
                     print("  %-14s %s %s" % (e["id"], r.status, cl))
             except Exception as exc:  # noqa: BLE001
                 print("  %-14s FAIL %s" % (e["id"], exc))
             time.sleep(0.4)
+
+    # `--check` is a verification-only mode: it must never clobber the sealed
+    # manifest (which carries the fetch-recorded hashes) with a pre-fetch copy.
+    if args.check:
+        print("--check: manifest NOT rewritten (verification-only mode)")
+        return 0
 
     with open(MANIFEST, "w", encoding="utf-8") as f:
         json.dump({"schema": "corpus-manifest/1", "phase": "16.10",
@@ -605,6 +629,7 @@ def main():
                   indent=1, ensure_ascii=False)
         f.write("\n")
     print("wrote", MANIFEST)
+    return 0
 
 
 if __name__ == "__main__":

@@ -101,6 +101,30 @@ POLICY = {
                             "documents are not memory-appropriate",
 }
 
+# §16.12 aggregation contract, frozen before timing. The population is strongly
+# skewed (26/37/25/3/4/5 files across the six size buckets), so no single
+# unstratified "overall x faster" number may be the primary evidence: a per-file
+# mean over-represents tiny XML and a byte-weighted mean is dominated by the
+# 8.41 GiB tail.
+AGGREGATION_POLICY = {
+    "required_outputs": [
+        "per_cell_distribution",
+        "macro_average_by_file",
+        "micro_byte_weighted_throughput",
+        "category_stratified",
+        "size_bucket_stratified",
+    ],
+    "primary_evidence": "the complete per-cell distribution together with both "
+                        "macro (per-file) and micro (byte-weighted) summaries and "
+                        "the category/size-bucket stratifications",
+    "forbidden": "a single unstratified overall speedup presented as the primary "
+                 "evidence",
+    "equivalence_prerequisite": True,
+    "rationale": "size buckets are 26/37/25/3/4/5 files; per-file and "
+                 "byte-weighted means answer different questions and neither is "
+                 "sufficient alone",
+}
+
 # Per-family resource declaration: available queries and transform (§16.13
 # materialises the concrete expressions/stylesheets; §16.11 freezes availability).
 FAMILY_RESOURCES = {
@@ -202,7 +226,8 @@ def policy_digest() -> str:
     payload = json.dumps(
         {"operations": OPERATIONS, "policy": POLICY, "family_resources": FAMILY_RESOURCES,
          "always": ALWAYS, "xpath": XPATH, "dtd": DTD, "xsd": XSD, "xslt": XSLT,
-         "simplexml": SIMPLEXML, "xsd_families": XSD_FAMILIES},
+         "simplexml": SIMPLEXML, "xsd_families": XSD_FAMILIES,
+          "aggregation_policy": AGGREGATION_POLICY},
         sort_keys=True, separators=(",", ":")).encode()
     return sha256_bytes(payload)
 
@@ -315,6 +340,7 @@ def build_doc(manifest: dict, report: dict, prev: dict | None, amendments: list)
         "consumers": CONSUMERS,
         "operations": OPERATIONS,
         "policy": POLICY,
+        "aggregation_policy": AGGREGATION_POLICY,
         "resources": {"families": FAMILY_RESOURCES, "xsd_families": XSD_FAMILIES},
         "entries": computed["entries"],
         "summary": computed["summary"],
@@ -328,6 +354,7 @@ def comparable(doc: dict) -> dict:
         "consumers": doc["consumers"],
         "operations": doc["operations"],
         "policy": doc["policy"],
+        "aggregation_policy": doc["aggregation_policy"],
         "resources": doc["resources"],
         "entries": doc["entries"],
         "summary": doc["summary"],

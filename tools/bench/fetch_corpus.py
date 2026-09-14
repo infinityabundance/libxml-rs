@@ -48,6 +48,7 @@ import os
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -65,6 +66,23 @@ UA = ("libxml-rs-bench-corpus/0.1 (+https://github.com/infinityabundance/libxml-
       "research corpus retrieval)")
 # Generous default timeout for the very-large tier.
 TIMEOUT = 900
+
+
+class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
+    """Refuse any redirect whose target hostname differs from the request."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        old = urllib.parse.urlsplit(req.full_url)
+        new = urllib.parse.urlsplit(newurl)
+        if (new.hostname or "").lower() != (old.hostname or "").lower():
+            raise urllib.error.HTTPError(
+                newurl, code,
+                "cross-host redirect refused: %s -> %s" % (old.netloc, new.netloc),
+                headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+OPENER = urllib.request.build_opener(_SameHostRedirect)
 
 
 def load_manifest() -> dict:
@@ -110,14 +128,18 @@ def rate_limit(state: dict, url: str, min_ms: int) -> None:
 
 
 def http_download(url: str, dest: str, state: dict, min_ms: int) -> str:
-    """Download `url` to `dest` (streamed). Returns the sha256."""
+    """Download `url` to `dest` (streamed). Returns the sha256.
+
+    Redirects are followed only when the hostname is unchanged: a provenance
+    chain pins a host, so a redirect to another host is refused rather than
+    silently retrieved (urllib's default opener would follow it)."""
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     rate_limit(state, url, min_ms)
     req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                "Accept-Encoding": "identity"})
     h = hashlib.sha256()
     tmp = dest + ".part"
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp, open(tmp, "wb") as out:
+    with OPENER.open(req, timeout=TIMEOUT) as resp, open(tmp, "wb") as out:
         while True:
             chunk = resp.read(1 << 20)
             if not chunk:

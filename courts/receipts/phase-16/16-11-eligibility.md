@@ -3,8 +3,9 @@
 Commit: (this commit)
 Date: 2026-09-13
 Phase: 16.11. Corpus manifest SHA-256 at freeze:
-`fed7faf831bf12e09e405ced9e556de1e46e14626b99d1f5c58b6a85f7740c27`.
-Frozen at `2026-09-13T23:40:33Z`, revision 1.
+`5bb81e3e9334bb8e58ea12eaeb92ac2c58369aa8dfab722cbe221699a864a75b`.
+Frozen at `2026-09-14T00:37:24Z`, **revision 2** (revision 1 was raised via an
+explicit pre-16.12 amendment; see §4).
 
 Raw evidence:
 
@@ -102,9 +103,9 @@ Every member's `excluded` array names the exact reason for each dropped
 
 The file pins its inputs: `input_basis.manifest_sha256`,
 `input_basis.report_sha256`, and `input_basis.policy_sha256` (a canonical digest
-of the catalog + policy + resource tables). `--check` rebuilds the matrix from
-the current manifest/report and compares it field-by-field with the committed
-file; any mismatch is a hard failure:
+of the catalog + policy + resource tables + aggregation contract). `--check`
+rebuilds the matrix from the current manifest/report and compares it
+field-by-field with the committed file; any mismatch is a hard failure:
 
 ```
 FAIL: eligibility drift — recompute with --amend "<rationale>"
@@ -115,16 +116,43 @@ an amendment record carrying the rationale, timestamp, and the manifest/report/
 policy hashes at amendment time — the "explicit amendment receipt with rationale"
 required once final measurement begins.
 
-## 5. Validation
+**Amendment 1 → revision 2 (pre-16.12).** The post-review corrections recorded
+in `16-10-corpus.md` §9 (renamed/quantified characterization, report↔manifest
+binding) changed the
+manifest and report digests, and this phase adds the §16.12 aggregation contract.
+Because measurement has not begun, the change is recorded as an explicit
+amendment rather than a silent recompute; the amendment record carries the full
+rationale and the input hashes. No eligibility outcome changed.
+
+## 5. Aggregation contract (§16.12 constraint, frozen here)
+
+Because the population is strongly skewed (26/37/25/3/4/5 across the six size
+buckets), a single unstratified “overall × faster” number is a misleading
+headline: a per-file mean over-represents tiny XML, a byte-weighted mean is
+dominated by the 8.41 GiB tail, and neither answers the same question. The
+frozen `aggregation_policy` therefore requires that the authoritative 16.12
+output include **all** of:
+
+* the complete per-cell distribution (every file × consumer × operation),
+* a macro average by file,
+* a micro, byte-weighted throughput,
+* category-stratified results,
+* size-bucket-stratified results,
+
+and forbids presenting a single unstratified overall speedup as the primary
+evidence. Result equivalence (§16.14) remains a prerequisite to accepting any
+timing.
+
+## 6. Validation
 
 * `python3 tools/bench/corpus_eligibility.py --check` → `eligibility seal: OK
-  (revision 1, 100 files)`.
+  (revision 2, 100 files)`.
 * The amendment path was exercised (revision 2 published an amendment record and
-  passed `--check`), then reset to the frozen revision 1.
+  passed `--check`).
 * CI job `§16.10 real-world XML corpus seal` now runs both `corpus_seal.py` and
   `corpus_eligibility.py --check`.
 
-## 6. Next phase
+## 7. Next phase
 
 *16.12* builds the five fixed consumer performance drivers (xmllint, xsltproc,
 python3-lxml, ruby-nokogiri, php) and, for the `(consumer, operation)` pairs this
