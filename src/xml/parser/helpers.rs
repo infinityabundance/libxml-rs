@@ -643,6 +643,17 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
         (*ctxt).nameNr = 0;
         (*ctxt).name = ptr::null();
 
+        // Free the `xml:space` stack (upstream parserInternals.c
+        // xmlFreeParserCtxt releases the spaceTab array allocated at
+        // xmlInitParserCtxt time).
+        if !(*ctxt).spaceTab.is_null() {
+            xmlFreeImpl((*ctxt).spaceTab as *mut c_void);
+        }
+        (*ctxt).spaceTab = ptr::null_mut();
+        (*ctxt).space = ptr::null_mut();
+        (*ctxt).spaceNr = 0;
+        (*ctxt).spaceMax = 0;
+
         // UPSTREAM-PARITY (parserInternals.c xmlFreeParserCtxt): the
         // declaration strings recorded on the context (xmlParseXMLDecl) are
         // context-owned heap buffers — xmlFree(ctxt->version/encoding/

@@ -2772,7 +2772,13 @@ pub unsafe extern "C" fn xmlReadDoc(
     let input =
         crate::xml::parser::helpers::input_from_memory_borrowed(cur as *const c_char, len as c_int);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
-    (*ctxt).options = options;
+    // UPSTREAM-PARITY (parser.c xmlReadDoc -> xmlCtxtReadDoc ->
+    // xmlCtxtUseOptions): the deprecated read entry points derive the
+    // historical struct members (keepBlanks, recovery, replaceEntities,
+    // loadsubset, validate, pedantic, dictNames) from the option bits. Skipping
+    // this left XML_PARSE_NOBLANKS inert for `xmllint --format/--noblanks` and
+    // for every consumer of the deprecated read API.
+    crate::abi::exports_parser::apply_options(ctxt, options);
     if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
         let doc = (*ctxt).myDoc;
         crate::xml::parser::helpers::free_parser_ctxt(ctxt);
@@ -2813,12 +2819,11 @@ pub unsafe extern "C" fn xmlReadFile(
     // them; below it the xmlParserInputBufferCreateFilenameDefault (php
     // streams loader) is consulted — a NULL result raises xmlCtxtErrIO — "I/O
     // warning : failed to load \"%s\": %s\n" — and the load fails.
-    (*ctxt).options = options;
-    // UPSTREAM-PARITY (xmlCtxtUseOptions): replaceEntities is derived from
-    // the options argument — a deprecated-global seed (create_parser_ctxt
-    // snapshots xmlSubstituteEntitiesDefault, which PHP's ext/xsl sets at
-    // request init) must not leak into a read whose options lack NOENT.
-    (*ctxt).replaceEntities = (options & crate::abi::types::XML_PARSE_NOENT != 0) as c_int;
+    //
+    // The historical struct members are derived from the option bits exactly
+    // like upstream xmlCtxtSetOptionsInternal; deriving them by hand (only
+    // replaceEntities used to be mirrored) silently dropped XML_PARSE_NOBLANKS.
+    crate::abi::exports_parser::apply_options(ctxt, options);
     let input = match crate::abi::exports_parser::open_filename_routed(URL, ctxt) {
         crate::abi::exports_parser::RoutedFileOpen::Loaded(i) => i,
         crate::abi::exports_parser::RoutedFileOpen::Failed => {
@@ -3080,7 +3085,9 @@ pub unsafe extern "C" fn xmlReadFd(
         buf.len() as c_int,
     );
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
-    (*ctxt).options = options;
+    // UPSTREAM-PARITY (parser.c xmlReadFd -> xmlCtxtReadFd -> xmlCtxtUseOptions):
+    // derive the historical struct members from the option bits.
+    crate::abi::exports_parser::apply_options(ctxt, options);
     if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
         let doc = (*ctxt).myDoc;
         crate::xml::parser::helpers::free_parser_ctxt(ctxt);
@@ -3118,7 +3125,9 @@ pub unsafe extern "C" fn xmlReadIO(
     }
     let input = crate::xml::parser::helpers::input_from_io(ioread, ioclose, ioctx);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
-    (*ctxt).options = options;
+    // UPSTREAM-PARITY (parser.c xmlReadIO -> xmlCtxtReadIO -> xmlCtxtUseOptions):
+    // derive the historical struct members from the option bits.
+    crate::abi::exports_parser::apply_options(ctxt, options);
     let parsed = crate::xml::parser::helpers::parse_document(ctxt);
     let doc = (*ctxt).myDoc;
     // UPSTREAM-PARITY (xmlReadIO -> xmlCtxtReadIO): the URL is attached to the
@@ -4138,9 +4147,10 @@ pub unsafe extern "C" fn xmlOutputBufferWriteString(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlAllocOutputBuffer(encoder: *mut c_void) -> *mut _xmlOutputBuffer {
-    crate::xml::io::output_buffer_create(
+    let out = crate::xml::io::output_buffer_create(
         encoder as *mut crate::abi::structs::_xmlCharEncodingHandler,
-    )
+    );
+    out
 }
 
 /// Create an output buffer that writes into a `_xmlBuffer` (upstream
@@ -8859,14 +8869,33 @@ pub unsafe extern "C" fn xmlSAX2Characters(ctx: *mut c_void, ch: *const xmlChar,
     crate::xml::sax::default::default_sax_handler::characters(ctx, ch, len)
 }
 
-/// Upstream SAX2.c `xmlSAX2IgnorableWhitespace` — public entry point of the default handler.
+/// Upstream SAX2.c `xmlSAX2IgnorableWhitespace` — public entry point of the
+/// default handler.
+///
+/// # UPSTREAM-PARITY (SAX2.c 2.15.3)
+///
+/// ```c
+/// void
+/// xmlSAX2IgnorableWhitespace(void *ctx ATTRIBUTE_UNUSED,
+///                            const xmlChar *ch ATTRIBUTE_UNUSED,
+///                            int len ATTRIBUTE_UNUSED)
+/// {
+/// }
+/// ```
+///
+/// The function is a DELIBERATE no-op: it is the sentinel the parser installs
+/// into `sax->ignorableWhitespace` to suppress whitespace-only character data
+/// (`xmlInitParserCtxt` when `xmlKeepBlanksDefaultValue == 0`, and
+/// nokogiri's `xmlCtxtSetOptions` polyfill for pre-2.13 libxml2). `xmlCharacters`
+/// only invokes the `ignorableWhitespace` slot when it differs from
+/// `characters`, so delegating to `characters` here (as an earlier revision
+/// did) would resurrect exactly the text the sentinel exists to drop.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSAX2IgnorableWhitespace(
-    ctx: *mut c_void,
-    ch: *const xmlChar,
-    len: c_int,
+    _ctx: *mut c_void,
+    _ch: *const xmlChar,
+    _len: c_int,
 ) {
-    crate::xml::sax::default::default_sax_handler::ignorableWhitespace(ctx, ch, len)
 }
 
 /// Upstream SAX2.c `xmlSAX2Comment` — public entry point of the default handler.

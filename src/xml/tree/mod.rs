@@ -5181,8 +5181,13 @@ unsafe fn node_dump_internal(
                 }
             } else {
                 if state.format == 1 {
-                    // An element with text/CDATA/entity-ref children is
-                    // serialized unformatted (upstream unformattedNode).
+                    // UPSTREAM-PARITY (xmlsave.c xmlNodeDumpOutputInternal):
+                    // an element with ANY text, CDATA or entity-reference
+                    // child is serialized unformatted (upstream
+                    // `unformattedNode`). Whitespace-only text nodes are NOT
+                    // special-cased here — upstream removes ignorable blanks
+                    // at PARSE time (XML_PARSE_NOBLANKS / `areBlanks`), so a
+                    // tree that still holds blank text is genuinely mixed.
                     let mut tmp = n.children;
                     while !tmp.is_null() {
                         let tt = unsafe { (*tmp).type_ };
@@ -5465,6 +5470,114 @@ pub(crate) unsafe fn serialize_node_opts_enc(
     unsafe {
         serialize_node_opts_xhtml(node, buf, format, level, indent, no_decl, encoding, false)
     };
+}
+
+/// Serialize a document for the `xmlDocDump*` / `xmlDocFormatDump` family and
+/// return an `_xmlBuffer` whose bytes are already in the effective output
+/// encoding.
+///
+/// # UPSTREAM-PARITY (xmlsave.c `xmlDocDumpInternal` / `xmlSaveDocInternal`)
+///
+/// Upstream builds a save context over a fresh output buffer, switches that
+/// buffer's ENCODER to the effective encoding — the caller's `txt_encoding`,
+/// otherwise `cur->encoding` — and serializes through it. Two observable
+/// consequences: the XML declaration names that encoding, and character data
+/// is CONVERTED to it rather than escaped as UTF-8. Characters the target
+/// codec cannot represent fall back to numeric character references
+/// (`xmlCharEncOutput`'s `XML_ENC_INPUT_ERROR` substitution), which
+/// [`crate::xml::encoding::char_enc_out`] implements identically — that is
+/// what makes a `us-ascii` document containing `é` dump as `&#233;` while an
+/// `iso-8859-1` document emits the raw byte.
+///
+/// A UTF-8 target is a byte-for-byte passthrough, so the conversion is skipped
+/// for it (upstream still runs the identity encoder; the bytes are the same,
+/// and this keeps a multi-gigabyte dump from being copied twice).
+///
+/// Returns NULL on allocation failure.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid `_xmlDoc`; `effective_encoding` must be NULL or a
+///   valid NUL-terminated string owned by `doc` or by the caller for the
+///   duration of the call.
+pub(crate) unsafe fn doc_dump_to_encoding(
+    doc: *mut _xmlDoc,
+    effective_encoding: *const xmlChar,
+    format: c_int,
+) -> *mut _xmlBuffer {
+    unsafe {
+        let utf8 = io::buf_create(-1);
+        if utf8.is_null() {
+            return ptr::null_mut();
+        }
+        serialize_doc_opts(
+            doc as *mut _xmlNode,
+            utf8,
+            format,
+            0,
+            ptr::null(),
+            0,
+            effective_encoding,
+        );
+
+        if effective_encoding.is_null() {
+            return utf8;
+        }
+        let name = core::ffi::CStr::from_ptr(effective_encoding as *const c_char).to_bytes();
+        if crate::xml::encoding::encoding_from_name(name)
+            == crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF8
+        {
+            return utf8;
+        }
+        let handler = crate::xml::encoding::find_encoding_handler(effective_encoding);
+        if handler.is_null() {
+            return utf8;
+        }
+        let out = io::buf_create(-1);
+        if out.is_null() {
+            io::buf_free(utf8);
+            return ptr::null_mut();
+        }
+        let written = crate::xml::encoding::char_enc_out(handler, out, utf8);
+        io::buf_free(utf8);
+        if written < 0 {
+            io::buf_free(out);
+            return ptr::null_mut();
+        }
+        out
+    }
+}
+
+/// Document-dump serialization (upstream `xmlDocContentDumpOutput`): like
+/// `serialize_node_opts_enc`, but non-ASCII content is escaped as numeric
+/// character references when no output encoder is in play
+/// (`xmlDocDump`/`xmlDocDumpMemoryEnc`/`xmlDocFormatDump`/`xmlSaveDoc`).
+/// `xmlNodeDumpOutput` deliberately does NOT do this, so the two entry points
+/// must stay distinct.
+///
+/// # SAFETY
+///
+/// - `node` must be NULL or a valid `_xmlNode`; `buf` a valid `_xmlBuffer`;
+///   `indent`/`encoding` NULL or valid NUL-terminated strings.
+pub(crate) unsafe fn serialize_doc_opts(
+    node: *mut _xmlNode,
+    buf: *mut _xmlBuffer,
+    format: c_int,
+    level: c_int,
+    indent: *const xmlChar,
+    no_decl: c_int,
+    encoding: *const xmlChar,
+) {
+    unsafe {
+        if node.is_null() || buf.is_null() {
+            return;
+        }
+        let parent = (*node).parent;
+        let mut state = DumpState::with_indent_enc(format, indent, no_decl, encoding);
+        state.explicit_save = true;
+        let mut lvl = level;
+        node_dump_internal(buf, node, node, parent, &mut state, &mut lvl);
+    }
 }
 
 /// Serialize a node with the full save-option set (node, buffer, format,
@@ -5783,14 +5896,11 @@ pub(crate) unsafe fn xmlDocDump(fp: *mut c_void, doc: *mut _xmlDoc) -> c_int {
         return -1;
     }
 
-    let buf = io::buf_create(-1);
+    // UPSTREAM-PARITY (tree.c 2.15: xmlDocDump = xmlDocFormatDump(f, cur, 0)):
+    // a NULL `txt_encoding` means the document's own encoding is the output
+    // encoding, so the dumped bytes are converted to it.
+    let buf = unsafe { doc_dump_to_encoding(doc, (*doc).encoding, 0) };
     if buf.is_null() {
-        return -1;
-    }
-
-    let ret = doc_dump(buf, doc);
-    if ret < 0 {
-        io::buf_free(buf);
         return -1;
     }
 
@@ -5837,7 +5947,10 @@ pub(crate) unsafe fn xmlDocDumpFormatMemory(
         return;
     }
 
-    let buf = io::buf_create(-1);
+    // UPSTREAM-PARITY (xmlsave.c xmlDocDumpFormatMemory ->
+    // xmlDocDumpFormatMemoryEnc(..., NULL, format)): a NULL encoding means the
+    // document's own encoding drives the output buffer's encoder.
+    let buf = unsafe { doc_dump_to_encoding(doc, (*doc).encoding, format) };
     if buf.is_null() {
         unsafe {
             *mem = ptr::null_mut();
@@ -5847,8 +5960,6 @@ pub(crate) unsafe fn xmlDocDumpFormatMemory(
         }
         return;
     }
-
-    serialize_node(doc as *mut _xmlNode, buf, format, 0);
 
     let content = io::buf_content(buf);
     let len = io::buf_length(buf);

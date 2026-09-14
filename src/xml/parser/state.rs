@@ -4414,6 +4414,38 @@ impl XmlParser {
         // not with the tag's other scan errors.
         self.raise_deferred_errors_matching(&[crate::abi::types::XML_ERR_ATTRIBUTE_REDEFINED]);
 
+        // UPSTREAM-PARITY (parser.c xmlParseStartTag2 / xmlParseAttribute):
+        // an `xml:space` attribute on the start tag writes this element's
+        // freshly pushed space slot. The SAX2 path matches (prefix `xml`,
+        // local `space`); the SAX1 path matches the raw QName `xml:space`,
+        // because xmlParseStartTag does no namespace processing. An invalid
+        // value is a warning upstream (XML_WAR_SPACE_VALUE) and leaves the
+        // slot at -1.
+        for (attr_name, attr_value, _) in attributes.iter() {
+            let is_xml_space = if sax2 {
+                let (attr_prefix, attr_local, attr_failed) = split_qname_bytes(attr_name);
+                !attr_failed
+                    && attr_prefix.as_deref() == Some(b"xml" as &[u8])
+                    && attr_local.as_slice() == b"space"
+            } else {
+                attr_name.as_slice() == b"xml:space"
+            };
+            if !is_xml_space {
+                continue;
+            }
+            unsafe {
+                let space = (*self.ctxt).space;
+                if !space.is_null() {
+                    if attr_value.as_slice() == b"default" {
+                        *space = 0;
+                    } else if attr_value.as_slice() == b"preserve" {
+                        *space = 1;
+                    }
+                }
+            }
+            break;
+        }
+
         // Fire startElement SAX event. The default SAX2 handler manages
         // nodeTab/nodeNr internally. For SAX2 parses the element's own
         // namespace declarations are registered on the parser-scoped
@@ -6941,9 +6973,18 @@ impl XmlParser {
     /// be KEPT even though it is all whitespace. Dropping it (the pre-`areBlanks`
     /// behaviour) turned `<b>  </b>` into `<b/>`.
     ///
-    /// The `xml:space` stack is consulted when the C context exposes it; with
-    /// no `xml:space` declaration upstream's slot is `-1` (undefined) and the
-    /// heuristic applies.
+    /// Three early exits keep the run:
+    ///
+    /// 1. `*ctxt->space` is `1` (`xml:space="preserve"`) or `-2` (this
+    ///    element already produced significant character data — the marker is
+    ///    sticky for the element, which is what makes
+    ///    `<measure><num>1</num>, <num>2</num>\n<unit/></measure>` keep its
+    ///    newline).
+    /// 2. The owning element is declared MIXED/ANY by an in-scope DTD (its
+    ///    content is character data by definition); a declaration of
+    ///    `XML_ELEMENT_TYPE_ELEMENT` instead DROPS the run unconditionally.
+    /// 3. The heuristic below (run not at a tag boundary; leaf element; a text
+    ///    sibling already present).
     ///
     /// # Safety
     ///
@@ -6952,12 +6993,27 @@ impl XmlParser {
     fn blanks_ignorable(&self, raw: u8, nxt1: u8) -> bool {
         unsafe {
             let space = (*self.ctxt).space;
-            if !space.is_null() && (*space == 1 || *space == -2) {
+            if space.is_null() || *space == 1 || *space == -2 {
                 return false;
             }
             let node = (*self.ctxt).node;
             if node.is_null() {
                 return false;
+            }
+            // UPSTREAM-PARITY (areBlanks step 3): a DTD declaration for the
+            // element settles the question. The lookup is by (local name,
+            // prefix) against the internal and then the external subset, and
+            // the "element content" declaration is the only one that makes
+            // blanks ignorable — ANY/MIXED content is character data.
+            if let Some(etype) = dtd_element_content_type(self.ctxt, node) {
+                if etype == XML_ELEMENT_TYPE_ELEMENT as c_int {
+                    return true;
+                }
+                if etype == XML_ELEMENT_TYPE_ANY as c_int
+                    || etype == XML_ELEMENT_TYPE_MIXED as c_int
+                {
+                    return false;
+                }
             }
             // The run must end at a tag boundary (or a CR) for the heuristic
             // to apply at all.
@@ -6971,17 +7027,16 @@ impl XmlParser {
             let last = crate::abi::exports_misc::xmlGetLastChild(node);
             if last.is_null() {
                 if (*node).type_ != XML_ELEMENT_NODE as c_int && !(*node).content.is_null() {
-                    return false;
+                    false
+                } else {
+                    true
                 }
             } else if (*last).type_ == XML_TEXT_NODE as c_int {
-                return false;
+                false
             } else {
                 let first = (*node).children;
-                if !first.is_null() && (*first).type_ == XML_TEXT_NODE as c_int {
-                    return false;
-                }
+                !(!first.is_null() && (*first).type_ == XML_TEXT_NODE as c_int)
             }
-            true
         }
     }
 
@@ -7039,9 +7094,11 @@ impl XmlParser {
     /// base-input run dispatches with a pointer into the input data — no
     /// C-string copy — exactly like upstream, which hands the SAX
     /// `characters` handler `input->cur + len` (never a NUL-terminated
-    /// copy; the handler copies what it keeps). Also applies the
-    /// XML_PARSE_NOBLANKS gate (a whitespace-only run is dropped when
-    /// keepBlanks == 0) — upstream xmlCharacters.
+    /// copy; the handler copies what it keeps).
+    ///
+    /// Applies upstream `xmlCharacters`: the `XML_PARSE_NOBLANKS` gate
+    /// (`checkBlanks` + `areBlanks`) and the sticky "significant text seen in
+    /// this element" marker (`*ctxt->space = -2`).
     ///
     /// # Safety
     ///
@@ -7052,21 +7109,21 @@ impl XmlParser {
         if self.sax_blocked() || text.is_empty() || self.below_delivery_boundary() {
             return;
         }
-        let keep_blanks = unsafe { (*self.ctxt).keepBlanks } != 0;
+        let check_blanks = self.xml_check_blanks();
         // Resolve under a shared reborrow and reduce to raw parts so the
         // borrow ends before the &mut self dispatch below. The NOBLANKS
-        // whitespace scan runs ONLY when keepBlanks == 0 — the default path
+        // whitespace scan runs ONLY when the gate is armed — the default path
         // must not pay a per-byte scan over every text run (criterion
         // parse/327793 regression: an unconditional `.all()` cost ~2% at
         // the largest size).
         let (ch, len, all_ws) = {
             let bytes = self.resolve_text(text);
-            let all_ws = if keep_blanks {
-                false
-            } else {
+            let all_ws = if check_blanks {
                 bytes
                     .iter()
                     .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
+            } else {
+                false
             };
             (
                 bytes.as_ptr() as *const xmlChar,
@@ -7077,10 +7134,91 @@ impl XmlParser {
         if all_ws {
             let (raw, nxt1) = self.raw_at_cursor();
             if self.blanks_ignorable(raw, nxt1) {
+                self.deliver_ignorable_whitespace(ch, len);
                 return;
             }
         }
         self.sax_characters_parts(ch, len);
+        self.mark_space_significant();
+    }
+
+    /// Upstream `xmlCharacters`'s `checkBlanks`:
+    ///
+    /// ```c
+    /// checkBlanks = (!ctxt->keepBlanks) ||
+    ///               (ctxt->sax->ignorableWhitespace != ctxt->sax->characters);
+    /// ```
+    ///
+    /// The second disjunct is the real switch: `XML_PARSE_NOBLANKS` / a
+    /// `xmlKeepBlanksDefault(0)` context installs the no-op
+    /// `xmlSAX2IgnorableWhitespace` into the slot, and the parser only treats
+    /// a run as ignorable when that slot differs from `characters`.
+    fn xml_check_blanks(&self) -> bool {
+        unsafe {
+            let c = &*self.ctxt;
+            if c.keepBlanks == 0 {
+                return true;
+            }
+            let sax = c.sax;
+            if sax.is_null() {
+                return false;
+            }
+            // Pointer identity, with NULL counted as a distinct value — the
+            // Option<fn> comparison does exactly that.
+            let iw = (*sax).ignorableWhitespace.map(|f| f as usize);
+            let ch = (*sax).characters.map(|f| f as usize);
+            iw != ch
+        }
+    }
+
+    /// Upstream `xmlCharacters`'s ignorable branch:
+    ///
+    /// ```c
+    /// if ((ctxt->sax->ignorableWhitespace != NULL) && (ctxt->keepBlanks))
+    ///     ctxt->sax->ignorableWhitespace(ctxt->userData, buf, size);
+    /// ```
+    ///
+    /// With `keepBlanks == 0` the run is simply dropped; with `keepBlanks !=
+    /// 0` and a distinct handler (the no-op sentinel, or a consumer's own
+    /// whitespace callback) the slot is invoked.
+    ///
+    /// # Safety
+    ///
+    /// - `ch` must point to `len` readable bytes; `self.ctxt` must be valid.
+    fn deliver_ignorable_whitespace(&mut self, ch: *const xmlChar, len: c_int) {
+        unsafe {
+            let c = &*self.ctxt;
+            if c.keepBlanks == 0 {
+                return;
+            }
+            let sax = c.sax;
+            if sax.is_null() || (*sax).ignorableWhitespace.is_none() {
+                return;
+            }
+            SaxDispatcher::ignorable_whitespace(&*sax, c.userData, ch, len);
+        }
+    }
+
+    /// Upstream `xmlCharacters`'s trailing marker:
+    ///
+    /// ```c
+    /// if ((checkBlanks) && (*ctxt->space == -1))
+    ///     *ctxt->space = -2;
+    /// ```
+    ///
+    /// Once an element has delivered significant character data its
+    /// `xml:space` slot becomes `-2`, which makes `areBlanks` keep every later
+    /// whitespace-only run in that element.
+    fn mark_space_significant(&mut self) {
+        if !self.xml_check_blanks() {
+            return;
+        }
+        unsafe {
+            let space = (*self.ctxt).space;
+            if !space.is_null() && *space == -1 {
+                *space = -2;
+            }
+        }
     }
 
     /// Fire `characters` for one flush of a character-data run — upstream
@@ -7105,18 +7243,23 @@ impl XmlParser {
         if self.sax_blocked() || data.is_empty() || self.below_delivery_boundary() {
             return false;
         }
-        let keep_blanks = unsafe { (*self.ctxt).keepBlanks } != 0;
-        if !keep_blanks
+        let check_blanks = self.xml_check_blanks();
+        if check_blanks
             && data
                 .iter()
                 .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
         {
             let (raw, nxt1) = self.raw_at_cursor();
             if self.blanks_ignorable(raw, nxt1) {
+                self.deliver_ignorable_whitespace(
+                    data.as_ptr() as *const xmlChar,
+                    data.len() as c_int,
+                );
                 return false;
             }
         }
         self.sax_characters(data);
+        self.mark_space_significant();
         true
     }
 
@@ -7437,7 +7580,99 @@ impl XmlParser {
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `name`
     ///   is a caller-owned slice; the NUL-terminated copy is heap-owned by
     ///   the context nameTab and freed on pop / context teardown.
+    /// Upstream `spacePush` (parser.c 2.15.3): push an `xml:space` state value
+    /// onto the context's `spaceTab` stack; `ctxt->space` aliases the new top.
+    ///
+    /// Values: `-1` undefined, `0` `xml:space="default"`, `1`
+    /// `xml:space="preserve"`, `-2` "an element's content already produced
+    /// significant character data" (sticky for the element's lifetime).
+    ///
+    /// # Safety
+    ///
+    /// `self.ctxt` must be a valid, initialized `_xmlParserCtxt`.
+    fn space_push(&mut self, val: c_int) {
+        unsafe {
+            let c = &mut *self.ctxt;
+            if c.spaceNr >= c.spaceMax || c.spaceTab.is_null() {
+                let new_max = if c.spaceMax <= 0 { 10 } else { c.spaceMax * 2 };
+                let new_tab = crate::abi::allocator::xmlReallocImpl(
+                    c.spaceTab as *mut c_void,
+                    (new_max as usize) * core::mem::size_of::<c_int>(),
+                ) as *mut c_int;
+                if new_tab.is_null() {
+                    return;
+                }
+                c.spaceTab = new_tab;
+                c.spaceMax = new_max;
+            }
+            *c.spaceTab.add(c.spaceNr as usize) = val;
+            c.space = c.spaceTab.add(c.spaceNr as usize);
+            c.spaceNr += 1;
+        }
+    }
+
+    /// Upstream `spacePop` (parser.c 2.15.3): drop the top `xml:space` slot and
+    /// re-alias `ctxt->space` to the new top (slot 0 when the stack empties).
+    ///
+    /// # Safety
+    ///
+    /// `self.ctxt` must be a valid, initialized `_xmlParserCtxt`.
+    fn space_pop(&mut self) {
+        unsafe {
+            let c = &mut *self.ctxt;
+            if c.spaceNr <= 0 {
+                return;
+            }
+            if c.spaceTab.is_null() {
+                c.spaceNr = 0;
+                c.space = ptr::null_mut();
+                return;
+            }
+            c.spaceNr -= 1;
+            if c.spaceNr > 0 {
+                c.space = c.spaceTab.add((c.spaceNr - 1) as usize);
+            } else {
+                c.space = c.spaceTab;
+            }
+            *c.spaceTab.add(c.spaceNr as usize) = -1;
+        }
+    }
+
+    /// Upstream `xmlParseElementStart`'s space-push rule (parser.c 2.15.3):
+    ///
+    /// ```c
+    /// if (ctxt->spaceNr == 0)      spacePush(ctxt, -1);
+    /// else if (*ctxt->space == -2) spacePush(ctxt, -1);
+    /// else                         spacePush(ctxt, *ctxt->space);
+    /// ```
+    ///
+    /// The `xml:space` state is inherited, but the "significant text already
+    /// seen" marker `-2` is NOT (a child element starts fresh).
+    ///
+    /// # Safety
+    ///
+    /// `self.ctxt` must be a valid, initialized `_xmlParserCtxt`.
+    fn space_push_element(&mut self) {
+        let val = unsafe {
+            let c = &*self.ctxt;
+            if c.spaceNr == 0 || c.space.is_null() {
+                -1
+            } else if *c.space == -2 {
+                -1
+            } else {
+                *c.space
+            }
+        };
+        self.space_push(val);
+    }
+
     fn push_name(&mut self, name: &[u8]) {
+        // UPSTREAM-PARITY (parser.c xmlParseElementStart): the `xml:space`
+        // slot for a new element is pushed BEFORE its start tag is parsed, so
+        // an `xml:space` attribute on the tag writes into the NEW element's
+        // slot. Pairing it with the name stack keeps the two stacks in
+        // lockstep on every open/close path.
+        self.space_push_element();
         // NUL-terminated heap copy (NULL only for an empty name).
         let name_cstr = Self::vec_to_cstr_null(name);
         unsafe {
@@ -7478,6 +7713,9 @@ impl XmlParser {
     ///   popped name is freed and the `name` pointer restored to the new top
     ///   (or NULL when the stack empties) and must not be used afterwards.
     fn pop_name(&mut self) {
+        // UPSTREAM-PARITY (parser.c xmlParseElementEnd / spacePop): the
+        // element's `xml:space` slot is released together with its name.
+        self.space_pop();
         unsafe {
             let c = &mut *self.ctxt;
             if c.nameNr <= 0 {
@@ -8817,4 +9055,76 @@ fn decode_entity_charrefs(input: &[u8]) -> Vec<u8> {
         i += 1;
     }
     out
+}
+
+/// Upstream `areBlanks` step 3 (parser.c 2.15.3): the DTD content model of the
+/// element currently open in `ctxt`, or `None` when no declaration applies.
+///
+/// The lookup mirrors upstream exactly:
+///
+/// ```c
+/// if (ctxt->myDoc != NULL) {
+///     xmlElementPtr elemDecl = NULL;
+///     xmlDocPtr doc = ctxt->myDoc;
+///     const xmlChar *prefix = NULL;
+///     if (ctxt->node->ns) prefix = ctxt->node->ns->prefix;
+///     if (doc->intSubset != NULL)
+///         elemDecl = xmlHashLookup2(doc->intSubset->elements,
+///                                   ctxt->node->name, prefix);
+///     if ((elemDecl == NULL) && (doc->extSubset != NULL))
+///         elemDecl = xmlHashLookup2(doc->extSubset->elements,
+///                                   ctxt->node->name, prefix);
+///     ...
+/// }
+/// ```
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid, initialized `_xmlParserCtxt`; `node` must be NULL
+///   or a valid `_xmlNode` whose `ns` link (if any) is valid.
+unsafe fn dtd_element_content_type(
+    ctxt: *mut _xmlParserCtxt,
+    node: *mut _xmlNode,
+) -> Option<c_int> {
+    unsafe {
+        let doc = (*ctxt).myDoc;
+        if doc.is_null() {
+            return None;
+        }
+        let prefix: *const xmlChar = {
+            let ns = (*node).ns;
+            if ns.is_null() {
+                ptr::null()
+            } else {
+                (*ns).prefix
+            }
+        };
+        let name = (*node).name;
+        if name.is_null() {
+            return None;
+        }
+        let mut decl: *mut c_void = ptr::null_mut();
+        let int_subset = (*doc).intSubset;
+        if !int_subset.is_null() && !(*int_subset).elements.is_null() {
+            decl = crate::xml::hash::hash_lookup2(
+                (*int_subset).elements as *mut crate::xml::hash::HashTable,
+                name,
+                prefix,
+            );
+        }
+        if decl.is_null() {
+            let ext_subset = (*doc).extSubset;
+            if !ext_subset.is_null() && !(*ext_subset).elements.is_null() {
+                decl = crate::xml::hash::hash_lookup2(
+                    (*ext_subset).elements as *mut crate::xml::hash::HashTable,
+                    name,
+                    prefix,
+                );
+            }
+        }
+        if decl.is_null() {
+            return None;
+        }
+        Some((*(decl as *mut crate::abi::structs::_xmlElement)).etype as c_int)
+    }
 }

@@ -198,6 +198,9 @@ unsafe fn init_sax_parser_ctxt(
     sax: *const _xmlSAXHandler,
     userData: *mut c_void,
 ) -> c_int {
+    /// Upstream parserInternals.c `initialNodeTabSize` — the initial
+    /// allocation for the `xml:space` stack (`spaceTab`).
+    const INITIAL_SPACE_TAB_SIZE: usize = 10;
     unsafe {
         ptr::write_bytes(ctxt as *mut u8, 0, core::mem::size_of::<_xmlParserCtxt>());
 
@@ -244,9 +247,42 @@ unsafe fn init_sax_parser_ctxt(
         c.valid = 1;
         c.nsWellFormed = 1;
         c.instate = xmlParserInputState::XML_PARSER_START as c_int;
+
+        // UPSTREAM-PARITY (parserInternals.c xmlInitParserCtxt): the
+        // `xml:space` stack starts with ONE entry holding -1 ("undefined"),
+        // `space` aliases its top, and the backing array is allocated up
+        // front. `areBlanks` reads `*ctxt->space`, so a NULL pointer (the
+        // pre-Phase-16 state) silently disabled every `xml:space` and
+        // sticky-blank rule.
+        let space_tab = crate::abi::allocator::xmlMallocImpl(
+            INITIAL_SPACE_TAB_SIZE * core::mem::size_of::<c_int>(),
+        ) as *mut c_int;
+        if space_tab.is_null() {
+            return -1;
+        }
+        *space_tab = -1;
+        c.spaceTab = space_tab;
+        c.spaceMax = INITIAL_SPACE_TAB_SIZE as c_int;
+        c.spaceNr = 1;
+        c.space = space_tab;
+
         c.keepBlanks = globals::get_keep_blanks_default();
         c.replaceEntities = globals::get_substitute_entities_default();
         c.linenumbers = 1;
+        // UPSTREAM-PARITY (parserInternals.c xmlInitParserCtxt): when the
+        // deprecated `xmlKeepBlanksDefaultValue` is 0 at context creation the
+        // default `ignorableWhitespace` slot is replaced by the no-op
+        // `xmlSAX2IgnorableWhitespace`. The swap is what makes the *global*
+        // govern every later read of this context: `xmlCharacters` computes
+        // `checkBlanks = !keepBlanks || sax->ignorableWhitespace !=
+        // sax->characters`, so a re-raised `keepBlanks` cannot resurrect
+        // ignorable blanks once the no-op handler is installed.
+        if c.keepBlanks == 0 && !c.sax.is_null() {
+            (*c.sax).ignorableWhitespace = Some(
+                crate::abi::exports_xml2::xmlSAX2IgnorableWhitespace
+                    as crate::abi::callbacks::ignorableWhitespaceSAXFunc,
+            );
+        }
         c.charset = xmlCharEncoding::XML_CHAR_ENCODING_UTF8 as c_int;
         c.pedantic = globals::get_pedantic_parser_default();
         c.loadsubset = globals::get_load_ext_dtd_default();
@@ -262,12 +298,16 @@ unsafe fn init_sax_parser_ctxt(
 /// Mirror `options` into the parser context's historical struct members
 /// (upstream `xmlCtxtSetOptionsInternal`).
 ///
-/// `keepBlanks` is special: the executed 2.15.3 oracle seeds it from the
-/// deprecated `xmlKeepBlanksDefaultValue` at context creation and only ever
-/// LOWERS it (XML_PARSE_NOBLANKS) — option application never re-raises it.
-/// Empirical: a context created while `xmlKeepBlanksDefault(0)` drops
-/// whitespace-only text for ALL its reads, even reused ones, and
-/// `xmlCtxtUseOptions`/read options without NOBLANKS do not restore it.
+/// `keepBlanks` is RE-DERIVED from the option bits (`NOBLANKS ? 0 : 1`),
+/// exactly as upstream: option application both lowers and re-raises it. The
+/// apparently "sticky" behaviour of `xmlKeepBlanksDefault(0)` comes from
+/// `xmlInitParserCtxt`, which swaps the context's `ignorableWhitespace` slot
+/// for the no-op `xmlSAX2IgnorableWhitespace` when the global is 0 — the
+/// no-op handler, not a frozen `keepBlanks`, is what suppresses ignorable
+/// whitespace for the rest of that context's life (empirically confirmed
+/// against libxml2 2.15.3: `xmlKeepBlanksDefault(0); xmlNewParserCtxt();
+/// xmlCtxtUseOptions(ctxt, 0)` leaves `keepBlanks == 1` yet still drops
+/// whitespace-only text).
 ///
 /// # Safety
 ///
@@ -299,9 +339,11 @@ pub(crate) unsafe fn apply_options(ctxt: *mut _xmlParserCtxt, options: c_int) {
         }
         c.validate = (options & XML_PARSE_DTDVALID != 0) as c_int;
         c.pedantic = (options & XML_PARSE_PEDANTIC != 0) as c_int;
-        if options & XML_PARSE_NOBLANKS != 0 {
-            c.keepBlanks = 0;
-        }
+        c.keepBlanks = if options & XML_PARSE_NOBLANKS != 0 {
+            0
+        } else {
+            1
+        };
         c.dictNames = if options & XML_PARSE_NODICT != 0 {
             0
         } else {
@@ -825,9 +867,16 @@ pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
         c.nameNr = 0;
         c.name = ptr::null();
 
-        // Space stack: keep the allocation, reset the counter.
+        // Space stack: upstream xmlCtxtReset keeps the allocation, rewrites
+        // slot 0 with -1 and aliases `space` to it (`spaceNr` drops to 0 so the
+        // next element start pushes the -1 sentinel again).
         c.spaceNr = 0;
-        c.space = ptr::null_mut();
+        if c.spaceTab.is_null() {
+            c.space = ptr::null_mut();
+        } else {
+            *c.spaceTab = -1;
+            c.space = c.spaceTab;
+        }
 
         // Namespaces.
         c.nsNr = 0;

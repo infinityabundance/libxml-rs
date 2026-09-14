@@ -961,6 +961,122 @@ pub unsafe fn cmp_nodes(node1: *mut _xmlNode, node2: *mut _xmlNode) -> c_int {
     }
 }
 
+/// Minimum set size at which the linear document-order rebuild is preferred
+/// over the comparator Shell sort.
+const DOC_ORDER_REBUILD_MIN: usize = 512;
+
+/// Rebuild a node-set in document order by walking its document once and
+/// emitting the members as they are encountered.
+///
+/// This is the fast path for the large sets that the `//`-shaped queries
+/// produce. It exists because the comparator Shell sort is not merely
+/// O(n log n): `xmlXPathCmpNodes` is O(tree depth) AND, for two nodes sharing
+/// a parent, O(sibling distance) — it walks the `next` chain from one to the
+/// other. On a document with tens of thousands of children under one element
+/// that reaches tens of microseconds per comparison, which made
+/// `count(//node())` on a 1.7 MB GPX file spend 26 s in a single
+/// `xmlXPathNodeSetSort` call (Phase 16 F4; the whole oracle run is 0.04 s).
+///
+/// The walk visits only the members and their ancestor paths, and it is
+/// accepted only when it accounts for EXACTLY the input set — so attribute or
+/// namespace nodes (which are not on the child chain), entries from more than
+/// one document, NULL entries and anything else the walk cannot see all fall
+/// back to the Shell sort.
+///
+/// Returns `None` when the set is not eligible.
+///
+/// # SAFETY
+///
+/// - every entry must be a valid `_xmlNode` pointer or NULL; the documents
+///   they belong to must stay alive and unmodified for the call.
+fn rebuild_doc_order(nodes: &[XPathNode]) -> Option<Vec<XPathNode>> {
+    unsafe {
+        // The walk only understands nodes that hang off the child chain.
+        for n in nodes {
+            if n.0.is_null() {
+                return None;
+            }
+            let t = (*n.0).type_;
+            if t == xmlElementType::XML_ATTRIBUTE_NODE as c_int
+                || t == xmlElementType::XML_NAMESPACE_DECL as c_int
+            {
+                return None;
+            }
+        }
+
+        // The single document the set lives in: climb from the first member.
+        let mut root = nodes[0].0;
+        while !(*root).parent.is_null() {
+            root = (*root).parent;
+        }
+
+        // Every member, plus every node on the path from the root to one (so
+        // the walk knows which subtrees to enter).
+        let mut members: HashSet<usize> = HashSet::with_capacity(nodes.len());
+        for n in nodes {
+            members.insert(n.0 as usize);
+        }
+        let mut marked: HashSet<usize> = HashSet::with_capacity(nodes.len() * 2);
+        for n in nodes {
+            let mut cur = n.0;
+            loop {
+                if !marked.insert(cur as usize) {
+                    // The rest of this node's ancestor path is already marked.
+                    break;
+                }
+                let parent = (*cur).parent;
+                if parent.is_null() {
+                    // `cur` is the top of this node's tree; it must be the same
+                    // root as the first member's, otherwise the set spans
+                    // documents and the walk cannot order it.
+                    if cur != root {
+                        return None;
+                    }
+                    break;
+                }
+                cur = parent;
+            }
+        }
+
+        // Bound the work: if the walk would inspect far more nodes than the
+        // set has entries, the comparator sort is the better trade.
+        let budget = nodes.len().saturating_mul(8).saturating_add(1 << 16);
+        let mut inspected: usize = 0;
+
+        let mut out: Vec<XPathNode> = Vec::with_capacity(nodes.len());
+        let mut stack: Vec<*mut _xmlNode> = vec![root];
+        while let Some(n) = stack.pop() {
+            if members.contains(&(n as usize)) {
+                out.push(XPathNode(n));
+            }
+            // Collect the marked children, then push in reverse so the stack
+            // yields them in document order.
+            let mut kids: Vec<*mut _xmlNode> = Vec::new();
+            let mut c = (*n).children;
+            while !c.is_null() {
+                inspected += 1;
+                if inspected > budget {
+                    return None;
+                }
+                if marked.contains(&(c as usize)) {
+                    kids.push(c);
+                }
+                c = (*c).next;
+            }
+            for child in kids.into_iter().rev() {
+                stack.push(child);
+            }
+        }
+
+        // Only accept a rebuild that found the whole set (defensive: the walk
+        // must never silently drop an entry).
+        if out.len() != nodes.len() {
+            return None;
+        }
+        Some(out)
+    }
+}
+
 /// Upstream `xmlXPathNodeSetSort` (xpath.c): a Shell sort that swaps two
 /// entries only when `xmlXPathCmpNodes` says the left one follows the right
 /// (`== -1`). Incomparable entries (`-2`) therefore stay put, and duplicates
@@ -977,6 +1093,32 @@ pub unsafe fn sort_nodeset_upstream(nodes: &mut Vec<XPathNode>) {
     if len < 2 {
         return;
     }
+    // PERF (Phase 16 F4), fast path 1: the set is very often ALREADY in
+    // document order (a forward-axis step is, and so is the concatenation of
+    // such steps over context nodes that are themselves in document order).
+    // One linear pass detects that exactly — adjacent entries compare through
+    // the `prev`/`next`/ancestor fast paths of the comparator, so it stays
+    // cheap even on the pathological documents described below.
+    let mut sorted = true;
+    for i in 0..len - 1 {
+        // `-1` means "nodes[i] follows nodes[i + 1]" — the one case the Shell
+        // sort swaps, i.e. the sortedness violation.
+        if unsafe { cmp_nodes(nodes[i].0, nodes[i + 1].0) } == -1 {
+            sorted = false;
+            break;
+        }
+    }
+    if sorted {
+        return;
+    }
+    // Fast path 2: rebuild in document order by walking the document.
+    if len >= DOC_ORDER_REBUILD_MIN {
+        if let Some(rebuilt) = rebuild_doc_order(nodes) {
+            *nodes = rebuilt;
+            return;
+        }
+    }
+    // Fallback: the upstream Shell sort.
     let mut incr = len / 2;
     while incr > 0 {
         let mut i = incr;

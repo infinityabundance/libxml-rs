@@ -144,6 +144,11 @@ const XML_EXTERNAL_GENERAL_PARSED_ENTITY: c_int =
     xmlEntityType::XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int;
 const XML_INTERNAL_PARAMETER_ENTITY: c_int = xmlEntityType::XML_INTERNAL_PARAMETER_ENTITY as c_int;
 const XML_EXTERNAL_PARAMETER_ENTITY: c_int = xmlEntityType::XML_EXTERNAL_PARAMETER_ENTITY as c_int;
+
+/// Candidate bit for `xmlEntity.flags` marking an entity whose replacement
+/// text is currently being parsed (upstream `XML_ENT_EXPANDING`). A recursive
+/// reference is then XML_ERR_ENTITY_LOOP instead of unbounded recursion.
+const XML_ENT_EXPANDING: c_int = 1 << 3;
 const XML_INTERNAL_PREDEFINED_ENTITY: c_int =
     xmlEntityType::XML_INTERNAL_PREDEFINED_ENTITY as c_int;
 const XML_ATTRIBUTE_CDATA: c_int = xmlAttributeType::XML_ATTRIBUTE_CDATA as c_int;
@@ -975,6 +980,11 @@ unsafe fn pi_pop_pe(ctxt: *mut _xmlParserCtxt) {
             return;
         }
         let base = (*input).base;
+        // UPSTREAM-PARITY (parser.c xmlCtxtPopInput): the entity whose
+        // replacement text this input carried is no longer expanding.
+        if !(*input).entity.is_null() {
+            (*(*input).entity).flags &= !XML_ENT_EXPANDING;
+        }
         if !base.is_null() && !(*input).entity.is_null() {
             xmlFreeImpl(base as *mut c_void);
         }
@@ -2115,8 +2125,217 @@ unsafe fn pi_parse_pe_reference(ctxt: *mut _xmlParserCtxt) {
                     xmlFreeImpl(buf as *mut c_void);
                 }
             }
+        } else if (*ent).etype == XML_EXTERNAL_PARAMETER_ENTITY as c_int {
+            // UPSTREAM-PARITY (parser.c xmlParsePERefInternal): an EXTERNAL
+            // parameter entity is loaded only when the caller asked for it —
+            // `loadsubset` (XML_PARSE_DTDLOAD), entity substitution
+            // (XML_PARSE_NOENT) or validation (XML_PARSE_DTDVALID) — and XXE
+            // is not disabled. This is why `xmlSAXParseDTD` sets
+            // XML_PARSE_DTDLOAD: without it the module references in a DTD
+            // resolve to nothing. A failed load is a WARNING, never fatal:
+            // the declaration is simply skipped and the DTD keeps parsing.
+            let c = &*ctxt;
+            let wants_load = (c.options & XML_PARSE_NO_XXE) == 0
+                && ((c.loadsubset & !crate::abi::constants::XML_SKIP_IDS) != 0
+                    || c.replaceEntities != 0
+                    || c.validate != 0);
+            if wants_load {
+                let sys = (*ent).SystemID;
+                if !sys.is_null() {
+                    let mut resolved = pi_resolve_system_id(ctxt, sys);
+                    resolved.push(0);
+                    let resolved_c = resolved.as_ptr() as *const c_char;
+                    match crate::abi::exports_parser::open_filename_routed(resolved_c, ctxt) {
+                        crate::abi::exports_parser::RoutedFileOpen::Loaded(b) => {
+                            let bytes = b.raw_range(0, b.len()).to_vec();
+                            pi_push_external_pe(ctxt, ent, &bytes, sys);
+                        }
+                        crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+                            match input_from_file(resolved_c) {
+                                Ok(b) => {
+                                    let bytes = b.raw_range(0, b.len()).to_vec();
+                                    pi_push_external_pe(ctxt, ent, &bytes, sys);
+                                }
+                                Err(()) => crate::abi::exports_parser::emit_io_warning(
+                                    ctxt,
+                                    crate::abi::exports_parser::io_load_failure_message(resolved_c),
+                                ),
+                            }
+                        }
+                        _ => {
+                            // `Failed`/`EntityLoaderFailed`: the external
+                            // entity (or filename-create) loader already
+                            // reported the failure through xmlCtxtErrIO, so a
+                            // second warning here would duplicate it (upstream
+                            // emits exactly one per unresolvable `%module;`).
+                        }
+                    }
+                }
+            }
         }
         xmlFreeImpl(name as *mut c_void);
+    }
+}
+
+/// UPSTREAM-PARITY (parserInternals.c `xmlDefaultExternalEntityLoader`): a
+/// system id with no scheme is resolved against the base of the input the
+/// reference came from — `xmlBuildURI(URL, ctxt->input->filename)`, falling
+/// back to `ctxt->directory`. Without this a DTD's `%module;` reference to a
+/// sibling file (`sub.mod`) was opened relative to the process CWD, so a
+/// perfectly resolvable module was reported as missing and its declarations
+/// were lost.
+///
+/// Returns the resolved id as a byte vector (never NUL-terminated).
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid context; `sys` must be NULL or a valid
+///   NUL-terminated string.
+unsafe fn pi_resolve_system_id(ctxt: *mut _xmlParserCtxt, sys: *const xmlChar) -> Vec<u8> {
+    unsafe {
+        if sys.is_null() {
+            return Vec::new();
+        }
+        let raw = core::slice::from_raw_parts(sys as *const u8, libc::strlen(sys as *const c_char))
+            .to_vec();
+        let base: *const c_char = {
+            let input = (*ctxt).input;
+            let mut b: *const c_char = ptr::null();
+            if !input.is_null() && !(*input).filename.is_null() {
+                b = (*input).filename;
+            }
+            if b.is_null() {
+                b = (*ctxt).directory;
+            }
+            b
+        };
+        let p = crate::abi::exports_uri::xmlBuildURI(sys as *const c_char, base);
+        if p.is_null() {
+            return raw;
+        }
+        let v =
+            core::slice::from_raw_parts(p as *const u8, libc::strlen(p as *const c_char)).to_vec();
+        xmlFreeImpl(p as *mut c_void);
+        v
+    }
+}
+
+/// Push the replacement text of an EXTERNAL parameter entity as a new input
+///
+/// The loaded bytes are copied into an owned C buffer that `pi_pop_pe`
+/// releases when the input is exhausted. `XML_ENT_EXPANDING` is set for the
+/// entity's lifetime so a recursive `%name;` raises XML_ERR_ENTITY_LOOP
+/// instead of recursing forever. A leading `<?xml ...?>` text declaration is
+/// parsed before the declaration body, matching upstream `xmlParsePERefInternal`.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid context with a live `input`; `ent` must be the
+///   external parameter entity the reference resolved to.
+unsafe fn pi_push_external_pe(
+    ctxt: *mut _xmlParserCtxt,
+    ent: *mut _xmlEntity,
+    bytes: &[u8],
+    system_id: *const xmlChar,
+) {
+    unsafe {
+        if (*ent).flags & XML_ENT_EXPANDING != 0 {
+            pi_fatal_err(ctxt, XML_ERR_ENTITY_LOOP);
+            return;
+        }
+        let total = bytes.len();
+        let buf = xmlMallocImpl(total + 1) as *mut xmlChar;
+        if buf.is_null() {
+            return;
+        }
+        ptr::copy_nonoverlapping(bytes.as_ptr(), buf, total);
+        *buf.add(total) = 0;
+        let input = xmlMallocZero(size_of::<_xmlParserInput>()) as *mut _xmlParserInput;
+        if input.is_null() {
+            xmlFreeImpl(buf as *mut c_void);
+            return;
+        }
+        (*input).base = buf;
+        (*input).cur = buf;
+        (*input).end = buf.add(total);
+        (*input).line = 1;
+        (*input).col = 1;
+        (*input).entity = ent;
+        if !system_id.is_null() {
+            (*input).filename = crate::xml::string::xml_strdup(system_id) as *const c_char;
+        }
+        (*ent).flags |= XML_ENT_EXPANDING;
+        if pi_input_push(ctxt, input) < 0 {
+            (*ent).flags &= !XML_ENT_EXPANDING;
+            xmlFreeImpl(buf as *mut c_void);
+            if !(*input).filename.is_null() {
+                xmlFreeImpl((*input).filename as *mut c_void);
+            }
+            xmlFreeImpl(input as *mut c_void);
+            return;
+        }
+        // UPSTREAM-PARITY (xmlParsePERefInternal): an external parameter
+        // entity may open with a text declaration.
+        if pi_cmp5(ctxt, b"<?xml") && pi_is_blank_ch(pi_nxt(ctxt, 5)) {
+            pi_parse_text_decl(ctxt);
+        }
+    }
+}
+
+/// Record an `<!ENTITY>` declaration in the subset the parser is currently in
+/// (upstream `xmlSAX2EntityDecl` -> `xmlAddDocEntity`/`xmlAddDtdEntity`):
+/// `inSubset == 2` selects the EXTERNAL subset, anything else the internal
+/// one. `decode` expands character/entity references in the replacement text
+/// (`xmlParseEntityValue`), leaving `orig` as the raw literal.
+///
+/// # Safety
+///
+/// - `c` must be a valid context whose `myDoc`/subset pointers are NULL or
+///   valid; the string arguments must be NULL or valid NUL-terminated strings
+///   owned by the caller.
+#[allow(clippy::too_many_arguments)]
+unsafe fn pi_record_entity(
+    c: &_xmlParserCtxt,
+    name: *const xmlChar,
+    etype: c_int,
+    external_id: *const xmlChar,
+    system_id: *const xmlChar,
+    value: *const xmlChar,
+    orig: *const xmlChar,
+    decode: bool,
+) {
+    unsafe {
+        if c.myDoc.is_null() || name.is_null() {
+            return;
+        }
+        let dtd = if c.inSubset == 2 {
+            (*c.myDoc).extSubset
+        } else {
+            (*c.myDoc).intSubset
+        };
+        if dtd.is_null() {
+            return;
+        }
+        let mut content = value;
+        let mut decoded: *mut xmlChar = ptr::null_mut();
+        if decode && !value.is_null() {
+            decoded = crate::xml::entities::string_decode_entities(c.myDoc, value, 0, 0, 0, 0);
+            if !decoded.is_null() {
+                content = decoded;
+            }
+        }
+        crate::xml::entities::add_entity_with_orig(
+            dtd,
+            name,
+            etype,
+            external_id,
+            system_id,
+            content,
+            orig,
+        );
+        if !decoded.is_null() {
+            xmlFreeImpl(decoded as *mut c_void);
+        }
     }
 }
 
@@ -2217,6 +2436,23 @@ unsafe fn pi_parse_entity_decl(ctxt: *mut _xmlParserCtxt) {
                                 value,
                             );
                         }
+                        // UPSTREAM-PARITY (SAX2.c xmlSAX2EntityDecl ->
+                        // xmlAddDocEntity/xmlAddDtdEntity): a declaration is
+                        // recorded in the CURRENT subset's `pentities` table,
+                        // which is what `getParameterEntity` reads back. The
+                        // candidate's default SAX2 `entityDecl` only creates the
+                        // entity on `doc->entities`, so without this an internal
+                        // `%name;` reference raised XML_ERR_UNDECLARED_ENTITY.
+                        pi_record_entity(
+                            c,
+                            name,
+                            XML_INTERNAL_PARAMETER_ENTITY as c_int,
+                            ptr::null(),
+                            ptr::null(),
+                            value,
+                            orig,
+                            true,
+                        );
                     }
                 } else {
                     uri = pi_parse_external_id(ctxt, &mut literal, 1);
@@ -2233,6 +2469,19 @@ unsafe fn pi_parse_entity_decl(ctxt: *mut _xmlParserCtxt) {
                                 ptr::null_mut(),
                             );
                         }
+                        // UPSTREAM-PARITY: record the external parameter entity
+                        // in the subset so `%name;` resolves to it (see the
+                        // internal branch above).
+                        pi_record_entity(
+                            c,
+                            name,
+                            XML_EXTERNAL_PARAMETER_ENTITY as c_int,
+                            literal,
+                            uri,
+                            ptr::null(),
+                            ptr::null(),
+                            false,
+                        );
                     }
                 }
             } else {
@@ -5295,6 +5544,14 @@ pub unsafe extern "C" fn xmlParseDTD(
         pi_ctxt_late_init(ctxt);
         (*ctxt).inSubset = 2;
         (*ctxt).hasExternalSubset = 1;
+        // UPSTREAM-PARITY (parser.c xmlSAXParseDTD):
+        //   xmlCtxtSetOptions(ctxt, XML_PARSE_DTDLOAD);
+        // `loadsubset` is what lets an external parameter entity inside the DTD
+        // (a `%module;` reference) be loaded at all — xmlParsePERefInternal
+        // skips the load when `loadsubset`, `replaceEntities` and `validate`
+        // are all clear.
+        (*ctxt).options |= XML_PARSE_DTDLOAD;
+        (*ctxt).loadsubset |= crate::abi::constants::XML_DETECT_IDS;
 
         // UPSTREAM-PARITY (parser.c xmlCtxtParseDtd, reached via
         // xmlSAXParseDTD): the parser document is created up front with an

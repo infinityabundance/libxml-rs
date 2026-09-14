@@ -2536,31 +2536,37 @@ impl XmlTokenizer {
         // the legacy per-char owned path (the body may run past the entity
         // boundary via auto-pop). Only base-input bodies can span.
         if !self.input.at_base_input() {
+            // UPSTREAM-PARITY (parser.c xmlParseCDSect): the terminator scan is
+            // a real 3-byte lookahead that consumes NOTHING until it matches —
+            // `if ((cur == ']') && (NXT(1) == ']') && (NXT(2) == '>'))`. A
+            // pair of `]` NOT followed by `>` therefore advances by exactly
+            // ONE byte, so the second `]` can still start the terminator of a
+            // later `]]>`. Consuming both (the previous behaviour) made
+            // `<![CDATA[xy]]]></a>` run to EOF with
+            // XML_ERR_CDATA_NOT_FINISHED. This loop tracks the number of
+            // consecutive `]` already appended instead of looking ahead.
             let mut content = Vec::new();
             let mut unterminated = false;
+            let mut trailing_rs = 0usize;
             loop {
                 if self.input.is_eof() {
                     unterminated = true;
                     break;
                 }
-                // Check for `]]>`
-                if self.input.peek_char() == Some(']') {
-                    self.input.read_char();
-                    if self.input.peek_char() == Some(']') {
-                        self.input.read_char();
-                        if self.input.peek_char() == Some('>') {
-                            self.input.read_char();
-                            break;
-                        }
-                        content.push(b']');
-                        content.push(b']');
-                        continue;
-                    }
-                    content.push(b']');
-                    continue;
-                }
                 match self.input.read_char() {
-                    Some(c) => Self::push_char(&mut content, c),
+                    Some(']') => {
+                        trailing_rs += 1;
+                        content.push(b']');
+                    }
+                    Some('>') if trailing_rs >= 2 => {
+                        // The last two `]` are the terminator, not content.
+                        content.truncate(content.len() - 2);
+                        break;
+                    }
+                    Some(c) => {
+                        trailing_rs = 0;
+                        Self::push_char(&mut content, c);
+                    }
                     None => break,
                 }
             }
@@ -2584,6 +2590,13 @@ impl XmlTokenizer {
         // ']' of the terminator.
         let mut content_end = seg_start;
         let mut unterminated = false;
+        // UPSTREAM-PARITY (parser.c xmlParseCDSect): the terminator scan is a
+        // 3-byte lookahead that consumes nothing until `]]>` matches, so a
+        // `]]` NOT followed by `>` advances by exactly ONE byte and its second
+        // `]` can still start a later terminator. Counting the consecutive `]`
+        // already consumed reproduces that without needing lookahead (see the
+        // entity-content path above for the same rule).
+        let mut trailing_rs = 0usize;
 
         loop {
             if self.input.is_eof() {
@@ -2600,9 +2613,21 @@ impl XmlTokenizer {
                     if let Some(v) = owned.as_mut() {
                         v.extend_from_slice(b"\xEF\xBF\xBD");
                     }
+                    trailing_rs = 0;
                     seg_start = self.input.current_pos().2;
                     continue;
                 }
+            }
+            // UPSTREAM-PARITY (parser.c xmlParseCDSect): with two `]` already
+            // consumed the next byte decides. `>` closes the section and the
+            // two `]` are the terminator, NOT content — this check must run
+            // before the bulk-run skip, because `>` is itself a valid
+            // verbatim CDATA byte and would otherwise be swallowed by it.
+            if trailing_rs >= 2 && self.input.peek_raw() == Some(b'>') {
+                let gt_pos = self.input.current_pos().2;
+                self.input.read_char();
+                content_end = gt_pos - 2;
+                break;
             }
             // §16.8 Level A: bulk-consume the verbatim CDATA-content run
             // (printable ASCII except ']'; CR/LF and non-ASCII excluded). The
@@ -2616,6 +2641,9 @@ impl XmlTokenizer {
                 );
                 if run > 0 {
                     self.input.skip_linebreak_free(run);
+                    // The run never ends on `]` (it is excluded from the
+                    // class), so any pending `]` sequence is broken here.
+                    trailing_rs = 0;
                     continue;
                 }
             }
@@ -2630,29 +2658,18 @@ impl XmlTokenizer {
                 if let Some(v) = owned.as_mut() {
                     v.push(b'\n');
                 }
+                trailing_rs = 0;
                 seg_start = self.input.current_pos().2;
                 continue;
             }
 
-            // Check for `]]>`
             if c == ']' {
-                let term_start = self.input.current_pos().2;
                 self.input.read_char();
-                if self.input.peek_char() == Some(']') {
-                    self.input.read_char();
-                    if self.input.peek_char() == Some('>') {
-                        self.input.read_char();
-                        content_end = term_start;
-                        break;
-                    }
-                    // `]]` not followed by `>`: both are ordinary content
-                    // and stay in the pending segment (bulk-flushed later).
-                    continue;
-                }
-                // Single ']' is ordinary content (pending segment).
+                trailing_rs += 1;
                 continue;
             }
 
+            trailing_rs = 0;
             match self.input.read_char() {
                 Some(_c) => {
                     // §16.5.3: clean bytes stay pending in `[seg_start, pos)`

@@ -493,6 +493,33 @@ pub(crate) mod default_sax_handler {
             return;
         }
         let bytes = unsafe { core::slice::from_raw_parts(value, len as usize) };
+        // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeInternal):
+        //
+        //     if (ctxt->replaceEntities == 0)
+        //         xmlNodeParseAttValue(ret->doc, ret, value, SIZE_MAX, NULL);
+        //     else if (value != NULL)
+        //         ret->children = xmlNewDocText(ctxt->myDoc, value);
+        //
+        // With entity substitution requested the value is stored VERBATIM as a
+        // single text node: a literal `&` in it is data, not the start of a
+        // reference. Running the multi-node builder anyway made
+        // `v="Mohammed Audi &amp; Ali Golf;Muhammad"` (value after NOENT:
+        // `Mohammed Audi & Ali Golf;Muhammad`) treat `& Ali Golf;` as an entity
+        // reference, drop the scanned span and leave a NULL-content entity-ref
+        // child behind — the C14N of that attribute then lost everything from
+        // the `&` on.
+        if unsafe { (*ctxt).replaceEntities } != 0 {
+            let text = unsafe { parser_new_text_node(ctxt, value, len, false) };
+            if !text.is_null() {
+                unsafe {
+                    (*attr).children = text;
+                    (*attr).last = text;
+                    (*text).parent = attr as *mut _xmlNode;
+                    (*text).doc = (*ctxt).myDoc;
+                }
+            }
+            return;
+        }
         let mut head: *mut _xmlNode = ptr::null_mut();
         let mut last: *mut _xmlNode = ptr::null_mut();
         let mut i = 0usize;
@@ -504,11 +531,39 @@ pub(crate) mod default_sax_handler {
             ($end:expr) => {{
                 let run_len = $end - run_start;
                 if run_len > 0 {
+                    // UPSTREAM-PARITY (tree.c xmlStringDecodeEntities via
+                    // xmlSAX2AttributeInternal): the tokenizer represents a
+                    // resolved ampersand in an attribute value as the four-byte
+                    // token `&#38;` so the SAX layer can tell it from a raw `&`
+                    // (SAX2 push consumers observe `&#38;`). The *tree* builder
+                    // decodes that token back to a literal `&`, so the
+                    // attribute's value is `x&y` for both `x&amp;y` and
+                    // `x&#38;y` (serializers then re-emit `&amp;`). Without this
+                    // the tree keeps the token and serializes `&amp;#38;`.
+                    let run = unsafe { core::slice::from_raw_parts(value.add(run_start), run_len) };
+                    let decoded_buf;
+                    let (ptr, len) = if run.windows(5).any(|w| w == b"&#38;") {
+                        let mut out = Vec::with_capacity(run_len);
+                        let mut k = 0usize;
+                        while k < run.len() {
+                            if run[k..].starts_with(b"&#38;") {
+                                out.push(b'&');
+                                k += 5;
+                            } else {
+                                out.push(run[k]);
+                                k += 1;
+                            }
+                        }
+                        decoded_buf = out;
+                        (decoded_buf.as_ptr(), decoded_buf.len())
+                    } else {
+                        (run.as_ptr(), run.len())
+                    };
                     let text = unsafe {
                         parser_new_text_node(
                             ctxt,
-                            value.add(run_start),
-                            run_len as c_int,
+                            ptr,
+                            len as c_int,
                             // had-ref values never compact (R-000120); the
                             // multi-node builder only runs for them.
                             true,
@@ -1499,17 +1554,21 @@ pub(crate) mod default_sax_handler {
         }
     }
 
-    /// Default `ignorableWhitespace` handler.
+    /// `ignorableWhitespace` handler that behaves like `characters`.
     ///
-    /// Behaves like `characters` — creates a text node from whitespace content.
+    /// # UPSTREAM-PARITY (SAX2.c xmlSAXVersion)
+    ///
+    /// Upstream does not define a separate function for this slot: the default
+    /// SAX2 handler stores the SAME pointer as `characters`. This helper is kept
+    /// as the explicit, name-bearing equivalent; the handler table
+    /// ([`super::xmlSAX2InitDefaultSAXHandler`]) installs `characters` directly
+    /// so the identity test in `xmlCharacters` behaves exactly like upstream.
     ///
     /// # SAFETY
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - `ch` must be a valid pointer to a buffer of at least `len` bytes.
     pub unsafe extern "C" fn ignorableWhitespace(ctx: *mut c_void, ch: *const xmlChar, len: c_int) {
-        // Delegate to characters handler — upstream libxml2 treats ignorable
-        // whitespace the same as regular character data by default.
         // SAFETY: Same safety requirements as `characters`.
         unsafe { characters(ctx, ch, len) };
     }

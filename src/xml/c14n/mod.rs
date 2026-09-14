@@ -1536,9 +1536,18 @@ unsafe fn c14n_serialize_attributes(
                 c14n_escape_attr(buf, value_c.as_ptr() as *const xmlChar);
             }
         } else if !a.children.is_null() {
-            let child = unsafe { &*a.children };
-            if child.type_ == XML_TEXT_NODE as c_int && !child.content.is_null() {
-                c14n_escape_attr(buf, child.content);
+            // UPSTREAM-PARITY (c14n.c xmlC14NProcessAttrsAxis):
+            //   value = xmlNodeListGetString(doc, attr->children, 1);
+            // The value is the CONCATENATION of the attribute's children with
+            // entity references substituted inline — an attribute whose value
+            // contains a reference is stored as several text siblings, and
+            // reading only `attr->children` truncated the value at the first
+            // reference (OSM `v="... &amp; ...;..."` lost everything from the
+            // `&` onward).
+            let value = crate::abi::exports_treedump::xmlNodeListGetString(a.doc, a.children, 1);
+            if !value.is_null() {
+                c14n_escape_attr(buf, value);
+                crate::abi::allocator::xmlFreeImpl(value as *mut core::ffi::c_void);
             }
         }
 

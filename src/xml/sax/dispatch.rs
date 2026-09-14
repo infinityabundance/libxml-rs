@@ -775,7 +775,15 @@ pub unsafe fn xmlSAX2InitDefaultSAXHandler(sax: *mut _xmlSAXHandler) {
         h.endElement = None; // SAX1: not set in SAX2 mode
         h.reference = Some(dflt::reference as referenceSAXFunc);
         h.characters = Some(dflt::characters as charactersSAXFunc);
-        h.ignorableWhitespace = Some(dflt::ignorableWhitespace as ignorableWhitespaceSAXFunc);
+        // UPSTREAM-PARITY (SAX2.c xmlSAXVersion): the default SAX2 handler
+        // installs the SAME function pointer for `ignorableWhitespace` and
+        // `characters`. The identity is load-bearing — `xmlCharacters`
+        // computes `checkBlanks = !keepBlanks || ignorableWhitespace !=
+        // characters` and the `XML_PARSE_NOBLANKS` path swaps this slot for
+        // the no-op `xmlSAX2IgnorableWhitespace`, so a non-identical default
+        // (a separate delegating wrapper) would make every parse look as if
+        // the no-op had been installed.
+        h.ignorableWhitespace = Some(dflt::characters as ignorableWhitespaceSAXFunc);
         h.processingInstruction = Some(dflt::processingInstruction as processingInstructionSAXFunc);
         h.comment = Some(dflt::comment as commentSAXFunc);
         // UPSTREAM-PARITY (SAX2.c xmlSAX2InitDefaultSAXHandler): the legacy

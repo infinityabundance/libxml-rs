@@ -2623,11 +2623,25 @@ pub unsafe extern "C" fn xmlElemDump(f: *mut c_void, doc: *mut _xmlDoc, cur: *mu
 /// Serialize an XML document to a `FILE` (upstream xmlsave.c
 /// `xmlDocFormatDump`). Returns the number of bytes written, or -1 on
 /// failure.
+/// Serialize a document for the `xmlDocDump*` / `xmlDocFormatDump` family and
+/// return a buffer whose bytes are already in the effective output encoding.
 ///
-/// # SAFETY
+/// Thin ABI-side wrapper over [`crate::xml::tree::doc_dump_to_encoding`].
+unsafe fn doc_dump_to_encoding(
+    doc: *mut _xmlDoc,
+    effective_encoding: *const xmlChar,
+    format: c_int,
+) -> *mut _xmlBuffer {
+    unsafe { crate::xml::tree::doc_dump_to_encoding(doc, effective_encoding, format) }
+}
+
+/// Serialize an XML document to a `FILE`.
 ///
-/// - `f` must be a valid `FILE *` or NULL.
-/// - `cur` must be a valid `xmlDoc*` or NULL.
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlDocFormatDump(FILE *f, xmlDocPtr cur, int format);
+/// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlDocFormatDump(
     f: *mut c_void,
@@ -2641,12 +2655,14 @@ pub unsafe extern "C" fn xmlDocFormatDump(
     if out.is_null() {
         return -1;
     }
-    let tmp = io::buf_create(-1);
+    // UPSTREAM-PARITY: xmlDocFormatDump -> xmlDocDumpInternal with a NULL
+    // `txt_encoding`, so the document's own encoding is the output encoding.
+    let effective = unsafe { (*cur).encoding };
+    let tmp = unsafe { doc_dump_to_encoding(cur, effective, format) };
     if tmp.is_null() {
         io::output_buffer_close(out);
         return -1;
     }
-    serialize_node_opts(cur as *mut _xmlNode, tmp, format, 0, ptr::null(), 0);
     let content = io::buf_content(tmp);
     let len = io::buf_length(tmp);
     if !content.is_null() && len > 0 {
@@ -2691,20 +2707,18 @@ pub unsafe extern "C" fn xmlDocDumpFormatMemoryEnc(
         return;
     }
 
-    let buf = io::buf_create(-1);
+    // UPSTREAM-PARITY (xmlDocDumpInternal -> xmlSaveDocInternal):
+    //   if (encoding == NULL) encoding = cur->encoding;
+    // and the save context then owns an encoder for it.
+    let effective_encoding: *const xmlChar = if txt_encoding.is_null() {
+        unsafe { (*out_doc).encoding }
+    } else {
+        txt_encoding as *const xmlChar
+    };
+
+    let buf = unsafe { doc_dump_to_encoding(out_doc, effective_encoding, format) };
     if buf.is_null() {
         return;
-    }
-
-    if !txt_encoding.is_null() {
-        // Upstream xmlSaveDocInternal writes the XML declaration with the
-        // passed encoding (ctxt->encoding); the crate serializer uses
-        // doc->encoding, so emit the declaration here and suppress the
-        // serializer's.
-        write_xml_declaration(buf, out_doc, txt_encoding as *const xmlChar);
-        serialize_node_opts(out_doc as *mut _xmlNode, buf, format, 0, ptr::null(), 1);
-    } else {
-        serialize_node_opts(out_doc as *mut _xmlNode, buf, format, 0, ptr::null(), 0);
     }
 
     let content = io::buf_content(buf);
@@ -2714,8 +2728,8 @@ pub unsafe extern "C" fn xmlDocDumpFormatMemoryEnc(
         let result = xmlMallocImpl((len + 1) as usize) as *mut xmlChar;
         if !result.is_null() {
             ptr::copy_nonoverlapping(content, result, len as usize);
-            *result.add(len as usize) = 0;
             unsafe {
+                *result.add(len as usize) = 0;
                 *doc_txt_ptr = result;
                 if !doc_txt_len.is_null() {
                     *doc_txt_len = len;
@@ -2725,41 +2739,6 @@ pub unsafe extern "C" fn xmlDocDumpFormatMemoryEnc(
     }
 
     io::buf_free(buf);
-}
-
-/// Write the XML declaration with a given encoding (upstream
-/// xmlSaveDocInternal): `<?xml version="1.0" encoding="...";?>\n` plus the
-/// standalone attribute.
-///
-/// # SAFETY
-///
-/// - `buf` must be a valid xmlBuffer pointer.
-/// - `doc` must be a valid `xmlDoc*`.
-/// - `encoding` must be a valid NUL-terminated string.
-unsafe fn write_xml_declaration(buf: *mut _xmlBuffer, doc: *mut _xmlDoc, encoding: *const xmlChar) {
-    let d = unsafe { &*doc };
-    io::buf_add(buf, b"<?xml version=\"" as *const u8, 15);
-    if !d.version.is_null() {
-        io::buf_cat(buf, d.version);
-    } else {
-        io::buf_add(buf, b"1.0" as *const u8, 3);
-    }
-    io::buf_ccat(buf, b'"');
-    if !encoding.is_null() {
-        io::buf_add(buf, b" encoding=\"" as *const u8, 11);
-        io::buf_cat(buf, encoding);
-        io::buf_ccat(buf, b'"');
-    }
-    match d.standalone {
-        0 => {
-            io::buf_add(buf, b" standalone=\"no\"" as *const u8, 16);
-        }
-        1 => {
-            io::buf_add(buf, b" standalone=\"yes\"" as *const u8, 17);
-        }
-        _ => {}
-    }
-    io::buf_add(buf, b"?>\n" as *const u8, 3);
 }
 
 /// Serialize an XML document to memory (upstream xmlsave.c

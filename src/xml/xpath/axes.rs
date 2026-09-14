@@ -126,11 +126,29 @@ pub unsafe fn traverse_axis(
         }
     }
 
-    // Forward axes already append in document order; reverse axes append in
-    // reverse document order and are normalized here. NodeSet::push is
-    // append-only (O(1)); this single sort/dedup at the boundary restores the
-    // document-order/unique invariant without the per-push re-sort.
-    result.sort();
+    // UPSTREAM-PARITY + PERF (xpath.c xmlXPathNodeCollectAndTest): only the
+    // REVERSE axes (parent, ancestor, ancestor-or-self, preceding,
+    // preceding-sibling) append in reverse document order and need
+    // normalizing. Every FORWARD axis below already appends in document order
+    // and cannot produce a duplicate from a single context node, so the
+    // document-order sort is a pure formality there — and an expensive one:
+    // `xmlXPathCmpNodes` walks to the root and, for two non-adjacent siblings,
+    // down the sibling chain, so the Shell sort over the result is
+    // super-linear (Phase 16 F4: `count(descendant-or-self::node())` on a
+    // 1.7 MB GPX file spent 4.8 s in this one call, against 0.04 s for the
+    // whole oracle run).
+    //
+    // A namespace node compares as `1` against everything, so the sort used to
+    // PERMUTE namespace-axis results; skipping it leaves `nsDef` chain order,
+    // which is the order XPath 1.0 specifies.
+    match axis {
+        Axis::Parent
+        | Axis::Ancestor
+        | Axis::AncestorOrSelf
+        | Axis::Preceding
+        | Axis::PrecedingSibling => result.sort(),
+        _ => {}
+    }
     result
 }
 

@@ -146,6 +146,15 @@ const XML_PARSE_HUGE: c_int = 1 << 19;
 const XML_PARSE_IGNORE_ENC: c_int = 1 << 21;
 const XML_PARSE_BIG_LINES: c_int = 1 << 22;
 
+/// UPSTREAM-PARITY (xmllint.c 2.15.3): all three canonicalization modes
+/// (`--c14n`, `--c14n11`, `--exc-c14n`) also enable
+/// `XML_PARSE_NOENT | XML_PARSE_DTDATTR | XML_PARSE_DTDLOAD`, because C14N
+/// requires a fully-expanded, attribute-completed infoset — an unexpanded
+/// entity reference is not a canonicalizable node. Without this the candidate
+/// emitted `b=""` for `style="&st0;"` and then failed on the entity-reference
+/// node with "Failed to canonicalize".
+const C14N_IMPLIED_PARSE_OPTIONS: c_int = XML_PARSE_NOENT | XML_PARSE_DTDATTR | XML_PARSE_DTDLOAD;
+
 // The remaining upstream XML_PARSE_* bits (DTDVALID, NOERROR, NOWARNING,
 // SAX1, XINCLUDE, NODICT, NSCLEAN, NOXINCNODE, NOBASEFIX, OLDSAX) are not
 // surfaced by this CLI; see archaeology/libxml2-git/parser.h for their
@@ -1278,11 +1287,28 @@ fn main() {
             "--sax1" => cli.sax1 = true,
             "--sax" => cli.sax = true,
             "--oldxml10" => cli.oldxml10 = true,
-            "--format" => cli.format = 1,
+            "--format" => {
+                // UPSTREAM-PARITY (xmllint.c 2.15.3 `--format`): formatting
+                // also implies XML_PARSE_NOBLANKS. `--pretty N` deliberately
+                // does NOT (only `--format`/`-format` sets the option), so a
+                // `--pretty 1` run keeps ignorable blanks and therefore
+                // serializes mixed content verbatim, exactly like upstream.
+                cli.format = 1;
+                cli.noblanks = true;
+            }
             "--compress" => cli.compress = true,
-            "--c14n" => cli.c14n = 1,
-            "--c14n11" => cli.c14n = 2,
-            "--exc-c14n" => cli.c14n = 3,
+            "--c14n" => {
+                cli.c14n = 1;
+                cli.options |= C14N_IMPLIED_PARSE_OPTIONS;
+            }
+            "--c14n11" => {
+                cli.c14n = 2;
+                cli.options |= C14N_IMPLIED_PARSE_OPTIONS;
+            }
+            "--exc-c14n" => {
+                cli.c14n = 3;
+                cli.options |= C14N_IMPLIED_PARSE_OPTIONS;
+            }
             "--xpath0" => {
                 cli.xpath0 = true;
                 cli.noout = true;

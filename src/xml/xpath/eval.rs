@@ -125,14 +125,18 @@ fn eval_absolute_path(ctx: &mut XPathContext, expr: &Expr) -> Result<XPathValue,
 
         // Set context to document node and evaluate the path
         let saved_node = ctx.context_node;
-        let saved_list = ctx.context_list.clone();
         ctx.context_node = doc_node;
-        ctx.set_context_list(vec![doc_node]);
+        // UPSTREAM-PARITY (xpath.c xmlXPathCompOpEval): the document node is a
+        // single-node context, so `last()` is 1 here. `context_list` is
+        // write-only bookkeeping and is deliberately NOT rebuilt — see
+        // `eval_relative_path`.
+        ctx.context_size = 1;
+        ctx.context_position = 1;
+        ctx.proximity_position = 1;
 
         let result = eval(ctx, expr);
 
         ctx.context_node = saved_node;
-        ctx.context_list = saved_list;
 
         result
     }
@@ -158,12 +162,20 @@ fn eval_relative_path(
 
     let mut result = NodeSet::new();
 
+    // PERF (Phase 16): the previous revision rebuilt the whole context list
+    // (`ctx.set_context_list(left_ns.iter().collect())`) AND cloned it for
+    // save/restore for EVERY context node. `context_list` is never read during
+    // evaluation — `position()` reads `proximity_position` and `last()` reads
+    // `context_size` — so that was pure O(N²) allocation: `count(//*)` on a
+    // 1.7 MB document (a 12.5 MB one never finished) spent 15 s and
+    // `count(//node())` 31 s, against 0.2 s for the oracle. Only the size is
+    // observable, and upstream sets exactly `ctxt->contextSize = left->nodeNr`.
+    let left_size = left_ns.len() as i32;
     for node in left_ns.iter() {
         // For each node in the left result, evaluate the right step
         let saved_node = ctx.context_node;
-        let saved_list = ctx.context_list.clone();
         ctx.context_node = node;
-        ctx.set_context_list(left_ns.iter().collect());
+        ctx.context_size = left_size;
 
         match eval(ctx, right) {
             Ok(val) => {
@@ -175,13 +187,11 @@ fn eval_relative_path(
             }
             Err(e) => {
                 ctx.context_node = saved_node;
-                ctx.context_list = saved_list;
                 return Err(e);
             }
         }
 
         ctx.context_node = saved_node;
-        ctx.context_list = saved_list;
     }
 
     // The per-context-node concatenation is append-only and may overlap across
@@ -238,7 +248,6 @@ fn eval_step(ctx: &mut XPathContext, step: &Step) -> Result<XPathValue, String> 
             let saved_pos = ctx.context_position;
             let saved_prox = ctx.proximity_position;
             let saved_size = ctx.context_size;
-            let saved_list = ctx.context_list.clone();
 
             ctx.context_node = node;
             ctx.context_position = (i + 1) as i32;
@@ -271,7 +280,6 @@ fn eval_step(ctx: &mut XPathContext, step: &Step) -> Result<XPathValue, String> 
             ctx.context_position = saved_pos;
             ctx.proximity_position = saved_prox;
             ctx.context_size = saved_size;
-            ctx.context_list = saved_list;
         }
 
         result = filtered;
@@ -352,7 +360,6 @@ fn eval_filter(
             let saved_pos = ctx.context_position;
             let saved_prox = ctx.proximity_position;
             let saved_size = ctx.context_size;
-            let saved_list = ctx.context_list.clone();
 
             ctx.context_node = *node;
             ctx.context_position = (i + 1) as i32;
@@ -378,7 +385,6 @@ fn eval_filter(
             ctx.context_position = saved_pos;
             ctx.proximity_position = saved_prox;
             ctx.context_size = saved_size;
-            ctx.context_list = saved_list;
         }
 
         *ns = filtered;

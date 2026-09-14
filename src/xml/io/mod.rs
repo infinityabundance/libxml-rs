@@ -173,17 +173,73 @@ const XML_BUFFER_ALLOC_IMMUTABLE: c_int = 2;
 ///   initializes a new `_xmlBuffer`, checking every allocation for NULL
 ///   before use. The caller owns the returned buffer and must release it
 ///   with `buf_free`.
+/// Initialise a `_xmlBuffer` allocation field-by-field after zeroing the whole
+/// allocation.
+///
+/// The allocation is sized for a `_xmlBuf` and fully zeroed first. `_xmlBuf` is
+/// a strict superset of `_xmlBuffer`: both begin with
+/// `{content, use_, size, alloc}`, but where `_xmlBuffer` has padding and then
+/// `contentIO`, `_xmlBuf` has `error`/`buffer`/`io`. Buffer-based consumers
+/// (notably lxml's `_tostring`) cast `xmlOutputBuffer.buffer` to `xmlBufPtr` and
+/// call `xmlBufUse`, which returns 0 when `->error != 0`. A whole-struct
+/// `ptr::write` leaves the `error` byte-range undefined padding, so `xmlBufUse`
+/// could report 0 nondeterministically and the serialization came back empty.
+///
+/// # Safety
+///
+/// - `buf` must point to at least `max(size_of::<_xmlBuffer>(),
+///   size_of::<_xmlBuf>())` writable bytes.
+unsafe fn init_buffer(
+    buf: *mut _xmlBuffer,
+    content: *mut xmlChar,
+    use_: c_uint,
+    size: c_uint,
+    alloc: c_int,
+    content_io: *mut xmlChar,
+) {
+    let sz = size_of::<_xmlBuffer>().max(size_of::<_xmlBuf>());
+    unsafe { ptr::write_bytes(buf as *mut u8, 0, sz) };
+    unsafe {
+        (*buf).content = content;
+        (*buf).use_ = use_;
+        (*buf).size = size;
+        (*buf).alloc = alloc;
+        (*buf).contentIO = content_io;
+    }
+}
+
 pub(crate) fn buf_create(size: c_int) -> *mut _xmlBuffer {
     let buf_size = if size <= 0 {
         DEFAULT_BUFFER_SIZE
     } else {
         size as c_uint
     };
+    buf_create_sized(buf_size as usize)
+}
+
+/// Create an `xmlBuffer` whose capacity is given as a `usize`.
+///
+/// The public `xmlBufferCreateSize` entry point takes an unsigned capacity, so
+/// this is the constructor the input layer uses when it materializes an input
+/// file larger than `INT_MAX` bytes (the oracle streams such files through a
+/// `size_t`-sized `xmlBuf`; the candidate's materializing input path must not
+/// truncate the length to `c_int`).
+///
+/// # Safety
+///
+/// The returned buffer is heap-owned and must be released with [`buf_free`].
+pub(crate) fn buf_create_sized(size: usize) -> *mut _xmlBuffer {
+    let buf_size = if size == 0 {
+        DEFAULT_BUFFER_SIZE
+    } else {
+        size.min(u32::MAX as usize) as c_uint
+    };
 
     // Ensure minimum size
     let buf_size = buf_size.max(MIN_BUFFER_SIZE);
 
-    let buf = unsafe { xmlMallocImpl(size_of::<_xmlBuffer>()) as *mut _xmlBuffer };
+    let sz = size_of::<_xmlBuffer>().max(size_of::<_xmlBuf>());
+    let buf = unsafe { xmlMallocImpl(sz) as *mut _xmlBuffer };
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -197,18 +253,13 @@ pub(crate) fn buf_create(size: c_int) -> *mut _xmlBuffer {
     // Initialize: null-terminate the empty buffer
     unsafe {
         ptr::write(content, 0);
-    }
-
-    unsafe {
-        ptr::write(
+        init_buffer(
             buf,
-            _xmlBuffer {
-                content,
-                use_: 0,
-                size: buf_size,
-                alloc: XML_BUFFER_ALLOC_DOUBLEIT,
-                contentIO: content, // Track original allocation for I/O mode
-            },
+            content,
+            0,
+            buf_size,
+            XML_BUFFER_ALLOC_DOUBLEIT,
+            content,
         );
     }
 
@@ -248,21 +299,20 @@ pub(crate) fn buf_create_static(str: *const xmlChar, size: c_int) -> *mut _xmlBu
         size as c_uint
     };
 
-    let buf = unsafe { xmlMallocImpl(size_of::<_xmlBuffer>()) as *mut _xmlBuffer };
+    let sz = size_of::<_xmlBuffer>().max(size_of::<_xmlBuf>());
+    let buf = unsafe { xmlMallocImpl(sz) as *mut _xmlBuffer };
     if buf.is_null() {
         return ptr::null_mut();
     }
 
     unsafe {
-        ptr::write(
+        init_buffer(
             buf,
-            _xmlBuffer {
-                content: str as *mut xmlChar,
-                use_: len,
-                size: len + 1, // Include space for null terminator
-                alloc: XML_BUFFER_ALLOC_IMMUTABLE,
-                contentIO: ptr::null_mut(),
-            },
+            str as *mut xmlChar,
+            len,
+            len + 1, // Include space for null terminator
+            XML_BUFFER_ALLOC_IMMUTABLE,
+            ptr::null_mut(),
         );
     }
 
@@ -381,10 +431,9 @@ pub(crate) fn buf_length(buf: *mut _xmlBuffer) -> c_int {
 ///   `content` pointer replaced, so borrowed pointers into the old content
 ///   become invalid.
 pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> c_int {
-    if buf.is_null() || str.is_null() {
+    if str.is_null() {
         return -1;
     }
-
     let mut len = len;
     if len < 0 {
         // UPSTREAM-PARITY: negative len means strlen(str).
@@ -399,8 +448,40 @@ pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> 
     if len == 0 {
         return 0;
     }
+    buf_add_limited(buf, str, len as usize, PUBLIC_BUFFER_MAX)
+}
 
-    let len = len as c_uint;
+/// Append `len` bytes to an `xmlBuffer` without the public `xmlBufferAdd`
+/// 2 GiB guard.
+///
+/// Upstream's parser input path never materializes the raw input into an
+/// `xmlBuffer`: `xmlParserInputBuffer` streams through an `xmlBuf` (a
+/// `size_t`-sized container), which is why the oracle parses multi-gigabyte
+/// files. The candidate's `xmlNewInputFromFile` path does materialize, so the
+/// public-ABI guard must not apply to it — the input constructor keeps the
+/// true length instead (bounded by the 32-bit `use_`/`size` fields of
+/// `_xmlBuffer`, i.e. `u32::MAX`).
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid writable `_xmlBuffer`; `str` must be NULL
+///   or point to at least `len` readable bytes.
+pub(crate) fn buf_add_sz(buf: *mut _xmlBuffer, str: *const xmlChar, len: usize) -> c_int {
+    if str.is_null() {
+        return -1;
+    }
+    if len == 0 {
+        return 0;
+    }
+    buf_add_limited(buf, str, len, u32::MAX as usize)
+}
+
+/// Shared append core. `limit` is the largest permitted `use_ + len + 1`.
+fn buf_add_limited(buf: *mut _xmlBuffer, str: *const xmlChar, len: usize, limit: usize) -> c_int {
+    if buf.is_null() || str.is_null() || len == 0 {
+        return -1;
+    }
+
     let b = unsafe { &mut *buf };
 
     // IMMUTABLE buffers cannot be written to
@@ -411,17 +492,19 @@ pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> 
     // Ensure capacity: need use_ + len + 1 (for null terminator). The
     // upstream allocator rejects allocations beyond 0x80000000 bytes, so
     // hostile lengths must fail fast before any copy (HOSTILE-ABI C-series).
-    let needed = b.use_.saturating_add(len).saturating_add(1);
-    if needed > 0x8000_0000 {
+    let needed = (b.use_ as usize).saturating_add(len).saturating_add(1);
+    if needed > limit {
         return -1;
     }
-    if needed > b.size {
+    if needed > b.size as usize {
         // Grow buffer
         let new_size = if b.alloc == XML_BUFFER_ALLOC_EXACT {
             needed
         } else {
             // DOUBLEIT or default: double until big enough
-            let mut doubled = b.size.saturating_mul(2).max(MIN_BUFFER_SIZE);
+            let mut doubled = (b.size as usize)
+                .saturating_mul(2)
+                .max(MIN_BUFFER_SIZE as usize);
             while doubled < needed {
                 doubled = doubled.saturating_mul(2);
             }
@@ -429,20 +512,25 @@ pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> 
         };
 
         let new_content =
-            unsafe { xmlReallocImpl(b.content as *mut c_void, new_size as usize) as *mut xmlChar };
+            unsafe { xmlReallocImpl(b.content as *mut c_void, new_size) as *mut xmlChar };
         if new_content.is_null() {
             return -1;
         }
         b.content = new_content;
         b.contentIO = new_content; // Track reallocated base
-        b.size = new_size;
+                                   // `_xmlBuffer.size` is 32-bit; a doubling past `u32::MAX` must clamp
+                                   // (never wrap) so the capacity check stays sound.
+        b.size = new_size.min(u32::MAX as usize) as c_uint;
+        if (b.size as usize) < needed {
+            return -1;
+        }
     }
 
     // Copy data
     unsafe {
-        ptr::copy_nonoverlapping(str, b.content.add(b.use_ as usize), len as usize);
+        ptr::copy_nonoverlapping(str, b.content.add(b.use_ as usize), len);
     }
-    b.use_ = b.use_.saturating_add(len);
+    b.use_ = b.use_.saturating_add(len as c_uint);
 
     // Null-terminate
     unsafe {
@@ -451,6 +539,10 @@ pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> 
 
     0
 }
+
+/// The public `xmlBufferAdd` size guard (upstream rejects allocations beyond
+/// 0x80000000 bytes — HOSTILE-ABI C-series).
+const PUBLIC_BUFFER_MAX: usize = 0x8000_0000;
 
 /// Cat a null-terminated string to an xmlBuffer.
 ///
@@ -985,28 +1077,54 @@ pub(crate) fn input_buffer_create_mem(
     if buffer.is_null() || size <= 0 {
         return ptr::null_mut();
     }
+    input_buffer_create_mem_sz(buffer, size as usize, enc)
+}
+
+/// `input_buffer_create_mem` with the length as a `usize`.
+///
+/// `xmlParserInputBufferCreateMem`/`...Static` take a `c_int` length, but the
+/// input layer also materializes whole FILES, which may exceed `INT_MAX`. The
+/// oracle streams those through `xmlBuf`; the candidate's materializing path
+/// keeps the exact length here instead of truncating it (which turned a
+/// 2.3 GiB file into a negative `c_int`, a NULL buffer and a spurious
+/// "failed to load" warning).
+///
+/// # Safety
+///
+/// - `buffer` must point to at least `size` readable bytes, or be NULL.
+pub(crate) fn input_buffer_create_mem_sz(
+    buffer: *const c_char,
+    size: usize,
+    enc: c_int,
+) -> *mut _xmlParserInputBuffer {
+    if buffer.is_null() || size == 0 || size > u32::MAX as usize {
+        return ptr::null_mut();
+    }
 
     let buf = allocate_input_buffer();
     if buf.is_null() {
         return ptr::null_mut();
     }
 
-    // Create the raw buffer containing the input data
-    let raw_buf = buf_create(size);
+    // Create the raw buffer containing the input data. The capacity is
+    // `size + 1` so the append below never has to grow (the NUL terminator
+    // needs one byte past the content) — growing a 2 GiB buffer would double
+    // it to 4 GiB for a single byte.
+    let raw_buf = buf_create_sized(size.saturating_add(1));
     if raw_buf.is_null() {
         unsafe { xmlFreeImpl(buf as *mut c_void) };
         return ptr::null_mut();
     }
 
     // Copy data into the raw buffer
-    buf_add(raw_buf, buffer as *const xmlChar, size);
+    buf_add_sz(raw_buf, buffer as *const xmlChar, size);
 
     // Check if encoding conversion is needed
     let handler = find_handler_for_encoding(enc);
     if !handler.is_null() {
         // Encoding conversion needed
         // Create the output (UTF-8) buffer
-        let out_buf = buf_create((size as c_uint).saturating_mul(3).max(MIN_BUFFER_SIZE) as c_int);
+        let out_buf = buf_create_sized(size.saturating_mul(3).max(MIN_BUFFER_SIZE as usize));
         if out_buf.is_null() {
             buf_free(raw_buf);
             unsafe { xmlFreeImpl(buf as *mut c_void) };
@@ -1191,31 +1309,21 @@ pub(crate) fn input_buffer_create_file(
         0
     };
 
-    // Read the file contents
-    let read_size = if file_size > 0 {
-        file_size
-    } else {
-        4096 // Default chunk
-    };
-
-    let mut data = vec![0u8; read_size];
-    let mut total_read: isize = 0;
+    // Read the file contents.
+    //
+    // Upstream streams the file through the parser (never materializing it),
+    // which is what lets the oracle parse multi-gigabyte inputs. The candidate
+    // materializes, so the read must be exact and must not truncate the length
+    // to `c_int`: a 1 MiB chunk loop with a pre-sized `Vec` avoids both the
+    // `read(fd, _, 0)` early-EOF bug of the previous revision (which doubled
+    // the buffer but left the read length behind) and the needless growth when
+    // the file is exactly the stat() size.
+    const CHUNK: usize = 1 << 20;
+    let mut data: Vec<u8> = Vec::with_capacity(file_size);
+    let mut chunk = [0u8; CHUNK];
 
     loop {
-        let remaining = read_size.saturating_sub(total_read as usize);
-        if remaining == 0 {
-            // Grow buffer
-            let new_size = read_size.saturating_mul(2);
-            data.resize(new_size, 0u8);
-        }
-
-        let ret = unsafe {
-            libc::read(
-                fd,
-                data.as_mut_ptr().add(total_read as usize) as *mut c_void,
-                remaining,
-            )
-        };
+        let ret = unsafe { libc::read(fd, chunk.as_mut_ptr() as *mut c_void, CHUNK) };
 
         if ret < 0 {
             // Error
@@ -1228,19 +1336,27 @@ pub(crate) fn input_buffer_create_file(
             break;
         }
 
-        total_read += ret as isize;
+        data.extend_from_slice(&chunk[..ret as usize]);
+
+        // The materializing path stores the input in an `_xmlBuffer`, whose
+        // `use_`/`size` fields are 32-bit. Refuse anything larger instead of
+        // wrapping (upstream's `size_t`-sized `xmlBuf` has no such ceiling).
+        if data.len() > u32::MAX as usize {
+            unsafe { libc::close(fd) };
+            return ptr::null_mut();
+        }
     }
 
     unsafe { libc::close(fd) };
-
-    data.truncate(total_read as usize);
 
     if data.is_empty() {
         return ptr::null_mut();
     }
 
-    // Create a memory-based input buffer from the data
-    input_buffer_create_mem(data.as_ptr() as *const c_char, data.len() as c_int, enc)
+    // Create a memory-based input buffer from the data. The length is passed
+    // as a `usize` — a materialized file can exceed `INT_MAX` (osm-007 is
+    // 2.3 GiB), and truncating it to `c_int` produced a NULL buffer.
+    input_buffer_create_mem_sz(data.as_ptr() as *const c_char, data.len(), enc)
 }
 
 /// Create an input buffer from I/O callbacks.
