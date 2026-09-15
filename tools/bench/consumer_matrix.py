@@ -37,6 +37,19 @@ OUT = os.path.join(ROOT, "courts", "receipts", "phase-16", "16-12-consumer-matri
 CONTAINER = os.environ.get("PERF_CONTAINER", "perf-c")
 CORPUS_DIR = os.environ.get("CORPUS_IN_CONTAINER", "/corpus")
 
+# §16.12 OOM isolation. The corpus's largest documents are multi-GB, and a
+# consumer that materialises one in memory can reach tens of GiB. Two guards
+# keep a runaway cell from taking down the machine:
+#
+#   * every driver is started with a maximally-killable `oom_score_adj`, so if
+#     the host comes under pressure the kernel reaps the measurement process
+#     rather than unrelated user processes. An earlier run without this guard
+#     hit a host-wide OOM that killed the developer's editor;
+#   * the preflight refuses to start unless the container's memory cap is a safe
+#     fraction of host MemAvailable, so the cap can actually be backed.
+OOM_SCORE_ADJ = os.environ.get("PERF_OOM_SCORE_ADJ", "1000")
+OOM_HEADROOM = float(os.environ.get("PERF_OOM_HEADROOM", "0.75"))
+
 CONSUMER_DRIVER = {
     "xmllint": "python3 /bench/cli_driver.py --consumer xmllint",
     "xsltproc": "python3 /bench/cli_driver.py --consumer xsltproc",
@@ -81,9 +94,64 @@ def provider_env(mode: str) -> str:
     return "; ".join(parts)
 
 
+def oom_guard_cmd() -> str:
+    """Make this cell's process tree the kernel's preferred OOM victim. A
+    process may always raise its own `oom_score_adj` (only lowering it needs
+    CAP_SYS_RESOURCE), so this needs no extra privilege."""
+    if not OOM_SCORE_ADJ:
+        return ""
+    return "echo %s > /proc/self/oom_score_adj 2>/dev/null || true; " % OOM_SCORE_ADJ
+
+
+def oom_preflight():
+    """Fail closed unless the perf container's memory cap fits comfortably in
+    host MemAvailable (§16.12 OOM guard). Returns the guard record for the
+    matrix metadata."""
+    cap = None
+    try:
+        out = subprocess.run(["docker", "inspect", CONTAINER, "--format",
+                              "{{.HostConfig.Memory}}"],
+                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                             timeout=30)
+        if out.returncode == 0:
+            cap = int(out.stdout.decode().strip() or 0)
+    except Exception:  # noqa: BLE001
+        cap = None
+    avail = None
+    try:
+        with open("/proc/meminfo", encoding="ascii") as f:
+            for line in f:
+                if line.startswith("MemAvailable:"):
+                    avail = int(line.split()[1]) * 1024
+                    break
+    except OSError:
+        avail = None
+    info = {
+        "container_memory_limit_bytes": cap,
+        "host_mem_available_bytes": avail,
+        "required_headroom_fraction": OOM_HEADROOM,
+        "oom_score_adj": OOM_SCORE_ADJ,
+    }
+    if cap and avail and cap > avail * OOM_HEADROOM:
+        msg = ("OOM guard: container %s memory cap %.1f GiB exceeds %.0f%% of "
+               "host MemAvailable %.1f GiB; refusing to start. Lower the cap "
+               "(docker update --memory=<n>g %s) or override with "
+               "PERF_OOM_HEADROOM / PERF_OOM_FORCE=1."
+               % (CONTAINER, cap / 2**30, OOM_HEADROOM * 100, avail / 2**30,
+                  CONTAINER))
+        if os.environ.get("PERF_OOM_FORCE") == "1":
+            print("WARNING: " + msg, file=sys.stderr)
+            info["forced"] = True
+        else:
+            print(msg, file=sys.stderr)
+            raise SystemExit(2)
+    return info
+
+
 def run_cell(mode, consumer, eid, category, path, ops, reps, warmup, timeout):
     driver = driver_cmd(consumer, mode)
-    inner = (provider_env(mode) + "; export OP_TIMEOUT=%d; timeout -s KILL %d "
+    inner = (provider_env(mode) + "; " + oom_guard_cmd()
+             + "export OP_TIMEOUT=%d; timeout -s KILL %d "
              % (max(5, timeout - 3), timeout)
              + "python3 /bench/runwrap.py -- "
              + driver
@@ -209,6 +277,7 @@ def main() -> int:
         report = json.load(f)
     with open(ELIG, encoding="utf-8") as f:
         elig = json.load(f)
+    oom_guard = oom_preflight()
     buckets = {r["id"]: r["bucket"] for r in report["rows"]}
     elig_by_id = {e["id"]: e for e in elig["entries"]}
 
@@ -283,6 +352,7 @@ def main() -> int:
         "phase": "16.12",
         "aggregation_contract": elig.get("aggregation_policy"),
         "plan_cells": plan,
+        "oom_guard": oom_guard,
         "cells": cells,
         "counts": {"total": len(cells), "equivalent": len(valid),
                    "invalid_result": len(invalid),

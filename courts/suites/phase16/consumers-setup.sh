@@ -9,17 +9,51 @@ REPO="${REPO:-/mnt/1tb_kingston/libxml-rs}"
 NAME="${PERF_CONTAINER:-perf-c}"
 IMG="${IMG:-libxml-rs/phase14-debian:1}"
 
+# OOM isolation (§16.12). The corpus holds multi-GB documents whose consumers
+# (lxml/PHP DOM) can reach tens of GiB of RSS. The container is therefore:
+#   * capped (PERF_MEM) so a runaway cell is killed by the container's own
+#     cgroup OOM killer, and
+#   * given a high oom_score_adj so that, if the HOST comes under pressure, the
+#     kernel reaps the measurement process instead of unrelated user processes.
+# An earlier `--all --force` run at a 60 GiB cap had neither guard: a 2.7 GB OSM
+# document drove one driver to 54 GiB RSS, the host went into global OOM, and
+# the developer's editor was killed alongside the run. The preflight below
+# refuses to start a cap the host cannot back; override deliberately with
+# PERF_MEM_FORCE=1.
+PERF_MEM="${PERF_MEM:-32g}"
+PERF_OOM_SCORE_ADJ="${PERF_OOM_SCORE_ADJ:-1000}"
+PERF_OOM_HEADROOM="${PERF_OOM_HEADROOM:-0.75}"
+
+perf_mem_preflight() {
+  local cap_gb avail_gb
+  cap_gb="${PERF_MEM%[Gg]}"
+  case "$cap_gb" in (''|*[!0-9]*) echo "OOM guard: PERF_MEM must be an integer GiB value (got '$PERF_MEM')" >&2; exit 1;; esac
+  avail_gb=$(( $(awk '/^MemAvailable:/{print $2}' /proc/meminfo) / 1024 / 1024 ))
+  local max_gb
+  max_gb=$(awk -v a="$avail_gb" -v h="$PERF_OOM_HEADROOM" 'BEGIN{printf "%d", a*h}')
+  if [ "$cap_gb" -gt "$max_gb" ]; then
+    echo "OOM guard: refusing to start $NAME: PERF_MEM=${PERF_MEM} exceeds ${max_gb}GiB" >&2
+    echo "           (host MemAvailable ${avail_gb}GiB x headroom ${PERF_OOM_HEADROOM})." >&2
+    echo "           Lower PERF_MEM, free memory, or set PERF_MEM_FORCE=1 to override." >&2
+    [ "${PERF_MEM_FORCE:-0}" = "1" ] || exit 1
+    echo "           PERF_MEM_FORCE=1: starting anyway." >&2
+  fi
+  echo "OOM guard: cap=${PERF_MEM} host MemAvailable=${avail_gb}GiB headroom=${PERF_OOM_HEADROOM} score_adj=${PERF_OOM_SCORE_ADJ}"
+}
+
 if ! docker ps --filter "name=^/${NAME}$" --format '{{.Names}}' | grep -qx "$NAME"; then
+  perf_mem_preflight
   docker rm -f "$NAME" >/dev/null 2>&1 || true
   mkdir -p "$REPO/target/perf-out"
-  docker run -d --name "$NAME" --memory=100g --memory-swap=100g --cpus=16 \
+  docker run -d --name "$NAME" --memory="$PERF_MEM" --memory-swap="$PERF_MEM" \
+    --oom-score-adj "$PERF_OOM_SCORE_ADJ" --cpus=16 \
     -v "$REPO/courts/suites/phase14/consumers:/court/consumers:ro" \
     -v "$REPO/tools/bench/consumers:/bench:ro" \
     -v "$REPO/target/release:/candidate:ro" \
     -v /tmp/lxmlrs-corpus/files:/corpus:ro \
     -v "$REPO/target/perf-out:/out" \
     "$IMG" sleep infinity >/dev/null
-  echo "container $NAME (re)created"
+  echo "container $NAME (re)created (mem=$PERF_MEM oom_score_adj=$PERF_OOM_SCORE_ADJ)"
 fi
 
 # 1. xsltperf (libxslt compile / precompiled-apply microdriver), per provider.

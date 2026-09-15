@@ -62,6 +62,7 @@ esac
 # disambiguate running containers so we never operate on a stale instance
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 docker run -d --name "$NAME" --memory="$MEM" --memory-swap="$MEM" --cpus="$CPUS" \
+  --oom-score-adj "${OOM_SCORE_ADJ:-1000}" \
   -v "$VOL:$MP" -v "$OUT_VOL:/out" \
   -v "$REPO/courts/suites/phase14/consumers:/court/consumers:ro" $MOUNT \
   "$IMG" sleep infinity >/dev/null

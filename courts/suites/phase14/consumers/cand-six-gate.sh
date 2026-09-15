@@ -21,6 +21,7 @@ docker volume create phpOut >/dev/null 2>&1 || true
 if ! docker ps --filter "name=^/${NAME}$" --format '{{.Names}}' | grep -qx "$NAME"; then
   docker rm -f "$NAME" >/dev/null 2>&1 || true
   docker run -d --name "$NAME" --memory="$MEM" --memory-swap="$MEM" --cpus="$CPUS" \
+    --oom-score-adj "${OOM_SCORE_ADJ:-1000}" \
     -v phpC:/srcb -v phpOut:/out \
     -v "$REPO/courts/suites/phase14/consumers:/court/consumers:ro" \
     -v "$REPO/target/debug:/candidate:ro" \

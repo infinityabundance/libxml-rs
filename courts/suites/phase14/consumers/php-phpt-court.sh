@@ -28,6 +28,7 @@ esac
 # Ensure a persistent container is up with consumers mounted.
 docker rm -f "$ctr" >/dev/null 2>&1 || true
 docker run -d --name "$ctr" --memory=6g --memory-swap=6g --cpus=14 \
+  --oom-score-adj "${OOM_SCORE_ADJ:-1000}" \
   -v "${_mode}:${mp}" -v phpOut:/out \
   -v "$PWD/consumers:/court/consumers:ro" $extra \
   "$IMG" sleep infinity >/dev/null
